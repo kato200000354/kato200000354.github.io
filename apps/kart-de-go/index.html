@@ -1,3 +1,5 @@
+<!doctype html>
+<meta charset="utf-8">
 <title>カートでゴー！</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -73,6 +75,14 @@ button:focus-visible{outline:3px solid #fff;outline-offset:3px}
 .bar{height:10px;border-radius:6px;background:rgba(255,255,255,.2);overflow:hidden}
 .bar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#43d1ff,#7dffb0);transition:width .25s}
 .row{display:flex;gap:14px;align-items:center;justify-content:center;flex-wrap:wrap}
+@media (max-height:500px){
+  #title{gap:8px}
+  .logo{font-size:min(11vw,17vh)}
+  #title > div[style]{height:6px!important}
+  .btn-y{padding:8px 36px;font-size:22px}
+  .round i{width:46px;height:46px}.round svg{width:24px;height:24px}
+  .lineup span{width:clamp(34px,11vh,56px)}
+}
 @media (max-width:620px){.grid-ch{grid-template-columns:repeat(4,1fr)}.pick .emo{font-size:26px}}
 
 /* HUD */
@@ -203,7 +213,7 @@ kbd{background:#fff;color:var(--ink);border-radius:5px;padding:0 6px;font-family
     </div>
   </div>
 
-  <div id="select" class="screen" hidden>
+  <div id="select" class="screen" hidden style="display:none">
     <div class="panel">
       <div class="ribbon">キャラクターを選んでね</div>
       <div id="gridCh" class="grid-ch"></div>
@@ -225,7 +235,7 @@ kbd{background:#fff;color:var(--ink);border-radius:5px;padding:0 6px;font-family
     </div>
   </div>
 
-  <div id="hud" hidden>
+  <div id="hud" hidden style="display:none">
     <div class="tl">
       <div class="posbox ol"><span id="hPos" class="n">8</span><span class="d">/8</span><small>順位</small></div>
       <div id="hRanks" class="ranks ol"></div>
@@ -250,7 +260,7 @@ kbd{background:#fff;color:var(--ink);border-radius:5px;padding:0 6px;font-family
   <div id="cd" class="ol"></div>
   <div id="toast" class="ol"></div>
 
-  <div id="course" class="screen" hidden>
+  <div id="course" class="screen" hidden style="display:none">
     <div class="panel">
       <div class="ribbon">コースを選んでね</div>
       <div id="gridCourse" class="grid-course"></div>
@@ -261,7 +271,7 @@ kbd{background:#fff;color:var(--ink);border-radius:5px;padding:0 6px;font-family
     </div>
   </div>
 
-  <div id="result" class="screen" hidden>
+  <div id="result" class="screen" hidden style="display:none">
     <div class="panel">
       <div class="ribbon" style="font-size:24px;padding:6px 34px;background:linear-gradient(#ffd84a,#ffae00)"><span class="ol-o">レース結果</span></div>
       <div id="resCourse" style="font-size:14px;margin-top:-4px"></div>
@@ -274,7 +284,7 @@ kbd{background:#fff;color:var(--ink);border-radius:5px;padding:0 6px;font-family
     </div>
   </div>
 
-  <div id="modal" hidden>
+  <div id="modal" hidden style="display:none">
     <div class="panel">
       <h2 id="mTitle" class="ol"></h2>
       <div id="mBody" class="mbody"></div>
@@ -364,7 +374,15 @@ const sfx = {
 
 /* ================= three setup ================= */
 const canvas = $('#gl');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+function fail(msg) {
+  const t = document.getElementById('title');
+  t.innerHTML = '<div class="panel" style="width:min(420px,100%)"><h2 class="ol" style="margin:0">あそべませんでした</h2><p style="margin:0;font-weight:500;line-height:1.7">' + msg + '</p></div>';
+  t.style.display = ''; t.hidden = false;
+}
+if (!window.THREE) { fail('ゲームの部品を読み込めませんでした。通信状態を確認して、ページを開き直してください。'); return; }
+let renderer;
+try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true }); }
+catch (e) { fail('この端末やブラウザでは3D表示（WebGL）が使えないため、ゲームを動かせません。別のブラウザで開いてみてください。'); return; }
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 const scene = new THREE.Scene();
 function canvasTex(w, h, draw, repeat) {
@@ -1205,7 +1223,8 @@ function updateHud(dt) {
 }
 
 /* ================= flow ================= */
-function show(id) { ['#title', '#select', '#course', '#hud', '#result'].forEach(s => $(s).hidden = s !== id); }
+function vis(el, on) { el.hidden = !on; el.style.display = on ? '' : 'none'; }
+function show(id) { ['#title', '#select', '#course', '#hud', '#result'].forEach(s => vis($(s), s === id)); }
 function toTitle() { state = 'title'; setupRacers(null); countdownIdle(); show('#title'); $('#cd').textContent = ''; }
 function countdownIdle() { cd = 0; cdShown = null; }
 function startRace() {
@@ -1379,7 +1398,7 @@ function openModal(kind) {
       : '<p style="margin:0">まだ記録がありません。レースを完走すると、ここにタイムが残ります。</p>';
     body.innerHTML = `<div class="seg" id="segCourse">${COURSES.map((c, i) => `<button data-v="${i}" aria-pressed="${i === rc}">${c.name.replace('サーキット', '').replace('ロード', '')}</button>`).join('')}</div>` + body.innerHTML;
     body.onclick = e => { const b = e.target.closest('#segCourse button'); if (!b) return; modalCourse = +b.dataset.v; sfx.click(); openModal('rank'); };
-    return void ($('#modal').hidden = false);
+    return void (vis($('#modal'), true));
   } else if (kind === 'settings') {
     $('#mTitle').textContent = '設定';
     body.innerHTML = `<div>サウンド</div><div class="seg" id="segSound"><button data-v="1" aria-pressed="${settings.sound}">オン</button><button data-v="0" aria-pressed="${!settings.sound}">オフ</button></div>
@@ -1390,7 +1409,7 @@ function openModal(kind) {
       if (b.parentElement.id === 'segDiff') settings.diff = +b.dataset.v;
       store.set('kdg.settings', settings); initAudio(); sfx.click(); openModal('settings');
     };
-    return void ($('#modal').hidden = false);
+    return void (vis($('#modal'), true));
   } else {
     $('#mTitle').textContent = 'あそびかた';
     body.innerHTML = `<div>アクセルは自動。ハンドルでコースを走って、3周のタイムを競います。</div>
@@ -1400,11 +1419,11 @@ function openModal(kind) {
       <div>？ボックスでアイテム：キノコ（ダッシュ）、コイン（+2枚）、こうら（前のカートに当たる）。コインは最大10枚、1枚ごとに少し速くなります。オレンジの矢印パネルはダッシュ板です。</div>`;
   }
   body.onclick = null;
-  $('#modal').hidden = false;
+  vis($('#modal'), true);
 }
 document.querySelectorAll('[data-modal]').forEach(b => b.addEventListener('click', () => { modalCourse = selCourse; initAudio(); sfx.click(); openModal(b.dataset.modal); }));
-$('#mClose').addEventListener('click', () => { sfx.click(); $('#modal').hidden = true; });
-$('#modal').addEventListener('click', e => { if (e.target.id === 'modal') $('#modal').hidden = true; });
+$('#mClose').addEventListener('click', () => { sfx.click(); vis($('#modal'), false); });
+$('#modal').addEventListener('click', e => { if (e.target.id === 'modal') vis($('#modal'), false); });
 
 $('#lineup').innerHTML = CHARS.map((c, i) => `<span style="animation-delay:${i * -0.18}s">${pimg(c, 'pt', i % 3 === 0 ? 'happy' : 'normal')}</span>`).join('');
 buildCourse(selCourse);
