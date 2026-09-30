@@ -1,0 +1,917 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>飲食店制覇マップ</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root{
+  --bg:#E9F0EC;--surface:#FFFFFF;--surface-2:#F2F6F4;--surface-3:#E6EEEA;
+  --ink:#16261E;--ink-2:#56675F;--ink-3:#8A9892;--line:#DCE5E0;
+  --accent:#1B8456;--accent-2:#136A44;--accent-soft:#DFF1E7;--on-accent:#FFFFFF;
+  --star:#F2AE17;--danger:#CC3B31;--danger-soft:#FBE7E5;
+  --shadow:0 8px 24px rgba(18,58,38,.14);--shadow-s:0 2px 8px rgba(18,58,38,.10);
+  --display:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Meiryo",sans-serif;
+  --body:"Noto Sans JP","Hiragino Sans","Yu Gothic UI","Meiryo",system-ui,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#070C0A;--surface:#111916;--surface-2:#18221E;--surface-3:#202C27;
+  --ink:#E4EDE8;--ink-2:#9DAEA6;--ink-3:#6F817A;--line:#26332D;
+  --accent:#38B47A;--accent-2:#5CCB95;--accent-soft:#16352A;--on-accent:#06120C;
+  --star:#F5BD3A;--danger:#EE6A5F;--danger-soft:#3A1B18;
+  --shadow:0 8px 24px rgba(0,0,0,.5);--shadow-s:0 2px 8px rgba(0,0,0,.4);color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#070C0A;--surface:#111916;--surface-2:#18221E;--surface-3:#202C27;
+  --ink:#E4EDE8;--ink-2:#9DAEA6;--ink-3:#6F817A;--line:#26332D;
+  --accent:#38B47A;--accent-2:#5CCB95;--accent-soft:#16352A;--on-accent:#06120C;
+  --star:#F5BD3A;--danger:#EE6A5F;--danger-soft:#3A1B18;
+  --shadow:0 8px 24px rgba(0,0,0,.5);--shadow-s:0 2px 8px rgba(0,0,0,.4);color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0}
+:focus-visible{outline:2.5px solid var(--accent);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;font-weight:700}
+
+#app{position:relative;max-width:480px;height:100%;margin:0 auto;background:var(--surface);overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 50px rgba(0,0,0,.08)}
+.views{flex:1;position:relative;overflow:hidden}
+.view{position:absolute;inset:0;overflow-y:auto;display:none;flex-direction:column}
+.view.on{display:flex}
+.pad{padding-inline:16px}
+
+/* tab bar */
+.tabbar{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);background:var(--surface);padding-bottom:env(safe-area-inset-bottom,0px);position:relative;z-index:5}
+.tab{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 7px;font-size:10.5px;color:var(--ink-3);font-weight:500}
+.tab svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tab.on{color:var(--accent)}
+.tab.on svg{stroke-width:2.2}
+
+/* header */
+.hd{padding:14px 16px 10px;display:flex;align-items:center;gap:10px}
+.hd h1{font-size:21px;letter-spacing:.02em}
+.hd .sub{font-size:11.5px;color:var(--ink-2)}
+.logo{width:36px;height:36px;border-radius:11px;background:var(--accent);display:grid;place-items:center;flex:none}
+.logo svg{width:22px;height:22px;fill:none;stroke:var(--on-accent);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.hd-title{flex:1;min-width:0}
+.hd-center{justify-content:center;text-align:center}
+
+.searchrow{display:flex;gap:8px;padding:0 16px 10px}
+.search{flex:1;display:flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:0 12px;height:42px}
+.search svg{width:17px;height:17px;stroke:var(--ink-3);fill:none;stroke-width:2;flex:none}
+.search input{border:0;background:none;outline:none;flex:1;min-width:0;height:100%}
+.iconbtn{width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;position:relative;flex:none}
+.iconbtn svg{width:19px;height:19px;stroke:var(--ink);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.iconbtn .dot{position:absolute;top:7px;right:7px;width:8px;height:8px;border-radius:50%;background:var(--danger);border:2px solid var(--surface)}
+
+/* maps */
+.mapbox{position:relative;z-index:0;flex:1;min-height:260px}
+.mapbox .leaflet-container{position:absolute;inset:0;background:var(--surface-3);font-family:var(--body)}
+.leaflet-control-attribution{font-size:9px!important;background:color-mix(in srgb,var(--surface) 80%,transparent)!important;color:var(--ink-3)!important}
+.leaflet-control-attribution a{color:var(--ink-2)!important}
+.pin-wrap{background:none;border:0}
+.pin{width:34px;height:34px;border-radius:50% 50% 50% 4px;transform:rotate(-45deg);background:var(--c);display:grid;place-items:center;box-shadow:0 3px 8px rgba(0,0,0,.28);border:2.5px solid #fff}
+.pin span{transform:rotate(45deg);font-size:17px;line-height:1}
+.pin.want{background:#fff;border:2.5px dashed var(--c)}
+.pin.hl{outline:3px solid var(--accent);outline-offset:2px}
+.map-fab{position:absolute;z-index:500;width:42px;height:42px;border-radius:50%;background:var(--surface);box-shadow:var(--shadow-s);display:grid;place-items:center}
+.map-fab svg{width:20px;height:20px;stroke:var(--accent);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+
+.progress-card{position:absolute;z-index:500;left:12px;right:12px;bottom:12px;background:var(--surface);border-radius:18px;box-shadow:var(--shadow);padding:12px 14px;display:flex;align-items:center;gap:12px;text-align:left}
+.avatar{width:48px;height:48px;border-radius:50%;background:var(--accent-soft);display:grid;place-items:center;font-size:26px;flex:none;background-size:cover;background-position:center;overflow:hidden}
+.pc-body{flex:1;min-width:0}
+.pc-label{font-size:11.5px;color:var(--ink-2);font-weight:500}
+.pc-count{font-family:var(--display);font-weight:900;font-size:26px;line-height:1.1}
+.pc-count small{font-size:13px;color:var(--ink-2);font-weight:700}
+.bar{height:8px;border-radius:99px;background:var(--surface-3);overflow:hidden;flex:1}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .5s}
+.barrow{display:flex;align-items:center;gap:8px;margin-top:5px}
+.barrow b{font-size:12px;color:var(--accent);min-width:34px;text-align:right}
+
+.add-fab{position:absolute;z-index:600;right:14px;bottom:104px;height:48px;padding:0 18px 0 14px;border-radius:99px;background:var(--accent);color:var(--on-accent);font-weight:700;display:flex;align-items:center;gap:6px;box-shadow:var(--shadow)}
+.add-fab svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2.6;stroke-linecap:round}
+.sample-note{position:absolute;z-index:500;top:10px;left:12px;right:60px;background:var(--surface);border-radius:12px;box-shadow:var(--shadow-s);padding:8px 12px;font-size:12px;display:flex;align-items:center;gap:8px}
+.sample-note span{flex:1;color:var(--ink-2)}
+.linkbtn{color:var(--accent);font-weight:700;font-size:12px;white-space:nowrap}
+
+/* chips */
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chips.scroll{flex-wrap:nowrap;overflow-x:auto;padding:0 16px 10px;scrollbar-width:none}
+.chips.scroll::-webkit-scrollbar{display:none}
+.chip{height:34px;padding:0 14px;border-radius:99px;border:1px solid var(--line);background:var(--surface);font-size:12.5px;font-weight:500;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;color:var(--ink-2)}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
+
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface-2);border-radius:99px;padding:3px;gap:3px}
+.seg button{height:32px;border-radius:99px;font-size:12.5px;font-weight:700;color:var(--ink-2)}
+.seg button.on{background:var(--accent);color:var(--on-accent)}
+
+.tabs2{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--line);margin-bottom:12px}
+.tabs2 button{padding:12px 0 10px;font-weight:700;color:var(--ink-3);border-bottom:2.5px solid transparent;margin-bottom:-1px}
+.tabs2 button.on{color:var(--accent);border-color:var(--accent)}
+
+/* list */
+.list{display:flex;flex-direction:column}
+.row{display:flex;gap:12px;align-items:center;padding:10px 16px;text-align:left;width:100%;border-bottom:1px solid var(--line)}
+.row:hover{background:var(--surface-2)}
+.thumb{width:74px;height:74px;border-radius:12px;background-size:cover;background-position:center;flex:none}
+.ph{background:linear-gradient(135deg,color-mix(in srgb,var(--c) 30%,var(--surface)),color-mix(in srgb,var(--c) 70%,var(--surface)));display:grid;place-items:center}
+.ph span{font-size:32px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.15))}
+.row-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.row-name{font-weight:700;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row-meta{font-size:11.5px;color:var(--ink-2)}
+.row-foot{display:flex;align-items:center;gap:12px;font-size:11.5px;color:var(--ink-2)}
+.row-foot .rt{margin-left:auto;font-weight:700;color:var(--ink)}
+.chev{width:16px;height:16px;stroke:var(--ink-3);fill:none;stroke-width:2;flex:none}
+.star{color:var(--star)}
+.tag{font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:99px;background:var(--surface-3);color:var(--ink-2)}
+.tag.want{background:color-mix(in srgb,var(--star) 22%,var(--surface));color:var(--ink)}
+.empty{padding:40px 24px;text-align:center;color:var(--ink-2)}
+.empty b{display:block;font-family:var(--display);font-size:16px;color:var(--ink);margin-bottom:4px}
+
+/* carousel */
+.carousel{display:flex;gap:10px;overflow-x:auto;padding:12px 16px 14px;scroll-snap-type:x mandatory;scrollbar-width:none;background:var(--surface)}
+.carousel::-webkit-scrollbar{display:none}
+.ccard{flex:0 0 150px;scroll-snap-align:start;border-radius:14px;overflow:hidden;background:var(--surface);border:1px solid var(--line);text-align:left}
+.ccard.hl{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.ccard .thumb{width:100%;height:84px;border-radius:0}
+.ccard div.cb{padding:7px 10px 9px}
+.ccard .row-name{font-size:13px}
+
+/* pages */
+.page{position:absolute;inset:0;z-index:2000;background:var(--surface);overflow-y:auto;transform:translateX(100%);transition:transform .28s cubic-bezier(.2,.8,.2,1),visibility .28s;visibility:hidden;display:flex;flex-direction:column}
+.page.on{transform:none;visibility:visible}
+.page.up{transform:translateY(100%)}
+.page.up.on{transform:none}
+.phd{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--surface);border-bottom:1px solid var(--line)}
+.phd h2{flex:1;font-size:17px;text-align:center}
+.phd .sp{width:38px}
+.back{width:38px;height:38px;border-radius:50%;display:grid;place-items:center}
+.back svg{width:22px;height:22px;stroke:var(--ink);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.back:hover{background:var(--surface-2)}
+
+.hero{position:relative;height:230px;flex:none;background-size:cover;background-position:center}
+.hero .ph-in{position:absolute;inset:0}
+.hero .ph-in span{font-size:84px}
+.hero-btn{position:absolute;top:12px;width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.42);display:grid;place-items:center;backdrop-filter:blur(4px)}
+.hero-btn svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.sec{padding:16px}
+.sec+.sec{border-top:8px solid var(--surface-2)}
+.sec-title{font-family:var(--display);font-weight:700;font-size:15px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.d-name{font-size:23px;line-height:1.3}
+.d-meta{color:var(--ink-2);font-size:12.5px;margin-top:2px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.d-rate{display:flex;align-items:center;gap:10px;margin-top:8px;font-size:13px;color:var(--ink-2)}
+.d-rate b{font-size:18px;color:var(--ink);font-family:var(--display)}
+.d-memo{margin:10px 0 0;color:var(--ink);font-size:13.5px;white-space:pre-wrap;max-width:65ch}
+.btnrow{display:flex;gap:10px;margin-top:14px}
+.btn{height:48px;border-radius:14px;padding:0 18px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:14px}
+.btn svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.btn.pri{background:var(--accent);color:var(--on-accent)}
+.btn.pri:hover{background:var(--accent-2)}
+.btn.sec2{background:var(--surface);border:1.5px solid var(--line);color:var(--ink)}
+.btn.danger{background:var(--danger-soft);color:var(--danger)}
+.btn.block{width:100%}
+.btn.grow{flex:1}
+.btn.fav-on{border-color:var(--danger);color:var(--danger)}
+.btn.fav-on svg{fill:var(--danger)}
+.info{display:grid;grid-template-columns:auto auto 1fr;gap:10px 10px;align-items:start;font-size:13px}
+.info svg{width:17px;height:17px;stroke:var(--ink-3);fill:none;stroke-width:1.9;margin-top:1px}
+.info .k{color:var(--ink-2);white-space:nowrap}
+.info .v{word-break:break-all}
+.gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.gallery .g{aspect-ratio:1;border-radius:10px;background-size:cover;background-position:center;position:relative;max-width:100%}
+.gallery .g button{position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:14px;line-height:1}
+.gallery label.g{border:1.5px dashed var(--line);display:grid;place-items:center;color:var(--ink-3);font-size:12px;cursor:pointer;text-align:center}
+.gallery label.g svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2;display:block;margin:0 auto 2px}
+
+/* record */
+.celebrate{position:relative;overflow:hidden;padding:28px 16px 18px;text-align:center;background:linear-gradient(180deg,var(--accent-soft),var(--surface))}
+.celebrate h2{font-size:20px;margin-bottom:14px}
+.cel-img{width:130px;height:130px;border-radius:50%;margin:0 auto 12px;background-size:cover;background-position:center;border:5px solid var(--surface);box-shadow:var(--shadow)}
+.cel-img.ph span{font-size:60px}
+.confetti{position:absolute;inset:0;pointer-events:none}
+.confetti i{position:absolute;top:-10px;width:7px;height:12px;border-radius:2px;animation:fall 1.8s ease-out forwards}
+@keyframes fall{from{transform:translateY(0) rotate(0);opacity:1}to{transform:translateY(260px) rotate(540deg);opacity:0}}
+@media (prefers-reduced-motion:reduce){.confetti{display:none}.page{transition:none}}
+
+/* form */
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.field>label,.flabel{font-size:12.5px;font-weight:700;color:var(--ink-2)}
+.field .opt{font-weight:400;color:var(--ink-3)}
+.inp{height:44px;border-radius:12px;border:1px solid var(--line);background:var(--surface-2);padding:0 12px;width:100%;outline:none}
+textarea.inp{height:auto;min-height:84px;padding:10px 12px;resize:vertical}
+.inp:focus{border-color:var(--accent);background:var(--surface)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stars{display:flex;gap:6px}
+.stars button{font-size:32px;line-height:1;color:var(--surface-3);transition:transform .1s}
+.stars button.on{color:var(--star)}
+.stars button:active{transform:scale(1.2)}
+.pickmap{height:220px;border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+.pickmap .leaflet-container{border-radius:14px}
+.hint{font-size:11.5px;color:var(--ink-3)}
+.results{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.results button{text-align:left;padding:9px 12px;font-size:12.5px;border-bottom:1px solid var(--line)}
+.results button:last-child{border-bottom:0}
+.results button:hover{background:var(--surface-2)}
+.req{color:var(--danger)}
+
+/* genre grid (filter / form) */
+.ggrid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px 6px}
+.gbtn{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:var(--ink-2);font-weight:500}
+.gbtn .gi{width:50px;height:50px;border-radius:50%;background:var(--surface-2);border:1.5px solid var(--line);display:grid;place-items:center;font-size:23px;transition:.15s}
+.gbtn.on{color:var(--accent);font-weight:700}
+.gbtn.on .gi{background:var(--accent);border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+
+/* sheet */
+.backdrop{position:absolute;inset:0;z-index:3000;background:rgba(0,0,0,.4);opacity:0;visibility:hidden;transition:.25s}
+.backdrop.on{opacity:1;visibility:visible}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:3001;background:var(--surface);border-radius:22px 22px 0 0;max-height:88%;overflow-y:auto;transform:translateY(100%);transition:transform .28s cubic-bezier(.2,.8,.2,1),visibility .28s;visibility:hidden;padding:0 16px calc(16px + env(safe-area-inset-bottom,0px))}
+.sheet.on{transform:none;visibility:visible}
+.sheet-hd{display:flex;align-items:center;justify-content:space-between;padding:16px 0 6px;position:sticky;top:0;background:var(--surface);z-index:2}
+.sheet-hd h2{font-size:18px}
+.sheet .flabel{display:block;margin:14px 0 8px;font-family:var(--display);font-size:14.5px;color:var(--ink)}
+.sheet-foot{display:flex;flex-direction:column;gap:8px;margin-top:20px}
+
+/* modal confirm */
+.modal{position:absolute;z-index:4001;left:24px;right:24px;top:50%;transform:translateY(-50%) scale(.96);background:var(--surface);border-radius:18px;padding:20px;box-shadow:var(--shadow);opacity:0;visibility:hidden;transition:.18s}
+.modal.on{opacity:1;visibility:visible;transform:translateY(-50%)}
+.modal p{margin:0 0 16px;font-size:14px}
+.modal .btnrow{margin:0}
+
+.toast{position:absolute;z-index:5000;left:50%;bottom:86px;transform:translate(-50%,20px);background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:12px;font-size:13px;font-weight:500;opacity:0;transition:.25s;pointer-events:none;max-width:calc(100% - 32px);text-align:center;box-shadow:var(--shadow)}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* stats */
+.bignum{font-family:var(--display);font-weight:900;font-size:40px;line-height:1.1}
+.bignum small{font-size:15px;font-weight:700;margin-left:2px}
+.bignum .of{font-size:12px;color:var(--ink-2);font-weight:500;margin-left:6px}
+.card{border:1px solid var(--line);border-radius:16px;padding:14px;background:var(--surface)}
+.stack{display:flex;flex-direction:column;gap:12px;padding:0 16px 20px}
+.donut-wrap{display:grid;grid-template-columns:140px 1fr;gap:14px;align-items:center}
+.donut{width:140px;height:140px;max-width:100%}
+.legend{display:flex;flex-direction:column;gap:5px;font-size:12.5px}
+.legend div{display:flex;align-items:center;gap:7px}
+.legend i{width:9px;height:9px;border-radius:50%;flex:none}
+.legend b{margin-left:auto;font-weight:700}
+.hbars{display:flex;flex-direction:column;gap:8px}
+.hbar{display:grid;grid-template-columns:62px 1fr 30px;gap:8px;align-items:center;font-size:12.5px;text-align:left;width:100%}
+.hbar .bar{height:10px}
+.hbar b{text-align:right}
+.hbar:disabled{cursor:default}
+.months{display:grid;grid-template-columns:repeat(12,1fr);gap:5px;align-items:end;height:120px}
+.months .m{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:3px;font-size:10px;color:var(--ink-3)}
+.months .m i{display:block;width:100%;max-width:18px;background:var(--accent);border-radius:5px 5px 2px 2px;min-height:2px}
+.months .m i.zero{background:var(--surface-3)}
+.months .m em{font-style:normal;font-size:10px;color:var(--ink-2);font-weight:700}
+.rank{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);width:100%;text-align:left}
+.rank:last-child{border-bottom:0}
+.rank .no{width:24px;font-family:var(--display);font-weight:900;font-size:16px;color:var(--ink-3);text-align:center}
+.rank .no.top{color:var(--star)}
+.rank .thumb{width:50px;height:50px;border-radius:10px}
+.rank .ph span{font-size:22px}
+
+/* area */
+.area-hero{padding:22px 16px 16px;background:linear-gradient(160deg,var(--accent),var(--accent-2));color:var(--on-accent)}
+.area-hero h2{font-size:24px}
+.area-hero .bar{background:rgba(255,255,255,.3)}
+.area-hero .bar i{background:var(--on-accent)}
+.area-hero .barrow b{color:var(--on-accent)}
+.areamap{height:340px;position:relative;z-index:0}
+
+/* badges */
+.bgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.badge{border:1px solid var(--line);border-radius:16px;padding:12px 6px 10px;display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center}
+.medal{width:62px;height:62px;border-radius:50%;display:grid;place-items:center;font-size:28px;background:radial-gradient(circle at 35% 30%,#FFE6A6,#E7A43A 70%);box-shadow:inset 0 -4px 0 rgba(0,0,0,.15),0 3px 8px rgba(160,100,20,.3);border:3px solid #fff3d2}
+.medal.genre{background:radial-gradient(circle at 35% 30%,#FFC9B8,#D9573F 70%);border-color:#ffe1d8;box-shadow:inset 0 -4px 0 rgba(0,0,0,.15),0 3px 8px rgba(180,60,40,.3)}
+.medal.area{background:radial-gradient(circle at 35% 30%,#BFE9D4,#1E8A5A 70%);border-color:#d9f3e6;box-shadow:inset 0 -4px 0 rgba(0,0,0,.15),0 3px 8px rgba(20,110,70,.3)}
+.badge.lock .medal{filter:grayscale(1);opacity:.35}
+.badge .bn{font-size:11.5px;font-weight:700;line-height:1.3}
+.badge .bp{font-size:11px;color:var(--ink-2)}
+.badge.lock .bn{color:var(--ink-3)}
+
+/* profile */
+.cover{height:130px;flex:none;background:
+  radial-gradient(circle at 20% 30%,rgba(255,255,255,.18) 0 18px,transparent 19px),
+  radial-gradient(circle at 80% 60%,rgba(255,255,255,.14) 0 26px,transparent 27px),
+  radial-gradient(circle at 55% 15%,rgba(255,255,255,.12) 0 10px,transparent 11px),
+  linear-gradient(135deg,var(--accent),#0E5234)}
+.prof{text-align:center;margin-top:-50px;padding:0 16px 8px;position:relative}
+.prof .avatar{width:96px;height:96px;font-size:50px;margin:0 auto 8px;border:4px solid var(--surface);box-shadow:var(--shadow-s)}
+.prof h2{font-size:20px}
+.prof p{margin:2px 0 0;color:var(--ink-2);font-size:12.5px}
+.prof .edit{position:absolute;right:16px;top:58px}
+.pstats{display:grid;grid-template-columns:repeat(3,1fr);margin:14px 16px 0;border:1px solid var(--line);border-radius:16px}
+.pstats div{padding:12px 4px;text-align:center}
+.pstats div+div{border-left:1px solid var(--line)}
+.pstats span{display:block;font-size:11px;color:var(--ink-2)}
+.pstats b{font-family:var(--display);font-size:22px;font-weight:900}
+.pstats b small{font-size:11px;font-weight:700}
+.badge-strip{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--line);border-radius:16px;width:100%;text-align:left}
+.badge-strip .medal{width:44px;height:44px;font-size:20px;border-width:2px}
+.badge-strip div{flex:1}
+.menu{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.menu button,.menu label{display:flex;align-items:center;gap:10px;padding:13px 14px;text-align:left;border-bottom:1px solid var(--line);cursor:pointer;font-size:13.5px}
+.menu>*:last-child{border-bottom:0}
+.menu .danger-t{color:var(--danger)}
+.foot-copy{text-align:center;color:var(--ink-3);font-size:11.5px;padding:10px 16px 24px;font-family:var(--display)}
+.avatar-pick{display:flex;gap:8px;flex-wrap:wrap}
+.avatar-pick button{width:44px;height:44px;border-radius:50%;background:var(--surface-2);font-size:22px;border:2px solid transparent}
+.avatar-pick button.on{border-color:var(--accent)}
+.visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="views">
+
+    <!-- ホーム -->
+    <section class="view on" id="v-home" style="overflow:hidden">
+      <header class="hd">
+        <div class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M17 3c-2 1.5-2.5 4-2.5 7h2.5v11"/></svg></div>
+        <div class="hd-title">
+          <h1>飲食店制覇マップ</h1>
+          <div class="sub">行ったお店をマップに記録しよう</div>
+        </div>
+      </header>
+      <div class="searchrow">
+        <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="homeSearch" type="search" placeholder="お店名・エリアで検索" autocomplete="off"></label>
+        <button class="iconbtn" data-act="filter" aria-label="絞り込み"><svg viewBox="0 0 24 24"><path d="M4 5h16l-6 8v5l-4 2v-7z"/></svg><i class="dot" hidden></i></button>
+      </div>
+      <div class="mapbox">
+        <div id="homeMap"></div>
+        <div class="sample-note" id="sampleNote" hidden><span>サンプルのお店を表示しています</span><button class="linkbtn" data-act="clearSamples">サンプルを消す</button></div>
+        <button class="map-fab" style="top:10px;right:12px" data-act="locate" data-map="home" aria-label="現在地"><svg viewBox="0 0 24 24"><path d="m3 11 18-8-8 18-2-8z"/></svg></button>
+        <button class="add-fab" data-act="add"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>お店を追加</button>
+        <button class="progress-card" data-act="tab" data-tab="stats">
+          <div class="avatar" data-avatar></div>
+          <div class="pc-body">
+            <div class="pc-label">あなたの制覇状況</div>
+            <div class="pc-count num"><span id="pcCount">0</span> <small>/ <span id="pcGoal">500</span> 店</small></div>
+            <div class="barrow"><div class="bar"><i id="pcBar" style="width:0"></i></div><b class="num" id="pcPct">0%</b></div>
+          </div>
+        </button>
+      </div>
+    </section>
+
+    <!-- ジャンル別マップ -->
+    <section class="view" id="v-map" style="overflow:hidden">
+      <header class="hd"><div class="hd-title"><h1 id="gmTitle">すべてのお店</h1><div class="sub" id="gmSub"></div></div></header>
+      <div class="chips scroll" id="gmChips"></div>
+      <div class="mapbox">
+        <div id="genreMap"></div>
+        <button class="map-fab" style="bottom:12px;right:12px" data-act="locate" data-map="genre" aria-label="現在地"><svg viewBox="0 0 24 24"><path d="m3 11 18-8-8 18-2-8z"/></svg></button>
+      </div>
+      <div class="carousel" id="gmCards"></div>
+    </section>
+
+    <!-- 一覧 -->
+    <section class="view" id="v-list">
+      <div class="tabs2 pad" id="listTabs">
+        <button class="on" data-act="listTab" data-v="visited">行ったお店</button>
+        <button data-act="listTab" data-v="want">行きたいお店</button>
+      </div>
+      <div class="searchrow">
+        <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="listSearch" type="search" placeholder="お店名・エリアで検索" autocomplete="off"></label>
+        <button class="iconbtn" data-act="filter" aria-label="絞り込み"><svg viewBox="0 0 24 24"><path d="M4 5h16l-6 8v5l-4 2v-7z"/></svg><i class="dot" hidden></i></button>
+      </div>
+      <div class="pad" style="display:flex;align-items:center;justify-content:space-between;padding-bottom:6px">
+        <span class="hint num" id="listCount"></span>
+        <select id="listSort" class="inp" style="height:32px;width:auto;font-size:12px;padding:0 8px" aria-label="並び替え">
+          <option value="date">新しい順</option><option value="rating">評価が高い順</option><option value="name">名前順</option>
+        </select>
+      </div>
+      <div class="list" id="listBody"></div>
+      <div style="height:80px;flex:none"></div>
+    </section>
+
+    <!-- 統計 -->
+    <section class="view" id="v-stats">
+      <header class="hd hd-center"><div class="hd-title"><h1>食の旅の軌跡</h1></div></header>
+      <div class="pad" style="padding-bottom:14px"><div class="seg" id="statSeg"><button class="on" data-act="statSeg" data-v="stats">統計</button><button data-act="statSeg" data-v="rank">ランキング</button></div></div>
+      <div id="statsBody" class="stack"></div>
+    </section>
+
+    <!-- マイページ -->
+    <section class="view" id="v-me">
+      <div class="cover"></div>
+      <div class="prof">
+        <div class="avatar" data-avatar></div>
+        <h2 id="meName"></h2>
+        <p id="meBio"></p>
+        <button class="chip edit" data-act="editProfile">編集</button>
+      </div>
+      <div class="pstats" id="meStats"></div>
+      <div class="stack" style="padding-top:14px" id="meBody"></div>
+    </section>
+  </div>
+
+  <nav class="tabbar" id="tabbar">
+    <button class="tab on" data-act="tab" data-tab="home"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>ホーム</button>
+    <button class="tab" data-act="tab" data-tab="map"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>マップ</button>
+    <button class="tab" data-act="tab" data-tab="list"><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg>一覧</button>
+    <button class="tab" data-act="tab" data-tab="stats"><svg viewBox="0 0 24 24"><path d="M5 20V11M12 20V5M19 20v-7M3 20h18"/></svg>統計</button>
+    <button class="tab" data-act="tab" data-tab="me"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.5-6.5 8-6.5s7 2 8 6.5"/></svg>マイページ</button>
+  </nav>
+
+  <!-- ページ群 -->
+  <section class="page" id="pDetail"></section>
+  <section class="page up" id="pRecord"></section>
+  <section class="page up" id="pForm"></section>
+  <section class="page" id="pArea"></section>
+  <section class="page" id="pBadges"></section>
+  <section class="page up" id="pProfile"></section>
+
+  <div class="backdrop" id="backdrop" data-act="closeSheet"></div>
+  <section class="sheet" id="sFilter" aria-label="絞り込み"></section>
+  <div class="modal" id="modal" role="dialog" aria-modal="true"><p id="modalMsg"></p><div class="btnrow"><button class="btn sec2 grow" id="modalNo">やめる</button><button class="btn danger grow" id="modalYes">削除する</button></div></div>
+  <div class="toast" id="toast" role="status"></div>
+  <input type="file" id="importFile" accept="application/json,.json" class="visually-hidden">
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+'use strict';
+/* ---------- 定数 ---------- */
+const GENRES=[
+  {k:'ramen',name:'ラーメン',emoji:'🍜',color:'#E0533D'},
+  {k:'cafe',name:'カフェ',emoji:'☕',color:'#9A6B4A'},
+  {k:'izakaya',name:'居酒屋',emoji:'🏮',color:'#E08A2B'},
+  {k:'washoku',name:'和食',emoji:'🍱',color:'#2E8B6E'},
+  {k:'yoshoku',name:'洋食',emoji:'🍝',color:'#D4A019'},
+  {k:'chuka',name:'中華',emoji:'🥟',color:'#B83B5E'},
+  {k:'sushi',name:'寿司',emoji:'🍣',color:'#3F7CC4'},
+  {k:'yakiniku',name:'焼肉',emoji:'🥩',color:'#7C4A9E'},
+  {k:'sweets',name:'甘味',emoji:'🍰',color:'#E07AA8'},
+  {k:'other',name:'その他',emoji:'🍴',color:'#6F7E78'}
+];
+const GM=Object.fromEntries(GENRES.map(g=>[g.k,g]));
+const PREFS=['北海道','青森県','岩手県','宮城県','秋田県','山形県','福島県','茨城県','栃木県','群馬県','埼玉県','千葉県','東京都','神奈川県','新潟県','富山県','石川県','福井県','山梨県','長野県','岐阜県','静岡県','愛知県','三重県','滋賀県','京都府','大阪府','兵庫県','奈良県','和歌山県','鳥取県','島根県','岡山県','広島県','山口県','徳島県','香川県','愛媛県','高知県','福岡県','佐賀県','長崎県','熊本県','大分県','宮崎県','鹿児島県','沖縄県'];
+const PRICES=['〜¥999','¥1,000〜¥1,999','¥2,000〜¥2,999','¥3,000〜¥4,999','¥5,000〜¥9,999','¥10,000〜'];
+const AVATARS=['🧑‍🍳','😋','🐻','🐱','🦊','🐼','🍙','🍜'];
+const DEF={name:'グルメ旅人',bio:'食べることが好きな旅人です。',avatar:'🧑‍🍳',avatarImg:null,goal:500,areaGoal:50,seeded:false};
+
+/* ---------- 保存（IndexedDB） ---------- */
+const DB={db:null,
+  open(){return new Promise((res,rej)=>{const r=indexedDB.open('inshokuten-seiha-map',1);
+    r.onupgradeneeded=()=>{const d=r.result;d.createObjectStore('shops',{keyPath:'id'});d.createObjectStore('kv')};
+    r.onsuccess=()=>{this.db=r.result;res()};r.onerror=()=>rej(r.error)})},
+  tx(store,mode,fn){return new Promise((res,rej)=>{const t=this.db.transaction(store,mode);const q=fn(t.objectStore(store));
+    t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)})},
+  all(){return this.tx('shops','readonly',s=>s.getAll())},
+  put(v){return this.tx('shops','readwrite',s=>s.put(v))},
+  del(id){return this.tx('shops','readwrite',s=>s.delete(id))},
+  get(k){return this.tx('kv','readonly',s=>s.get(k))},
+  set(k,v){return this.tx('kv','readwrite',s=>s.put(v,k))}
+};
+let shops=[],settings={...DEF};
+async function saveShop(s){try{if(DB.db)await DB.put(s)}catch(e){toast('保存できませんでした（'+e.message+'）')}}
+async function removeShop(id){shops=shops.filter(s=>s.id!==id);try{if(DB.db)await DB.del(id)}catch(e){}}
+async function saveSettings(){try{if(DB.db)await DB.set('settings',settings)}catch(e){}}
+
+/* ---------- ユーティリティ ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const todayStr=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const fmtDate=d=>d?d.replace(/-/g,'/'):'';
+const fmtDateJa=d=>{if(!d)return'';const x=new Date(d+'T00:00');return `${x.getFullYear()}年${x.getMonth()+1}月${x.getDate()}日（${'日月火水木金土'[x.getDay()]}）`};
+const shortPref=p=>p==='北海道'?p:(p||'').replace(/[都府県]$/,'');
+const visited=()=>shops.filter(s=>s.status==='visited');
+const byId=id=>shops.find(s=>s.id===id);
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),2600)}
+function thumb(s,cls='thumb'){const g=GM[s.genre]||GM.other;
+  if(s.photos&&s.photos.length)return `<div class="${cls}" style="background-image:url('${s.photos[0]}')"></div>`;
+  return `<div class="${cls} ph" style="--c:${g.color}"><span>${g.emoji}</span></div>`}
+function place(s){return [shortPref(s.pref),s.area].filter(Boolean).join('・')}
+function hav(a,b){const R=6371,r=x=>x*Math.PI/180;const dLa=r(b.lat-a.lat),dLo=r(b.lng-a.lng);
+  const h=Math.sin(dLa/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dLo/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
+function resizeImg(file,max=900){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>{const im=new Image();
+  im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);
+  c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.8))};im.onerror=()=>rej(new Error('画像を読み込めませんでした'));im.src=fr.result};
+  fr.onerror=()=>rej(fr.error);fr.readAsDataURL(file)})}
+function confirmBox(msg,yes='削除する'){return new Promise(res=>{const m=$('#modal');$('#modalMsg').textContent=msg;$('#modalYes').textContent=yes;
+  m.classList.add('on');$('#backdrop').classList.add('on');$('#backdrop').dataset.modal='1';
+  const done=v=>{m.classList.remove('on');delete $('#backdrop').dataset.modal;if(!$('#sFilter').classList.contains('on'))$('#backdrop').classList.remove('on');res(v)};
+  $('#modalYes').onclick=()=>done(true);$('#modalNo').onclick=()=>done(false)})}
+
+/* ---------- サンプル ---------- */
+function samples(){const S=(name,genre,pref,area,lat,lng,status,date,rating,memo,extra={})=>({id:uid(),name,genre,pref,area,lat,lng,status,visitedDate:status==='visited'?date:'',rating:rating||0,memo:memo||'',
+  address:extra.address||'',price:extra.price||'',hours:extra.hours||'',holiday:extra.holiday||'',favorite:!!extra.fav,visitCount:status==='visited'?(extra.count||1):0,photos:[],sample:true,createdAt:Date.now()});
+  return [
+    S('麺や ひなた','ramen','東京都','渋谷',35.6595,139.7005,'visited','2026-09-20',4.5,'濃厚な豚骨スープとコシのある麺。行列ができるけど待つ価値あり。',{price:'¥1,000〜¥1,999',hours:'11:00〜23:00',holiday:'なし',address:'東京都渋谷区道玄坂',fav:true,count:3}),
+    S('ビストロ アルモニー','yoshoku','東京都','恵比寿',35.6467,139.7101,'visited','2026-09-14',4.2,'鴨のコンフィが絶品。ワインの品揃えも良い。',{price:'¥5,000〜¥9,999',hours:'17:30〜23:00',holiday:'月曜'}),
+    S('やきとり 風見鶏','izakaya','東京都','新宿',35.6938,139.7034,'visited','2026-09-06',4.0,'つくねとレバーがおすすめ。',{price:'¥3,000〜¥4,999',hours:'17:00〜24:00',holiday:'日曜'}),
+    S('cafe ことり','cafe','東京都','下北沢',35.6616,139.6680,'visited','2026-08-30',4.3,'窓際の席が落ち着く。自家製プリン。',{price:'〜¥999',hours:'10:00〜19:00',holiday:'水曜',fav:true}),
+    S('寿司 まつもと','sushi','東京都','銀座',35.6712,139.7650,'visited','2026-08-17',4.6,'記念日に。コハダが印象的だった。',{price:'¥10,000〜',hours:'18:00〜22:00',holiday:'日曜・祝日'}),
+    S('らーめん 大黒','ramen','東京都','池袋',35.7295,139.7109,'visited','2026-08-02',4.2,'煮干し系。あっさりで朝にも合う。',{price:'〜¥999'}),
+    S('甘味処 みつ豆堂','sweets','東京都','浅草',35.7118,139.7966,'visited','2026-07-19',4.4,'クリームあんみつ。黒蜜が濃い。',{price:'〜¥999'}),
+    S('串カツ だるま家','izakaya','大阪府','新世界',34.6523,135.5063,'visited','2026-06-21',4.1,'ソース二度漬け禁止。',{price:'¥2,000〜¥2,999'}),
+    S('お好み焼き ひろ吉','other','大阪府','道頓堀',34.6687,135.5013,'visited','2026-06-21',4.3,'豚玉とすじこん。',{price:'¥1,000〜¥1,999'}),
+    S('味噌煮込み 八丁庵','washoku','愛知県','大須',35.1590,136.9040,'visited','2026-05-10',4.0,'麺が固めで独特。',{price:'¥1,000〜¥1,999'}),
+    S('餃子 福福','chuka','福岡県','博多',33.5902,130.4207,'visited','2026-04-12',3.8,'一口餃子を3人前。',{price:'¥1,000〜¥1,999'}),
+    S('焼肉 炭火屋','yakiniku','東京都','六本木',35.6628,139.7314,'want','',0,'友達のおすすめ。タンが有名らしい。'),
+    S('中華そば 青葉通り','ramen','宮城県','仙台',38.2602,140.8820,'want','',0,''),
+    S('喫茶 灯台','cafe','神奈川県','鎌倉',35.3192,139.5467,'want','',0,'海が見える喫茶店。')
+  ]}
+
+/* ---------- 地図 ---------- */
+const dark=()=>matchMedia('(prefers-color-scheme: dark)').matches;
+const TILE=()=>dark()?'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png':'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+const maps={};
+function makeMap(el){const m=L.map(el,{zoomControl:false}).setView([35.681,139.767],12);
+  L.tileLayer(TILE(),{maxZoom:19,subdomains:'abcd',attribution:'&copy; OpenStreetMap contributors &copy; CARTO'}).addTo(m);
+  m.attributionControl.setPrefix(false);m._layer=L.layerGroup().addTo(m);return m}
+function pinIcon(s,hl){const g=GM[s.genre]||GM.other;return L.divIcon({className:'pin-wrap',html:`<div class="pin ${s.status}${hl?' hl':''}" style="--c:${g.color}"><span>${g.emoji}</span></div>`,iconSize:[34,40],iconAnchor:[17,38]})}
+function drawMarkers(m,list,onClick){m._layer.clearLayers();m._markers={};
+  list.forEach(s=>{if(s.lat==null)return;const mk=L.marker([s.lat,s.lng],{icon:pinIcon(s),title:s.name}).on('click',()=>onClick(s));mk.addTo(m._layer);m._markers[s.id]=mk})}
+function fit(m,list){const pts=list.filter(s=>s.lat!=null).map(s=>[s.lat,s.lng]);
+  if(!pts.length)return;if(pts.length===1)m.setView(pts[0],15);else m.fitBounds(pts,{padding:[40,40],maxZoom:15})}
+
+/* ---------- 絞り込み ---------- */
+const F={genres:new Set(),pref:'all',min:0,status:'all'};
+let Ft=null;
+const filterActive=()=>F.genres.size||F.pref!=='all'||F.min||F.status!=='all';
+function matchQ(s,q){if(!q)return true;const t=(s.name+' '+s.pref+' '+s.area+' '+(s.address||'')+' '+(GM[s.genre]||GM.other).name).toLowerCase();return t.includes(q.toLowerCase().trim())}
+function matchF(s,ignoreStatus){if(F.genres.size&&!F.genres.has(s.genre))return false;if(F.pref!=='all'&&s.pref!==F.pref)return false;
+  if(F.min&&(s.rating||0)<F.min)return false;if(!ignoreStatus&&F.status!=='all'&&s.status!==F.status)return false;return true}
+function renderFilter(){const prefs=[...new Set(shops.map(s=>s.pref).filter(Boolean))].sort((a,b)=>PREFS.indexOf(a)-PREFS.indexOf(b));
+  const chip=(act,v,label,on)=>`<button class="chip${on?' on':''}" data-act="${act}" data-v="${esc(v)}">${esc(label)}</button>`;
+  $('#sFilter').innerHTML=`<div class="sheet-hd"><h2>絞り込み</h2><button class="back" data-act="closeSheet" aria-label="閉じる"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <span class="flabel">ジャンル</span>
+  <div class="ggrid"><button class="gbtn${Ft.genres.size?'':' on'}" data-act="fGenre" data-v="all"><span class="gi">✨</span>すべて</button>
+  ${GENRES.map(g=>`<button class="gbtn${Ft.genres.has(g.k)?' on':''}" data-act="fGenre" data-v="${g.k}"><span class="gi">${g.emoji}</span>${g.name}</button>`).join('')}</div>
+  <span class="flabel">エリア</span>
+  <div class="chips">${chip('fPref','all','すべて',Ft.pref==='all')}${prefs.map(p=>chip('fPref',p,shortPref(p),Ft.pref===p)).join('')}</div>
+  <span class="flabel">評価</span>
+  <div class="chips">${[[0,'すべて'],[4,'★4以上'],[3,'★3以上'],[2,'★2以上']].map(([v,l])=>chip('fMin',v,l,Ft.min===v)).join('')}</div>
+  <span class="flabel">ホーム地図に表示するお店</span>
+  <div class="chips">${[['all','すべて'],['visited','行ったお店'],['want','行きたいお店']].map(([v,l])=>chip('fStatus',v,l,Ft.status===v)).join('')}</div>
+  <div class="sheet-foot"><button class="btn pri block" data-act="fApply">適用する</button><button class="btn sec2 block" data-act="fReset">リセット</button></div>`}
+function openFilter(){Ft={genres:new Set(F.genres),pref:F.pref,min:F.min,status:F.status};renderFilter();$('#backdrop').classList.add('on');$('#sFilter').classList.add('on')}
+function closeSheet(){$('#sFilter').classList.remove('on');if(!$('#backdrop').dataset.modal)$('#backdrop').classList.remove('on')}
+
+/* ---------- ホーム ---------- */
+function renderHome(refit){const q=$('#homeSearch').value;const list=shops.filter(s=>matchF(s)&&matchQ(s,q));
+  drawMarkers(maps.home,list,s=>openDetail(s.id));if(refit)fit(maps.home,list);
+  const n=visited().length,goal=settings.goal||500,pct=Math.min(100,Math.round(n/goal*100));
+  $('#pcCount').textContent=n;$('#pcGoal').textContent=goal;$('#pcBar').style.width=pct+'%';$('#pcPct').textContent=pct+'%';
+  $('#sampleNote').hidden=!shops.some(s=>s.sample);
+  document.querySelectorAll('.iconbtn .dot').forEach(d=>d.hidden=!filterActive());
+  document.querySelectorAll('[data-avatar]').forEach(a=>{if(settings.avatarImg){a.style.backgroundImage=`url('${settings.avatarImg}')`;a.textContent=''}else{a.style.backgroundImage='';a.textContent=settings.avatar}})}
+
+/* ---------- ジャンル別マップ ---------- */
+let gmGenre='all';
+function renderGenreMap(refit){const g=GM[gmGenre];
+  $('#gmChips').innerHTML=`<button class="chip${gmGenre==='all'?' on':''}" data-act="gmGenre" data-v="all">すべて</button>`+GENRES.map(x=>`<button class="chip${gmGenre===x.k?' on':''}" data-act="gmGenre" data-v="${x.k}">${x.emoji} ${x.name}</button>`).join('');
+  const list=shops.filter(s=>gmGenre==='all'||s.genre===gmGenre).sort((a,b)=>(b.status==='visited')-(a.status==='visited')||(b.rating||0)-(a.rating||0));
+  $('#gmTitle').textContent=g?g.name+'のお店':'すべてのお店';
+  const v=list.filter(s=>s.status==='visited').length;$('#gmSub').textContent=`行った ${v}店・行きたい ${list.length-v}店`;
+  if(!maps.genre)return;
+  drawMarkers(maps.genre,list,s=>{const c=document.querySelector(`#gmCards [data-id="${s.id}"]`);document.querySelectorAll('#gmCards .ccard').forEach(x=>x.classList.toggle('hl',x===c));if(c)c.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'})});
+  if(refit)fit(maps.genre,list);
+  $('#gmCards').innerHTML=list.length?list.map(s=>`<button class="ccard" data-act="open" data-id="${s.id}">${thumb(s)}<div class="cb"><div class="row-name">${esc(s.name)}</div>
+    <div class="row-meta">${s.status==='visited'?`<span class="star">★</span> ${(s.rating||0).toFixed(1)}　`:'<span class="tag want">行きたい</span> '}${esc(shortPref(s.pref))}</div></div></button>`).join('')
+    :`<div class="empty" style="padding:14px;width:100%"><b>まだありません</b>このジャンルのお店を追加してみましょう</div>`}
+
+/* ---------- 一覧 ---------- */
+let listTab='visited';
+function renderList(){const q=$('#listSearch').value,sort=$('#listSort').value;
+  let list=shops.filter(s=>s.status===listTab&&matchF(s,true)&&matchQ(s,q));
+  list.sort(sort==='rating'?(a,b)=>(b.rating||0)-(a.rating||0):sort==='name'?(a,b)=>a.name.localeCompare(b.name,'ja'):(a,b)=>(b.visitedDate||'').localeCompare(a.visitedDate||'')||b.createdAt-a.createdAt);
+  document.querySelectorAll('#listTabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===listTab));
+  $('#listCount').textContent=`${list.length}件`;
+  $('#listBody').innerHTML=list.length?list.map(rowHtml).join(''):`<div class="empty"><b>${listTab==='visited'?'行ったお店がありません':'行きたいお店がありません'}</b>${filterActive()||q?'絞り込み条件を変えてみてください':'右下の「お店を追加」から登録できます'}</div>`}
+function rowHtml(s){const g=GM[s.genre]||GM.other;return `<button class="row" data-act="open" data-id="${s.id}">${thumb(s)}<div class="row-body">
+  <div class="row-name">${esc(s.name)}</div><div class="row-meta">${g.name}・${esc(place(s))}</div>
+  <div class="row-foot">${s.status==='visited'?`<span class="num">🗓 ${fmtDate(s.visitedDate)}</span>${s.rating?`<span class="rt"><span class="star">★</span> ${s.rating.toFixed(1)}</span>`:''}`:`<span class="tag want">行きたい</span>`}${s.favorite?'<span style="color:var(--danger)">♥</span>':''}</div>
+  </div><svg class="chev" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></button>`}
+
+/* ---------- 統計 ---------- */
+let statSeg='stats';
+function renderStats(){document.querySelectorAll('#statSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===statSeg));
+  const V=visited(),n=V.length,goal=settings.goal||500,pct=Math.min(100,Math.round(n/goal*100));const body=$('#statsBody');
+  if(statSeg==='rank'){const top=[...V].filter(s=>s.rating).sort((a,b)=>b.rating-a.rating).slice(0,10);
+    const rep=[...V].filter(s=>(s.visitCount||1)>1).sort((a,b)=>b.visitCount-a.visitCount).slice(0,5);
+    const rk=(s,i,extra)=>`<button class="rank" data-act="open" data-id="${s.id}"><span class="no${i<3?' top':''}">${i+1}</span>${thumb(s)}<div class="row-body"><div class="row-name">${esc(s.name)}</div><div class="row-meta">${(GM[s.genre]||GM.other).name}・${esc(place(s))}</div></div><b class="num">${extra}</b></button>`;
+    body.innerHTML=`<div class="card"><div class="sec-title">評価の高いお店</div>${top.length?top.map((s,i)=>rk(s,i,`<span class="star">★</span> ${s.rating.toFixed(1)}`)).join(''):'<div class="hint">評価をつけたお店がまだありません</div>'}</div>
+      <div class="card"><div class="sec-title">よく通うお店</div>${rep.length?rep.map((s,i)=>rk(s,i,`${s.visitCount}回`)).join(''):'<div class="hint">2回以上行ったお店がここに並びます</div>'}</div>`;return}
+  // ジャンル別
+  const gc=GENRES.map(g=>({g,c:V.filter(s=>s.genre===g.k).length})).filter(x=>x.c).sort((a,b)=>b.c-a.c);
+  const C=2*Math.PI*46;let off=0;const gap=gc.length>1?1.5:0;
+  const arcs=gc.map(x=>{const len=x.c/n*C;const a=`<circle cx="60" cy="60" r="46" fill="none" stroke="${x.g.color}" stroke-width="16" stroke-dasharray="${Math.max(0,len-gap)} ${C}" stroke-dashoffset="${-off}" transform="rotate(-90 60 60)"/>`;off+=len;return a}).join('');
+  // エリア別
+  const pc={};V.forEach(s=>{pc[s.pref]=(pc[s.pref]||0)+1});
+  let pl=Object.entries(pc).sort((a,b)=>b[1]-a[1]);const rest=pl.slice(5).reduce((t,x)=>t+x[1],0);pl=pl.slice(0,5);const pmax=Math.max(1,...pl.map(x=>x[1]),rest);
+  // 月別
+  const now=new Date();const ms=[];for(let i=11;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');ms.push({m:d.getMonth()+1,c:V.filter(s=>(s.visitedDate||'').startsWith(key)).length})}
+  const mmax=Math.max(1,...ms.map(x=>x.c));
+  body.innerHTML=`<div class="card"><div class="pc-label">制覇したお店の数</div><div class="bignum num">${n}<small>店</small><span class="of">/ ${goal}店</span></div>
+    <div class="barrow"><div class="bar"><i style="width:${pct}%"></i></div><b class="num">${pct}%</b></div></div>
+    <div class="card"><div class="sec-title">ジャンル別の制覇数</div>${n?`<div class="donut-wrap"><svg class="donut" viewBox="0 0 120 120" role="img" aria-label="ジャンル別の割合"><circle cx="60" cy="60" r="46" fill="none" stroke="var(--surface-3)" stroke-width="16"/>${arcs}
+      <text x="60" y="60" text-anchor="middle" font-size="22" font-weight="900" fill="var(--ink)" font-family="Zen Maru Gothic, sans-serif">${n}</text><text x="60" y="76" text-anchor="middle" font-size="10" fill="var(--ink-2)">店舗</text></svg>
+      <div class="legend">${gc.map(x=>`<div><i style="background:${x.g.color}"></i>${x.g.name}<b class="num">${x.c}</b></div>`).join('')}</div></div>`:'<div class="hint">行ったお店を記録すると表示されます</div>'}</div>
+    <div class="card"><div class="sec-title">エリア別の制覇数 <span class="hint">タップで詳細</span></div><div class="hbars">${pl.map(([p,c])=>`<button class="hbar" data-act="area" data-v="${esc(p)}"><span>${esc(shortPref(p))}</span><div class="bar"><i style="width:${c/pmax*100}%"></i></div><b class="num">${c}</b></button>`).join('')}
+      ${rest?`<button class="hbar" disabled><span>その他</span><div class="bar"><i style="width:${rest/pmax*100}%;background:var(--ink-3)"></i></div><b class="num">${rest}</b></button>`:''}${pl.length?'':'<div class="hint">まだ記録がありません</div>'}</div></div>
+    <div class="card"><div class="sec-title">月ごとの来店数 <span class="hint">直近12か月</span></div><div class="months">${ms.map(x=>`<div class="m">${x.c?`<em class="num">${x.c}</em>`:''}<i class="${x.c?'':'zero'}" style="height:${x.c/mmax*80}%"></i>${x.m}月</div>`).join('')}</div></div>`}
+
+/* ---------- バッジ ---------- */
+function statObj(){const V=visited();const g={};GENRES.forEach(x=>g[x.k]=0);V.forEach(s=>g[s.genre]=(g[s.genre]||0)+1);
+  return {visited:V.length,g,prefs:new Set(V.map(s=>s.pref)).size,genresTried:GENRES.filter(x=>x.k!=='other'&&g[x.k]).length,
+    fives:V.filter(s=>s.rating>=5).length,photos:shops.reduce((t,s)=>t+(s.photos||[]).length,0),favs:shops.filter(s=>s.favorite).length,
+    maxRepeat:Math.max(0,...V.map(s=>s.visitCount||1)),want:shops.filter(s=>s.status==='want').length}}
+const BADGES=[
+  {id:'first',cat:'special',name:'初めての来店',icon:'🎉',need:1,v:t=>t.visited},
+  {id:'v10',cat:'special',name:'10店制覇',icon:'🥉',need:10,v:t=>t.visited},
+  {id:'v50',cat:'special',name:'50店制覇',icon:'🥈',need:50,v:t=>t.visited},
+  {id:'v100',cat:'special',name:'100店制覇',icon:'🥇',need:100,v:t=>t.visited},
+  {id:'v300',cat:'special',name:'300店制覇',icon:'🏆',need:300,v:t=>t.visited},
+  {id:'v500',cat:'special',name:'全店制覇',icon:'👑',need:500,v:t=>t.visited},
+  {id:'ramen10',cat:'genre',name:'ラーメンマスター',icon:'🍜',need:10,v:t=>t.g.ramen},
+  {id:'ramen50',cat:'genre',name:'麺の旅人',icon:'🍥',need:50,v:t=>t.g.ramen},
+  {id:'cafe10',cat:'genre',name:'カフェ好き',icon:'☕',need:10,v:t=>t.g.cafe},
+  {id:'washoku10',cat:'genre',name:'和食通',icon:'🍱',need:10,v:t=>t.g.washoku},
+  {id:'izakaya10',cat:'genre',name:'お酒好き',icon:'🍶',need:10,v:t=>t.g.izakaya},
+  {id:'sushi10',cat:'genre',name:'寿司通',icon:'🍣',need:10,v:t=>t.g.sushi},
+  {id:'chuka10',cat:'genre',name:'中華の達人',icon:'🥟',need:10,v:t=>t.g.chuka},
+  {id:'yoshoku10',cat:'genre',name:'洋食通',icon:'🍝',need:10,v:t=>t.g.yoshoku},
+  {id:'yakiniku10',cat:'genre',name:'肉食系',icon:'🥩',need:10,v:t=>t.g.yakiniku},
+  {id:'sweets10',cat:'genre',name:'甘党',icon:'🍰',need:10,v:t=>t.g.sweets},
+  {id:'pref3',cat:'area',name:'旅する食いしん坊',icon:'🧳',need:3,v:t=>t.prefs},
+  {id:'pref10',cat:'area',name:'グルメ探検家',icon:'🧭',need:10,v:t=>t.prefs},
+  {id:'pref24',cat:'area',name:'日本半分制覇',icon:'🗾',need:24,v:t=>t.prefs},
+  {id:'pref47',cat:'area',name:'47都道府県制覇',icon:'🎌',need:47,v:t=>t.prefs},
+  {id:'allgenre',cat:'special',name:'全ジャンル制覇',icon:'🍽️',need:9,v:t=>t.genresTried},
+  {id:'five',cat:'special',name:'運命の一皿',icon:'💫',need:1,v:t=>t.fives},
+  {id:'regular',cat:'special',name:'常連さん',icon:'🔑',need:5,v:t=>t.maxRepeat},
+  {id:'photo20',cat:'special',name:'フードフォトグラファー',icon:'📷',need:20,v:t=>t.photos},
+  {id:'want10',cat:'special',name:'行きたいリスト10',icon:'📝',need:10,v:t=>t.want}
+];
+const earned=()=>{const t=statObj();return new Set(BADGES.filter(b=>b.v(t)>=b.need).map(b=>b.id))};
+function badgeHtml(b,t){const v=Math.min(b.v(t),b.need),ok=v>=b.need;return `<div class="badge${ok?'':' lock'}"><div class="medal ${b.cat}">${b.icon}</div><div class="bn">${b.name}</div><div class="bp num">${ok?'獲得済み':v+' / '+b.need}</div></div>`}
+let badgeCat='all';
+function openBadges(){const t=statObj(),e=earned();const p=$('#pBadges');
+  const list=BADGES.filter(b=>badgeCat==='all'||b.cat===badgeCat).sort((a,b)=>e.has(b.id)-e.has(a.id));
+  p.innerHTML=`<div class="phd"><button class="back" data-act="back" aria-label="戻る"><svg viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></svg></button><h2>獲得したバッジ</h2><span class="sp"></span></div>
+  <div class="sec"><div class="hint num" style="margin-bottom:10px">${e.size} / ${BADGES.length} 個 獲得</div>
+  <div class="chips" style="margin-bottom:14px">${[['all','すべて'],['genre','ジャンル'],['area','エリア'],['special','特別']].map(([v,l])=>`<button class="chip${badgeCat===v?' on':''}" data-act="badgeCat" data-v="${v}">${l}</button>`).join('')}</div>
+  <div class="bgrid">${list.map(b=>badgeHtml(b,t)).join('')}</div></div>`;
+  openPage(p)}
+
+/* ---------- マイページ ---------- */
+function renderMe(){const V=visited().filter(s=>s.visitedDate&&s.lat!=null).sort((a,b)=>a.visitedDate.localeCompare(b.visitedDate));
+  let dist=0;for(let i=1;i<V.length;i++)dist+=hav(V[i-1],V[i]);
+  $('#meName').textContent=settings.name;$('#meBio').textContent=settings.bio;
+  $('#meStats').innerHTML=`<div><span>行ったお店</span><b class="num">${visited().length}</b></div><div><span>お気に入り</span><b class="num">${shops.filter(s=>s.favorite).length}</b></div><div><span>総移動距離</span><b class="num">${Math.round(dist).toLocaleString()}<small>km</small></b></div>`;
+  const e=earned(),last=BADGES.filter(b=>e.has(b.id)).slice(-1)[0];
+  const recent=[...visited()].sort((a,b)=>(b.visitedDate||'').localeCompare(a.visitedDate||'')).slice(0,5);
+  $('#meBody').innerHTML=`<button class="badge-strip" data-act="badges"><div class="medal ${last?last.cat:''}">${last?last.icon:'🔒'}</div><div><b>獲得したバッジ</b><div class="hint num">${e.size} / ${BADGES.length} 個</div></div><svg class="chev" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></button>
+    <div><div class="sec-title">最近の記録</div><div class="list" style="margin-inline:-16px">${recent.length?recent.map(rowHtml).join(''):'<div class="empty">まだ記録がありません</div>'}</div></div>
+    <div><div class="sec-title">データ</div><div class="menu">
+      <button data-act="export">バックアップを書き出す（JSON）</button>
+      <label for="importFile">バックアップから読み込む</label>
+      ${shops.some(s=>s.sample)?'<button data-act="clearSamples">サンプルのお店を削除</button>':''}
+      <button class="danger-t" data-act="wipe">すべての記録を削除</button></div>
+      <p class="hint">記録はこのブラウザ内に保存されます。別の端末やブラウザに移すときはバックアップを使ってください。</p></div>
+    <div class="foot-copy">行ったお店が、地図に残る。</div>`}
+function openProfile(){const p=$('#pProfile');let av=settings.avatar,img=settings.avatarImg;
+  const draw=()=>{p.innerHTML=`<div class="phd"><button class="back" data-act="back" aria-label="閉じる"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button><h2>プロフィール編集</h2><span class="sp"></span></div>
+  <div class="sec">
+    <div class="field"><span class="flabel">アイコン</span><div class="avatar-pick">${AVATARS.map(a=>`<button type="button" class="${!img&&av===a?'on':''}" data-av="${a}">${a}</button>`).join('')}
+      <label class="chip" for="pf-img" style="cursor:pointer">写真を選ぶ</label><input type="file" id="pf-img" accept="image/*" class="visually-hidden"></div>${img?`<div class="avatar" style="background-image:url('${img}');margin-top:6px"></div>`:''}</div>
+    <div class="field"><label for="pf-name">ニックネーム</label><input class="inp" id="pf-name" maxlength="24" value="${esc(settings.name)}"></div>
+    <div class="field"><label for="pf-bio">ひとこと</label><input class="inp" id="pf-bio" maxlength="60" value="${esc(settings.bio)}"></div>
+    <div class="grid2"><div class="field"><label for="pf-goal">制覇目標（店）</label><input class="inp num" id="pf-goal" type="number" min="1" max="99999" value="${settings.goal}"></div>
+    <div class="field"><label for="pf-agoal">エリア目標（店）</label><input class="inp num" id="pf-agoal" type="number" min="1" max="9999" value="${settings.areaGoal}"></div></div>
+    <button class="btn pri block" id="pf-save">保存する</button></div>`;
+    p.querySelectorAll('[data-av]').forEach(b=>b.onclick=()=>{keep();av=b.dataset.av;img=null;draw()});
+    p.querySelector('#pf-img').onchange=async e=>{const f=e.target.files[0];if(!f)return;keep();try{img=await resizeImg(f,300)}catch(err){toast(err.message)}draw()};
+    p.querySelector('#pf-save').onclick=async()=>{keep();Object.assign(settings,tmp,{avatar:av,avatarImg:img});await saveSettings();closePage();renderAll();toast('プロフィールを保存しました')}};
+  let tmp={name:settings.name,bio:settings.bio,goal:settings.goal,areaGoal:settings.areaGoal};
+  const keep=()=>{const n=p.querySelector('#pf-name');if(!n)return;tmp={name:n.value.trim()||DEF.name,bio:p.querySelector('#pf-bio').value.trim(),goal:Math.max(1,+p.querySelector('#pf-goal').value||500),areaGoal:Math.max(1,+p.querySelector('#pf-agoal').value||50)};settings={...settings,...tmp}};
+  draw();openPage(p)}
+
+/* ---------- ページ管理 ---------- */
+const stack=[];
+function openPage(p){if(!stack.includes(p))stack.push(p);p.scrollTop=0;requestAnimationFrame(()=>p.classList.add('on'))}
+function closePage(){const p=stack.pop();if(p)p.classList.remove('on')}
+
+/* ---------- 詳細 ---------- */
+let curDetail=null;
+function openDetail(id){const s=byId(id);if(!s)return;curDetail=id;const g=GM[s.genre]||GM.other;const p=$('#pDetail');
+  const hero=s.photos&&s.photos.length?`<div class="hero" style="background-image:url('${s.photos[0]}')">`:`<div class="hero"><div class="ph ph-in" style="--c:${g.color}"><span>${g.emoji}</span></div>`;
+  const I=(icon,k,v)=>v?`${icon}<span class="k">${k}</span><span class="v">${esc(v)}</span>`:'';
+  const ic={clock:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',cal:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+    pin:'<svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>',tag:'<svg viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.3"/></svg>',
+    yen:'<svg viewBox="0 0 24 24"><path d="m6 4 6 8 6-8M12 12v8M7 13h10M7 17h10"/></svg>',off:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m6 6 12 12"/></svg>'};
+  p.innerHTML=`${hero}<button class="hero-btn" style="left:12px" data-act="back" aria-label="戻る"><svg viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></svg></button>
+    <button class="hero-btn" style="right:12px" data-act="edit" data-id="${s.id}" aria-label="編集"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button></div>
+  <div class="sec">
+    <h2 class="d-name">${esc(s.name)}</h2>
+    <div class="d-meta"><span>${g.name}</span><span>/</span><span>${esc(place(s))}</span>${s.status==='want'?'<span class="tag want">行きたい</span>':''}${s.sample?'<span class="tag">サンプル</span>':''}</div>
+    ${s.status==='visited'?`<div class="d-rate">${s.rating?`<span class="star" style="font-size:18px">★</span><b class="num">${s.rating.toFixed(1)}</b>`:'<span>評価なし</span>'}<span class="num">来店 ${s.visitCount||1}回</span>${s.price?`<span>${esc(s.price)}</span>`:''}</div>`:''}
+    ${s.memo?`<p class="d-memo">${esc(s.memo)}</p>`:''}
+    <div class="btnrow">${s.status==='visited'
+      ?`<button class="btn pri grow" data-act="record" data-id="${s.id}"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>また行った！</button>`
+      :`<button class="btn pri grow" data-act="record" data-id="${s.id}"><svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></svg>行ったよ！（記録する）</button>`}
+      <button class="btn sec2${s.favorite?' fav-on':''}" data-act="fav" data-id="${s.id}" aria-pressed="${!!s.favorite}"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/></svg>お気に入り</button></div>
+  </div>
+  <div class="sec"><div class="sec-title">基本情報</div><div class="info">
+    ${I(ic.cal,'来店日',s.status==='visited'?fmtDateJa(s.visitedDate):'')}${I(ic.clock,'営業時間',s.hours)}${I(ic.off,'定休日',s.holiday)}${I(ic.pin,'住所',s.address||(s.pref+(s.area?' '+s.area:'')))}${I(ic.tag,'ジャンル',g.name)}${I(ic.yen,'予算',s.price)}
+  </div>${s.lat!=null?`<button class="btn sec2 block" style="margin-top:14px" data-act="showOnMap" data-id="${s.id}">地図で見る</button>`:''}</div>
+  <div class="sec"><div class="sec-title">写真 <span class="hint num">${(s.photos||[]).length}枚</span></div><div class="gallery">
+    ${(s.photos||[]).map((ph,i)=>`<div class="g" style="background-image:url('${ph}')"><button data-act="delPhoto" data-id="${s.id}" data-v="${i}" aria-label="写真を削除">×</button></div>`).join('')}
+    <label class="g" for="addPhoto"><span><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>写真を追加</span></label></div>
+    <input type="file" id="addPhoto" accept="image/*" multiple class="visually-hidden"></div>
+  <div class="sec"><button class="btn danger block" data-act="del" data-id="${s.id}">このお店を削除</button></div>`;
+  p.querySelector('#addPhoto').onchange=async e=>{const files=[...e.target.files];if(!files.length)return;toast('写真を取り込んでいます…');
+    try{for(const f of files){s.photos=(s.photos||[]).concat(await resizeImg(f))}await saveShop(s);openDetail(s.id);renderAll();toast(`写真を${files.length}枚追加しました`)}catch(err){toast(err.message)}};
+  openPage(p)}
+
+/* ---------- 記録（行った！） ---------- */
+async function openRecord(id){const s=byId(id);if(!s)return;const before=earned();const wasWant=s.status!=='visited';
+  s.status='visited';s.visitedDate=todayStr();s.visitCount=(s.visitCount||0)+1;s.sample=false;await saveShop(s);renderAll();
+  const newly=BADGES.filter(b=>earned().has(b.id)&&!before.has(b.id));
+  let rating=s.rating?Math.round(s.rating):0;const p=$('#pRecord');const g=GM[s.genre]||GM.other;
+  const cols=['#E0533D','#F2AE17','#1B8456','#3F7CC4','#E07AA8','#7C4A9E'];
+  const conf=Array.from({length:36},(_,i)=>`<i style="left:${Math.random()*100}%;background:${cols[i%6]};animation-delay:${Math.random()*.5}s;transform:rotate(${Math.random()*180}deg)"></i>`).join('');
+  const img=s.photos&&s.photos.length?`<div class="cel-img" style="background-image:url('${s.photos[0]}')"></div>`:`<div class="cel-img ph" style="--c:${g.color}"><span>${g.emoji}</span></div>`;
+  p.innerHTML=`<div class="phd"><button class="back" data-act="back" aria-label="閉じる"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button><h2>記録</h2><span class="sp"></span></div>
+  <div class="celebrate"><div class="confetti">${conf}</div><h2>${wasWant?'このお店を記録しました！':`${s.visitCount}回目の来店を記録しました！`}</h2>${img}
+    <h3 style="font-size:19px">${esc(s.name)}</h3><div class="hint">${g.name} / ${esc(place(s))}</div>
+    ${newly.length?`<div style="margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">${newly.map(b=>`<span class="tag want">🏅 ${b.name} を獲得</span>`).join('')}</div>`:''}</div>
+  <div class="sec">
+    <div class="field"><label for="r-date">来店日</label><input class="inp" type="date" id="r-date" value="${s.visitedDate}" max="${todayStr()}"></div>
+    <div class="field"><label for="r-memo">メモ <span class="opt">（任意）</span></label><textarea class="inp" id="r-memo" placeholder="とんこつが濃厚で最高でした！また行きたい。">${esc(s.memo)}</textarea></div>
+    <div class="field"><span class="flabel">評価 <span class="opt">（任意）</span></span><div class="stars" id="r-stars"></div></div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:6px"><button class="btn pri block" id="r-save">保存する</button><button class="btn sec2 block" id="r-more">続けて他のお店を探す</button></div>
+  </div>`;
+  starWidget(p.querySelector('#r-stars'),rating,v=>rating=v);
+  const commit=async()=>{s.visitedDate=p.querySelector('#r-date').value||todayStr();s.memo=p.querySelector('#r-memo').value.trim();s.rating=rating;await saveShop(s);renderAll()};
+  p.querySelector('#r-save').onclick=async()=>{await commit();closePage();openDetail(s.id);toast('記録を保存しました')};
+  p.querySelector('#r-more').onclick=async()=>{await commit();while(stack.length)closePage();switchTab('home');toast('記録を保存しました')};
+  openPage(p)}
+function starWidget(el,val,onChange){const draw=()=>{el.innerHTML=[1,2,3,4,5].map(i=>`<button type="button" class="${i<=val?'on':''}" data-v="${i}" aria-label="${i}つ星">★</button>`).join('')};
+  el.onclick=e=>{const b=e.target.closest('button');if(!b)return;const v=+b.dataset.v;val=val===v?0:v;onChange(val);draw()};draw()}
+
+/* ---------- 追加・編集フォーム ---------- */
+function openForm(id){const s=id?byId(id):null;const p=$('#pForm');
+  const d=s?{...s}:{name:'',genre:'ramen',pref:'東京都',area:'',address:'',lat:null,lng:null,status:'visited',visitedDate:todayStr(),rating:0,memo:'',price:'',hours:'',holiday:'',photos:[]};
+  if(!s&&maps.home){const c=maps.home.getCenter();d.lat=null;d._center=[c.lat,c.lng]}
+  p.innerHTML=`<div class="phd"><button class="back" data-act="back" aria-label="閉じる"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button><h2>${s?'お店を編集':'お店を追加'}</h2><span class="sp"></span></div>
+  <form class="sec" id="f" novalidate>
+    <div class="field"><label for="f-name">お店の名前 <span class="req">*</span></label><input class="inp" id="f-name" maxlength="60" value="${esc(d.name)}" placeholder="例：麺や ひなた" required></div>
+    <div class="field"><span class="flabel">ジャンル</span><div class="ggrid" id="f-genre">${GENRES.map(g=>`<button type="button" class="gbtn${d.genre===g.k?' on':''}" data-v="${g.k}"><span class="gi">${g.emoji}</span>${g.name}</button>`).join('')}</div></div>
+    <div class="field"><span class="flabel">状態</span><div class="seg" id="f-status"><button type="button" data-v="visited" class="${d.status==='visited'?'on':''}">行った</button><button type="button" data-v="want" class="${d.status==='want'?'on':''}">行きたい</button></div></div>
+    <div class="grid2"><div class="field"><label for="f-pref">都道府県</label><select class="inp" id="f-pref">${PREFS.map(x=>`<option${x===d.pref?' selected':''}>${x}</option>`).join('')}</select></div>
+      <div class="field"><label for="f-area">エリア <span class="opt">（駅・街）</span></label><input class="inp" id="f-area" maxlength="30" value="${esc(d.area)}" placeholder="例：渋谷"></div></div>
+    <div class="field"><span class="flabel">場所 <span class="opt">（地図をタップしてピンを置く）</span></span>
+      <div style="display:flex;gap:8px"><input class="inp" id="f-q" placeholder="店名や住所で場所を検索" autocomplete="off"><button type="button" class="btn sec2" id="f-search" style="height:44px">検索</button></div>
+      <div class="results" id="f-results" hidden></div>
+      <div class="pickmap" id="pickMap"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="hint" id="f-pos">${d.lat!=null?'ピン設置済み':'まだピンが置かれていません'}</span><button type="button" class="linkbtn" id="f-here">現在地を使う</button></div></div>
+    <div class="field"><label for="f-address">住所 <span class="opt">（任意）</span></label><input class="inp" id="f-address" maxlength="120" value="${esc(d.address)}"></div>
+    <div id="f-visited" ${d.status==='visited'?'':'hidden'}>
+      <div class="grid2"><div class="field"><label for="f-date">来店日</label><input class="inp" type="date" id="f-date" value="${d.visitedDate||todayStr()}" max="${todayStr()}"></div>
+      <div class="field"><span class="flabel">評価</span><div class="stars" id="f-stars" style="gap:2px"></div></div></div></div>
+    <div class="field"><label for="f-memo">メモ <span class="opt">（任意）</span></label><textarea class="inp" id="f-memo" placeholder="味の感想、おすすめメニューなど">${esc(d.memo)}</textarea></div>
+    <div class="grid2"><div class="field"><label for="f-price">予算</label><select class="inp" id="f-price"><option value="">未設定</option>${PRICES.map(x=>`<option${x===d.price?' selected':''}>${x}</option>`).join('')}</select></div>
+      <div class="field"><label for="f-hours">営業時間</label><input class="inp" id="f-hours" maxlength="40" value="${esc(d.hours)}" placeholder="11:00〜23:00"></div></div>
+    <div class="field"><label for="f-holiday">定休日</label><input class="inp" id="f-holiday" maxlength="30" value="${esc(d.holiday)}" placeholder="例：月曜"></div>
+    ${s?'':`<div class="field"><label for="f-photos">写真 <span class="opt">（任意・複数可）</span></label><input type="file" id="f-photos" accept="image/*" multiple class="inp" style="padding:9px 12px;height:auto"></div>`}
+    <button class="btn pri block" type="submit">${s?'変更を保存':'登録する'}</button>
+  </form>`;
+  let genre=d.genre,status=d.status,rating=Math.round(d.rating||0),lat=d.lat,lng=d.lng;
+  p.querySelector('#f-genre').onclick=e=>{const b=e.target.closest('.gbtn');if(!b)return;genre=b.dataset.v;p.querySelectorAll('#f-genre .gbtn').forEach(x=>x.classList.toggle('on',x===b))};
+  p.querySelector('#f-status').onclick=e=>{const b=e.target.closest('button');if(!b)return;status=b.dataset.v;p.querySelectorAll('#f-status button').forEach(x=>x.classList.toggle('on',x===b));p.querySelector('#f-visited').hidden=status!=='visited'};
+  starWidget(p.querySelector('#f-stars'),rating,v=>rating=v);
+  openPage(p);
+  // 地図
+  setTimeout(()=>{if(maps.pick){maps.pick.remove();maps.pick=null}
+    const m=maps.pick=makeMap(p.querySelector('#pickMap'));let mk=null;
+    const setPos=(la,ln,zoom)=>{lat=+la.toFixed(6);lng=+ln.toFixed(6);if(mk)mk.setLatLng([lat,lng]);else mk=L.marker([lat,lng],{icon:pinIcon({genre,status}),draggable:true}).on('dragend',e=>{const q=e.target.getLatLng();lat=+q.lat.toFixed(6);lng=+q.lng.toFixed(6)}).addTo(m);
+      mk.setIcon(pinIcon({genre,status}));p.querySelector('#f-pos').textContent='ピン設置済み（ドラッグで微調整できます）';if(zoom)m.setView([lat,lng],zoom)};
+    if(lat!=null)setPos(lat,lng,16);else if(d._center)m.setView(d._center,13);
+    m.on('click',e=>setPos(e.latlng.lat,e.latlng.lng));
+    p.querySelector('#f-here').onclick=()=>locate(pos=>setPos(pos[0],pos[1],16));
+    const doSearch=async()=>{const q=p.querySelector('#f-q').value.trim()||p.querySelector('#f-name').value.trim();if(!q){toast('検索する言葉を入れてください');return}
+      const box=p.querySelector('#f-results');box.hidden=false;box.innerHTML='<button type="button" disabled>検索中…</button>';
+      try{const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&accept-language=ja&countrycodes=jp&q='+encodeURIComponent(q));if(!r.ok)throw new Error();const js=await r.json();
+        box.innerHTML=js.length?js.map((x,i)=>`<button type="button" data-i="${i}">${esc(x.display_name)}</button>`).join(''):'<button type="button" disabled>見つかりませんでした。地図をタップしてピンを置いてください</button>';
+        box.onclick=e=>{const b=e.target.closest('[data-i]');if(!b)return;const x=js[+b.dataset.i];setPos(+x.lat,+x.lon,17);box.hidden=true;
+          const addr=p.querySelector('#f-address');if(!addr.value)addr.value=x.display_name.split(',').map(t=>t.trim()).reverse().filter(t=>t!=='日本'&&!/^\d{3}-?\d{4}$/.test(t)).join('');
+          const pr=PREFS.find(pf=>x.display_name.includes(pf));if(pr)p.querySelector('#f-pref').value=pr}}
+      catch(err){box.innerHTML='<button type="button" disabled>検索できませんでした。通信状況を確認するか、地図をタップしてピンを置いてください</button>'}};
+    p.querySelector('#f-search').onclick=doSearch;
+    p.querySelector('#f-q').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();doSearch()}};
+    p.querySelector('#f-genre').addEventListener('click',()=>mk&&mk.setIcon(pinIcon({genre,status})));
+    p.querySelector('#f-status').addEventListener('click',()=>mk&&mk.setIcon(pinIcon({genre,status})));
+  },300);
+  p.querySelector('#f').onsubmit=async e=>{e.preventDefault();const name=p.querySelector('#f-name').value.trim();
+    if(!name){toast('お店の名前を入れてください');p.querySelector('#f-name').focus();return}
+    const before=earned();
+    const o=s||{id:uid(),createdAt:Date.now(),photos:[],favorite:false,visitCount:0};
+    const wasVisited=o.status==='visited';
+    Object.assign(o,{name,genre,status,pref:p.querySelector('#f-pref').value,area:p.querySelector('#f-area').value.trim(),address:p.querySelector('#f-address').value.trim(),
+      lat,lng,memo:p.querySelector('#f-memo').value.trim(),price:p.querySelector('#f-price').value,hours:p.querySelector('#f-hours').value.trim(),holiday:p.querySelector('#f-holiday').value.trim(),sample:false});
+    if(status==='visited'){o.visitedDate=p.querySelector('#f-date').value||todayStr();o.rating=rating;if(!wasVisited)o.visitCount=Math.max(1,o.visitCount||0)}else{o.visitedDate='';o.rating=0;o.visitCount=0}
+    const fi=p.querySelector('#f-photos');if(fi&&fi.files.length){try{for(const f of fi.files)o.photos.push(await resizeImg(f))}catch(err){toast(err.message)}}
+    if(!s)shops.push(o);await saveShop(o);closePage();renderAll();
+    if(s){openDetail(o.id);toast('変更を保存しました')}else{if(o.lat!=null&&cur==='home')maps.home.setView([o.lat,o.lng],15);
+      const nb=BADGES.filter(b=>earned().has(b.id)&&!before.has(b.id));toast(nb.length?`登録しました。バッジ「${nb[0].name}」を獲得！`:(o.lat==null?'登録しました（地図のピンは編集から追加できます）':'登録しました'))}};
+}
+
+/* ---------- エリア ---------- */
+let areaSeg='map',curArea=null;
+function openArea(pref){curArea=pref;const p=$('#pArea');const list=shops.filter(s=>s.pref===pref);const v=list.filter(s=>s.status==='visited');
+  const goal=settings.areaGoal||50,pct=Math.min(100,Math.round(v.length/goal*100));
+  p.innerHTML=`<div class="phd"><button class="back" data-act="back" aria-label="戻る"><svg viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></svg></button><h2>エリアの記録</h2><span class="sp"></span></div>
+  <div class="area-hero"><h2>${esc(shortPref(pref))}エリア</h2><div class="bignum num" style="font-size:34px">${v.length}<span class="of" style="color:inherit;opacity:.8">/ ${goal}店</span></div>
+    <div class="barrow"><div class="bar"><i style="width:${pct}%"></i></div><b class="num">${pct}%</b></div>
+    <div class="hint" style="color:inherit;opacity:.85;margin-top:4px">行きたいお店 ${list.length-v.length}店</div></div>
+  <div class="sec" style="padding-bottom:10px"><div class="seg"><button class="${areaSeg==='map'?'on':''}" data-act="areaSeg" data-v="map">マップ</button><button class="${areaSeg==='list'?'on':''}" data-act="areaSeg" data-v="list">一覧</button></div></div>
+  ${areaSeg==='map'?'<div class="areamap" id="areaMap"></div>':''}
+  <div class="list">${[...list].sort((a,b)=>(b.visitedDate||'').localeCompare(a.visitedDate||'')).map(rowHtml).join('')}</div><div style="height:30px;flex:none"></div>`;
+  openPage(p);
+  if(areaSeg==='map')setTimeout(()=>{if(maps.area){maps.area.remove();maps.area=null}const m=maps.area=makeMap(p.querySelector('#areaMap'));drawMarkers(m,list,s=>openDetail(s.id));fit(m,list)},300)}
+
+/* ---------- 現在地 ---------- */
+function locate(cb){if(!navigator.geolocation){toast('このブラウザでは現在地を取得できません');return}
+  toast('現在地を取得しています…');
+  navigator.geolocation.getCurrentPosition(p=>cb([p.coords.latitude,p.coords.longitude]),e=>toast(e.code===1?'位置情報の利用が許可されていません':'現在地を取得できませんでした'),{enableHighAccuracy:true,timeout:10000})}
+let hereMk={};
+function showHere(key){const m=maps[key];if(!m)return;locate(pos=>{if(hereMk[key])hereMk[key].setLatLng(pos);else hereMk[key]=L.circleMarker(pos,{radius:8,color:'#fff',weight:3,fillColor:'#2F7BEA',fillOpacity:1}).addTo(m);m.setView(pos,15)})}
+
+/* ---------- タブ ---------- */
+let cur='home';
+function switchTab(t){cur=t;document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+t));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+  if(t==='home')setTimeout(()=>maps.home.invalidateSize(),0);
+  if(t==='map'){if(!maps.genre){maps.genre=makeMap('genreMap');renderGenreMap(true)}else{renderGenreMap(false);setTimeout(()=>maps.genre.invalidateSize(),0)}}
+  if(t==='list')renderList();if(t==='stats')renderStats();if(t==='me')renderMe()}
+function renderAll(){renderHome(false);if(cur==='map')renderGenreMap(false);if(cur==='list')renderList();if(cur==='stats')renderStats();if(cur==='me')renderMe()}
+
+/* ---------- イベント ---------- */
+const A={
+  tab:t=>{while(stack.length)closePage();switchTab(t.dataset.tab)},
+  open:(t,id)=>openDetail(id),
+  back:()=>closePage(),
+  add:()=>openForm(),
+  edit:(t,id)=>openForm(id),
+  record:(t,id)=>openRecord(id),
+  fav:async(t,id)=>{const s=byId(id);s.favorite=!s.favorite;await saveShop(s);openDetail(id);renderAll();toast(s.favorite?'お気に入りに追加しました':'お気に入りから外しました')},
+  del:async(t,id)=>{const s=byId(id);if(!await confirmBox(`「${s.name}」を削除しますか？記録と写真は元に戻せません。`))return;await removeShop(id);closePage();renderAll();toast('削除しました')},
+  delPhoto:async(t,id)=>{const s=byId(id);if(!await confirmBox('この写真を削除しますか？'))return;s.photos.splice(+t.dataset.v,1);await saveShop(s);openDetail(id);renderAll()},
+  showOnMap:(t,id)=>{const s=byId(id);while(stack.length)closePage();switchTab('home');setTimeout(()=>{maps.home.setView([s.lat,s.lng],17);const mk=maps.home._markers&&maps.home._markers[id];if(mk)mk.setIcon(pinIcon(s,true))},50)},
+  filter:()=>openFilter(),
+  closeSheet:()=>{if(!$('#backdrop').dataset.modal)closeSheet()},
+  fGenre:t=>{const v=t.dataset.v;if(v==='all')Ft.genres.clear();else Ft.genres.has(v)?Ft.genres.delete(v):Ft.genres.add(v);renderFilter()},
+  fPref:t=>{Ft.pref=t.dataset.v;renderFilter()},
+  fMin:t=>{Ft.min=+t.dataset.v;renderFilter()},
+  fStatus:t=>{Ft.status=t.dataset.v;renderFilter()},
+  fApply:()=>{Object.assign(F,{genres:Ft.genres,pref:Ft.pref,min:Ft.min,status:Ft.status});closeSheet();renderHome(true);if(cur==='list')renderList()},
+  fReset:()=>{Ft={genres:new Set(),pref:'all',min:0,status:'all'};renderFilter()},
+  gmGenre:t=>{gmGenre=t.dataset.v;renderGenreMap(true)},
+  listTab:t=>{listTab=t.dataset.v;renderList()},
+  statSeg:t=>{statSeg=t.dataset.v;renderStats()},
+  area:t=>openArea(t.dataset.v),
+  areaSeg:t=>{areaSeg=t.dataset.v;closePage();setTimeout(()=>openArea(curArea),10)},
+  badges:()=>openBadges(),
+  badgeCat:t=>{badgeCat=t.dataset.v;openBadges()},
+  editProfile:()=>openProfile(),
+  locate:t=>showHere(t.dataset.map),
+  clearSamples:async()=>{if(!await confirmBox('サンプルのお店をすべて削除しますか？','サンプルを削除'))return;for(const s of shops.filter(s=>s.sample))await removeShop(s.id);renderAll();renderHome(true);toast('サンプルを削除しました')},
+  wipe:async()=>{if(!await confirmBox('すべての記録を削除しますか？この操作は元に戻せません。','すべて削除'))return;for(const s of [...shops])await removeShop(s.id);renderAll();toast('すべての記録を削除しました')},
+  export:()=>{const blob=new Blob([JSON.stringify({app:'inshokuten-seiha-map',version:1,exportedAt:new Date().toISOString(),settings,shops},null,1)],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`飲食店制覇マップ_${todayStr()}.json`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);toast('バックアップを書き出しました')}
+};
+document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(!t)return;const f=A[t.dataset.act];if(f){e.preventDefault();f(t,t.dataset.id,e)}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('#sFilter').classList.contains('on'))closeSheet();else if(stack.length)closePage()}});
+$('#homeSearch').addEventListener('input',()=>renderHome(false));
+$('#homeSearch').addEventListener('keydown',e=>{if(e.key==='Enter')renderHome(true)});
+$('#listSearch').addEventListener('input',renderList);
+$('#listSort').addEventListener('change',renderList);
+$('#importFile').addEventListener('change',async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
+  try{const js=JSON.parse(await f.text());if(!Array.isArray(js.shops))throw new Error();
+    let n=0;for(const s of js.shops){if(!s.id||!s.name)continue;const i=shops.findIndex(x=>x.id===s.id);if(i>=0)shops[i]=s;else shops.push(s);await saveShop(s);n++}
+    if(js.settings){settings={...settings,...js.settings,seeded:true};await saveSettings()}renderAll();renderHome(true);toast(`${n}件のお店を読み込みました`)}
+  catch(err){toast('読み込めませんでした。このアプリで書き出したJSONファイルを選んでください')}});
+
+/* ---------- 起動 ---------- */
+(async function init(){
+  if(typeof L==='undefined'){document.body.innerHTML='<p style="padding:24px">地図ライブラリを読み込めませんでした。インターネット接続を確認して再読み込みしてください。</p>';return}
+  try{await DB.open();shops=await DB.all();const st=await DB.get('settings');if(st)settings={...DEF,...st}}
+  catch(e){DB.db=null;setTimeout(()=>toast('保存領域を開けませんでした。記録はページを閉じると消えます'),500)}
+  if(!settings.seeded){for(const s of samples()){shops.push(s);await saveShop(s)}settings.seeded=true;await saveSettings()}
+  maps.home=makeMap('homeMap');renderHome(true);
+})();
+</script>
+</body>
+</html>

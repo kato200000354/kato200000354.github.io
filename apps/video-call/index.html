@@ -1,0 +1,631 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>やさしいビデオ通話</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap">
+<style>
+:root{
+  --bg:#E6ECF5; --app:#F4F7FB; --surface:#FFFFFF; --surface-2:#EDF2F9; --line:#D3DCE8;
+  --ink:#14233A; --ink-2:#4B5B73;
+  --blue:#1B5FD1; --blue-ink:#FFFFFF; --blue-soft:#DDE8FB; --blue-deep:#0F3F94;
+  --green:#16804A; --green-ink:#FFFFFF; --green-soft:#DDF2E6; --green-deep:#0B5530;
+  --red:#CF3528; --red-soft:#FBE4E1;
+  --shadow:0 18px 50px rgba(20,35,58,.16);
+  --display:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Meiryo",sans-serif;
+  --body:"BIZ UDPGothic","Hiragino Sans","Meiryo",sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#090E16; --app:#101826; --surface:#172234; --surface-2:#1D2A3F; --line:#2B3A53;
+    --ink:#EEF3FB; --ink-2:#A9B7CC;
+    --blue:#78A6F8; --blue-ink:#0A1220; --blue-soft:#1C2F52; --blue-deep:#3F68B0;
+    --green:#5ACB8E; --green-ink:#07170E; --green-soft:#143424; --green-deep:#2E8A5A;
+    --red:#F2695E; --red-soft:#3E1C1A;
+    --shadow:0 18px 50px rgba(0,0,0,.5);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#090E16; --app:#101826; --surface:#172234; --surface-2:#1D2A3F; --line:#2B3A53;
+  --ink:#EEF3FB; --ink-2:#A9B7CC;
+  --blue:#78A6F8; --blue-ink:#0A1220; --blue-soft:#1C2F52; --blue-deep:#3F68B0;
+  --green:#5ACB8E; --green-ink:#07170E; --green-soft:#143424; --green-deep:#2E8A5A;
+  --red:#F2695E; --red-soft:#3E1C1A;
+  --shadow:0 18px 50px rgba(0,0,0,.5);
+}
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body)}
+button{font:inherit}
+button:focus-visible,input:focus-visible{outline:4px solid #F5B400;outline-offset:3px}
+
+.stage{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:40px;padding-inline:16px;padding-block:28px}
+
+/* ---------- 端末 ---------- */
+.phone{
+  --s:1; --t:calc(1px * var(--s));
+  font-size:calc(18 * var(--t));
+  position:relative;flex:none;display:flex;flex-direction:column;
+  width:min(100%,420px);height:clamp(620px,88vh,880px);
+  background:var(--app);color:var(--ink);
+  border:10px solid #0C131E;border-radius:42px;overflow:hidden;box-shadow:var(--shadow);
+}
+.status{display:flex;justify-content:space-between;align-items:center;padding:10px 24px 4px;font:700 15px var(--body);font-variant-numeric:tabular-nums}
+.bat{width:26px;height:12px;border:2px solid currentColor;border-radius:4px;position:relative}
+.bat::after{content:"";position:absolute;inset:1px 5px 1px 1px;background:currentColor;border-radius:1px}
+.scroll{flex:1;overflow-y:auto;padding:8px 18px 28px}
+.screen{display:flex;flex-direction:column;gap:14px}
+
+.ic{display:inline-flex;align-items:center;justify-content:center}
+.ic svg{width:1.2em;height:1.2em}
+
+.date{margin:8px 0 0;color:var(--ink-2);font-size:calc(17 * var(--t))}
+.greet,.title{margin:0;font:800 calc(30 * var(--t))/1.25 var(--display);text-wrap:balance}
+.lead{margin:-6px 0 4px;color:var(--ink-2);font-size:calc(17 * var(--t))}
+
+.big-btn{
+  display:flex;align-items:center;justify-content:center;gap:12px;width:100%;
+  min-height:calc(78 * var(--t));padding:10px 16px;border:0;border-radius:20px;cursor:pointer;
+  background:var(--blue);color:var(--blue-ink);font:800 calc(24 * var(--t)) var(--display);
+  box-shadow:0 6px 0 var(--blue-deep);transition:transform .08s,box-shadow .08s;
+}
+.big-btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--blue-deep)}
+.big-btn.green{background:var(--green);color:var(--green-ink);box-shadow:0 6px 0 var(--green-deep)}
+.big-btn.green:active{box-shadow:0 2px 0 var(--green-deep)}
+.big-btn .ic svg{width:1.3em;height:1.3em}
+.hint{margin:0 0 6px;text-align:center;color:var(--ink-2);font-size:calc(16 * var(--t))}
+.sec{margin:8px 0 0;font:800 calc(21 * var(--t)) var(--display)}
+
+.fav{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tile{
+  display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 8px 14px;cursor:pointer;
+  background:var(--surface);color:var(--ink);border:2px solid var(--line);border-radius:20px;
+}
+.tile:active,.row:active{border-color:var(--blue);background:var(--blue-soft)}
+.tile b{font:800 calc(21 * var(--t)) var(--display)}
+.tile small{color:var(--ink-2);font-size:calc(15 * var(--t))}
+
+.st{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:calc(15 * var(--t));color:var(--green)}
+.st::before{content:"";width:.75em;height:.75em;border-radius:50%;background:currentColor;flex:none}
+.st.off{color:var(--ink-2)}
+.st.off::before{background:transparent;border:2px solid currentColor}
+
+.av{
+  --c:#777;display:inline-grid;place-items:center;flex:none;
+  width:2.3em;height:2.3em;border-radius:50%;background:var(--c);color:#fff;
+  font:800 calc(22 * var(--t)) var(--display);
+}
+.av.lg{font-size:calc(30 * var(--t))}
+.av.xl{font-size:46px}
+.av.xxl{font-size:74px}
+
+.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.row{
+  display:flex;align-items:center;gap:14px;width:100%;padding:14px;cursor:pointer;text-align:left;
+  background:var(--surface);color:var(--ink);border:2px solid var(--line);border-radius:18px;
+}
+.who{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.who b{font:800 calc(21 * var(--t)) var(--display)}
+.who small{color:var(--ink-2);font-size:calc(15 * var(--t))}
+.callchip{display:grid;place-items:center;flex:none;width:calc(52 * var(--t));height:calc(52 * var(--t));border-radius:50%;background:var(--green-soft);color:var(--green)}
+
+.hrow{display:flex;align-items:center;gap:12px;padding:14px;background:var(--surface);border:2px solid var(--line);border-radius:18px}
+.kind{display:inline-flex;align-items:center;gap:4px;align-self:flex-start;padding:2px 10px 2px 6px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);font-weight:700;font-size:calc(14 * var(--t))}
+.kind.missed{background:var(--red-soft);color:var(--red)}
+.redial{flex:none;min-height:calc(52 * var(--t));padding:0 14px;border-radius:14px;cursor:pointer;border:2px solid var(--blue);background:var(--blue-soft);color:var(--blue);font:800 calc(16 * var(--t)) var(--display)}
+
+.group{display:flex;flex-direction:column;gap:10px;padding:14px;background:var(--surface);border:2px solid var(--line);border-radius:18px}
+.glabel{margin:0;font:800 calc(19 * var(--t)) var(--display)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:5px;background:var(--surface-2);border-radius:14px}
+.seg button{min-height:calc(54 * var(--t));border:0;border-radius:10px;cursor:pointer;background:transparent;color:var(--ink);font:700 calc(16 * var(--t)) var(--display)}
+.seg button[aria-checked="true"]{background:var(--blue);color:var(--blue-ink)}
+.sample{margin:0;padding:10px 12px;background:var(--surface-2);border-radius:10px;font-size:calc(18 * var(--t));line-height:1.6}
+.row-set{display:flex;align-items:center;gap:12px;width:100%;min-height:calc(56 * var(--t));padding:4px 0;border:0;background:none;color:var(--ink);text-align:left;cursor:pointer}
+.row-set + .row-set{border-top:1px solid var(--line);padding-top:12px}
+.row-set .txt{flex:1;display:flex;flex-direction:column;gap:3px}
+.row-set .txt small{color:var(--ink-2);font-size:calc(15 * var(--t))}
+.row-set.link b{flex:1}
+.row-set .ic{color:var(--ink-2)}
+.onoff{font-weight:700;font-size:calc(16 * var(--t));color:var(--green);min-width:2.5em;text-align:right}
+.onoff.no{color:var(--ink-2)}
+.switch{appearance:none;-webkit-appearance:none;flex:none;position:relative;width:64px;height:36px;margin:0;border-radius:999px;background:var(--line);cursor:pointer;transition:background .15s}
+.switch::before{content:"";position:absolute;top:4px;left:4px;width:28px;height:28px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .15s}
+.switch:checked{background:var(--green)}
+.switch:checked::before{transform:translateX(28px)}
+.ghost{width:100%;min-height:calc(56 * var(--t));border:2px solid var(--line);border-radius:16px;cursor:pointer;background:var(--surface);color:var(--ink);font:700 calc(18 * var(--t)) var(--display)}
+
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:8px 10px 12px;background:var(--surface);border-top:1px solid var(--line)}
+.tabs button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 2px;border:0;border-radius:14px;cursor:pointer;background:none;color:var(--ink-2);font:700 calc(14 * var(--t)) var(--display)}
+.tabs .ic svg{width:28px;height:28px}
+.tabs button[aria-current="page"]{background:var(--blue-soft);color:var(--blue)}
+
+/* ---------- 確認シート ---------- */
+.scrim{position:absolute;inset:0;z-index:35;display:flex;align-items:flex-end;background:rgba(8,14,24,.5)}
+.sheet{width:100%;max-height:92%;overflow:auto;display:flex;flex-direction:column;gap:12px;padding:26px 20px 26px;background:var(--surface);border-radius:26px 26px 0 0;animation:up .22s ease-out}
+.sheet h2{margin:0;font:800 calc(22 * var(--t)) var(--display)}
+.confirm{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+.q{margin:0;font-size:calc(21 * var(--t));line-height:1.6}
+.q b{font-family:var(--display);font-size:1.2em}
+.warn{margin:0;padding:10px 12px;border-radius:12px;background:var(--red-soft);color:var(--red);font-weight:700;font-size:calc(16 * var(--t));line-height:1.5}
+.steps{margin:0;padding-left:1.4em;display:flex;flex-direction:column;gap:10px;font-size:calc(18 * var(--t));line-height:1.6}
+.steps b{font-family:var(--display)}
+.note-s{margin:0;color:var(--ink-2);font-size:calc(16 * var(--t));line-height:1.6}
+
+/* ---------- 通話画面（常に暗い背景） ---------- */
+.call{position:absolute;inset:0;z-index:30;display:flex;background:#0E1622;color:#fff}
+.cstage{flex:1;position:relative;display:flex;flex-direction:column}
+.center{align-items:center;justify-content:center;gap:18px;padding:24px;text-align:center}
+.c-name{margin:0;font:800 30px var(--display)}
+.c-sub{margin:0;font-size:19px;color:#C5D0E0;line-height:1.5}
+.ring{position:relative;display:grid;place-items:center;margin:14px 0}
+.ring::before,.ring::after{content:"";position:absolute;inset:-14px;border-radius:50%;border:3px solid rgba(255,255,255,.35);animation:pulse 1.8s ease-out infinite}
+.ring::after{animation-delay:.9s}
+.pill-btn{display:inline-flex;align-items:center;gap:10px;min-height:68px;margin-top:20px;padding:0 38px;border:0;border-radius:999px;cursor:pointer;color:#fff;font:800 22px var(--display)}
+.pill-btn svg{width:30px;height:30px}
+.pill-btn.red{background:#E0392C}
+.pill-btn.blue{background:#2F6FE4}
+.in-btns{display:flex;gap:52px;margin-top:24px}
+.round-act{display:flex;flex-direction:column;align-items:center;gap:10px;border:0;background:none;color:#fff;cursor:pointer;font:800 21px var(--display)}
+.round-act .ic{width:94px;height:94px;border-radius:50%}
+.round-act .ic svg{width:42px;height:42px}
+.round-act.red .ic{background:#E0392C}
+.round-act.green .ic{background:#1FA35C}
+
+.remote{--pc:#8a6a55;position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding-bottom:160px;
+  background:radial-gradient(95% 70% at 50% 32%, color-mix(in srgb, var(--pc) 55%, #3a2f28), #15110f)}
+.remote .av{box-shadow:0 0 0 8px rgba(255,255,255,.12);animation:breathe 4s ease-in-out infinite}
+.remote-note{margin:0;padding:6px 14px;border-radius:999px;background:rgba(0,0,0,.35);color:rgba(255,255,255,.8);font-size:14px}
+.live-top{position:absolute;top:14px;left:14px;right:132px}
+.namepill{display:inline-flex;align-items:baseline;gap:12px;padding:8px 16px;border-radius:14px;background:rgba(10,16,26,.62);font:800 20px var(--display)}
+.namepill .num{font:700 17px var(--body);color:#C5D0E0;font-variant-numeric:tabular-nums}
+.self{position:absolute;top:14px;right:14px;width:104px;height:140px;display:grid;place-items:center;overflow:hidden;border-radius:16px;border:2px solid rgba(255,255,255,.7);background:#2A3548}
+.self video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+.self-ph{padding:4px;color:#D8E0EC;text-align:center;font:700 15px/1.4 var(--display)}
+.live-bottom{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;gap:12px;padding:48px 14px 16px;background:linear-gradient(transparent,rgba(6,10,18,.88) 32%)}
+.banner{padding:10px 14px;border-radius:12px;background:#FFE9A8;color:#3A2A00;font-weight:700;font-size:calc(16 * var(--t));line-height:1.5}
+.ctls{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.ctl{display:flex;flex-direction:column;align-items:center;gap:6px;border:0;background:none;color:#fff;cursor:pointer;font:700 calc(15 * var(--t))/1.25 var(--display)}
+.ci{display:grid;place-items:center;width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.16);border:2px solid rgba(255,255,255,.3)}
+.ci svg{width:30px;height:30px}
+.ctl[aria-pressed="true"] .ci{background:#fff;border-color:#fff;color:#C62D22}
+.end-btn{display:flex;align-items:center;justify-content:center;gap:12px;min-height:72px;border:0;border-radius:20px;cursor:pointer;background:#E0392C;color:#fff;font:800 calc(23 * var(--t)) var(--display)}
+.end-btn svg{width:34px;height:34px}
+.flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+.flash.go{animation:flash .5s ease-out}
+
+.toast{position:absolute;left:16px;right:16px;bottom:100px;z-index:40;padding:14px 16px;border-radius:14px;background:#14233A;color:#fff;border:1px solid rgba(255,255,255,.2);box-shadow:0 10px 30px rgba(0,0,0,.3);text-align:center;font-weight:700;font-size:calc(17 * var(--t));line-height:1.5}
+
+/* ---------- 説明欄 ---------- */
+.about{max-width:340px;display:flex;flex-direction:column;gap:14px;padding-top:28px}
+.tag{align-self:flex-start;padding:4px 12px;border-radius:999px;background:var(--blue-soft);color:var(--blue);font:700 13px var(--body);letter-spacing:.08em}
+.about h1{margin:0;font:800 32px/1.3 var(--display);text-wrap:balance}
+.about p,.about li{margin:0;color:var(--ink-2);font-size:16px;line-height:1.8}
+.about ul{margin:0;padding-left:1.2em}
+.about .note{padding-top:12px;border-top:1px solid var(--line);font-size:14px}
+.about .ghost{font-size:17px;min-height:52px}
+
+@keyframes pulse{from{transform:scale(.9);opacity:1}to{transform:scale(1.35);opacity:0}}
+@keyframes breathe{50%{transform:scale(1.04)}}
+@keyframes up{from{transform:translateY(40px);opacity:0}}
+@keyframes flash{0%{opacity:.95}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+@media (max-width:780px){.about{max-width:420px;padding-top:0}}
+@media (max-width:480px){
+  .stage{padding-block:16px}
+  .phone{border-width:6px;border-radius:28px;height:calc(100dvh - 32px);min-height:600px}
+}
+</style>
+
+<div class="stage">
+  <div class="phone" id="phone">
+    <div class="status"><span id="clock">10:24</span><span class="bat" aria-hidden="true"></span></div>
+
+    <main class="scroll" id="scroll">
+      <section class="screen" id="s-home">
+        <p class="date" id="today"></p>
+        <h1 class="greet" id="greet">こんにちは</h1>
+        <button class="big-btn" id="go-contacts"><span class="ic" data-i="cam"></span>通話を始める</button>
+        <p class="hint">押すと、話す相手を選べます</p>
+        <h2 class="sec">よく話す人</h2>
+        <div class="fav" id="fav"></div>
+      </section>
+
+      <section class="screen" id="s-contacts" hidden>
+        <h1 class="title">連絡先</h1>
+        <p class="lead">話したい人を押してください</p>
+        <ul class="list" id="contacts"></ul>
+      </section>
+
+      <section class="screen" id="s-history" hidden>
+        <h1 class="title">履歴</h1>
+        <p class="lead">最近の通話です</p>
+        <ul class="list" id="hist"></ul>
+      </section>
+
+      <section class="screen" id="s-settings" hidden>
+        <h1 class="title">設定</h1>
+        <div class="group">
+          <h2 class="glabel">文字の大きさ</h2>
+          <div class="seg" role="radiogroup" aria-label="文字の大きさ">
+            <button role="radio" data-s="1">ふつう</button>
+            <button role="radio" data-s="1.15">大きい</button>
+            <button role="radio" data-s="1.3">特大</button>
+          </div>
+          <p class="sample">見本：ゆみこから ビデオ通話です</p>
+        </div>
+        <div class="group">
+          <label class="row-set" for="confirm-t">
+            <span class="txt"><b>かける前に確認する</b><small>まちがって電話するのを防ぎます</small></span>
+            <span class="onoff" id="confirm-state">オン</span>
+            <input type="checkbox" class="switch" id="confirm-t" checked>
+          </label>
+        </div>
+        <div class="group">
+          <button class="row-set link" id="open-guide"><span class="ic" data-i="book"></span><b>使い方ガイド</b><span class="ic" data-i="chev"></span></button>
+          <button class="row-set link" id="try-incoming"><span class="ic" data-i="phone"></span><b>着信画面を試す</b><span class="ic" data-i="chev"></span></button>
+          <button class="row-set link" id="acct"><span class="ic" data-i="people"></span><b>アカウント</b><span class="ic" data-i="chev"></span></button>
+        </div>
+        <button class="ghost" id="logout">ログアウト</button>
+      </section>
+    </main>
+
+    <nav class="tabs" aria-label="画面の切り替え">
+      <button data-tab="home" aria-current="page"><span class="ic" data-i="home"></span>ホーム</button>
+      <button data-tab="contacts"><span class="ic" data-i="people"></span>連絡先</button>
+      <button data-tab="history"><span class="ic" data-i="clock"></span>履歴</button>
+      <button data-tab="settings"><span class="ic" data-i="gear"></span>設定</button>
+    </nav>
+
+    <div class="scrim" id="scrim" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+
+    <div class="call" id="call" hidden>
+      <div class="cstage center" id="c-ring" hidden>
+        <div class="ring"><span class="av xl" id="ring-av"></span></div>
+        <p class="c-name" id="ring-name"></p>
+        <p class="c-sub" id="ring-sub">呼び出し中…</p>
+        <button class="pill-btn red" id="ring-cancel"><span class="ic" data-i="hang"></span><span id="ring-cancel-t">やめる</span></button>
+      </div>
+
+      <div class="cstage center" id="c-in" hidden>
+        <p class="c-sub">ビデオ通話がきています</p>
+        <div class="ring"><span class="av xl" id="in-av"></span></div>
+        <p class="c-name" id="in-name"></p>
+        <div class="in-btns">
+          <button class="round-act red" id="in-no"><span class="ic" data-i="hang"></span>出ない</button>
+          <button class="round-act green" id="in-yes"><span class="ic" data-i="phone"></span>出る</button>
+        </div>
+      </div>
+
+      <div class="cstage" id="c-live" hidden>
+        <div class="remote" id="remote">
+          <span class="av xxl" id="live-av"></span>
+          <p class="remote-note">試作品：ここに相手の映像が映ります</p>
+        </div>
+        <div class="live-top"><div class="namepill"><span id="live-name"></span><span class="num" id="live-time">0:00</span></div></div>
+        <div class="self"><video id="selfv" autoplay muted playsinline hidden></video><span class="self-ph" id="self-ph">あなた</span></div>
+        <div class="live-bottom">
+          <div class="banner" id="b-mute" hidden>声を消しています。相手にはあなたの声が聞こえません。</div>
+          <div class="banner" id="b-cam" hidden>カメラを止めています。相手にはあなたが見えません。</div>
+          <div class="ctls">
+            <button class="ctl" id="t-mute" aria-pressed="false"><span class="ci" id="t-mute-i"></span><span id="t-mute-l">声を消す</span></button>
+            <button class="ctl" id="t-cam" aria-pressed="false"><span class="ci" id="t-cam-i"></span><span id="t-cam-l">カメラ停止</span></button>
+            <button class="ctl" id="t-photo"><span class="ci"><span class="ic" data-i="photo"></span></span>写真を撮る</button>
+            <button class="ctl" id="t-more"><span class="ci"><span class="ic" data-i="more"></span></span>その他</button>
+          </div>
+          <button class="end-btn" id="t-end"><span class="ic" data-i="hang"></span>通話を終了</button>
+        </div>
+        <div class="flash" id="flash"></div>
+      </div>
+
+      <div class="cstage center" id="c-end" hidden>
+        <span class="av xl" id="end-av"></span>
+        <p class="c-name">通話を終了しました</p>
+        <p class="c-sub" id="end-sub"></p>
+        <button class="pill-btn blue" id="end-home">ホームに戻る</button>
+      </div>
+    </div>
+
+    <div class="toast" id="toast" role="status" hidden></div>
+  </div>
+
+  <aside class="about">
+    <span class="tag">試作品</span>
+    <h1>やさしいビデオ通話</h1>
+    <p>高齢の方が迷わず使えることを第一に考えた、ビデオ通話アプリの画面の試作品です。左の画面は実際に押して動かせます。</p>
+    <ul>
+      <li>「よく話す人」を押して、電話をかけてみる</li>
+      <li>通話中に「声を消す」「写真を撮る」などを押してみる</li>
+      <li>設定で文字の大きさを変えてみる</li>
+      <li>電話がかかってきた時の画面を見る</li>
+    </ul>
+    <button class="ghost" id="about-incoming">着信画面を試す</button>
+    <p class="note">相手の映像は仮の表示です。実際に相手とはつながりません。通話の履歴や設定は、このブラウザの中にだけ保存されます。</p>
+  </aside>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+
+const I = {
+  mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
+  micoff:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M3 3l18 18"/>',
+  cam:'<rect x="2.5" y="6" width="13.5" height="12" rx="2.5"/><path d="M16 10.5l5.5-3.5v10l-5.5-3.5z"/>',
+  camoff:'<rect x="2.5" y="6" width="13.5" height="12" rx="2.5"/><path d="M16 10.5l5.5-3.5v10l-5.5-3.5zM3 3l18 18"/>',
+  phone:'<path d="M5 3.5h3.5l2 5-2.5 1.6a11 11 0 0 0 5.4 5.4l1.6-2.5 5 2v3.5a2 2 0 0 1-2 2A16.5 16.5 0 0 1 3 5.5a2 2 0 0 1 2-2z"/>',
+  hang:'<g transform="rotate(135 12 12)"><path d="M5 3.5h3.5l2 5-2.5 1.6a11 11 0 0 0 5.4 5.4l1.6-2.5 5 2v3.5a2 2 0 0 1-2 2A16.5 16.5 0 0 1 3 5.5a2 2 0 0 1 2-2z"/></g>',
+  photo:'<path d="M3.5 8h3.5l2-3h6l2 3h3.5v11.5h-17z"/><circle cx="12" cy="13.3" r="3.6"/>',
+  more:'<circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/>',
+  home:'<path d="M3 11l9-7.5 9 7.5M5.5 9.5V20h5v-6h3v6h5V9.5"/>',
+  people:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14a5 5 0 0 1 5.5 5"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/><circle cx="12" cy="12" r="7"/>',
+  chev:'<path d="M9 5l7 7-7 7"/>',
+  book:'<path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H20v15H5.5A1.5 1.5 0 0 0 4 19.5zM4 19.5A1.5 1.5 0 0 0 5.5 21H20"/>',
+  out:'<path d="M7 17L17 7M9 7h8v8"/>',
+  inc:'<path d="M17 7L7 17M15 17H7V9"/>',
+  miss:'<path d="M6 6l12 12M18 6L6 18"/>'
+};
+const icon = n => `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${I[n]}</svg>`;
+document.querySelectorAll('[data-i]').forEach(e => e.innerHTML = icon(e.dataset.i));
+
+const people = [
+  {id:'yumiko', name:'ゆみこ',   rel:'娘',   ch:'ゆ', c:'#C4553F', on:true,  fav:true},
+  {id:'taro',   name:'たろう',   rel:'息子', ch:'た', c:'#2B7A9B', on:true,  fav:true},
+  {id:'sakura', name:'さくら',   rel:'孫',   ch:'さ', c:'#B34C88', on:true,  fav:true},
+  {id:'hanako', name:'花子さん', rel:'友だち', ch:'花', c:'#667A24', on:false, fav:true},
+  {id:'kenji',  name:'けんじ',   rel:'弟',   ch:'け', c:'#5E54A0', on:false, fav:false},
+  {id:'michiko',name:'みちこさん', rel:'ご近所', ch:'み', c:'#3F7F6A', on:true, fav:false}
+];
+const byId = Object.fromEntries(people.map(p => [p.id, p]));
+
+// ---------- 保存（使えない環境でも動くように） ----------
+const store = {
+  get(k, d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch(e){ return d; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+};
+const settings = Object.assign({scale:1, confirm:true}, store.get('yvc-settings', {}));
+
+const daysAgo = (n, h, m) => { const d = new Date(); d.setDate(d.getDate() - n); d.setHours(h, m, 0, 0); return +d; };
+let history = store.get('yvc-history', null) || [
+  {id:'taro',   type:'out',    at:daysAgo(0, 9, 15),  sec:312},
+  {id:'sakura', type:'missed', at:daysAgo(1, 18, 5),  sec:0},
+  {id:'yumiko', type:'in',     at:daysAgo(1, 19, 40), sec:746},
+  {id:'hanako', type:'out',    at:daysAgo(3, 14, 20), sec:185},
+  {id:'taro',   type:'in',     at:daysAgo(6, 20, 2),  sec:421}
+];
+history.sort((a, b) => b.at - a.at);
+
+// ---------- 表示の部品 ----------
+const av = (p, cls='') => `<span class="av ${cls}" style="--c:${p.c}" aria-hidden="true">${p.ch}</span>`;
+const status = p => p.on ? '<span class="st">今 話せます</span>' : '<span class="st off">いまは不在</span>';
+const clockText = d => `${d.getHours() < 12 ? '午前' : '午後'}${d.getHours() % 12}:${String(d.getMinutes()).padStart(2, '0')}`;
+function dayText(t){
+  const d = new Date(t), a = new Date(); a.setHours(0,0,0,0);
+  const b = new Date(d); b.setHours(0,0,0,0);
+  const diff = Math.round((a - b) / 864e5);
+  if (diff === 0) return '今日';
+  if (diff === 1) return 'きのう';
+  if (diff < 7) return `${diff}日前`;
+  return `${d.getMonth()+1}月${d.getDate()}日`;
+}
+const durText = s => s < 60 ? `${s}秒` : `${Math.floor(s/60)}分${s % 60 ? (s % 60) + '秒' : ''}`;
+const shortDur = s => s < 60 ? `${s}秒` : `${Math.round(s/60)}分`;
+
+function renderHome(){
+  const now = new Date(), wd = '日月火水木金土'[now.getDay()];
+  $('#today').textContent = `${now.getMonth()+1}月${now.getDate()}日（${wd}）`;
+  const h = now.getHours();
+  $('#greet').textContent = h < 10 ? 'おはようございます' : h < 18 ? 'こんにちは' : 'こんばんは';
+  $('#fav').innerHTML = people.filter(p => p.fav).map(p =>
+    `<button class="tile" data-call="${p.id}">${av(p,'lg')}<b>${p.name}</b><small>${p.rel}</small>${status(p)}</button>`).join('');
+}
+function renderContacts(){
+  $('#contacts').innerHTML = people.map(p =>
+    `<li><button class="row" data-call="${p.id}">${av(p)}<span class="who"><b>${p.name}</b><small>${p.rel}</small>${status(p)}</span><span class="callchip">${icon('phone')}</span></button></li>`).join('');
+}
+const KIND = {out:['かけた','out',''], in:['かかってきた','inc',''], missed:['出られなかった','miss','missed'], noans:['つながらなかった','out','missed']};
+function renderHistory(){
+  $('#hist').innerHTML = history.map(h => {
+    const p = byId[h.id], [label, ic, cls] = KIND[h.type];
+    const when = `${dayText(h.at)} ${clockText(new Date(h.at))}` + (h.sec ? `・${shortDur(h.sec)}` : '');
+    return `<li class="hrow">${av(p)}<span class="who"><span class="kind ${cls}"><span class="ic">${icon(ic)}</span>${label}</span><b>${p.name}</b><small>${when}</small></span><button class="redial" data-call="${p.id}">かけ直す</button></li>`;
+  }).join('');
+}
+
+// ---------- 画面切り替え ----------
+function showTab(t){
+  ['home','contacts','history','settings'].forEach(n => $('#s-' + n).hidden = n !== t);
+  document.querySelectorAll('.tabs button').forEach(b => b.dataset.tab === t ? b.setAttribute('aria-current','page') : b.removeAttribute('aria-current'));
+  if (t === 'home') renderHome();
+  if (t === 'contacts') renderContacts();
+  if (t === 'history') renderHistory();
+  $('#scroll').scrollTop = 0;
+}
+document.querySelector('.tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) showTab(b.dataset.tab); });
+$('#go-contacts').onclick = () => showTab('contacts');
+
+// ---------- 文字の大きさ・設定 ----------
+function applyScale(s){
+  settings.scale = s; store.set('yvc-settings', settings);
+  $('#phone').style.setProperty('--s', s);
+  document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-checked', String(+b.dataset.s === s)));
+}
+document.addEventListener('click', e => { const b = e.target.closest('.seg button'); if (b) applyScale(+b.dataset.s); });
+function applyConfirm(v){
+  settings.confirm = v; store.set('yvc-settings', settings);
+  $('#confirm-t').checked = v;
+  $('#confirm-state').textContent = v ? 'オン' : 'オフ';
+  $('#confirm-state').classList.toggle('no', !v);
+}
+$('#confirm-t').onchange = e => applyConfirm(e.target.checked);
+
+// ---------- お知らせ ----------
+let toastT;
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.hidden = false;
+  clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2800);
+}
+$('#acct').onclick = () => toast('試作品のため、アカウント画面はまだありません');
+$('#logout').onclick = () => toast('試作品のため、ログアウトはできません');
+
+// ---------- シート ----------
+function openSheet(html){
+  $('#sheet').innerHTML = html; $('#scrim').hidden = false;
+  const f = $('#sheet').querySelector('button'); if (f) f.focus();
+}
+function closeSheet(){ $('#scrim').hidden = true; }
+$('#scrim').addEventListener('click', e => { if (e.target.id === 'scrim') closeSheet(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
+$('#sheet').addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  if (b.dataset.act === 'close') closeSheet();
+  if (b.dataset.act === 'call') startCall(b.dataset.id);
+  if (b.dataset.act === 'louder') { toast('相手の声を大きくしました'); closeSheet(); }
+});
+
+function askCall(id){
+  const p = byId[id];
+  if (!settings.confirm) return startCall(id);
+  openSheet(`<div class="confirm">${av(p,'xl')}
+    <p class="q"><b>${p.name}</b>（${p.rel}）に<br>ビデオ通話をかけますか？</p>
+    ${p.on ? '' : '<p class="warn">いまは不在のようです。出られないかもしれません。</p>'}
+    <button class="big-btn green" data-act="call" data-id="${id}"><span class="ic">${icon('phone')}</span>かける</button>
+    <button class="ghost" data-act="close">やめる</button></div>`);
+}
+document.addEventListener('click', e => { const b = e.target.closest('[data-call]'); if (b) askCall(b.dataset.call); });
+
+$('#open-guide').onclick = () => openSheet(`<h2>使い方ガイド</h2>
+  <ol class="steps">
+    <li>ホームの<b>「通話を始める」</b>を押します</li>
+    <li>話したい人の名前を押します</li>
+    <li>緑色の<b>「かける」</b>を押すと、呼び出しが始まります</li>
+  </ol>
+  <p class="note-s">話し終わったら、画面の下にある赤い<b>「通話を終了」</b>を押してください。</p>
+  <button class="ghost" data-act="close">閉じる</button>`);
+
+// ---------- 通話 ----------
+let call = null, tick = null, ringT = null, stream = null, camTried = false;
+const STAGES = ['c-ring','c-in','c-live','c-end'];
+function stage(id){ STAGES.forEach(s => $('#' + s).hidden = s !== id); $('#call').hidden = !id; }
+function setAv(el, p){ el.style.setProperty('--c', p.c); el.textContent = p.ch; }
+
+function startCall(id){
+  closeSheet();
+  const p = byId[id];
+  call = {id, dir:'out'};
+  setAv($('#ring-av'), p);
+  $('#ring-name').textContent = p.name;
+  $('#ring-sub').textContent = '呼び出し中…';
+  $('#ring-cancel-t').textContent = 'やめる';
+  stage('c-ring');
+  ringT = setTimeout(() => {
+    if (p.on) return goLive();
+    $('#ring-sub').textContent = '応答がありませんでした。\nあとで、もう一度かけてみてください。';
+    $('#ring-cancel-t').textContent = 'もどる';
+    addHist(id, 'noans', 0);
+  }, 2600);
+}
+$('#ring-cancel').onclick = () => { clearTimeout(ringT); call = null; stage(null); };
+
+function incoming(){
+  closeSheet();
+  const p = byId.yumiko;
+  call = {id:p.id, dir:'in'};
+  setAv($('#in-av'), p);
+  $('#in-name').textContent = `${p.name}（${p.rel}）`;
+  stage('c-in');
+}
+$('#try-incoming').onclick = incoming;
+$('#about-incoming').onclick = incoming;
+$('#in-yes').onclick = () => goLive();
+$('#in-no').onclick = () => { addHist(call.id, 'missed', 0); call = null; stage(null); toast('履歴から、あとでかけ直せます'); };
+
+function goLive(){
+  const p = byId[call.id];
+  Object.assign(call, {start:Date.now(), muted:false, camOff:false});
+  setAv($('#live-av'), p);
+  $('#remote').style.setProperty('--pc', p.c);
+  $('#live-name').textContent = p.name;
+  setMute(false); setCam(false);
+  stage('c-live');
+  updTime(); tick = setInterval(updTime, 1000);
+  startCamera();
+}
+function updTime(){
+  const s = Math.floor((Date.now() - call.start) / 1000);
+  $('#live-time').textContent = `${Math.floor(s/60)}:${String(s % 60).padStart(2,'0')}`;
+}
+
+async function startCamera(){
+  if (camTried && !stream) return;
+  camTried = true;
+  try {
+    if (!stream) stream = await navigator.mediaDevices.getUserMedia({video:true, audio:false});
+    $('#selfv').srcObject = stream;
+    if (call && !call.camOff) { $('#selfv').hidden = false; $('#self-ph').hidden = true; }
+  } catch(e) { stream = null; }
+}
+function stopCamera(){
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; camTried = false; }
+  $('#selfv').hidden = true; $('#self-ph').hidden = false;
+}
+
+function setMute(v){
+  if (call) call.muted = v;
+  $('#t-mute').setAttribute('aria-pressed', String(v));
+  $('#t-mute-i').innerHTML = icon(v ? 'micoff' : 'mic');
+  $('#t-mute-l').textContent = v ? '声を出す' : '声を消す';
+  $('#b-mute').hidden = !v;
+}
+function setCam(v){
+  if (call) call.camOff = v;
+  $('#t-cam').setAttribute('aria-pressed', String(v));
+  $('#t-cam-i').innerHTML = icon(v ? 'camoff' : 'cam');
+  $('#t-cam-l').textContent = v ? 'カメラ再開' : 'カメラ停止';
+  $('#b-cam').hidden = !v;
+  $('#selfv').hidden = v || !stream;
+  $('#self-ph').hidden = !v && !!stream;
+  $('#self-ph').textContent = v ? 'カメラ停止中' : 'あなた';
+}
+$('#t-mute').onclick = () => setMute(!call.muted);
+$('#t-cam').onclick = () => setCam(!call.camOff);
+$('#t-photo').onclick = () => {
+  const f = $('#flash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go');
+  toast('写真を撮りました（試作品のため保存はされません）');
+};
+$('#t-more').onclick = () => openSheet(`<h2>その他</h2>
+  <div class="group"><h3 class="glabel">文字の大きさ</h3>
+    <div class="seg" role="radiogroup" aria-label="文字の大きさ">
+      ${[['1','ふつう'],['1.15','大きい'],['1.3','特大']].map(([s,l]) => `<button role="radio" data-s="${s}" aria-checked="${+s === settings.scale}">${l}</button>`).join('')}
+    </div></div>
+  <button class="big-btn" data-act="louder">相手の声を大きくする</button>
+  <button class="ghost" data-act="close">閉じる</button>`);
+
+$('#t-end').onclick = () => {
+  clearInterval(tick); stopCamera(); closeSheet();
+  const p = byId[call.id], sec = Math.max(1, Math.floor((Date.now() - call.start) / 1000));
+  addHist(call.id, call.dir, sec);
+  setAv($('#end-av'), p);
+  $('#end-sub').textContent = `${p.name}と ${durText(sec)} 話しました`;
+  stage('c-end');
+};
+$('#end-home').onclick = () => { call = null; stage(null); showTab('home'); };
+
+function addHist(id, type, sec){
+  history.unshift({id, type, at:Date.now(), sec});
+  history = history.slice(0, 30);
+  store.set('yvc-history', history);
+  if (!$('#s-history').hidden) renderHistory();
+}
+
+// ---------- 時計 ----------
+function updClock(){ const d = new Date(); $('#clock').textContent = `${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`; }
+updClock(); setInterval(updClock, 15000);
+
+$('#ring-sub').style.whiteSpace = 'pre-line';
+applyScale(settings.scale);
+applyConfirm(settings.confirm);
+showTab('home');
+</script>

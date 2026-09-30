@@ -1,0 +1,1292 @@
+<meta charset="utf-8">
+<title>ツタジャンプ！</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0c2a5b; --navy-glass:rgba(10,36,82,.84);
+  --leaf:#23893d; --sun:#ffcf33; --red:#e5364b; --blue:#1d7df2;
+  --ink:#0b1b33; --muted:#566783; --line:#d9e4f3; --card:#ffffff; --soft:#f1f6fd;
+  color-scheme:light;
+}
+html,body{height:100%}
+body{margin:0;background:#8fd8ff;color:var(--ink);font-family:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Yu Gothic UI","Meiryo",system-ui,sans-serif;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+#app{position:fixed;inset:0;overflow:hidden}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#app:not(.in-game) .game-only{display:none!important}
+
+/* HUD */
+.hud{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));left:12px;right:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;pointer-events:none}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{display:flex;align-items:center;gap:6px;padding:3px 11px 3px 3px;border-radius:999px;background:var(--navy-glass);color:#fff;border:2px solid rgba(255,255,255,.55);font-weight:800;font-size:15px;font-variant-numeric:tabular-nums;transition:transform .2s,box-shadow .2s}
+.chip .tag{display:grid;place-items:center;min-width:32px;height:26px;border-radius:999px;font-size:13px;font-weight:900;color:#fff;padding:0 6px}
+.chip.on{transform:scale(1.07);border-color:#fff;box-shadow:0 0 0 3px rgba(255,207,51,.9)}
+.neg{color:#ff8e9b}
+.pill{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;background:var(--navy-glass);color:#fff;border:2px solid rgba(255,255,255,.55);font-weight:800;font-size:13px;font-variant-numeric:tabular-nums}
+.pill b{font-size:16px}
+.timer{font-size:24px;padding:2px 16px 2px 12px}
+.timer.low{background:rgba(190,28,52,.94)}
+.timer svg,.best svg{flex:none}
+.spacer{flex:1}
+
+/* いきおいゲージ */
+.gauge{position:absolute;right:calc(20px + env(safe-area-inset-right,0px));top:calc(78px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none}
+.glabel{font-size:11px;font-weight:800;color:#fff;background:var(--navy-glass);padding:2px 8px;border-radius:999px}
+.track{position:relative;width:20px;height:min(34vh,230px);border-radius:12px;border:3px solid #fff;background:linear-gradient(to top,#39b54a,#a6d93b 40%,#ffd23f 62%,#ff8a2b 82%,#e5364b);box-shadow:0 4px 12px rgba(0,30,80,.3)}
+.cover{position:absolute;left:0;right:0;top:0;height:100%;background:rgba(12,42,91,.88);border-radius:9px 9px 0 0}
+.reach{position:absolute;left:-9px;right:-9px;bottom:28.9%;border-top:3px solid #fff}
+.reach span{position:absolute;right:calc(100% + 4px);top:-11px;font-size:10px;font-weight:800;color:#fff;background:var(--navy-glass);padding:1px 6px;border-radius:6px;white-space:nowrap}
+
+/* ヒント */
+.hint{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(24px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:10px;padding:10px 18px;border-radius:999px;background:var(--navy-glass);color:#fff;border:2px solid rgba(255,255,255,.75);font-weight:800;font-size:15px;pointer-events:none;max-width:calc(100% - 32px);white-space:nowrap}
+.hint.warn{background:rgba(190,28,52,.94)}
+.hint.go{background:rgba(18,118,58,.94)}
+@media (max-width:700px){.hint{left:16px;transform:none;max-width:calc(100% - 32px);font-size:13px;border-radius:16px;white-space:normal;padding:8px 12px}}
+
+/* はなすボタン */
+.primary:focus-visible,.ghost:focus-visible,.seg button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
+
+/* パネル */
+.panel{position:absolute;inset:0;display:grid;place-items:center;padding:16px;background:rgba(6,28,60,.36);overflow:auto}
+.panel.clear{background:rgba(6,28,60,.12)}
+.card{background:var(--card);border-radius:24px;padding:22px 20px;width:min(440px,100%);box-shadow:0 18px 50px rgba(5,25,60,.35);display:flex;flex-direction:column;gap:14px;max-height:calc(100% - 8px);overflow:auto;box-sizing:border-box}
+.logo{margin:0;font-weight:900;font-size:clamp(36px,10vw,50px);line-height:1;color:var(--leaf);letter-spacing:.02em;text-wrap:balance;text-shadow:3px 3px 0 #ffd23f}
+.lead{margin:0;color:var(--muted);font-weight:700;font-size:14px;line-height:1.6}
+.steps{margin:0;padding:0;list-style:none;display:grid;gap:8px;counter-reset:s}
+.steps li{display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start;font-size:14px;font-weight:700;line-height:1.5;counter-increment:s}
+.steps li::before{content:counter(s);display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--blue);color:#fff;font-weight:900;font-size:14px}
+.steps li.bad::before{background:var(--red)}
+.steps em{font-style:normal;color:var(--red)}
+.field{display:grid;gap:6px}
+.flabel{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.06em}
+.seg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.seg button{padding:10px 0;border-radius:12px;border:2px solid var(--line);background:var(--soft);font-family:inherit;font-weight:800;font-size:15px;color:var(--ink);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--blue);color:#fff;border-color:var(--blue)}
+.opts{display:flex;flex-wrap:wrap;gap:8px 18px}
+.opts label{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;cursor:pointer}
+.opts input{width:20px;height:20px;accent-color:var(--blue)}
+.primary{appearance:none;border:0;border-radius:16px;padding:14px 18px;background:linear-gradient(#34a0ff,#1766d6);color:#fff;font-family:inherit;font-weight:900;font-size:20px;box-shadow:0 5px 0 #0d468f;cursor:pointer}
+.primary:active{transform:translateY(3px);box-shadow:0 2px 0 #0d468f}
+.ghost{appearance:none;border:2px solid var(--line);border-radius:16px;padding:12px 16px;background:#fff;color:var(--ink);font-family:inherit;font-weight:800;font-size:16px;cursor:pointer}
+.keys{margin:0;font-size:12px;color:var(--muted);font-weight:700;text-align:center}
+.turn{align-items:center;text-align:center;width:min(320px,100%)}
+.turn .round{font-size:13px;font-weight:800;color:var(--muted);letter-spacing:.08em}
+.turn .who{font-size:44px;font-weight:900;line-height:1}
+.turn .who span{display:inline-block;padding:4px 18px;border-radius:999px;color:#fff}
+.turn p{margin:0;font-size:13px;color:var(--muted);font-weight:700}
+.turn .primary{align-self:stretch}
+
+/* 着地結果 */
+.toast{position:absolute;left:50%;top:max(84px,20%);transform:translateX(-50%);width:min(360px,calc(100% - 32px));background:var(--card);border-radius:22px;padding:16px 18px 18px;box-shadow:0 18px 50px rgba(5,25,60,.35);display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;box-sizing:border-box;animation:pop .28s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{from{transform:translateX(-50%) scale(.7);opacity:0}}
+.rc-who{font-size:13px;font-weight:900;color:#fff;padding:2px 12px;border-radius:999px}
+.rc-title{font-size:22px;font-weight:900}
+.rc-rec{font-size:48px;font-weight:900;line-height:1.05;font-variant-numeric:tabular-nums;color:var(--leaf)}
+.rc-rec.neg{color:var(--red)}
+.rc-rec.none{color:var(--muted);font-size:32px}
+.rc-sub{font-size:13px;font-weight:700;color:var(--muted)}
+.toast .primary{align-self:stretch;margin-top:6px}
+
+/* 最終結果 */
+.card h2{margin:0;font-size:28px;font-weight:900;color:var(--leaf)}
+.rank{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.rank li{display:grid;grid-template-columns:26px auto 1fr auto;gap:10px;align-items:center;padding:10px 12px;border-radius:14px;background:var(--soft);font-variant-numeric:tabular-nums}
+.rank li:first-child{background:#fff6d1;box-shadow:inset 0 0 0 2px #ffd23f}
+.rank .rk{font-weight:900;font-size:18px;text-align:center}
+.rank .tag{padding:2px 10px;border-radius:999px;color:#fff;font-weight:900;font-size:13px}
+.rank .recs{font-size:12px;color:var(--muted);font-weight:700;min-width:0}
+.rank b{font-size:20px;font-weight:900}
+.rank b.neg,.award .neg{color:var(--red)}
+.awards{display:grid;gap:6px}
+.award{display:flex;justify-content:space-between;gap:10px;padding:8px 12px;border-radius:12px;border:2px dashed var(--line);font-size:13px;font-weight:800}
+.award span:last-child{font-variant-numeric:tabular-nums}
+.row{display:grid;grid-template-columns:1fr auto;gap:8px}
+
+@media (prefers-reduced-motion:reduce){.toast{animation:none}}
+</style>
+
+<div id="app">
+  <canvas id="cv"></canvas>
+
+  <div class="hud">
+    <div class="chips game-only" id="chips"></div>
+    <div class="pill game-only">ラウンド <b id="roundVal">1</b>/3</div>
+    <div class="pill timer game-only" id="timer">
+      <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8.5" fill="none" stroke="#fff" stroke-width="2.6"/><path d="M12 8.5V13l3 2" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><path d="M9.5 2.5h5" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg>
+      <span id="timeVal">30</span>
+    </div>
+    <div class="pill game-only" id="altPill" hidden>
+      <svg width="14" height="18" viewBox="0 0 14 18" aria-hidden="true"><path d="M7 1v16M7 1 2 6M7 1l5 5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      高さ <b id="altVal">0</b>m
+    </div>
+    <div class="spacer"></div>
+    <div class="pill best">
+      <svg width="20" height="16" viewBox="0 0 24 18" aria-hidden="true"><path d="M2 15 1 4l6 5 5-8 5 8 6-5-1 11z" fill="#ffd23f" stroke="#b88300" stroke-width="1.2"/></svg>
+      ベスト <b id="bestVal">--</b>
+    </div>
+  </div>
+
+  <div class="gauge game-only" aria-hidden="true">
+    <span class="glabel">いきおい</span>
+    <div class="track"><div class="cover" id="gCover"></div><div class="reach"><span>とどく</span></div></div>
+  </div>
+
+  <div class="hint game-only" id="hint" hidden>
+    <svg width="34" height="18" viewBox="0 0 34 18" aria-hidden="true"><path d="M2 9h30M2 9l6-6M2 9l6 6M32 9l-6-6M32 9l-6 6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span id="hintText"></span>
+  </div>
+
+  <!-- タイトル -->
+  <div class="panel" id="titleScreen">
+    <div class="card">
+      <h1 class="logo">ツタジャンプ！</h1>
+      <p class="lead">ツタのゆれに合わせて左右にスワイプ。いちばんいい瞬間に手をはなして、向こう岸の旗をめざそう。</p>
+      <ol class="steps">
+        <li>画面に指を置いて動かすと、ツタが指の方向へついてくる。大きく振ったり、ぐるっと回したりして勢いをつけよう</li>
+        <li>ゲージが「とどく」を超えたら、前へ動いている途中で<b>指をはなしてジャンプ</b></li>
+        <li class="bad">うしろ向きに動いている時に指をはなすと<em>マイナス方向</em>へ飛ぶ！</li>
+      </ol>
+      <div class="field">
+        <span class="flabel">人数（交代で3ラウンド）</span>
+        <div class="seg" id="segPlayers">
+          <button type="button" data-n="1" aria-pressed="true">1人</button>
+          <button type="button" data-n="2" aria-pressed="false">2人</button>
+          <button type="button" data-n="3" aria-pressed="false">3人</button>
+          <button type="button" data-n="4" aria-pressed="false">4人</button>
+        </div>
+      </div>
+      <div class="opts">
+        <label><input type="checkbox" id="optBeginner" checked> 初心者モード（予測線）</label>
+        <label><input type="checkbox" id="optSound" checked> 効果音</label>
+      </div>
+      <button class="primary" id="startBtn" type="button">あそぶ</button>
+      <p class="keys">PC：マウスを押したまま動かし、ボタンをはなすとジャンプ</p>
+    </div>
+  </div>
+
+  <!-- 交代 -->
+  <div class="panel clear" id="turnScreen" hidden>
+    <div class="card turn">
+      <div class="round" id="turnRound">ラウンド 1 / 3</div>
+      <div class="who"><span id="turnWho">1P</span> の番</div>
+      <button class="primary" id="goBtn" type="button">スタート</button>
+      <p>スタートすると25秒のカウントが始まります</p>
+    </div>
+  </div>
+
+  <!-- 着地結果 -->
+  <div class="toast" id="resultCard" hidden>
+    <div class="rc-who" id="rcWho">1P</div>
+    <div class="rc-title" id="rcTitle"></div>
+    <div class="rc-rec" id="rcRec"></div>
+    <div class="rc-sub" id="rcSub"></div>
+    <button class="primary" id="nextBtn" type="button">つぎへ</button>
+  </div>
+
+  <!-- 最終結果 -->
+  <div class="panel" id="finalScreen" hidden>
+    <div class="card">
+      <h2>けっか</h2>
+      <ol class="rank" id="rankList"></ol>
+      <div class="awards" id="awards"></div>
+      <div class="row">
+        <button class="primary" id="againBtn" type="button">もう一度</button>
+        <button class="ghost" id="titleBtn" type="button">タイトルへ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const app = $('app'), cv = $('cv'), ctx = cv.getContext('2d');
+
+/* ---------- 世界の定数（単位：m、yは上向き） ---------- */
+// 揺れをきびきびさせるため重力を強めにしている（軌道の形は9.8のときと同じ）
+const G = 30, G_FX = 9.8, VS = Math.sqrt(G / 9.8), L = 7.5, AX = 0, AY = 14;
+const M = 2.5;               // 画面に表示する記録の倍率
+const FEET = 1.6;            // 手から足先までの長さ
+const T_LIMIT = 25, ROUNDS = 3;
+const PLAT_L = -7, PLAT_R = -1.6, PLAT_TOP = 4.6;
+const CLIFF_X = 10, CLIFF_TOP = 3.5, FLAG_X = 17;
+const SWAMP_TOP = 0.35;   // やぐらより後ろは、どこまでも続く沼
+const REACH_A = 52 * Math.PI / 180;
+
+const PCOL = [
+  { tag: '1P', shirt: '#1f6fe0', shade: '#0f4aa8', hair: '#5a3217' },
+  { tag: '2P', shirt: '#e5364b', shade: '#a61f31', hair: '#7a3d1a' },
+  { tag: '3P', shirt: '#23a24d', shade: '#157034', hair: '#33241a' },
+  { tag: '4P', shirt: '#eab000', shade: '#b07f00', hair: '#6b4020' },
+];
+
+function groundTop(x) {
+  if (x >= CLIFF_X) return CLIFF_TOP;
+  if (x >= PLAT_L && x <= PLAT_R) return PLAT_TOP;
+  if (x < PLAT_L) return SWAMP_TOP;
+  return 0;
+}
+function region(x) {
+  if (x >= CLIFF_X) return 'cliff';
+  if (x >= PLAT_L && x <= PLAT_R) return 'plat';
+  if (x < PLAT_L) return 'swamp';
+  return 'water';
+}
+// 周期 period で繰り返す背景を、カメラ位置 c の近くに持ってくる
+const wrapAround = (x, c, period) => x + Math.round((c - x) / period) * period;
+const round1 = v => Math.round(v * 10) / 10;
+const fmt = v => (v < 0 ? '−' : '') + Math.abs(v).toFixed(1) + 'm';
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+/* ---------- 保存 ---------- */
+let best = 0;
+try { best = parseFloat(localStorage.getItem('tsuta-best')) || 0; } catch (e) {}
+function saveBest() { try { localStorage.setItem('tsuta-best', String(best)); } catch (e) {} }
+try {
+  const b = localStorage.getItem('tsuta-beginner');
+  if (b !== null) $('optBeginner').checked = b === '1';
+} catch (e) {}
+
+/* ---------- 状態 ---------- */
+const S = {
+  phase: 'title', n: 1, beginner: true, round: 1, cur: 0, scores: [], recs: [], marks: [],
+  th: 0.6, om: 0, credited: false, lastSign: 0, combo: 0, miss: 0, twist: 0, time: T_LIMIT,
+  px: 0, py: 0, vx: 0, vy: 0, flyAng: 0, ropeTh: 0, ropeOm: 0, hideKid: false, bumped: false,
+  slide: null, landT: 0, result: null, resultShown: false, t: 0, cx: 0,
+  parts: [], pops: [], toucan: 0, face: 'smile', firstTurn: true, lastSwipe: -1, lastTick: 99,
+};
+
+/* ---------- 効果音 ---------- */
+let AC = null;
+function audio() {
+  if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = null; } }
+  if (AC && AC.state === 'suspended') AC.resume();
+  return AC;
+}
+const soundOn = () => $('optSound').checked;
+function tone(f, d, type = 'sine', vol = 0.12, f2) {
+  if (!AC || !soundOn()) return;
+  const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t);
+  if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + d);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+  o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + d + 0.02);
+}
+function noise(d, vol, freq) {
+  if (!AC || !soundOn()) return;
+  const len = Math.floor(AC.sampleRate * d), buf = AC.createBuffer(1, len, AC.sampleRate), ch = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) ch[i] = (Math.random() * 2 - 1) * (1 - i / len);
+  const src = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain();
+  src.buffer = buf; f.type = 'lowpass'; f.frequency.value = freq; g.gain.value = vol;
+  src.connect(f); f.connect(g); g.connect(AC.destination); src.start();
+}
+const sfx = {
+  perfect() { tone(880, .12, 'triangle', .12); setTimeout(() => tone(1320, .18, 'triangle', .12), 70); },
+  good() { tone(660, .12, 'triangle', .1); },
+  weak() { tone(420, .1, 'sine', .07); },
+  miss() { tone(190, .2, 'sawtooth', .06, 110); },
+  twist() { tone(320, .45, 'square', .05, 140); },
+  whoosh() { noise(.35, .25, 1400); },
+  land() { tone(160, .16, 'sine', .22, 70); noise(.12, .2, 600); },
+  splash() { noise(.7, .38, 2000); },
+  bump() { tone(120, .12, 'square', .08, 80); },
+  tick() { tone(1000, .05, 'square', .04); },
+  laugh() { [0, 120, 240].forEach(d => setTimeout(() => tone(1500, .07, 'square', .04, 1100), d)); },
+};
+
+/* ---------- 画面サイズとカメラ ---------- */
+let W = 0, H = 0, sc = 20, baseY = 400;
+function resize() {
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  W = cv.clientWidth; H = cv.clientHeight;
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const land = W >= H;
+  const sh = W / (land ? 30 : 25), sv = (H - 56) / 17.5;
+  sc = Math.min(sh, sv);
+  const extra = Math.max(0, H - 56 - 17.5 * sc);
+  baseY = H - 1.3 * sc - extra * 0.45;
+}
+addEventListener('resize', resize);
+const X = (x, p = 1) => W / 2 + (x - S.cx * p) * sc;
+const Y = y => baseY - (y - (S.cy || 0)) * sc;
+
+/* ---------- 景色の素材 ---------- */
+const rnd = (() => { let s = 11; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
+const clouds = [...Array(10)].map(() => ({ x: -40 + rnd() * 110, y: 12.5 + rnd() * 6, w: 2.5 + rnd() * 4 }));
+const farIsles = [...Array(10)].map((_, i) => ({ x: -45 + i * 11 + rnd() * 5, w: 6 + rnd() * 8, h: 1.4 + rnd() * 3 }));
+const midIsles = [{ x: -1, w: 2.6, h: 4.2, fall: true }, { x: 7.5, w: 2, h: 2.8 }, { x: 20, w: 3.6, h: 4.8 }, { x: -20, w: 3.2, h: 3.6 }, { x: 33, w: 2.6, h: 3.4 }];
+const hash = n => { const v = Math.sin(n * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); };
+const vines = [...Array(14)].map((_, i) => ({ x: CLIFF_X + 0.5 + i * 1.25 + rnd() * 0.5, len: 0.8 + rnd() * 2 }));
+const pads = [-17.5, -19.8, -22.4, -25.1].map(x => ({ x, r: 0.35 + rnd() * 0.2 }));
+
+/* ---------- 振り子 ---------- */
+// 角度の制限なし。勢い（エネルギー）を「振れ幅の角度」に換算して扱う
+// 180°を超えるぶんは一回転できる勢いとして、そのまま上乗せしていく
+const energy = () => L * S.om * S.om / (2 * G) + 1 - Math.cos(S.th);   // 0〜2で振り子、2超で一回転
+function amp() {
+  const e = energy();
+  return e <= 2 ? Math.acos(1 - e) : Math.PI + (e - 2) / 0.8;
+}
+function setAmp(A, dir) {
+  A = Math.max(0, A);
+  const e = A <= Math.PI ? 1 - Math.cos(A) : 2 + (A - Math.PI) * 0.8;
+  const v = 2 * G / L * (e - (1 - Math.cos(S.th)));
+  S.om = dir * Math.sqrt(Math.max(0, v));
+}
+const wrapTh = () => Math.atan2(Math.sin(S.th), Math.cos(S.th));   // -180°〜180°（0が真下）
+const forward = () => S.om * Math.cos(S.th) > 0;                   // 今はなすと前へ飛ぶか
+const handPos = th => [AX + L * Math.sin(th), AY - L * Math.cos(th)];
+function kidPos() {
+  if (S.phase === 'fly' || S.phase === 'landed') return [S.px, S.py];
+  return handPos(S.th);
+}
+
+function pop(text, col, size = 1) {
+  const [x, y] = kidPos();
+  S.pops.push({ text, col, size, x, y: y + 0.9, t: 0 });
+}
+function burst(x, y, n, cols, spd, grav = 1, rMin = 0.07) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI, v = spd * (0.4 + Math.random() * 0.8);
+    S.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, t: 0, life: 0.8 + Math.random() * 0.7, col: cols[i % cols.length], r: rMin + Math.random() * 0.12, g: grav });
+  }
+}
+
+function swipeInput(dir) {
+  if (S.phase !== 'swing') return;
+  if (S.t - S.lastSwipe < 0.12) return;
+  S.lastSwipe = S.t;
+  S.kickAnim = dir * 0.45;       // スワイプした瞬間に足をこいで見せる
+  ropeFlick(dir);               // ツタもその向きにはじく
+  swipe(dir);
+}
+function swipe(dir) {
+  S.swipes++;
+  const A = amp(), sg = Math.sign(S.om);
+  if (A < 0.06) {
+    S.om += dir * 0.95; S.credited = 1; S.lastSign = dir;
+    pop('GO!', '#ffffff'); sfx.good(); return;
+  }
+  const r = Math.abs(wrapTh()) / Math.min(A, Math.PI);
+  if (sg !== 0 && dir !== sg) {
+    if (r > 0.45) return;          // 端での切り返し（指の戻し）はノーカウント
+    setAmp(A - 0.03, sg);
+    S.combo = 0; S.miss++;
+    pop('MISS', '#ff8e9b'); sfx.miss();
+    if (S.miss >= 4) { S.miss = 0; S.twist = 1.5; pop('ツタがよじれた！', '#ffc2ca', 1.05); sfx.twist(); }
+    return;
+  }
+  if (S.credited >= 2) { S.om += sg * 0.06; return; }   // 3回目以降は少しだけ
+  const second = S.credited === 1;  // 同じ半周の2回目は効果を控えめに
+  S.credited++;
+  const late = wrapTh() * S.om > 0;
+  let gain;
+  if (r < 0.4) {
+    S.combo++; S.miss = 0;
+    gain = 0.2 * (1 + 0.1 * Math.min(S.combo - 1, 4));
+    pop(S.combo > 1 ? `PERFECT ×${S.combo}` : 'PERFECT!', '#ffd23f', 1.15);
+    const [x, y] = kidPos(); burst(x, y + 0.4, 12, ['#fff6b0', '#ffd23f', '#ffffff'], 3, 0.3, 0.05);
+    sfx.perfect();
+  } else if (r < 0.75) {
+    S.combo = 0; S.miss = 0; gain = 0.13;
+    pop('GOOD', '#8fe6ff'); sfx.good();
+  } else {
+    S.combo = 0; gain = 0.06;
+    pop(late ? 'おそい…' : 'はやい…', '#e3eaf6', 0.9); sfx.weak();
+  }
+  setAmp(A + gain * (second ? 0.6 : 1), sg || dir);
+  S.hintSeen = true;
+}
+function release(auto) {
+  if (S.phase !== 'swing') return;
+  const c = Math.cos(S.th), s = Math.sin(S.th);
+  S.px = AX + L * s; S.py = AY - L * c;
+  S.vx = L * S.om * c; S.vy = L * S.om * s;
+  S.ropeTh = S.th; S.ropeOm = S.om * 0.6; S.flyAng = -S.th; S.bumped = false; S.altStage = 0; S.maxAlt = 0;
+  S.phase = 'fly';
+  S.face = S.vx < -0.3 ? 'oops' : 'smile';
+  if (auto) pop('時間切れ！', '#ffffff', 1.1);
+  if (S.vx < -0.3) setTimeout(() => pop('うしろ!?', '#ff8e9b', 1.2), auto ? 250 : 0);
+  sfx.whoosh();
+  $('hint').hidden = true;
+}
+
+function land(reg) {
+  S.phase = 'landed'; S.landT = 0; S.resultShown = false; S.flyAng = 0;
+  let rec = 0, title, sub = '', kind = 'good', to = S.px;
+  if (reg === 'water') {
+    S.hideKid = true; burst(S.px, 0, 26, ['#e8f8ff', '#bfe9ff', '#ffffff'], 6, 1, 0.08);
+    title = 'ポチャン！'; sub = '川に落ちた… 記録なし'; kind = 'none'; sfx.splash();
+  } else {
+    if (reg === 'cliff') to = S.px + clamp(S.vx / VS * 0.22, 0, 3);
+    else if (reg === 'plat') to = clamp(S.px + S.vx / VS * 0.15, PLAT_L + 0.3, PLAT_R - 0.3);
+    if (reg !== 'swamp') S.slide = { from: S.px, to, t: 0 };
+    S.py = groundTop(S.px) + FEET;
+    rec = round1(to * M);
+    if (reg === 'cliff') {
+      burst(S.px, CLIFF_TOP, 14, ['#d9c08a', '#b89a62'], 2.5, 1, 0.06);
+      title = to >= FLAG_X ? '旗越え！' : 'ナイス着地！';
+      sub = to >= FLAG_X ? '旗の向こうまで跳んだ' : '向こう岸にとどいた';
+    } else if (reg === 'plat') {
+      burst(S.px, PLAT_TOP, 12, ['#c99a5f', '#8a5d31'], 2.5, 1, 0.06);
+      title = 'やぐらに逆もどり…'; sub = 'うしろ向きに飛んでしまった'; kind = 'bad';
+      S.toucan = 2.6; setTimeout(sfx.laugh, 300);
+    } else {
+      S.hideKid = true; burst(S.px, SWAMP_TOP, 26, ['#7d8a3a', '#5b6628', '#a3ad5a'], 5, 1, 0.09);
+      title = '沼にドボン！'; sub = 'うしろ向きに飛んでしまった'; kind = 'bad';
+      S.toucan = 2.6; setTimeout(sfx.laugh, 300);
+    }
+    S.face = rec < 0 ? 'oops' : 'smile';
+    S.marks.push({ x: to, i: S.cur });
+    if (reg === 'swamp') sfx.splash(); else sfx.land();
+  }
+  S.scores[S.cur] = round1(S.scores[S.cur] + rec);
+  S.recs[S.cur].push(kind === 'none' ? null : rec);
+  let nb = false;
+  if (reg === 'cliff' && rec > best) { best = rec; saveBest(); nb = true; updateBest(); }
+  S.result = { rec, title, sub, kind, nb };
+  updateChips();
+}
+
+/* ---------- ツタ（節をつないだひも） ---------- */
+// 両端（枝と手）は固定し、あいだの節は慣性と重力で動く。長さに少しだけ余裕を持たせてしなりを出す
+const RN = 14, SEG = L / RN * 1.025;
+let rope = null;
+function ropeInit(th) {
+  const [ex, ey] = handPos(th);
+  rope = [];
+  for (let i = 0; i <= RN; i++) {
+    const x = AX + (ex - AX) * i / RN, y = AY + (ey - AY) * i / RN;
+    rope.push({ x, y, px: x, py: y });
+  }
+}
+function ropeFlick(dir) {
+  if (!rope) return;
+  for (let i = 1; i < RN; i++) rope[i].px -= dir * 0.012 * Math.sin(Math.PI * i / RN);
+}
+function ropeStep(h, th) {
+  if (!rope) ropeInit(th);
+  const [ex, ey] = handPos(th);
+  let fx = 0;
+  if (S.phase === 'swing' && sw)
+    fx = clamp(S.fingerV / 1500, -1, 1) * 18;
+  const keep = 1 - 2.5 * h;
+  for (let i = 1; i < RN; i++) {
+    const p = rope[i], w = Math.sin(Math.PI * i / RN);
+    const vx = (p.x - p.px) * keep, vy = (p.y - p.py) * keep;
+    p.px = p.x; p.py = p.y;
+    p.x += vx + fx * w * h * h;
+    p.y += vy - G * 0.25 * h * h;
+  }
+  const a = rope[0], b = rope[RN];
+  a.x = a.px = AX; a.y = a.py = AY;
+  b.x = b.px = ex; b.y = b.py = ey;
+  for (let it = 0; it < 6; it++) {
+    for (let i = 0; i < RN; i++) {
+      const p = rope[i], q = rope[i + 1];
+      const dx = q.x - p.x, dy = q.y - p.y, d = Math.hypot(dx, dy) || 1e-6;
+      if (d <= SEG) continue;          // ひもなので縮むのは自由、伸びだけを戻す
+      const k = (d - SEG) / d;
+      const wp = i === 0 ? 0 : (i + 1 === RN ? 1 : 0.5), wq = i === 0 ? 1 : (i + 1 === RN ? 0 : 0.5);
+      p.x += dx * k * wp; p.y += dy * k * wp;
+      q.x -= dx * k * wq; q.y -= dy * k * wq;
+    }
+  }
+}
+
+/* ---------- 指の位置 ---------- */
+const FOLLOW_K = 60, FOLLOW_C = 8;
+// 画面上の指の位置を、世界の座標にして「枝から見た角度」にする（0が真下、右回りが＋）
+function fingerAim() {
+  if (!sw || !S.fs) return null;
+  const wx = S.cx + (S.fs.x - W / 2) / sc, wy = (baseY - S.fs.y) / sc + (S.cy || 0);
+  const dx = wx - AX, dy = AY - wy;
+  if (Math.hypot(dx, dy) < 1) return null;          // 枝の根元近くでは向きが決まらない
+  return { phi: Math.atan2(dx, dy), wx, wy };
+}
+
+/* ---------- 物理ステップ ---------- */
+function stepSwing(h, timed) {
+  let acc = -(G / L) * Math.sin(S.th);
+  if (timed) {
+    if (S.twist > 0) { acc -= 1.3 * VS * VS; S.twist -= h; }
+    S.om *= (1 - 0.02 * h);
+    // 指が触れている間は、枝から見た指の方向へツタをばねで引っぱる（少し遅れてついてくる）
+    const aim = fingerAim();
+    if (aim) {
+      let d = aim.phi - S.th; d = Math.atan2(Math.sin(d), Math.cos(d));
+      acc += FOLLOW_K * d + FOLLOW_C * ((S.phiV || 0) - S.om);
+    }
+  }
+  S.alpha = acc;
+  S.om += acc * h; S.th += S.om * h;
+  const sg = Math.sign(S.om);
+  if (sg !== 0 && sg !== S.lastSign) { S.lastSign = sg; S.credited = 0; }
+  // 真上を越えたら一回転。回り続けるときは真上を越えるたびに次の加速を受け付ける
+  const wt = wrapTh(), pw = S.prevW ?? wt;
+  if (Math.sign(wt) !== Math.sign(pw) && Math.abs(wt) > Math.PI / 2) {
+    S.credited = 0;
+    if (timed) { S.loops = (S.loops || 0) + 1; pop(S.loops > 1 ? `${S.loops}回転！` : '一回転！', '#ffd23f', 1.2); sfx.perfect(); }
+  }
+  S.prevW = wt;
+  if (timed) {
+    S.time -= h;
+    if (S.time <= 0) { S.time = 0; release(true); }
+  }
+}
+function stepRope(h) {
+  S.ropeOm += -(G / L) * Math.sin(S.ropeTh) * h;
+  S.ropeOm *= (1 - 0.5 * h);
+  S.ropeTh += S.ropeOm * h;
+}
+const ALT_STAGES = [[20, '鳥といっしょ！'], [32, '雲の上へ！'], [60, '空の果て！'], [80, '宇宙だ！'], [93, 'UFO！？']];
+function stepFly(h) {
+  S.vy -= G * h;
+  const nx = S.px + S.vx * h, ny = S.py + S.vy * h;
+  const fPrev = S.py - FEET, f = ny - FEET, reg = region(nx);
+  if (reg === 'water') {
+    S.px = nx; S.py = ny;
+    if (f <= -0.1) { land('water'); return; }
+  } else {
+    const top = groundTop(nx);
+    if (f <= top) {
+      if (fPrev >= top - 0.02) { S.px = nx; S.py = top + FEET; land(reg); return; }
+      S.vx = -S.vx * 0.3; S.py = ny;           // 崖ややぐらの側面にぶつかった
+      if (!S.bumped) { S.bumped = true; pop('ゴツン！', '#ffffff'); sfx.bump(); }
+    } else { S.px = nx; S.py = ny; }
+  }
+  // 高さのお知らせ
+  S.maxAlt = Math.max(S.maxAlt || 0, S.py - FEET);
+  while (S.altStage < ALT_STAGES.length && S.py - FEET >= ALT_STAGES[S.altStage][0]) {
+    pop(ALT_STAGES[S.altStage][1], '#ffffff', 1.15); sfx.perfect(); S.altStage++;
+  }
+  if (S.vx < -0.3) S.flyAng -= 5 * h;          // うしろ向きはくるくる回る
+  else S.flyAng += (0 - S.flyAng) * Math.min(1, 2.5 * h);
+}
+function step(h) {
+  ropeStep(h, (S.phase === 'fly' || S.phase === 'landed') ? S.ropeTh : S.th);
+  switch (S.phase) {
+    case 'title': stepSwing(h, false); break;
+    case 'swing': stepSwing(h, true); break;
+    case 'fly': stepFly(h); stepRope(h); break;
+    case 'landed': stepRope(h); break;
+  }
+}
+function stepFx(dt) {
+  for (const p of S.pops) { p.t += dt; p.y += dt * 1.1; }
+  S.pops = S.pops.filter(p => p.t < 1.1);
+  for (const p of S.parts) { p.t += dt; p.vy -= G_FX * p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; }
+  S.parts = S.parts.filter(p => p.t < p.life);
+  if (S.toucan > 0) S.toucan -= dt;
+  S.kickAnim = (S.kickAnim || 0) * Math.max(0, 1 - dt * 5);
+  S.fingerV = (S.fingerV || 0) * Math.max(0, 1 - dt * 6);
+  const aim = fingerAim();
+  if (aim && S.prevPhi != null) {
+    let d = aim.phi - S.prevPhi; d = Math.atan2(Math.sin(d), Math.cos(d));
+    S.phiV = S.phiV * 0.6 + (d / Math.max(dt, 1e-3)) * 0.4;
+  } else S.phiV = 0;
+  S.prevPhi = aim ? aim.phi : null;
+  if (S.phase === 'landed') {
+    S.landT += dt;
+    if (S.slide) {
+      S.slide.t += dt;
+      const k = Math.min(1, S.slide.t / 0.45), e = 1 - (1 - k) * (1 - k);
+      S.px = S.slide.from + (S.slide.to - S.slide.from) * e;
+      if (k >= 1) S.slide = null;
+    }
+    if (S.landT > 0.9 && !S.resultShown) showResult();
+  }
+  // カメラ
+  let target = AX;   // 揺れている間はツタの根元を画面の左右中央に
+  if (S.phase === 'fly' || S.phase === 'landed') target = S.px;
+  S.cx += (target - S.cx) * Math.min(1, dt * 3);
+  const ky = kidPos()[1];
+  S.cy = (S.cy || 0) + (Math.max(0, ky - 12) - (S.cy || 0)) * Math.min(1, dt * 4);
+  if (S.phase === 'swing' && S.time <= 5 && Math.ceil(S.time) !== S.lastTick) { S.lastTick = Math.ceil(S.time); sfx.tick(); }
+}
+
+/* ---------- 描画 ---------- */
+function rr(x, y, w, h, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+function circle(x, y, r) { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); }
+
+// 高さ（m）ごとの空の色。上へ行くほど青が深くなり、やがて宇宙の黒に
+const SKY = [[-5, [223, 245, 255]], [12, [139, 214, 255]], [28, [47, 159, 240]], [50, [31, 95, 200]], [70, [27, 31, 107]], [90, [10, 10, 42]], [120, [2, 2, 8]]];
+function skyCol(h) {
+  if (h <= SKY[0][0]) return SKY[0][1];
+  for (let i = 1; i < SKY.length; i++) if (h <= SKY[i][0]) {
+    const [h0, c0] = SKY[i - 1], [h1, c1] = SKY[i], t = (h - h0) / (h1 - h0);
+    return c0.map((v, k) => Math.round(v + (c1[k] - v) * t));
+  }
+  return SKY[SKY.length - 1][1];
+}
+const rgb = (c, a = 1) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+const altAt = sy => (baseY - sy) / sc + (S.cy || 0);     // 画面のその高さは、世界で何mか
+const stars = [...Array(160)].map(() => ({ u: rnd(), v: rnd(), s: 0.6 + rnd() * 1.6, p: rnd() * 6 }));
+function puff(x, y, w) {
+  circle(x, y, w * 0.28); circle(x + w * 0.32, y - w * 0.12, w * 0.34);
+  circle(x + w * 0.66, y, w * 0.27); ctx.fillRect(x, y - w * 0.05, w * 0.66, w * 0.28);
+}
+function drawSky(hY) {
+  const end = Math.max(1, Math.min(H, hY));
+  const g = ctx.createLinearGradient(0, 0, 0, end);
+  for (let k = 0; k <= 6; k++) g.addColorStop(k / 6, rgb(skyCol(altAt(end * k / 6))));
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, end + 1);
+  const topAlt = altAt(0);
+  const sunA = 1 - clamp((topAlt - 40) / 40, 0, 1);
+  if (sunA > 0) {
+    const sg = ctx.createRadialGradient(W * 0.86, H * 0.06, 0, W * 0.86, H * 0.06, Math.max(W, H) * 0.45);
+    sg.addColorStop(0, `rgba(255,255,228,${0.85 * sunA})`); sg.addColorStop(1, 'rgba(255,255,228,0)');
+    ctx.fillStyle = sg; ctx.fillRect(0, 0, W, end);
+  }
+  // 星（高いところほど濃く、少しきらめく）
+  if (topAlt > 50) {
+    for (const st of stars) {
+      const x = ((st.u * W - S.cx * sc * 0.05) % W + W) % W;
+      const y = ((st.v * H + (S.cy || 0) * sc * 0.05) % H + H) % H;
+      const a = clamp((altAt(y) - 50) / 30, 0, 1) * (0.65 + 0.35 * Math.sin(S.t * 3 + st.p));
+      if (a <= 0) continue;
+      ctx.fillStyle = `rgba(255,255,255,${a})`; ctx.fillRect(x, y, st.s, st.s);
+    }
+    // 流れ星
+    const cell = Math.floor(S.t / 2.5), ph = (S.t % 2.5) / 2.5;
+    if (ph < 0.25 && topAlt > 60) {
+      const x0 = hash(cell) * W, y0 = hash(cell + 0.3) * H * 0.5, d = ph / 0.25 * W * 0.35;
+      ctx.strokeStyle = `rgba(255,255,255,${1 - ph * 4})`; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x0 + d, y0 + d * 0.4); ctx.lineTo(x0 + d - 60, y0 + d * 0.4 - 24); ctx.stroke();
+    }
+  }
+  // 月と輪のある惑星（ずっと遠くにあるので、ゆっくりしか動かない）
+  const my = H * 0.3 + (95 - (S.cy || 0)) * sc * 0.25;
+  if (my > -200 && my < H + 200) {
+    const mx = W * 0.8 - S.cx * sc * 0.01, r = Math.min(W, H) * 0.11, a = clamp((altAt(my) - 45) / 30, 0, 1);
+    if (a > 0) {
+      ctx.globalAlpha = a;
+      ctx.fillStyle = '#f3f0dc'; circle(mx, my, r);
+      ctx.fillStyle = 'rgba(180,175,150,.55)'; circle(mx - r * 0.3, my - r * 0.2, r * 0.18); circle(mx + r * 0.35, my + r * 0.25, r * 0.12); circle(mx + r * 0.05, my + r * 0.45, r * 0.09);
+      ctx.globalAlpha = 1;
+    }
+  }
+  const py2 = H * 0.25 + (150 - (S.cy || 0)) * sc * 0.2;
+  if (py2 > -200 && py2 < H + 200) {
+    const px2 = W * 0.2 - S.cx * sc * 0.01, r = Math.min(W, H) * 0.07, a = clamp((altAt(py2) - 70) / 30, 0, 1);
+    if (a > 0) {
+      ctx.globalAlpha = a;
+      ctx.fillStyle = '#e8a05a'; circle(px2, py2, r);
+      ctx.fillStyle = 'rgba(160,80,40,.45)'; ctx.fillRect(px2 - r, py2 - r * 0.15, r * 2, r * 0.22);
+      ctx.strokeStyle = '#f5d9a8'; ctx.lineWidth = r * 0.12;
+      ctx.beginPath(); ctx.ellipse(px2, py2, r * 1.7, r * 0.45, -0.3, 0, Math.PI * 2); ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+  }
+  ctx.fillStyle = 'rgba(255,255,255,.93)';
+  for (const c of clouds) {
+    const cxw = wrapAround(c.x + S.t * 0.25, S.cx * 0.15, 110);
+    puff(X(cxw, 0.15), Y(c.y), c.w * sc);
+  }
+}
+// 上空の雲（高さ18〜80m）。この中を突き抜けて飛ぶ
+function drawHighClouds() {
+  const xl = S.cx - W / 2 / sc - 10, xr = S.cx + W / 2 / sc + 10, yb = altAt(H) - 8, yt = altAt(0) + 8;
+  for (let j = Math.max(0, Math.floor((yb - 18) / 11)); j <= Math.min(5, Math.floor((yt - 18) / 11)); j++) {
+    for (let i = Math.floor(xl / 16); i <= Math.ceil(xr / 16); i++) {
+      if (hash(i * 7.13 + j * 31.7) > 0.45) continue;
+      const x = i * 16 + hash(i + j * 3.3) * 10, y = 18 + j * 11 + hash(i * 1.7 + j) * 7, w = 3 + hash(i + j * 5.1) * 6;
+      ctx.fillStyle = `rgba(255,255,255,${0.9 - j * 0.1})`;
+      puff(X(x), Y(y), w * sc);
+    }
+  }
+}
+// 鳥の群れ（高さ9〜35m）。左へ飛んでいき、羽ばたく
+function drawBirds() {
+  const drift = S.t * 2, xl = S.cx - W / 2 / sc - 6 + drift, xr = S.cx + W / 2 / sc + 6 + drift;
+  const yb = altAt(H) - 2, yt = altAt(0) + 2;
+  ctx.strokeStyle = '#1d2a44'; ctx.lineWidth = Math.max(1.5, 0.07 * sc); ctx.lineCap = 'round';
+  for (let i = Math.floor(xl / 20); i <= Math.ceil(xr / 20); i++) {
+    if (hash(i * 3.7) > 0.6) continue;
+    const bx = i * 20 + hash(i) * 12 - drift, by = 9 + hash(i * 2.3) * 26;
+    if (by < yb || by > yt) continue;
+    const n = 3 + Math.floor(hash(i * 5.9) * 3);
+    for (let k = 0; k < n; k++) {
+      const x = X(bx + k * 1.1), y = Y(by - Math.abs(k - (n - 1) / 2) * 0.55), f = Math.sin(S.t * 10 + k * 1.3 + i) * 0.28 * sc, w = 0.42 * sc;
+      ctx.beginPath(); ctx.moveTo(x - w, y - f); ctx.quadraticCurveTo(x - w * 0.4, y - 0.18 * sc, x, y);
+      ctx.quadraticCurveTo(x + w * 0.4, y - 0.18 * sc, x + w, y - f); ctx.stroke();
+    }
+  }
+}
+// 宇宙：人工衛星とUFO
+function drawSpace() {
+  const sy = Y(112);
+  if (sy > -80 && sy < H + 80) {
+    const sx = X(S.cx - 14 + (S.t * 1.2) % 28);
+    ctx.save(); ctx.translate(sx, sy); ctx.rotate(0.3);
+    ctx.fillStyle = '#c9ced8'; ctx.fillRect(-0.3 * sc, -0.3 * sc, 0.6 * sc, 0.6 * sc);
+    ctx.fillStyle = '#2c5fb8'; ctx.fillRect(-1.5 * sc, -0.2 * sc, 1.1 * sc, 0.4 * sc); ctx.fillRect(0.4 * sc, -0.2 * sc, 1.1 * sc, 0.4 * sc);
+    ctx.fillStyle = S.t % 1 < 0.5 ? '#ff5252' : '#ffffff'; circle(0, -0.45 * sc, 0.08 * sc);
+    ctx.restore();
+  }
+  const ux = S.cx + 7 + 5 * Math.sin(S.t * 0.6), uy = 95 + 1.5 * Math.sin(S.t * 1.4);
+  const x = X(ux), y = Y(uy);
+  if (y < -150 || y > H + 150) return;
+  const bg = ctx.createLinearGradient(0, y, 0, y + 6 * sc);
+  bg.addColorStop(0, `rgba(150,255,190,${0.35 + 0.15 * Math.sin(S.t * 8)})`); bg.addColorStop(1, 'rgba(150,255,190,0)');
+  ctx.fillStyle = bg;
+  ctx.beginPath(); ctx.moveTo(x - 0.6 * sc, y); ctx.lineTo(x + 0.6 * sc, y); ctx.lineTo(x + 2 * sc, y + 6 * sc); ctx.lineTo(x - 2 * sc, y + 6 * sc); ctx.fill();
+  ctx.fillStyle = 'rgba(140,220,255,.85)'; ctx.beginPath(); ctx.ellipse(x, y - 0.35 * sc, 0.7 * sc, 0.55 * sc, 0, Math.PI, 0); ctx.fill();
+  ctx.fillStyle = '#9aa3b5'; ctx.beginPath(); ctx.ellipse(x, y, 1.7 * sc, 0.45 * sc, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#6c7589'; ctx.beginPath(); ctx.ellipse(x, y + 0.12 * sc, 1.7 * sc, 0.3 * sc, 0, 0, Math.PI); ctx.fill();
+  for (let k = 0; k < 5; k++) {
+    ctx.fillStyle = (Math.floor(S.t * 6) + k) % 3 === 0 ? '#ffe45c' : ['#ff6b6b', '#6bffb0', '#6bc8ff'][k % 3];
+    circle(x + (k - 2) * 0.65 * sc, y + 0.05 * sc, 0.1 * sc);
+  }
+}
+// 飛んでいる間のスピード線
+function drawSpeedLines() {
+  if (S.phase !== 'fly') return;
+  const v = Math.hypot(S.vx, S.vy) / VS;
+  if (v < 5) return;
+  const n = Math.min(30, Math.floor((v - 5) * 2.5)), dx = S.vx / (v * VS), dy = -S.vy / (v * VS), len = Math.min(160, v * 7);
+  const seed = Math.floor(S.t * 24);
+  ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+  ctx.beginPath();
+  for (let k = 0; k < n; k++) {
+    const x = hash(seed * 1.3 + k * 7.7) * W, y = hash(seed * 2.1 + k * 3.9) * H;
+    ctx.moveTo(x, y); ctx.lineTo(x - dx * len, y - dy * len);
+  }
+  ctx.stroke();
+}
+// 遠くの山なみ（地平線のすぐ上）
+function drawMountains(hY) {
+  if (hY > H + 10) return;
+  const p = 0.12, xl = S.cx * p - W / 2 / sc - 12, xr = S.cx * p + W / 2 / sc + 12;
+  for (let i = Math.floor(xl / 13); i <= Math.ceil(xr / 13); i++) {
+    const x = X(i * 13 + hash(i * 1.9) * 6, p), w = (7 + hash(i * 4.1) * 6) * sc, h = (3 + hash(i * 2.7) * 4) * sc;
+    ctx.fillStyle = '#a7c3dc';
+    ctx.beginPath(); ctx.moveTo(x - w / 2, hY + 1); ctx.lineTo(x, hY - h); ctx.lineTo(x + w / 2, hY + 1); ctx.fill();
+    ctx.fillStyle = '#f4f8ff';
+    ctx.beginPath(); ctx.moveTo(x - w * 0.12, hY - h * 0.76); ctx.lineTo(x, hY - h); ctx.lineTo(x + w * 0.12, hY - h * 0.76);
+    ctx.lineTo(x + w * 0.04, hY - h * 0.7); ctx.lineTo(x - w * 0.03, hY - h * 0.78); ctx.fill();
+  }
+}
+function drawIsles(hY) {
+  // 遠くの島
+  ctx.fillStyle = '#8fc6b8';
+  for (const s of farIsles) {
+    const x = X(wrapAround(s.x, S.cx * 0.3, 110), 0.3), w = s.w * sc * 0.8, h = s.h * sc * 0.8;
+    if (x + w < 0 || x - w > W) continue;
+    ctx.beginPath(); ctx.moveTo(x - w / 2, hY + 1);
+    ctx.bezierCurveTo(x - w / 2, hY - h * 1.2, x + w / 2, hY - h * 1.2, x + w / 2, hY + 1); ctx.fill();
+  }
+  // 水
+  const wg = ctx.createLinearGradient(0, hY, 0, H);
+  wg.addColorStop(0, '#7fd6f2'); wg.addColorStop(0.35, '#2fa6dc'); wg.addColorStop(1, '#0c5e96');
+  ctx.fillStyle = wg; ctx.fillRect(0, hY, W, H - hY);
+  // 中景の岩の島
+  const mY = Y(0.7);
+  for (const s of midIsles) {
+    const x = X(wrapAround(s.x, S.cx * 0.6, 70), 0.6), w = s.w * sc * 0.75, h = s.h * sc * 0.75;
+    if (x + w < -20 || x - w > W + 20) continue;
+    ctx.fillStyle = '#9fae98'; rr(x - w / 2, mY - h, w, h + 2, w * 0.2); ctx.fill();
+    ctx.fillStyle = '#86987f'; ctx.fillRect(x - w / 2, mY - h * 0.45, w, h * 0.45);
+    ctx.fillStyle = '#5ea96b';
+    circle(x - w * 0.3, mY - h, w * 0.3); circle(x + w * 0.05, mY - h - w * 0.12, w * 0.36); circle(x + w * 0.35, mY - h, w * 0.28);
+    if (s.fall) {
+      ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.fillRect(x - w * 0.12, mY - h * 0.85, w * 0.22, h * 0.85);
+      ctx.fillStyle = 'rgba(255,255,255,.5)'; circle(x, mY, w * 0.25);
+    }
+  }
+  // 波のきらめき
+  ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+  for (let r = 0; r < 7; r++) {
+    const yy = hY + (r + 0.6) * (H - hY) / 7.5, len = 14 + r * 5, dir = r % 2 ? 1 : -1;
+    ctx.beginPath();
+    for (let k = 0; k < 7; k++) {
+      const xx = (((k * 173 + r * 61 + S.t * 18 * dir) % (W + 120)) + W + 120) % (W + 120) - 60;
+      ctx.moveTo(xx, yy); ctx.lineTo(xx + len, yy);
+    }
+    ctx.stroke();
+  }
+}
+function drawSwamp() {
+  const x1 = X(PLAT_L + 0.3);
+  if (x1 < 0) return;
+  const top = Y(SWAMP_TOP);
+  const g = ctx.createLinearGradient(0, top, 0, H);
+  g.addColorStop(0, '#6b7a33'); g.addColorStop(1, '#2d3814');
+  ctx.fillStyle = g; ctx.fillRect(-10, top, x1 + 10, H - top + 10);
+  ctx.fillStyle = 'rgba(190,205,120,.35)'; ctx.fillRect(-10, top, x1 + 10, 0.08 * sc);
+  // 見えている範囲だけ、位置から決まる形でハスの葉・水草・泡を並べる
+  const from = Math.floor((S.cx - W / 2 / sc - 2) / 1.3), to = Math.min(Math.floor((PLAT_L - 0.5) / 1.3), Math.ceil((S.cx + W / 2 / sc + 2) / 1.3));
+  for (let i = from; i <= to; i++) {
+    const x = i * 1.3 + hash(i) * 0.8, k = hash(i + 0.5);
+    if (k < 0.45) {
+      ctx.fillStyle = k < 0.2 ? '#3f8f3a' : '#4fa546';
+      const r = (0.3 + hash(i + 0.25) * 0.25) * sc;
+      ctx.beginPath(); ctx.ellipse(X(x), top + 0.08 * sc, r, r * 0.35, 0, 0.3, Math.PI * 2); ctx.lineTo(X(x), top + 0.08 * sc); ctx.fill();
+    } else if (k < 0.75) {
+      ctx.strokeStyle = '#5c7a2a'; ctx.lineWidth = 0.07 * sc; ctx.lineCap = 'round';
+      ctx.beginPath();
+      for (let j = 0; j < 3; j++) { const rx = X(x + j * 0.18); ctx.moveTo(rx, top); ctx.quadraticCurveTo(rx + 0.1 * sc, top - 0.6 * sc, rx + (j - 1) * 0.15 * sc, top - (1 + hash(i + j) * 0.6) * sc); }
+      ctx.stroke();
+    } else {
+      const ph = (S.t * 0.7 + k * 3) % 1;
+      ctx.strokeStyle = 'rgba(210,220,150,.6)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(X(x), top + 0.3 * sc - ph * 0.3 * sc, 0.12 * sc * (0.5 + ph), 0, Math.PI * 2); ctx.stroke();
+    }
+  }
+}
+function drawTree() {
+  const tx = -9.6;
+  ctx.fillStyle = '#7b5231'; ctx.fillRect(X(tx - 0.65), Y(22), 1.3 * sc, Y(SWAMP_TOP) - Y(22));
+  ctx.fillStyle = '#654227'; ctx.fillRect(X(tx - 0.2), Y(22), 0.22 * sc, Y(SWAMP_TOP) - Y(22));
+  ctx.fillStyle = '#7b5231';
+  ctx.beginPath(); ctx.moveTo(X(tx), Y(15.9)); ctx.quadraticCurveTo(X(-4), Y(15.2), X(1.3), Y(14.35));
+  ctx.lineTo(X(1.3), Y(13.95)); ctx.quadraticCurveTo(X(-4), Y(14.4), X(tx), Y(14.5)); ctx.fill();
+  const leaves = [[tx, 19, 2.6, '#2f8a3f'], [tx - 2, 17.5, 1.8, '#277a36'], [tx + 2.2, 17.8, 2, '#3a9d49'], [-5, 16.3, 1.5, '#2f8a3f'], [-2.2, 15.8, 1.2, '#3a9d49'], [0.4, 15.3, 1.0, '#48b457']];
+  for (const [x, y, r, c] of leaves) { ctx.fillStyle = c; circle(X(x), Y(y), r * sc); }
+}
+function drawPlatform() {
+  const posts = [-6.8, -4.4, -1.95];
+  for (const p of posts) {
+    ctx.fillStyle = '#7a5230'; ctx.fillRect(X(p - 0.18), Y(PLAT_TOP), 0.36 * sc, Y(-0.8) - Y(PLAT_TOP));
+    ctx.fillStyle = '#946640'; ctx.fillRect(X(p - 0.18), Y(PLAT_TOP), 0.1 * sc, Y(-0.8) - Y(PLAT_TOP));
+    ctx.fillStyle = '#d8b777';
+    ctx.fillRect(X(p - 0.22), Y(3.9), 0.44 * sc, 0.18 * sc); ctx.fillRect(X(p - 0.22), Y(0.9), 0.44 * sc, 0.18 * sc);
+  }
+  ctx.strokeStyle = '#6b4526'; ctx.lineWidth = 0.14 * sc; ctx.lineCap = 'round';
+  ctx.beginPath();
+  for (let i = 0; i < posts.length - 1; i++) {
+    ctx.moveTo(X(posts[i]), Y(0.9)); ctx.lineTo(X(posts[i + 1]), Y(3.9));
+    ctx.moveTo(X(posts[i]), Y(3.9)); ctx.lineTo(X(posts[i + 1]), Y(0.9));
+  }
+  ctx.stroke();
+  // 手すり
+  ctx.fillStyle = '#7a5230'; ctx.fillRect(X(-6.95), Y(6.05), 0.3 * sc, Y(PLAT_TOP) - Y(6.05));
+  ctx.fillRect(X(-6.8), Y(5.75), 2.5 * sc, 0.16 * sc);
+  // 床板
+  const l = X(PLAT_L - 0.2), w = (PLAT_R - PLAT_L + 0.4) * sc;
+  ctx.fillStyle = '#a8733f'; ctx.fillRect(l, Y(PLAT_TOP), w, 0.45 * sc);
+  ctx.fillStyle = '#c99a5f'; ctx.fillRect(l, Y(PLAT_TOP), w, 0.1 * sc);
+  ctx.strokeStyle = '#7d522b'; ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  for (let x = PLAT_L + 0.4; x < PLAT_R; x += 0.6) { ctx.moveTo(X(x), Y(PLAT_TOP) + 0.1 * sc); ctx.lineTo(X(x), Y(PLAT_TOP) + 0.45 * sc); }
+  ctx.stroke();
+}
+function drawCliff() {
+  const x0 = X(CLIFF_X), top = Y(CLIFF_TOP);
+  if (x0 > W + 40) return;
+  ctx.fillStyle = '#b07f52';
+  ctx.beginPath(); ctx.moveTo(x0 + 0.35 * sc, H + 5); ctx.lineTo(x0 + 0.1 * sc, Y(1.4)); ctx.lineTo(x0 - 0.12 * sc, Y(2.5)); ctx.lineTo(x0, top);
+  ctx.lineTo(W + 20, top); ctx.lineTo(W + 20, H + 5); ctx.fill();
+  ctx.strokeStyle = 'rgba(90,55,30,.35)'; ctx.lineWidth = 0.1 * sc;
+  ctx.beginPath();
+  for (const y of [2.6, 1.7, 0.8]) { ctx.moveTo(x0 + 0.1 * sc, Y(y)); ctx.lineTo(W + 20, Y(y) + 0.1 * sc); }
+  ctx.stroke();
+  const sh = ctx.createLinearGradient(x0, 0, x0 + 1.4 * sc, 0);
+  sh.addColorStop(0, 'rgba(60,30,10,.35)'); sh.addColorStop(1, 'rgba(60,30,10,0)');
+  ctx.fillStyle = sh; ctx.fillRect(x0 - 0.2 * sc, top, 1.6 * sc, H - top);
+  // つる
+  ctx.strokeStyle = '#2f8a3f'; ctx.lineWidth = 0.08 * sc;
+  for (const v of vines) {
+    const x = X(v.x); if (x < -10 || x > W + 10) continue;
+    ctx.beginPath(); ctx.moveTo(x, top); ctx.quadraticCurveTo(x + 0.2 * sc, top + v.len * sc * 0.5, x, top + v.len * sc); ctx.stroke();
+  }
+  // 草
+  ctx.fillStyle = '#3fa843'; ctx.fillRect(x0 - 0.3 * sc, top - 0.05 * sc, W + 30 - x0, 0.45 * sc);
+  ctx.fillStyle = '#56c052';
+  for (let x = Math.max(CLIFF_X - 0.2, Math.floor((S.cx - W / 2 / sc - 1) / 0.6) * 0.6); x < S.cx + W / 2 / sc + 1; x += 0.6) {
+    const s = X(x); if (s > W + 20) break; if (s < -20) continue;
+    circle(s, top, 0.32 * sc);
+  }
+  ctx.fillStyle = '#e4c98f'; ctx.fillRect(X(CLIFF_X + 1.2), top - 0.05 * sc, W + 30 - X(CLIFF_X + 1.2), 0.1 * sc);
+  // 旗
+  const fx = X(FLAG_X), fb = top, ft = Y(CLIFF_TOP + 2.3);
+  ctx.strokeStyle = '#eef3f8'; ctx.lineWidth = 0.09 * sc; ctx.beginPath(); ctx.moveTo(fx, fb); ctx.lineTo(fx, ft); ctx.stroke();
+  const cell = 0.3 * sc;
+  for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) {
+    const wv = Math.sin(S.t * 5 - i * 0.9) * 0.07 * sc * i;
+    ctx.fillStyle = (i + j) % 2 ? '#ffffff' : '#e5364b';
+    ctx.fillRect(fx + i * cell, ft + j * cell + wv, cell + 0.5, cell + 0.5);
+  }
+}
+function labelTag(xw, yw, text, col) {
+  const x = X(xw), y = Y(yw); if (x < -80 || x > W + 80) return;
+  const fs = Math.max(10, Math.round(sc * 0.42));
+  ctx.font = `800 ${fs}px "M PLUS Rounded 1c", sans-serif`;
+  const w = ctx.measureText(text).width + fs * 0.9;
+  ctx.fillStyle = 'rgba(10,36,82,.8)'; rr(x - w / 2, y - fs * 0.8, w, fs * 1.5, fs * 0.5); ctx.fill();
+  ctx.fillStyle = col; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, x, y - fs * 0.05);
+}
+function drawTicks() {
+  for (let x = CLIFF_X; x <= Math.max(24, S.cx + W / 2 / sc + 4); x += 2) if (x <= 24 || x % 8 === 0) labelTag(x + 0.02, CLIFF_TOP - 0.85, (x * M) + 'm', '#ffffff');
+  labelTag(-4, PLAT_TOP - 0.9, '−10m', '#ff9aa7');
+  const xl = S.cx - W / 2 / sc - 4, xr = S.cx + W / 2 / sc + 4;
+  for (let x = Math.min(-8, Math.floor(xr / 4) * 4); x >= xl; x -= 4)
+    labelTag(x, SWAMP_TOP + 0.9, '−' + (-x * M) + 'm', '#ff9aa7');
+}
+function drawMarks() {
+  if (best > 0 && best / M >= CLIFF_X) {
+    const x = X(best / M), y = Y(CLIFF_TOP);
+    ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - 1.3 * sc); ctx.stroke();
+    ctx.fillStyle = '#ffd23f'; ctx.strokeStyle = '#8a6200'; ctx.lineWidth = 1.5;
+    const s = 0.35 * sc, cy = y - 1.3 * sc;
+    ctx.beginPath(); ctx.moveTo(x - s, cy); ctx.lineTo(x - s, cy - s); ctx.lineTo(x - s / 2, cy - s * 0.5); ctx.lineTo(x, cy - s * 1.2); ctx.lineTo(x + s / 2, cy - s * 0.5); ctx.lineTo(x + s, cy - s); ctx.lineTo(x + s, cy); ctx.closePath(); ctx.fill(); ctx.stroke();
+  }
+  for (const m of S.marks) {
+    const x = X(m.x), y = Y(groundTop(m.x)); if (x < -20 || x > W + 20) continue;
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - 0.9 * sc); ctx.stroke();
+    ctx.fillStyle = PCOL[m.i].shirt; ctx.beginPath(); ctx.moveTo(x, y - 0.9 * sc); ctx.lineTo(x + 0.5 * sc, y - 0.72 * sc); ctx.lineTo(x, y - 0.54 * sc); ctx.fill();
+  }
+}
+function drawToucan() {
+  const bob = S.toucan > 0 ? Math.abs(Math.sin(S.t * 16)) * 0.14 : 0;
+  const x = X(-6.8), y = Y(6.05 + bob);
+  if (x < -60 || x > W + 60) return;
+  ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc);
+  ctx.fillStyle = '#161a22';
+  ctx.beginPath(); ctx.ellipse(-0.02, -0.38, 0.24, 0.38, 0.2, 0, Math.PI * 2); ctx.fill();
+  ctx.fillRect(-0.16, -0.1, 0.1, 0.3);
+  ctx.fillStyle = '#fff2b8'; ctx.beginPath(); ctx.ellipse(0.08, -0.52, 0.12, 0.13, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#ff8a1f';
+  ctx.beginPath(); ctx.moveTo(0.12, -0.66); ctx.quadraticCurveTo(0.68, -0.72, 0.74, -0.52);
+  ctx.quadraticCurveTo(0.45, -0.47, 0.12, -0.5); ctx.fill();
+  ctx.fillStyle = '#e2412e'; circle(0.72, -0.54, 0.035);
+  ctx.fillStyle = '#48b8ff'; circle(0.03, -0.64, 0.065);
+  ctx.fillStyle = '#111'; circle(0.035, -0.64, 0.03);
+  ctx.restore();
+  if (S.toucan > 0) {
+    const fs = Math.max(13, sc * 0.5);
+    ctx.font = `900 ${fs}px "M PLUS Rounded 1c", sans-serif`;
+    const bx = x + 0.9 * sc, by = y - 1.25 * sc, w = ctx.measureText('ケケケ！').width + fs;
+    ctx.fillStyle = '#ffffff'; rr(bx - w / 2, by - fs * 0.85, w, fs * 1.6, fs * 0.6); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(bx - w * 0.3, by + fs * 0.7); ctx.lineTo(bx - w * 0.45, by + fs * 1.2); ctx.lineTo(bx - w * 0.1, by + fs * 0.7); ctx.fill();
+    ctx.fillStyle = '#0c2a5b'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('ケケケ！', bx, by);
+  }
+}
+function drawRope() {
+  if (!rope) return 0;
+  const pts = rope.map(p => [X(p.x), Y(p.y)]);
+  const path = () => {
+    ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length - 1; i++) {
+      const mx = (pts[i][0] + pts[i + 1][0]) / 2, my = (pts[i][1] + pts[i + 1][1]) / 2;
+      ctx.quadraticCurveTo(pts[i][0], pts[i][1], mx, my);
+    }
+    ctx.lineTo(pts[RN][0], pts[RN][1]);
+  };
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.strokeStyle = '#6e4420'; ctx.lineWidth = 0.14 * sc; path(); ctx.stroke();
+  ctx.strokeStyle = '#b98a4e'; ctx.lineWidth = 0.06 * sc; ctx.setLineDash([0.18 * sc, 0.16 * sc]); path(); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#d8b777'; ctx.fillRect(pts[0][0] - 0.16 * sc, pts[0][1] - 0.1 * sc, 0.32 * sc, 0.35 * sc);
+  const [ax, ay] = pts[RN - 2], [bx, by] = pts[RN];
+  return Math.atan2(-(bx - ax), by - ay);   // 先端の向き＝キャラの傾き
+}
+function drawKid(hx, hy, ang, c, kick, face) {
+  ctx.save(); ctx.translate(X(hx), Y(hy)); ctx.rotate(ang); ctx.scale(sc, sc);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const skin = '#f5c9a3', k = clamp(kick, -0.35, 0.35);
+  ctx.strokeStyle = skin; ctx.lineWidth = 0.13;
+  ctx.beginPath(); ctx.moveTo(-0.1, 1.28); ctx.lineTo(-0.12 + k, 1.5); ctx.moveTo(0.1, 1.28); ctx.lineTo(0.12 + k * 0.7, 1.5); ctx.stroke();
+  ctx.fillStyle = '#2b2f3a'; circle(-0.12 + k, 1.54, 0.1); circle(0.12 + k * 0.7, 1.54, 0.1);
+  ctx.fillStyle = '#26324a'; rr(-0.24, 1.08, 0.48, 0.24, 0.08); ctx.fill();
+  ctx.strokeStyle = skin; ctx.lineWidth = 0.12;
+  ctx.beginPath(); ctx.moveTo(-0.2, 0.86); ctx.lineTo(-0.07, 0.04); ctx.moveTo(0.2, 0.86); ctx.lineTo(0.07, 0.04); ctx.stroke();
+  ctx.fillStyle = c.shirt; rr(-0.26, 0.76, 0.52, 0.42, 0.13); ctx.fill();
+  ctx.fillStyle = c.shade; ctx.fillRect(-0.26, 1.02, 0.52, 0.08);
+  ctx.strokeStyle = c.shirt; ctx.lineWidth = 0.17;
+  ctx.beginPath(); ctx.moveTo(-0.2, 0.86); ctx.lineTo(-0.17, 0.7); ctx.moveTo(0.2, 0.86); ctx.lineTo(0.17, 0.7); ctx.stroke();
+  ctx.fillStyle = skin; circle(0, 0.52, 0.27);
+  ctx.fillStyle = c.hair;
+  ctx.beginPath(); ctx.arc(0, 0.5, 0.285, Math.PI, Math.PI * 2); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(-0.1, 0.5, 0.15, 0.06, -0.35, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#1d1d1d'; circle(-0.09, 0.58, 0.035); circle(0.09, 0.58, 0.035);
+  ctx.fillStyle = 'rgba(255,120,120,.35)'; circle(-0.16, 0.66, 0.045); circle(0.16, 0.66, 0.045);
+  ctx.strokeStyle = '#7a2e1e'; ctx.lineWidth = 0.028;
+  ctx.beginPath();
+  if (face === 'oops') ctx.arc(0, 0.69, 0.045, 0, Math.PI * 2);
+  else ctx.arc(0, 0.64, 0.07, 0.15 * Math.PI, 0.85 * Math.PI);
+  ctx.stroke();
+  ctx.fillStyle = skin; circle(-0.07, 0.03, 0.075); circle(0.07, 0.03, 0.075);
+  ctx.restore();
+}
+function drawPredict() {
+  if (!S.beginner || S.phase !== 'swing' || amp() < 0.15) return;
+  const c = Math.cos(S.th), s = Math.sin(S.th);
+  let x = AX + L * s, y = AY - L * c, vx = L * S.om * c, vy = L * S.om * s;
+  const back = vx < -0.05;
+  ctx.save();
+  ctx.strokeStyle = back ? 'rgba(255,90,110,.95)' : 'rgba(255,255,255,.95)';
+  ctx.shadowColor = back ? 'rgba(229,54,75,.8)' : 'rgba(40,150,255,.9)'; ctx.shadowBlur = 8;
+  ctx.lineWidth = 0.12 * sc; ctx.setLineDash([0.35 * sc, 0.3 * sc]); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(X(x), Y(y - 0.8));
+  for (let i = 0; i < 160; i++) {
+    vy -= G * 0.02; x += vx * 0.02; y += vy * 0.02;
+    ctx.lineTo(X(x), Y(y - 0.8));
+    const r = region(x);
+    if (y - FEET <= (r === 'water' ? -0.1 : groundTop(x))) break;
+  }
+  ctx.stroke(); ctx.restore();
+}
+// 指の位置の目印と、枝からの向き
+function drawAim() {
+  if (S.phase !== 'swing' || !S.fs) return;
+  const aim = fingerAim(); if (!aim) return;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 2; ctx.setLineDash([6, 8]);
+  ctx.beginPath(); ctx.moveTo(X(AX), Y(AY)); ctx.lineTo(S.fs.x, S.fs.y); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3; ctx.globalAlpha = 0.9;
+  ctx.beginPath(); ctx.arc(S.fs.x, S.fs.y, 22, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.fill();
+  ctx.restore();
+}
+function drawFx() {
+  for (const p of S.parts) {
+    ctx.globalAlpha = Math.max(0, 1 - p.t / p.life); ctx.fillStyle = p.col;
+    circle(X(p.x), Y(p.y), p.r * sc);
+  }
+  ctx.globalAlpha = 1;
+  for (const p of S.pops) {
+    const a = 1 - Math.max(0, (p.t - 0.6) / 0.5);
+    const fs = Math.max(18, sc * 0.8 * p.size) * (p.t < 0.12 ? 0.7 + p.t * 2.5 : 1);
+    ctx.globalAlpha = a;
+    ctx.font = `900 ${fs}px "M PLUS Rounded 1c", sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+    ctx.lineWidth = fs * 0.22; ctx.strokeStyle = '#0c2a5b'; ctx.strokeText(p.text, X(p.x), Y(p.y));
+    ctx.fillStyle = p.col; ctx.fillText(p.text, X(p.x), Y(p.y));
+  }
+  ctx.globalAlpha = 1;
+}
+function leaf(x, y, len, ang, col) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.fillStyle = col;
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(len * 0.5, -len * 0.3, len, 0); ctx.quadraticCurveTo(len * 0.5, len * 0.3, 0, 0); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,.16)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(len * 0.9, 0); ctx.stroke();
+  ctx.restore();
+}
+function render() {
+  const hY = Y(1.4);
+  drawSky(hY);
+  drawSpace();
+  drawHighClouds();
+  drawBirds();
+  drawMountains(hY);
+  drawIsles(hY);
+  drawSwamp();
+  drawTree();
+  drawPlatform();
+  drawCliff();
+  drawTicks();
+  drawMarks();
+  drawToucan();
+  drawPredict();
+  drawAim();
+  const col = PCOL[S.phase === 'title' ? 0 : S.cur];
+  if (S.phase === 'fly' || S.phase === 'landed') {
+    drawRope();
+    if (!S.hideKid) drawKid(S.px, S.py, S.flyAng, col, S.phase === 'fly' ? 0.25 : 0, S.face);
+  } else {
+    const tip = drawRope();
+    const [hx, hy] = handPos(S.th);
+    drawKid(hx, hy, tip - (S.kickAnim || 0) * 0.25, col, S.om * 0.06 + (S.kickAnim || 0), 'smile');
+  }
+  drawSpeedLines();
+  drawFx();
+  const lf = Math.min(W, H) * 0.3;
+  leaf(-lf * 0.15, H + lf * 0.1, lf, -1.0, 'rgba(24,104,50,.95)');
+  leaf(-lf * 0.2, H - lf * 0.35, lf * 0.85, -0.45, 'rgba(34,128,60,.92)');
+  leaf(lf * 0.1, H + lf * 0.15, lf * 0.8, -1.35, 'rgba(18,86,40,.95)');
+}
+
+/* ---------- HUD ---------- */
+function buildChips() {
+  const el = $('chips'); el.innerHTML = '';
+  for (let i = 0; i < S.n; i++) {
+    const d = document.createElement('div'); d.className = 'chip';
+    d.innerHTML = `<span class="tag" style="background:${PCOL[i].shirt}">${PCOL[i].tag}</span><span class="val">0.0m</span>`;
+    el.appendChild(d);
+  }
+  updateChips();
+}
+function updateChips() {
+  [...$('chips').children].forEach((d, i) => {
+    d.classList.toggle('on', i === S.cur && S.phase !== 'final');
+    const v = d.querySelector('.val');
+    v.textContent = fmt(S.scores[i] || 0);
+    v.classList.toggle('neg', S.scores[i] < 0);
+  });
+}
+function updateBest() { $('bestVal').textContent = best > 0 ? fmt(best) : '--'; }
+let lastTimeTxt = '', lastCover = -1, lastHint = '';
+function hud() {
+  if (S.phase === 'title' || S.phase === 'final') return;
+  const ap = $('altPill');
+  ap.hidden = S.phase !== 'fly';
+  if (S.phase === 'fly') $('altVal').textContent = Math.max(0, Math.round((S.py - FEET) * M));
+  const tt = String(Math.ceil(S.time));
+  if (tt !== lastTimeTxt) { $('timeVal').textContent = tt; lastTimeTxt = tt; }
+  $('timer').classList.toggle('low', S.phase === 'swing' && S.time <= 5);
+  const A = (S.phase === 'swing' || S.phase === 'ready') ? amp() : 0;
+  const cover = Math.round((1 - clamp(A / Math.PI, 0, 1)) * 1000) / 10;
+  if (cover !== lastCover) { $('gCover').style.height = cover + '%'; lastCover = cover; }
+  // ヒント
+  const hint = $('hint');
+  let txt = '', cls = '';
+  if (S.phase === 'swing') {
+    if (S.beginner) {
+      if (A < REACH_A) txt = '指を置いたまま大きく動かして、ツタを振り回そう';
+      else if (forward()) { txt = '今！指をはなしてジャンプ'; cls = 'go'; }
+      else { txt = 'うしろ向き！今指をはなすとマイナス…'; cls = 'warn'; }
+    } else if (!S.hintSeen && S.firstTurn) txt = '画面に指を置いて動かすと、ツタがついてくるよ';
+  }
+  if (txt + cls !== lastHint) {
+    lastHint = txt + cls;
+    hint.hidden = !txt; $('hintText').textContent = txt;
+    hint.classList.toggle('go', cls === 'go'); hint.classList.toggle('warn', cls === 'warn');
+  }
+}
+
+/* ---------- 進行 ---------- */
+function resetSwing() {
+  Object.assign(S, { th: -0.35, om: 0, credited: 0, lastSign: 0, combo: 0, miss: 0, twist: 0, time: T_LIMIT, kickAnim: 0, swipes: 0, phiV: 0, prevPhi: null, fs: null, loops: 0, prevW: null, bend: 0, bendV: 0, fingerV: 0, fingerOff: 0,
+    hideKid: false, result: null, resultShown: false, slide: null, face: 'smile', lastTick: 99, pops: [], lastSwipe: -1 });
+}
+function startGame() {
+  audio();
+  S.beginner = $('optBeginner').checked;
+  try { localStorage.setItem('tsuta-beginner', S.beginner ? '1' : '0'); } catch (e) {}
+  S.scores = Array(S.n).fill(0); S.recs = [...Array(S.n)].map(() => []);
+  S.marks = []; S.round = 1; S.cur = 0; S.firstTurn = true; S.hintSeen = false;
+  $('titleScreen').hidden = true; $('finalScreen').hidden = true;
+  app.classList.add('in-game');
+  buildChips(); startTurn();
+}
+function startTurn() {
+  resetSwing(); ropeInit(S.th); S.phase = 'ready'; S.cx = AX;
+  $('roundVal').textContent = S.round;
+  $('turnRound').textContent = `ラウンド ${S.round} / ${ROUNDS}`;
+  const w = $('turnWho'); w.textContent = PCOL[S.cur].tag; w.style.background = PCOL[S.cur].shirt;
+  $('turnScreen').hidden = false; $('resultCard').hidden = true;
+  updateChips(); hud();
+  setTimeout(() => $('goBtn').focus({ preventScroll: true }), 30);
+}
+function go() {
+  if (S.phase !== 'ready') return;
+  audio();
+  $('turnScreen').hidden = true; S.phase = 'swing';
+}
+function showResult() {
+  S.resultShown = true;
+  const r = S.result, c = PCOL[S.cur];
+  const who = $('rcWho'); who.textContent = c.tag; who.style.background = c.shirt;
+  $('rcTitle').textContent = r.title;
+  const rec = $('rcRec');
+  rec.textContent = r.kind === 'none' ? '記録なし' : fmt(r.rec);
+  rec.className = 'rc-rec' + (r.kind === 'none' ? ' none' : r.rec < 0 ? ' neg' : '');
+  $('rcSub').textContent = r.sub + (r.nb ? '　ベスト更新！' : '') + ((S.maxAlt || 0) * M >= 40 ? `　最高 ${Math.round(S.maxAlt * M)}m` : '');
+  const last = S.cur === S.n - 1 && S.round === ROUNDS;
+  $('nextBtn').textContent = last ? 'けっかを見る' : 'つぎへ';
+  $('resultCard').hidden = false;
+  setTimeout(() => $('nextBtn').focus({ preventScroll: true }), 30);
+}
+function next() {
+  if (S.phase !== 'landed' || !S.resultShown) return;
+  $('resultCard').hidden = true;
+  S.firstTurn = false;
+  S.cur++;
+  if (S.cur >= S.n) { S.cur = 0; S.round++; }
+  if (S.round > ROUNDS) showFinal(); else startTurn();
+}
+function showFinal() {
+  S.phase = 'final'; updateChips();
+  const order = [...Array(S.n).keys()].sort((a, b) => S.scores[b] - S.scores[a]);
+  $('rankList').innerHTML = order.map((i, k) => `<li><span class="rk">${k + 1}</span><span class="tag" style="background:${PCOL[i].shirt}">${PCOL[i].tag}</span><span class="recs">${S.recs[i].map(v => v == null ? '記録なし' : fmt(v)).join(' / ')}</span><b class="${S.scores[i] < 0 ? 'neg' : ''}">${fmt(S.scores[i])}</b></li>`).join('');
+  let far = null, back = null;
+  S.recs.forEach((arr, i) => arr.forEach(v => {
+    if (v == null) return;
+    if (v > 0 && (!far || v > far.v)) far = { v, i };
+    if (v < 0 && (!back || v < back.v)) back = { v, i };
+  }));
+  const aw = [];
+  if (far) aw.push(`<div class="award"><span>いちばん遠くへ跳んだ人：${PCOL[far.i].tag}</span><span>${fmt(far.v)}</span></div>`);
+  if (back) aw.push(`<div class="award"><span>いちばん後ろへ飛んだ人：${PCOL[back.i].tag}</span><span class="neg">${fmt(back.v)}</span></div>`);
+  if (!aw.length) aw.push(`<div class="award"><span>全員ポチャン…。次は「とどく」を超えてからはなそう</span><span></span></div>`);
+  $('awards').innerHTML = aw.join('');
+  $('finalScreen').hidden = false;
+}
+function toTitle() {
+  $('finalScreen').hidden = true; $('titleScreen').hidden = false;
+  app.classList.remove('in-game');
+  S.phase = 'title'; S.th = 0.6; S.om = 0; ropeInit(S.th); S.cx = AX; S.hideKid = false; S.marks = []; S.cur = 0;
+}
+
+/* ---------- 入力 ---------- */
+let sw = null;
+const canvasPt = e => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+cv.addEventListener('pointerdown', e => {
+  audio();
+  const pt = canvasPt(e);
+  sw = { id: e.pointerId, x0: pt.x, y0: pt.y, lx: pt.x, lt: e.timeStamp };
+  S.fs = pt; S.prevPhi = null;
+  try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+});
+cv.addEventListener('pointermove', e => {
+  if (!sw || e.pointerId !== sw.id) return;
+  const pt = canvasPt(e);
+  S.fs = pt;
+  const ft = Math.max(1, e.timeStamp - sw.lt);
+  S.fingerV = S.fingerV * 0.6 + ((pt.x - sw.lx) / ft * 1000) * 0.4;
+  sw.lx = pt.x; sw.lt = e.timeStamp;
+  if (Math.hypot(pt.x - sw.x0, pt.y - sw.y0) > 12 && S.phase === 'swing') { S.swipes++; S.hintSeen = true; }
+});
+// 指をはなしたらジャンプ（一度でも動かしていれば。ただのタップでは跳ばない）
+cv.addEventListener('pointerup', e => {
+  if (!sw || e.pointerId !== sw.id) return;
+  sw = null; S.fs = null;
+  if (S.phase === 'swing' && S.swipes > 0) release(false);
+});
+cv.addEventListener('pointercancel', e => { if (sw && e.pointerId === sw.id) { sw = null; S.fs = null; } });
+
+$('segPlayers').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  S.n = +b.dataset.n;
+  [...$('segPlayers').children].forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+});
+$('startBtn').addEventListener('click', startGame);
+$('goBtn').addEventListener('click', go);
+$('turnScreen').addEventListener('click', e => { if (e.target === $('turnScreen')) go(); });
+$('nextBtn').addEventListener('click', next);
+$('againBtn').addEventListener('click', startGame);
+$('titleBtn').addEventListener('click', toTitle);
+addEventListener('keydown', e => {
+  if (e.repeat) return;
+  if (e.key === 'ArrowLeft') { audio(); swipeInput(-1); e.preventDefault(); return; }
+  if (e.key === 'ArrowRight') { audio(); swipeInput(1); e.preventDefault(); return; }
+  if ((e.key === ' ' || e.key === 'Enter') && !(e.target instanceof HTMLButtonElement) && !(e.target instanceof HTMLInputElement)) {
+    if (S.phase === 'swing') release(false);
+    else if (S.phase === 'ready') go();
+    else if (S.phase === 'landed') next();
+    e.preventDefault();
+  } else if (e.key === ' ' && S.phase === 'swing') { release(false); e.preventDefault(); }
+});
+
+/* ---------- ループ ---------- */
+resize(); updateBest();
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  S.t += dt;
+  const n = Math.max(1, Math.ceil(dt * 240)), h = dt / n;
+  for (let i = 0; i < n; i++) step(h);
+  stepFx(dt); hud(); render();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>

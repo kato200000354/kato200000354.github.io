@@ -1,0 +1,287 @@
+<meta charset="utf-8">
+<title>ポケモン知識テスト</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=DotGothic16&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+  :root {
+    --bg: #eef3f1;
+    --grid: #dbe5e1;
+    --surface: #ffffff;
+    --ink: #17252b;
+    --muted: #5b6b70;
+    --line: #c9d6d2;
+    --accent: #1f7a55;
+    --accent-ink: #ffffff;
+    --spark: #e2a21b;
+    --good: #1f8a4c;
+    --good-bg: #e3f4ea;
+    --bad: #c73e52;
+    --bad-bg: #fbe6e9;
+    --display: "Dela Gothic One", "Hiragino Sans", "Yu Gothic", sans-serif;
+    --body: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+    --dot: "DotGothic16", "MS Gothic", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #0f1719; --grid: #172225; --surface: #182427; --ink: #e4eeeb;
+      --muted: #93a6a3; --line: #2b3b3e; --accent: #4cc38a; --accent-ink: #0b1a14;
+      --spark: #f0b93a; --good: #5fd08f; --good-bg: #173427; --bad: #f07a8b; --bad-bg: #3a1c22;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0f1719; --grid: #172225; --surface: #182427; --ink: #e4eeeb;
+    --muted: #93a6a3; --line: #2b3b3e; --accent: #4cc38a; --accent-ink: #0b1a14;
+    --spark: #f0b93a; --good: #5fd08f; --good-bg: #173427; --bad: #f07a8b; --bad-bg: #3a1c22;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background-color: var(--bg);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 24px 24px;
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.7;
+    padding-inline: 16px;
+    padding-block: 32px 48px;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; display: grid; gap: 20px; }
+
+  header { display: grid; gap: 4px; }
+  .eyebrow { font-family: var(--dot); font-size: 13px; letter-spacing: .12em; color: var(--muted); }
+  h1 { font-family: var(--display); font-weight: 400; font-size: clamp(28px, 7vw, 40px); line-height: 1.2; margin: 0; text-wrap: balance; }
+  h1 span { color: var(--accent); }
+
+  .status { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-family: var(--dot); font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .status b { color: var(--ink); font-weight: 400; font-size: 18px; }
+  .meter { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
+  .meter i { height: 8px; background: var(--line); border-radius: 2px; }
+  .meter i.ok { background: var(--good); }
+  .meter i.ng { background: var(--bad); }
+  .meter i.now { background: var(--spark); }
+
+  .card { background: var(--surface); border: 2px solid var(--ink); border-radius: 6px; box-shadow: 5px 5px 0 var(--ink); padding: 24px; display: grid; gap: 18px; }
+  .tag { justify-self: start; font-family: var(--dot); font-size: 13px; padding: 2px 10px; border: 1.5px solid var(--accent); color: var(--accent); border-radius: 999px; }
+  .question { font-size: clamp(19px, 4.6vw, 22px); font-weight: 700; line-height: 1.55; margin: 0; text-wrap: pretty; }
+
+  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 460px) { .choices { grid-template-columns: 1fr; } }
+  .choice {
+    display: flex; align-items: center; gap: 12px; text-align: left;
+    font: inherit; font-weight: 500; color: var(--ink);
+    background: var(--surface); border: 1.5px solid var(--line); border-radius: 6px;
+    padding: 12px 14px; cursor: pointer; transition: border-color .12s, transform .12s;
+  }
+  .choice:hover:not(:disabled) { border-color: var(--ink); transform: translateY(-1px); }
+  .choice:focus-visible, .btn:focus-visible { outline: 3px solid var(--spark); outline-offset: 2px; }
+  .choice .key { flex: none; width: 26px; height: 26px; display: grid; place-items: center; font-family: var(--dot); font-size: 14px; border: 1.5px solid var(--line); border-radius: 4px; color: var(--muted); }
+  .choice:disabled { cursor: default; }
+  .choice.correct { border-color: var(--good); background: var(--good-bg); }
+  .choice.correct .key { border-color: var(--good); background: var(--good); color: var(--surface); }
+  .choice.wrong { border-color: var(--bad); background: var(--bad-bg); }
+  .choice.wrong .key { border-color: var(--bad); background: var(--bad); color: var(--surface); }
+  .choice.dim { opacity: .5; }
+
+  .feedback { display: grid; gap: 6px; padding: 14px 16px; border-radius: 6px; border-left: 4px solid var(--good); background: var(--good-bg); }
+  .feedback.ng { border-left-color: var(--bad); background: var(--bad-bg); }
+  .feedback strong { font-family: var(--display); font-weight: 400; font-size: 18px; }
+  .feedback p { margin: 0; font-size: 15px; }
+
+  .actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+  .btn { font: inherit; font-weight: 700; padding: 10px 22px; border-radius: 6px; cursor: pointer; border: 2px solid var(--ink); background: var(--accent); color: var(--accent-ink); box-shadow: 3px 3px 0 var(--ink); }
+  .btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+  .btn.ghost { background: var(--surface); color: var(--ink); }
+
+  .result-score { font-family: var(--display); font-size: clamp(48px, 14vw, 72px); line-height: 1; font-variant-numeric: tabular-nums; }
+  .result-score small { font-size: .4em; color: var(--muted); }
+  .rank { font-family: var(--dot); font-size: 18px; color: var(--accent); }
+  .review { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+  .review li { border-top: 1px dashed var(--line); padding-top: 10px; font-size: 15px; }
+  .review .ans { color: var(--good); font-weight: 700; }
+  .review .yours { color: var(--bad); }
+
+  footer { font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .hint { font-size: 12px; color: var(--muted); font-family: var(--dot); }
+  @media (max-width: 460px) { .hint { display: none; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">非公式ファンクイズ ／ 全10問</div>
+    <h1>ポケモン<span>知識</span>テスト</h1>
+  </header>
+
+  <div class="status">
+    <span id="qnum">Q.1 / 10</span>
+    <span>正解 <b id="score">0</b></span>
+  </div>
+  <div class="meter" id="meter" aria-hidden="true"></div>
+
+  <main class="card" id="card" aria-live="polite"></main>
+
+  <div class="hint" id="hint">キーボードの 1〜4 で回答、Enter で次へ</div>
+
+  <footer>
+    このサイトは個人が作った非公式のファンクイズで、株式会社ポケモン・任天堂・クリーチャーズ・ゲームフリークとは関係ありません。
+    「ポケットモンスター」「ポケモン」および各ポケモンの名称の権利は、それぞれの権利者に帰属します。問題と解説はすべてオリジナルの文章です。
+  </footer>
+</div>
+
+<script>
+// 各問題の a[0] が正解。表示するときに選択肢をシャッフルする
+const BANK = [
+  { c: "タイプ", q: "ピカチュウのタイプはどれ?", a: ["でんき", "ノーマル", "ほのお", "フェアリー"], e: "ピカチュウはでんきタイプ。ほっぺの電気袋に電気をためています。" },
+  { c: "タイプ", q: "ゲンガーのタイプの組み合わせはどれ?", a: ["ゴースト・どく", "ゴースト・あく", "エスパー・どく", "あく・どく"], e: "ゲンガーはゴースト・どくタイプ。ゴースから2回進化した姿です。" },
+  { c: "タイプ", q: "ルカリオのタイプの組み合わせはどれ?", a: ["かくとう・はがね", "かくとう・エスパー", "はがね・あく", "かくとう・ノーマル"], e: "ルカリオはかくとう・はがねタイプ。リオルから進化します。" },
+  { c: "タイプ", q: "ミュウツーのタイプはどれ?", a: ["エスパー", "ゴースト", "かくとう", "ドラゴン"], e: "ミュウツーはエスパータイプ単体の伝説のポケモンです。" },
+  { c: "相性", q: "ほのおタイプの技が「こうかはばつぐん」になるタイプは?", a: ["くさ", "みず", "いわ", "ドラゴン"], e: "ほのおはくさ・こおり・むし・はがねにばつぐん。みず・いわ・ドラゴンにはいまひとつです。" },
+  { c: "相性", q: "じめんタイプの技が「こうかがない」タイプは?", a: ["ひこう", "でんき", "はがね", "いわ"], e: "空を飛ぶひこうタイプには、じめん技が当たりません。" },
+  { c: "相性", q: "でんきタイプの技が「こうかがない」タイプは?", a: ["じめん", "くさ", "いわ", "はがね"], e: "でんき技はじめんタイプに無効。電気が地面に逃げていくイメージです。" },
+  { c: "相性", q: "ドラゴンタイプの技が「こうかがない」タイプは?", a: ["フェアリー", "はがね", "こおり", "エスパー"], e: "『X・Y』で登場したフェアリータイプには、ドラゴン技が効きません。" },
+  { c: "相性", q: "エスパータイプの技が「こうかがない」タイプは?", a: ["あく", "ゴースト", "はがね", "ノーマル"], e: "エスパー技はあくタイプに無効です。" },
+  { c: "相性", q: "かくとうタイプの技が「こうかがない」タイプは?", a: ["ゴースト", "エスパー", "ひこう", "フェアリー"], e: "実体のないゴーストタイプには、かくとう技もノーマル技も当たりません。" },
+  { c: "進化", q: "フシギダネが進化するとどのポケモンになる?", a: ["フシギソウ", "フシギバナ", "チコリータ", "ナエトル"], e: "フシギダネ → フシギソウ → フシギバナ の順に進化します。" },
+  { c: "進化", q: "ヒトカゲの最終進化形はどれ?", a: ["リザードン", "リザード", "バクフーン", "ゴウカザル"], e: "ヒトカゲ → リザード → リザードン。最終形ではひこうタイプも加わります。" },
+  { c: "進化", q: "コイキングが進化するとどのポケモンになる?", a: ["ギャラドス", "ミロカロス", "カイリュー", "トサキント"], e: "はねるしかできないコイキングが、凶暴なギャラドスに進化します。" },
+  { c: "進化", q: "イーブイの進化形ではないのはどれ?", a: ["ライチュウ", "シャワーズ", "ブラッキー", "ニンフィア"], e: "ライチュウはピカチュウの進化形。イーブイには8種類の進化先があります。" },
+  { c: "進化", q: "ハクリューが進化するとどのポケモンになる?", a: ["カイリュー", "ボーマンダ", "ガブリアス", "バンギラス"], e: "ミニリュウ → ハクリュー → カイリュー。最終形はドラゴン・ひこうタイプです。" },
+  { c: "進化", q: "ガーディをウインディに進化させる道具はどれ?", a: ["ほのおのいし", "たいようのいし", "かみなりのいし", "つきのいし"], e: "ほのおのいしを使うとウインディに進化します。" },
+  { c: "進化", q: "ポッポが進化するとどのポケモンになる?", a: ["ピジョン", "オニドリル", "ヨルノズク", "ムクバード"], e: "ポッポ → ピジョン → ピジョット と進化します。" },
+  { c: "地方", q: "『ルビー・サファイア』の舞台になった地方は?", a: ["ホウエン地方", "シンオウ地方", "ジョウト地方", "イッシュ地方"], e: "『ルビー・サファイア』の舞台はホウエン地方です。" },
+  { c: "地方", q: "『ダイヤモンド・パール』の舞台になった地方は?", a: ["シンオウ地方", "カロス地方", "ホウエン地方", "アローラ地方"], e: "『ダイヤモンド・パール』の舞台はシンオウ地方。北海道がモデルといわれています。" },
+  { c: "地方", q: "『ソード・シールド』の舞台になった地方は?", a: ["ガラル地方", "パルデア地方", "カロス地方", "イッシュ地方"], e: "『ソード・シールド』の舞台はイギリスがモデルのガラル地方です。" },
+  { c: "地方", q: "『スカーレット・バイオレット』の舞台になった地方は?", a: ["パルデア地方", "ガラル地方", "アローラ地方", "カントー地方"], e: "『スカーレット・バイオレット』の舞台はパルデア地方です。" },
+  { c: "図鑑", q: "全国図鑑で No.001 のポケモンはどれ?", a: ["フシギダネ", "ピカチュウ", "ミュウ", "ヒトカゲ"], e: "No.001 はフシギダネ。ヒトカゲは No.004、ピカチュウは No.025 です。" },
+  { c: "図鑑", q: "『赤・緑』で最初にもらえる3匹に入っていないのはどれ?", a: ["ピカチュウ", "フシギダネ", "ヒトカゲ", "ゼニガメ"], e: "『赤・緑』の最初の3匹はフシギダネ・ヒトカゲ・ゼニガメです。" },
+  { c: "図鑑", q: "カビゴンが最初に登場した地方はどこ?", a: ["カントー地方", "ジョウト地方", "ホウエン地方", "シンオウ地方"], e: "カビゴンは第1世代、カントー地方のポケモンです。" }
+];
+
+const TOTAL = 10;
+const KEYS = ["1", "2", "3", "4"];
+const RANKS = [
+  [10, "はかせ級!全問正解"],
+  [8, "ジムリーダー級"],
+  [5, "ベテラントレーナー"],
+  [3, "かけだしトレーナー"],
+  [0, "冒険はこれから"]
+];
+
+const $ = (id) => document.getElementById(id);
+const card = $("card");
+let round, idx, score, answered, log;
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function start() {
+  round = shuffle(BANK).slice(0, TOTAL).map((item) => ({ ...item, opts: shuffle(item.a) }));
+  idx = 0; score = 0; log = [];
+  renderQuestion();
+}
+
+function renderMeter() {
+  $("meter").innerHTML = Array.from({ length: TOTAL }, (_, i) => {
+    const cls = log[i] ? (log[i].ok ? "ok" : "ng") : (i === idx ? "now" : "");
+    return `<i class="${cls}"></i>`;
+  }).join("");
+  $("score").textContent = score;
+  $("qnum").textContent = idx < TOTAL ? `Q.${idx + 1} / ${TOTAL}` : "結果";
+}
+
+function renderQuestion() {
+  answered = false;
+  const item = round[idx];
+  card.innerHTML = `
+    <span class="tag">${item.c}</span>
+    <p class="question">${item.q}</p>
+    <div class="choices">
+      ${item.opts.map((o, i) => `<button class="choice" id="choice-${i}" data-i="${i}"><span class="key">${i + 1}</span><span>${o}</span></button>`).join("")}
+    </div>
+    <div id="after"></div>`;
+  card.querySelectorAll(".choice").forEach((b) => b.addEventListener("click", () => answer(+b.dataset.i)));
+  renderMeter();
+}
+
+function answer(i) {
+  if (answered) return;
+  answered = true;
+  const item = round[idx];
+  const correct = item.a[0];
+  const picked = item.opts[i];
+  const ok = picked === correct;
+  if (ok) score++;
+  log.push({ ok, item, picked });
+
+  card.querySelectorAll(".choice").forEach((b, j) => {
+    b.disabled = true;
+    const text = item.opts[j];
+    if (text === correct) b.classList.add("correct");
+    else if (j === i) b.classList.add("wrong");
+    else b.classList.add("dim");
+  });
+
+  const last = idx === TOTAL - 1;
+  $("after").innerHTML = `
+    <div class="feedback ${ok ? "" : "ng"}">
+      <strong>${ok ? "正解!" : "ざんねん…"}</strong>
+      <p>${ok ? "" : `正解は「${correct}」。`}${item.e}</p>
+    </div>
+    <div class="actions" style="margin-top:16px">
+      <button class="btn" id="next">${last ? "結果を見る" : "次の問題へ"}</button>
+    </div>`;
+  $("next").addEventListener("click", next);
+  $("next").focus();
+  renderMeter();
+}
+
+function next() {
+  idx++;
+  if (idx < TOTAL) renderQuestion();
+  else renderResult();
+}
+
+function renderResult() {
+  const rank = RANKS.find(([min]) => score >= min)[1];
+  const missed = log.filter((l) => !l.ok);
+  card.innerHTML = `
+    <span class="tag">結果</span>
+    <div class="result-score">${score}<small> / ${TOTAL}問</small></div>
+    <div class="rank">${rank}</div>
+    ${missed.length ? `
+      <p style="margin:0;font-weight:700">まちがえた問題</p>
+      <ul class="review">
+        ${missed.map((l) => `<li>${l.item.q}<br><span class="ans">正解:${l.item.a[0]}</span> ／ <span class="yours">あなた:${l.picked}</span></li>`).join("")}
+      </ul>` : `<p style="margin:0">すべて正解です。おみごと!</p>`}
+    <div class="actions">
+      <button class="btn" id="retry">もう一度チャレンジ</button>
+    </div>
+    <p class="hint" style="margin:0">毎回 ${BANK.length} 問の中から ${TOTAL} 問がランダムに出題されます。</p>`;
+  $("retry").addEventListener("click", start);
+  $("retry").focus();
+  renderMeter();
+}
+
+document.addEventListener("keydown", (e) => {
+  if (idx >= TOTAL) return;
+  const k = KEYS.indexOf(e.key);
+  if (k >= 0 && !answered) { answer(k); return; }
+  if (e.key === "Enter" && answered && document.activeElement?.id !== "next") next();
+});
+
+start();
+</script>

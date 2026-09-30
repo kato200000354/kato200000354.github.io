@@ -1,4 +1,119 @@
 <!doctype html>
-<html lang="ja"><head><meta charset="utf-8"><title>いまコト</title>
-<meta http-equiv="refresh" content="0; url=/imakoto/"></head>
-<body><a href="/imakoto/">いまコトを開く</a></body></html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>つくったもの置き場</title>
+<meta name="description" content="自分でつくったゲームとアプリをまとめて公開しています。ブラウザですぐに遊べます。">
+<meta property="og:title" content="つくったもの置き場">
+<meta property="og:description" content="自分でつくったゲームとアプリをまとめて公開しています。ブラウザですぐに遊べます。">
+<meta property="og:image" content="https://kato200000354.github.io/thumbs/chanbara.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fbf7f0; --card:#ffffff; --ink:#26221d; --muted:#6f675c; --line:#ebe3d6;
+  --accent:#ff6b3d; --accent-ink:#fff; --chip:#f3ece1; --shadow:0 1px 2px rgba(60,40,10,.06),0 8px 24px rgba(60,40,10,.08);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#17150f; --card:#221f18; --ink:#f3eee6; --muted:#b0a797; --line:#35302566;
+    --accent:#ff8a5f; --accent-ink:#1b120c; --chip:#2d2920; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+  }
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"M PLUS Rounded 1c",system-ui,-apple-system,"Hiragino Sans","Yu Gothic UI",sans-serif;line-height:1.6}
+a{color:inherit}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px}
+
+header{padding:56px 0 28px}
+.hello{display:inline-block;background:var(--chip);color:var(--muted);font-size:13px;font-weight:700;padding:4px 12px;border-radius:999px}
+h1{font-size:clamp(30px,6vw,48px);line-height:1.2;margin:14px 0 10px;font-weight:800;letter-spacing:.01em}
+h1 span{color:var(--accent)}
+.lead{color:var(--muted);margin:0;max-width:36em}
+
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:28px 0 20px;position:sticky;top:0;padding:10px 0;background:var(--bg);z-index:5}
+.tab{appearance:none;border:1.5px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-weight:700;font-size:14px;padding:8px 16px;border-radius:999px;cursor:pointer}
+.tab[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.tab .n{opacity:.6;margin-left:4px;font-size:12px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:18px;padding-bottom:56px}
+@media (max-width:480px){.grid{grid-template-columns:repeat(2,1fr);gap:12px}}
+.card{display:flex;flex-direction:column;background:var(--card);border-radius:18px;overflow:hidden;text-decoration:none;box-shadow:var(--shadow);transition:transform .15s ease, box-shadow .15s ease}
+.card:hover{transform:translateY(-3px)}
+.card:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.thumb{aspect-ratio:3/4;background:var(--chip);overflow:hidden}
+.thumb img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
+.body{padding:12px 14px 14px;display:flex;flex-direction:column;gap:4px;flex:1}
+.kind{font-size:11px;font-weight:800;color:var(--accent);letter-spacing:.05em}
+.name{font-size:16px;font-weight:800;line-height:1.35;margin:0}
+.desc{font-size:13px;color:var(--muted);margin:0}
+@media (max-width:480px){.name{font-size:14px}.desc{font-size:12px}.body{padding:10px 11px 12px}}
+
+footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="hello">ようこそ</span>
+    <h1>つくったもの<span>置き場</span></h1>
+    <p class="lead">自分でつくったゲームとアプリをまとめています。インストール不要で、スマホでもパソコンでもそのまま遊べます。</p>
+  </header>
+
+  <nav class="tabs" aria-label="絞り込み">
+    <button class="tab" data-f="all" aria-pressed="true">すべて<span class="n" id="n-all"></span></button>
+    <button class="tab" data-f="game" aria-pressed="false">ゲーム<span class="n" id="n-game"></span></button>
+    <button class="tab" data-f="app" aria-pressed="false">アプリ<span class="n" id="n-app"></span></button>
+  </nav>
+
+  <main class="grid" id="grid"></main>
+</div>
+<footer><div class="wrap">© kato200000354 ・ 作品はブラウザ上で動きます。記録などのデータはお使いの端末の中だけに保存されます。</div></footer>
+
+<script>
+const WORKS = [
+  // kind, フォルダ（またはURL）, サムネイル, 名前, ひとこと
+  ['game','apps/chanbara/','chanbara','チャンバラ','スワイプで斬る！ストーリーモードや対人戦で熱い一撃を。'],
+  ['game','apps/tank-battle/','tank-battle','タンクバトル','戦車をカスタマイズして、ひとりでもみんなでも対戦。'],
+  ['game','apps/speed-kart/','speed-kart','スピードカート レーシング','カーブで減速がカギ。みんなでゴールをめざすレース。'],
+  ['game','apps/ski-jump/','ski-jump','すきーじゃんぷ','タイミングがすべて。風を読んで最高の一瞬に飛ぶ。'],
+  ['game','apps/jungle-jump/','jungle-jump','ツタジャンプ！','ツタのゆれに合わせてスワイプ、向こう岸の旗へ。'],
+  ['game','/shake-fever/','shake-fever','シェイク・フィーバー','スマホを振って炭酸を噴き出させるパーティゲーム。'],
+  ['game','apps/minnade-tetris/','minnade-tetris','みんなでテトリス','1つの盤面を最大4人で共有する協力型テトリス。'],
+  ['game','apps/colorful-island/','colorful-island','カラフルアイランド','いろいろきのこのサバイバルゲーム。'],
+  ['game','apps/sukisugite-metsu/','sukisugite-metsu','好きすぎて滅','あなたは、どこまで好きでいられますか？'],
+  ['game','apps/yokatta/','yokatta','よかった、この距離で。','少しずつ近づいて、ちょうどいい距離を見つける物語。'],
+  ['game','apps/nemuke-survivor/','nemuke-survivor','ねむけサバイバー','眠気に勝て。ミッションをこなして目を覚ます。'],
+  ['game','/ekakiuta/','ekakiuta','えかきうたチャレンジ','えかきうたを聞きながら描いて、最後に答え合わせ。'],
+  ['game','apps/pokemon-quiz/','pokemon-quiz','ポケモン知識テスト','全10問の非公式ファンクイズ。'],
+  ['app','/imakoto/','imakoto','いまコト','いま話題の言葉を、やさしく解説。'],
+  ['app','apps/animal-anger-log/','animal-anger-log','アニマルアンガーログ','怒りのレベルを動物で記録して、あとで振り返る。'],
+  ['app','apps/jibun-no-mori/','jibun-no-mori','じぶんの森','毎日のタスクをこなして、じぶんの森を育てる。'],
+  ['app','apps/gourmet-map/','gourmet-map','飲食店制覇マップ','行ったお店をマップに記録して制覇をめざす。'],
+  ['app','apps/ramen-map/','ramen-map','ラーメン制覇マップ','食べたラーメンを記録して、一杯ずつ制覇。'],
+  ['app','apps/video-call/','video-call','やさしいビデオ通話','大きな文字でわかりやすい、ビデオ通話の画面案。'],
+];
+const grid = document.getElementById('grid');
+grid.innerHTML = WORKS.map(([k,href,img,name,desc]) => `
+  <a class="card" href="${href}" data-kind="${k}">
+    <div class="thumb"><img src="thumbs/${img}.jpg" alt="" loading="lazy" width="420" height="560"></div>
+    <div class="body">
+      <span class="kind">${k === 'game' ? 'GAME' : 'APP'}</span>
+      <h2 class="name">${name}</h2>
+      <p class="desc">${desc}</p>
+    </div>
+  </a>`).join('');
+const count = k => WORKS.filter(w => k === 'all' || w[0] === k).length;
+['all','game','app'].forEach(k => document.getElementById('n-'+k).textContent = count(k));
+document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => {
+  const f = btn.dataset.f;
+  document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-pressed', b === btn));
+  grid.querySelectorAll('.card').forEach(c => c.hidden = f !== 'all' && c.dataset.kind !== f);
+}));
+</script>
+</body>
+</html>

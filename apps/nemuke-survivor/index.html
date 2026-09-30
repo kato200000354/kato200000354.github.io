@@ -1,0 +1,1102 @@
+<title>ねむけサバイバー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@500;700;800;900&display=swap">
+<style>
+[hidden]{display:none!important}
+:root{
+  color-scheme:dark;
+  --ink:#050818;
+  --bg:#0b1238;
+  --bg2:#121a4c;
+  --panel:rgba(18,28,78,.86);
+  --panel-line:rgba(96,150,255,.35);
+  --neon:#3fa6ff;
+  --cyan:#5de6ff;
+  --pink:#ff5fa8;
+  --yellow:#ffd23a;
+  --yellow2:#ffab1f;
+  --purple:#7b52ff;
+  --text:#eef2ff;
+  --muted:#9ba8dc;
+  --good:#39e3a6;
+  --bad:#ff5a6e;
+  --bubble:#fbfbff;
+  --bubble-ink:#1b2150;
+  --d:0;
+  --blur:0px;
+  --round:'M PLUS Rounded 1c','Hiragino Maru Gothic ProN','Yu Gothic',system-ui,sans-serif;
+  --display:'Dela Gothic One','M PLUS Rounded 1c','Hiragino Sans',sans-serif;
+}
+html{height:100%;box-sizing:border-box}
+*,*::before,*::after{box-sizing:border-box}
+body{height:100%;margin:0;background:var(--ink);color:var(--text);font-family:var(--round);font-weight:700;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+.app{position:relative;max-width:430px;height:100%;margin:0 auto;overflow:hidden;
+  background:
+    radial-gradient(1px 1px at 12% 8%,#fff8,transparent),radial-gradient(1px 1px at 78% 14%,#fff9,transparent),
+    radial-gradient(1.5px 1.5px at 40% 22%,#fffa,transparent),radial-gradient(1px 1px at 88% 34%,#fff7,transparent),
+    radial-gradient(1px 1px at 22% 40%,#fff6,transparent),radial-gradient(1.5px 1.5px at 62% 6%,#fff,transparent),
+    linear-gradient(180deg,#0e1846 0%,var(--bg) 55%,#070b27 100%)}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;gap:12px;padding:14px 16px 18px;overflow-y:auto;overflow-x:hidden}
+.screen.has-nav{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+.city{position:absolute;left:0;right:0;bottom:0;height:62%;pointer-events:none;opacity:.9;z-index:0}
+.city svg{width:100%;height:100%;display:block}
+.screen > :where(*){position:relative;z-index:1}
+
+/* ---------- shared ---------- */
+.panel{background:var(--panel);border:1.5px solid var(--panel-line);border-radius:18px;padding:14px;box-shadow:0 10px 30px #0008,inset 0 1px 0 #ffffff14;backdrop-filter:blur(6px)}
+.panel h2{margin:0 0 10px;font-size:13px;color:var(--muted);letter-spacing:.08em}
+.meter{display:grid;grid-template-columns:30px 1fr auto;align-items:center;column-gap:8px;row-gap:5px}
+.meter + .meter{margin-top:10px}
+.m-ic{grid-row:span 2;width:30px;height:30px;border-radius:50%;display:grid;place-items:center}
+.m-ic svg{width:18px;height:18px}
+.meter.sleep .m-ic{background:radial-gradient(circle at 35% 30%,#ff8ccd,#b0409a)}
+.meter.focus .m-ic{background:radial-gradient(circle at 35% 30%,#7ee8ff,#2a6fe0)}
+.m-label{font-size:13px}
+.m-val{font-size:13px;font-variant-numeric:tabular-nums}
+.bar{grid-column:2 / 4;height:10px;border-radius:99px;background:#0a1030;overflow:hidden;box-shadow:inset 0 1px 3px #000a}
+.bar i{display:block;height:100%;border-radius:inherit;transition:width .25s}
+.meter.sleep .bar i{background:linear-gradient(90deg,#ff8ad0,var(--pink))}
+.meter.focus .bar i{background:linear-gradient(90deg,#39d0ff,#3f7bff)}
+.cta{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:15px 18px;border-radius:99px;font-size:17px;font-weight:900;color:#2a1a00;
+  background:linear-gradient(180deg,#ffe56a,var(--yellow) 45%,var(--yellow2));box-shadow:0 5px 0 #b86b00,0 10px 22px #ffb3003d;transition:transform .08s}
+.cta:active{transform:translateY(3px);box-shadow:0 2px 0 #b86b00}
+.cta.ghost{background:linear-gradient(180deg,#1d2a78,#141d5a);color:var(--text);box-shadow:0 0 0 2px #4d7dff inset,0 5px 0 #0b1140}
+.icon-btn{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:#ffffff12;border:1.5px solid #ffffff22}
+.icon-btn svg{width:22px;height:22px}
+.bubble{background:var(--bubble);color:var(--bubble-ink);border-radius:22px;padding:10px 14px;font-size:14px;line-height:1.45;font-weight:800;box-shadow:0 6px 16px #0006;position:relative;max-width:170px;text-wrap:balance}
+.bubble::after{content:"";position:absolute;left:24px;bottom:-9px;border:10px solid transparent;border-top-color:var(--bubble);border-bottom:0}
+.bubble.right::after{left:auto;right:28px}
+.char svg{width:100%;height:auto;display:block;overflow:visible}
+.char.bob svg{animation:bob 2.4s ease-in-out infinite}
+.spark{transform-box:fill-box;transform-origin:center;animation:twinkle 1.8s ease-in-out infinite}
+@keyframes twinkle{0%,100%{opacity:.3;transform:scale(.6)}50%{opacity:1;transform:scale(1.1)}}
+#success .char svg{animation:jump .9s cubic-bezier(.3,0,.4,1) 2}
+@keyframes jump{0%,100%{transform:translateY(0) scale(1,1)}15%{transform:translateY(4px) scale(1.05,.94)}45%{transform:translateY(-34px) scale(.97,1.04)}75%{transform:translateY(0) scale(1.04,.96)}}
+@keyframes bob{50%{transform:translateY(-4px)}}
+
+/* ---------- home ---------- */
+.home-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.logo{display:flex;align-items:center;gap:8px}
+.logo svg{width:34px;height:34px;flex:none;filter:drop-shadow(0 0 8px #ffd23a88)}
+.logo h1{margin:0;font-family:var(--display);font-weight:400;font-size:clamp(24px,7.2vw,30px);letter-spacing:.02em;
+  color:#fff;text-shadow:0 0 12px #6fb6ff,0 2px 0 #2440a0}
+.tagline{margin:-6px 0 0;font-size:12px;color:#c8d2ff;letter-spacing:.1em}
+.home-stage{flex:1;min-height:250px;display:grid;grid-template-columns:1fr auto;align-items:end;position:relative}
+.home-stage .char{width:min(230px,58vw);grid-column:1;grid-row:1;justify-self:start;margin-left:-4px}
+.home-stage .bubble{grid-column:1 / 3;grid-row:1;justify-self:end;align-self:start;margin-top:16px}
+.room-window{position:absolute;right:6px;top:6px;width:120px;height:92px;border-radius:10px;border:3px solid #2a3470;background:linear-gradient(#1a2a78,#0d1646);overflow:hidden;opacity:.55}
+.lamp{position:absolute;right:10px;bottom:6px;width:90px;height:90px;border-radius:50%;background:radial-gradient(circle,#ffcc7055,transparent 70%)}
+.mini-mon{position:absolute;right:14px;bottom:18px;width:74px}
+.mini-mon svg{width:100%;display:block}
+.status .cta{margin-top:14px}
+
+/* ---------- play ---------- */
+.hud-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.timer small{display:block;font-size:11px;color:var(--muted);letter-spacing:.1em}
+.timer b{font-size:34px;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:.02em;text-shadow:0 0 12px #5aa9ff}
+.lv{margin-top:8px;padding:5px 12px;border-radius:99px;font-size:12px;background:#ff5fa822;border:1.5px solid #ff5fa877;color:#ffc2e0;font-variant-numeric:tabular-nums}
+.stage{flex:1;min-height:250px;position:relative;display:grid;align-items:end}
+.stage .char{width:min(240px,62vw);justify-self:center;grid-row:1;grid-column:1}
+.stage .bubble{grid-row:1;grid-column:1;align-self:start;justify-self:start;margin-top:10px}
+.shadow-mon{position:absolute;right:0;top:30%;width:110px;transition:opacity .6s}
+.shadow-mon svg{width:100%}
+.next{text-align:center;font-size:13px;color:#cfe0ff}
+.next b{display:inline-block;min-width:1.2em;color:var(--yellow);font-size:18px}
+
+/* ---------- mini games ---------- */
+.mini-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding-top:6px}
+.mini-head h2{margin:0;font-size:24px;font-weight:900}
+.mini-head p{margin:6px 0 0;font-size:13px;color:#c9d4ff}
+.ring{position:relative;width:52px;height:52px;flex:none}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:4}
+.ring .bg{stroke:#ffffff1c}
+.ring .fg{stroke:var(--yellow);stroke-linecap:round;transition:stroke-dashoffset .1s linear}
+.ring span{position:absolute;inset:0;display:grid;place-items:center;font-size:18px;font-weight:900;font-variant-numeric:tabular-nums}
+.mini-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;filter:blur(var(--blur))}
+.mini-foot{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mini-foot .meter{grid-template-columns:22px 1fr auto;column-gap:6px}
+.mini-foot .meter + .meter{margin-top:0}
+.mini-foot .m-ic{width:22px;height:22px}
+.mini-foot .m-ic svg{width:13px;height:13px}
+.mini-foot .m-label,.mini-foot .m-val{font-size:11px}
+.neon-cell{border:2.5px solid var(--neon);border-radius:14px;background:#0b1a55aa;box-shadow:0 0 10px #3fa6ff88,inset 0 0 14px #3fa6ff44}
+.mem-grid{display:grid;grid-template-columns:repeat(3,min(90px,25vw));gap:10px}
+.mem-cell{aspect-ratio:1;max-width:100%;display:grid;place-items:center;position:relative;font-size:clamp(40px,12vw,52px);font-weight:900;text-shadow:0 0 14px #9fd4ff}
+.mem-cell small{position:absolute;left:8px;top:5px;font-size:12px;color:#8fb7ff;text-shadow:none}
+.mem-cell.hide b{opacity:.25}
+.q{font-size:16px;text-align:center;margin:0}
+.opts{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.opt-circle{width:46px;height:46px;border-radius:50%;border:2px solid #a9c2ff;background:#131d58;font-size:20px;font-weight:900}
+.opt-circle:active{background:#2a3c99}
+.opt-circle:disabled{opacity:.35}
+.react-grid{display:grid;grid-template-columns:repeat(3,min(76px,21vw));gap:10px}
+.react-cell{aspect-ratio:1;max-width:100%;border-radius:12px;transition:background .08s,box-shadow .08s}
+.react-cell.lit{background:linear-gradient(180deg,#ffc15a,#ff8a1f);border-color:#ffd88a;box-shadow:0 0 22px #ff9d2a,0 0 44px #ff8a1f88}
+.react-cell.hit{background:#39e3a655}
+.react-cell.decoy{background:linear-gradient(180deg,#5aa8ff,#2f5fe0);border-color:#9fd0ff;box-shadow:0 0 22px #3f8cff,0 0 44px #2f5fe088}
+.react-cell.bad{background:#ff5a6e66}
+.counter{margin:0;font-size:14px;color:#c9d4ff;font-variant-numeric:tabular-nums}
+.glitch{font-size:clamp(46px,15vw,66px);font-weight:900;color:#ff7ad0;display:flex;letter-spacing:.02em;
+  text-shadow:-3px 0 #36e8ff,3px 0 #ff2fa0,0 0 22px #ff5fa8}
+.glitch.fade{animation:gfade 2.6s ease-in forwards}
+@keyframes gfade{0%,60%{opacity:1;filter:none}100%{opacity:.04;filter:blur(6px)}}
+.glitch span{display:inline-block;animation:jit var(--sp,1s) steps(2) infinite}
+@keyframes jit{
+  0%{transform:translate(0,0)}
+  25%{transform:translate(calc(var(--g)*-6px),calc(var(--g)*3px)) skewX(calc(var(--g)*12deg))}
+  50%{transform:translate(calc(var(--g)*4px),calc(var(--g)*-4px));opacity:calc(1 - var(--g)*.6)}
+  75%{transform:translate(calc(var(--g)*-2px),calc(var(--g)*5px)) scaleY(calc(1 + var(--g)*.3))}
+}
+.opts.words{display:grid;grid-template-columns:1fr 1fr;width:100%;max-width:340px}
+.opt-word{padding:13px 8px;border-radius:14px;border:2px solid #a9c2ff66;background:#131d58;font-size:17px;font-weight:800}
+.opt-word:active{background:#2a3c99}
+.try-row{display:flex;align-items:center;gap:10px;width:100%;max-width:340px;padding:10px 14px;border-radius:99px;border:2px solid #4d7dff88;background:#111a52}
+.try-row .char{width:58px;flex:none;border-radius:50%;overflow:hidden;background:#1f2b70}
+.try-row p{margin:0;font-size:15px;color:#e5ebff}
+.judge{position:absolute;inset:0;display:grid;place-items:center;z-index:6;background:#050818aa;font-size:30px;font-weight:900;text-align:center;line-height:1.5}
+.judge small{display:block;font-size:15px;color:#ffb9cf}
+
+/* ---------- monster ---------- */
+#monster{background:radial-gradient(ellipse at 50% 55%,#4a2bb055,transparent 60%)}
+.mon-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;position:relative}
+.mon-btn{width:min(280px,74vw);touch-action:manipulation;filter:drop-shadow(0 0 26px #8a5cff99)}
+.mon-btn svg{width:100%;display:block}
+.mon-btn.hitfx{animation:hitfx .12s}
+@keyframes hitfx{50%{transform:scale(.93) rotate(-2deg)}}
+.mon-btn:not(.hitfx) svg{animation:mfloat 2.6s ease-in-out infinite}
+@keyframes mfloat{50%{transform:translateY(-6px)}}
+.portal{width:min(300px,80vw);height:40px;margin-top:-30px;border-radius:50%;background:radial-gradient(#b48cff88,#5a2dd544 60%,transparent 72%)}
+.hp{width:100%;max-width:300px}
+.hp label{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px}
+.hp .bar i{background:linear-gradient(90deg,#ff8ad0,#b86bff)}
+.mon-foot{display:flex;align-items:flex-end;gap:10px}
+.mon-foot .char{width:96px;flex:none}
+.mon-foot p{margin:0 0 14px;font-size:14px;color:#ffd6ec}
+
+/* ---------- success ---------- */
+#success{align-items:center;justify-content:center;text-align:center;background:radial-gradient(circle at 50% 38%,#3a4fb0,#0b1238 62%)}
+.rays{position:absolute;inset:-40%;background:repeating-conic-gradient(from 0deg,#ffe38a14 0 8deg,transparent 8deg 22deg);animation:spin 30s linear infinite;z-index:0!important}
+@keyframes spin{to{transform:rotate(360deg)}}
+.win-title{font-family:var(--display);font-weight:400;font-size:clamp(34px,11vw,44px);margin:0;color:var(--yellow);transform:rotate(-4deg);text-shadow:0 3px 0 #b86b00,0 0 20px #ffd23a88}
+#success .char{width:min(220px,58vw)}
+.pts{width:100%;max-width:320px}
+.pts .row{display:flex;align-items:center;justify-content:center;gap:10px;font-size:17px}
+.pts .row b{color:var(--yellow);font-size:24px;font-variant-numeric:tabular-nums}
+.pts p{margin:6px 0 0;font-size:13px;color:var(--muted)}
+#success .cta{max-width:320px}
+.confetti{position:absolute;inset:0;pointer-events:none;z-index:0!important}
+.confetti i{position:absolute;width:8px;height:14px;border-radius:2px;top:-20px;animation:fall 2.4s linear infinite}
+@keyframes fall{to{transform:translateY(110vh) rotate(540deg)}}
+
+/* ---------- overlays ---------- */
+.overlay{position:absolute;inset:0;z-index:30;display:grid;place-items:center;padding:16px;background:#03061ab8;backdrop-filter:blur(3px)}
+.modal{width:100%;max-width:340px;border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:12px;text-align:center}
+.modal.warn{background:linear-gradient(180deg,#b9334d,#6e1d44);border:2px solid #ff8ca0;box-shadow:0 0 30px #ff5a6e66}
+.modal.plain{background:var(--bg2);border:2px solid var(--panel-line)}
+.modal h3{margin:0;font-size:18px}
+.modal p{margin:0;font-size:13px;color:#ffdbe3}
+.modal.plain p{color:var(--muted)}
+.modal .char{width:150px;margin:0 auto -6px}
+.drowsy{position:absolute;inset:0;pointer-events:none;z-index:20;opacity:0;transition:opacity .4s;
+  background:radial-gradient(ellipse at center,transparent 35%,#02030dcc 100%)}
+.drowsy.on{opacity:calc(var(--d) * 1.1)}
+.lids{position:absolute;inset:0;pointer-events:none;z-index:21}
+.lids i{position:absolute;left:0;right:0;height:0;background:#02030d;transition:height .18s ease-in}
+.lids i:first-child{top:0;border-radius:0 0 50% 50%/0 0 40px 40px}
+.lids i:last-child{bottom:0;border-radius:50% 50% 0 0/40px 40px 0 0}
+.lids.blink i{height:52%}
+.toast{position:absolute;left:16px;right:16px;top:calc(12px + env(safe-area-inset-top,0px));z-index:40;display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:16px;
+  background:linear-gradient(90deg,#2b2f8f,#4b2a9a);border:1.5px solid #a58bff;box-shadow:0 8px 24px #0009;transform:translateY(-140%);transition:transform .35s}
+.toast.show{transform:none}
+.toast .bdg{width:40px;flex:none}
+.toast small{display:block;font-size:11px;color:#d7cbff}
+
+/* ---------- night ---------- */
+#night{background:linear-gradient(180deg,#0e1a55,#0a1033 60%,#170e3a)}
+.gn{text-align:center;padding-top:8px}
+.gn h2{margin:0;font-family:var(--display);font-weight:400;font-size:clamp(34px,11vw,44px);color:#ffe28a;text-shadow:0 0 18px #ffd23a88;display:flex;align-items:center;justify-content:center;gap:8px}
+.gn h2 svg{width:42px}
+.gn p{margin:4px 0 0;font-size:13px;color:#d9e0ff}
+.rec-list{display:flex;flex-direction:column;gap:8px}
+.rec-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:#0c1543;font-size:14px}
+.rec-row .ic{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;flex:none}
+.rec-row .ic svg{width:15px;height:15px}
+.rec-row b{margin-left:auto;font-size:18px;font-variant-numeric:tabular-nums}
+.bed{flex:1;min-height:170px;position:relative;display:flex;align-items:flex-end;justify-content:center}
+.bed .char{width:min(210px,56vw);margin-bottom:-4px}
+.blanket{position:absolute;left:-16px;right:-16px;bottom:-18px;height:38%;border-radius:40% 40% 0 0/60% 60% 0 0;background:linear-gradient(180deg,#d9dcf5,#9aa0cf);box-shadow:inset 0 6px 0 #fff8}
+.baton{position:absolute;right:4px;top:6px;text-align:right;font-size:16px;line-height:1.5}
+.zzz{position:absolute;font-weight:900;color:#c9d6ff;animation:zz 2.6s ease-in-out infinite;opacity:0}
+@keyframes zz{0%{opacity:0;transform:translate(0,0) scale(.7)}30%{opacity:1}100%{opacity:0;transform:translate(18px,-40px) scale(1.2)}}
+
+/* ---------- list screens ---------- */
+.page-head{display:flex;align-items:center;gap:10px}
+.page-head h2{margin:0;font-size:20px;font-weight:900}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);padding:4px;border-radius:99px;background:#0a1136;border:1.5px solid var(--panel-line)}
+.tabs button{padding:8px 4px;border-radius:99px;font-size:13px;color:var(--muted)}
+.tabs button[aria-selected="true"]{background:#fff;color:#1b2150}
+.badge-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 10px}
+.badge{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.badge .bdg{width:min(84px,23vw)}
+.badge b{font-size:13px}
+.badge small{font-size:10.5px;color:var(--muted);line-height:1.35}
+.badge.locked .bdg{filter:grayscale(1) brightness(.55)}
+.badge-count{font-size:13px;color:var(--muted);margin:0}
+.bdg svg{width:100%;display:block}
+
+.set-list{display:flex;flex-direction:column}
+.set-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 2px;border-bottom:1px solid #ffffff14;font-size:15px}
+.switch{width:52px;height:30px;border-radius:99px;background:#2b3470;position:relative;transition:background .2s;flex:none}
+.switch::after{content:"";position:absolute;left:3px;top:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .2s}
+.switch[aria-checked="true"]{background:var(--good)}
+.switch[aria-checked="true"]::after{transform:translateX(22px)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.seg button{padding:10px;border-radius:99px;border:1.5px solid #ffffff2a;font-size:14px}
+.seg button[aria-pressed="true"]{background:var(--good);color:#06271b;border-color:var(--good)}
+.set-label{font-size:13px;color:var(--muted);margin:16px 0 8px}
+.charas{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.charas button{aspect-ratio:1;max-width:100%;border-radius:50%;overflow:hidden;background:#1d2870;border:3px solid transparent;padding:0}
+.charas button[aria-pressed="true"]{border-color:var(--yellow);box-shadow:0 0 14px #ffd23a88}
+.charas svg{width:100%;height:100%;display:block}
+.note{font-size:11px;color:var(--muted);margin:10px 0 0;line-height:1.5}
+.danger{margin-top:18px;padding:12px;border-radius:14px;border:1.5px solid #ff5a6e77;color:#ffb3bf;width:100%}
+
+.cal-head{display:flex;align-items:center;justify-content:space-between}
+.cal-head b{font-size:17px;font-variant-numeric:tabular-nums}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-variant-numeric:tabular-nums}
+.cal .wd{font-size:11px;color:var(--muted);padding:4px 0}
+.cal .wd.sat{color:#7fb8ff}.cal .wd.sun{color:#ff8ca0}
+.cal button{aspect-ratio:1;max-width:100%;border-radius:50%;font-size:13px;display:grid;place-items:center}
+.cal button.has{background:#1fa4b8;color:#fff}
+.cal button.today{box-shadow:0 0 0 2px var(--yellow) inset}
+.cal button.sel{background:#fff;color:#1b2150}
+.cal button:disabled{opacity:.25;cursor:default}
+.day-title{margin:0 0 8px;font-size:14px}
+.empty{font-size:13px;color:var(--muted);margin:0}
+
+.nav{position:absolute;left:0;right:0;bottom:0;z-index:25;display:grid;grid-template-columns:repeat(4,1fr);
+  padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px));background:#0a1136f2;border-top:1.5px solid var(--panel-line)}
+.nav button{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--muted);padding:4px}
+.nav svg{width:22px;height:22px}
+.nav button[aria-current="page"]{color:var(--yellow)}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  .glitch.fade{animation-duration:2.6s!important}
+}
+</style>
+
+<div class="app" id="app">
+
+  <!-- ホーム -->
+  <section class="screen has-nav" id="home">
+    <div class="city" data-seed="11"></div>
+    <header class="home-head">
+      <div class="logo"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M30 6a18 18 0 1 0 12 30A15 15 0 1 1 30 6z" fill="#ffd23a"/></svg><h1>ねむけサバイバー</h1></div>
+      <button class="icon-btn" data-go="settings" aria-label="設定"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg></button>
+    </header>
+    <p class="tagline">― 眠気に勝つ。あなたのミッション ―</p>
+    <div class="home-stage">
+      <div class="room-window"></div>
+      <div class="lamp"></div>
+      <div class="mini-mon" id="homeMon"></div>
+      <div class="char bob" id="homeChar"></div>
+      <div class="bubble right" id="homeBubble"></div>
+    </div>
+    <div class="panel status">
+      <h2>現在のステータス</h2>
+      <div class="meter sleep"><span class="m-ic" data-ic="moon"></span><span class="m-label">ねむけ</span><span class="m-val" id="hSleepV"></span><div class="bar"><i id="hSleep"></i></div></div>
+      <div class="meter focus"><span class="m-ic" data-ic="bolt"></span><span class="m-label">集中力</span><span class="m-val" id="hFocusV"></span><div class="bar"><i id="hFocus"></i></div></div>
+      <button class="cta" id="startBtn"></button>
+    </div>
+  </section>
+
+  <!-- ゲームプレイ -->
+  <section class="screen" id="play" hidden>
+    <div class="city" data-seed="3"></div>
+    <div class="hud-top">
+      <div class="timer"><small>残り時間</small><b id="tTime">01:00</b></div>
+      <div class="lv" id="lvChip">眠気 Lv.1</div>
+      <button class="icon-btn" id="pauseBtn" aria-label="一時停止"><svg viewBox="0 0 24 24" fill="#fff"><rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/></svg></button>
+    </div>
+    <div class="stage">
+      <div class="shadow-mon" id="playMon"></div>
+      <div class="char bob" id="playChar"></div>
+      <div class="bubble" id="playBubble"></div>
+    </div>
+    <p class="next" id="nextLabel">つぎのミッションまで <b id="nextN">3</b></p>
+    <div class="panel">
+      <div class="meter sleep"><span class="m-ic" data-ic="moon"></span><span class="m-label">ねむけ</span><span class="m-val" data-v="sleep"></span><div class="bar"><i data-b="sleep"></i></div></div>
+      <div class="meter focus"><span class="m-ic" data-ic="bolt"></span><span class="m-label">集中力</span><span class="m-val" data-v="focus"></span><div class="bar"><i data-b="focus"></i></div></div>
+    </div>
+  </section>
+
+  <!-- ミニゲーム -->
+  <section class="screen" id="mini" hidden>
+    <header class="mini-head">
+      <div><h2 id="miniTitle"></h2><p id="miniSub"></p></div>
+      <div class="ring"><svg viewBox="0 0 52 52"><circle class="bg" cx="26" cy="26" r="22"/><circle class="fg" id="ringFg" cx="26" cy="26" r="22" stroke-dasharray="138.2" stroke-dashoffset="0"/></svg><span id="ringNum">10</span></div>
+    </header>
+    <div class="mini-body" id="miniBody"></div>
+    <div class="mini-foot">
+      <div class="meter sleep"><span class="m-ic" data-ic="moon"></span><span class="m-label">ねむけ</span><span class="m-val" data-v="sleep"></span><div class="bar"><i data-b="sleep"></i></div></div>
+      <div class="meter focus"><span class="m-ic" data-ic="bolt"></span><span class="m-label">集中力</span><span class="m-val" data-v="focus"></span><div class="bar"><i data-b="focus"></i></div></div>
+    </div>
+    <div class="judge" id="judge" hidden></div>
+  </section>
+
+  <!-- 敵キャラ -->
+  <section class="screen" id="monster" hidden>
+    <header class="mini-head">
+      <div><h2>ねむねむモンスター</h2><p>連打して追い払え！</p></div>
+      <div class="ring"><svg viewBox="0 0 52 52"><circle class="bg" cx="26" cy="26" r="22"/><circle class="fg" id="ringFg2" cx="26" cy="26" r="22" stroke-dasharray="138.2" stroke-dashoffset="0"/></svg><span id="ringNum2">6</span></div>
+    </header>
+    <div class="mon-stage">
+      <div class="bubble" id="monBubble">ねむねむ…<br>もっと…ねむく<br>させてあげる…</div>
+      <button class="mon-btn" id="monBtn" aria-label="モンスターをタップ"></button>
+      <div class="portal"></div>
+      <div class="hp"><label><span>モンスターの体力</span><span id="hpV">100%</span></label><div class="bar"><i id="hpBar" style="width:100%"></i></div></div>
+    </div>
+    <div class="mon-foot"><div class="char" id="monChar"></div><p id="monTip">負けるな…！</p></div>
+    <div class="judge" id="judge2" hidden></div>
+  </section>
+
+  <!-- ミッション成功 -->
+  <section class="screen" id="success" hidden>
+    <div class="rays"></div>
+    <div class="confetti" id="confetti"></div>
+    <h2 class="win-title" id="winTitle">ミッション成功！</h2>
+    <div class="char" id="winChar"></div>
+    <div class="panel pts">
+      <div class="row"><span>意識ポイント</span><b id="winPts">+10</b></div>
+      <p id="winMsg">あと少し！がんばろう！</p>
+    </div>
+    <button class="cta" id="nextBtn">次の問題へ</button>
+  </section>
+
+  <!-- おやすみ -->
+  <section class="screen" id="night" hidden>
+    <div class="gn">
+      <h2><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M30 6a18 18 0 1 0 12 30A15 15 0 1 1 30 6z" fill="#ffd23a"/></svg>GOOD NIGHT</h2>
+      <p id="gnSub">― 今日はここまで！ ―</p>
+    </div>
+    <div class="panel">
+      <h2 style="text-align:center;color:#fff;font-size:15px">今日の記録</h2>
+      <div class="rec-list">
+        <div class="rec-row"><span class="ic" style="background:#3f7bff" data-ic="clock"></span>起きていた時間<b id="gnTime">--:--</b></div>
+        <div class="rec-row"><span class="ic" style="background:#b0409a" data-ic="bolt"></span>ミニゲーム成功<b id="gnWins">0回</b></div>
+        <div class="rec-row"><span class="ic" style="background:#1fa47a" data-ic="star"></span>最高の集中力<b id="gnFocus">0%</b></div>
+      </div>
+    </div>
+    <div class="bed">
+      <p class="baton" id="gnBaton">明日の自分に<br>バトンタッチ。</p>
+      <span class="zzz" style="left:62%;top:30%">z</span><span class="zzz" style="left:66%;top:22%;animation-delay:.9s">Z</span><span class="zzz" style="left:70%;top:14%;animation-delay:1.8s">z</span>
+      <div class="char" id="gnChar"></div>
+      <div class="blanket"></div>
+    </div>
+    <button class="cta" id="gnHome">ホームへもどる</button>
+  </section>
+
+  <!-- 実績 -->
+  <section class="screen has-nav" id="badges" hidden>
+    <div class="page-head"><h2>実績・バッジ</h2></div>
+    <div class="tabs" role="tablist" id="badgeTabs">
+      <button role="tab" aria-selected="true" data-f="all">すべて</button>
+      <button role="tab" aria-selected="false" data-f="done">達成</button>
+      <button role="tab" aria-selected="false" data-f="todo">未達成</button>
+    </div>
+    <p class="badge-count" id="badgeCount"></p>
+    <div class="badge-grid" id="badgeGrid"></div>
+  </section>
+
+  <!-- 設定 -->
+  <section class="screen has-nav" id="settings" hidden>
+    <div class="page-head"><h2>設定</h2></div>
+    <div class="panel">
+      <div class="set-list">
+        <div class="set-row"><span id="lbNotify">通知音</span><button class="switch" role="switch" data-key="notify" aria-labelledby="lbNotify"></button></div>
+        <div class="set-row"><span id="lbBgm">BGM</span><button class="switch" role="switch" data-key="bgm" aria-labelledby="lbBgm"></button></div>
+        <div class="set-row" style="border:0"><span id="lbSfx">効果音</span><button class="switch" role="switch" data-key="sfx" aria-labelledby="lbSfx"></button></div>
+      </div>
+      <p class="set-label">ゲームの長さ</p>
+      <div class="seg" id="lenSeg">
+        <button data-len="60">1分</button><button data-len="120">2分</button><button data-len="180">3分</button>
+      </div>
+      <p class="set-label">キャラクター</p>
+      <div class="charas" id="charaPick"></div>
+      <p class="note">※キャラクターの選択はプレイ中の見た目にだけ反映されます。</p>
+      <button class="danger" id="resetBtn">記録と実績をリセット</button>
+    </div>
+  </section>
+
+  <!-- 記録 -->
+  <section class="screen has-nav" id="records" hidden>
+    <div class="page-head"><h2>記録</h2></div>
+    <div class="panel">
+      <div class="cal-head"><button class="icon-btn" id="calPrev" aria-label="前の月"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M15 5l-7 7 7 7"/></svg></button><b id="calTitle"></b><button class="icon-btn" id="calNext" aria-label="次の月"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M9 5l7 7-7 7"/></svg></button></div>
+      <div class="cal" id="cal"></div>
+    </div>
+    <div class="panel" id="dayDetail"></div>
+  </section>
+
+  <nav class="nav" id="nav">
+    <button data-go="home"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-4.5v-6h-3v6H6v-9H3z"/></svg>ホーム</button>
+    <button data-go="records"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>記録</button>
+    <button data-go="badges"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 16.9 6.1 20l1.2-6.5L2.5 8.9 9.1 8z"/></svg>実績</button>
+    <button data-go="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg>設定</button>
+  </nav>
+
+  <!-- 眠気の演出 -->
+  <div class="drowsy" id="drowsy"></div>
+  <div class="lids" id="lids"><i></i><i></i></div>
+
+  <!-- 眠気が限界 -->
+  <div class="overlay" id="ask" hidden>
+    <div class="modal warn">
+      <div class="char" id="askChar"></div>
+      <div class="bubble" style="margin:0 auto;max-width:none">もう… だめかも…</div>
+      <h3>眠気が強くなっています</h3>
+      <p>今夜はここまでにしますか？</p>
+      <button class="cta" id="askSleep"><svg width="20" height="20" viewBox="0 0 48 48"><path d="M30 6a18 18 0 1 0 12 30A15 15 0 1 1 30 6z" fill="#2a1a00"/></svg>今日は寝る</button>
+      <button class="cta ghost" id="askMore"><svg width="18" height="18" viewBox="0 0 24 24" fill="#ffd23a"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>もう少し遊ぶ</button>
+    </div>
+  </div>
+
+  <!-- 一時停止 -->
+  <div class="overlay" id="pause" hidden>
+    <div class="modal plain">
+      <h3>一時停止中</h3>
+      <p>寝るのも正解。無理はしないでね。</p>
+      <button class="cta" id="pResume">つづける</button>
+      <button class="cta ghost" id="pSleep">今日は寝る</button>
+      <button class="cta ghost" id="pQuit">ホームへ（記録しない）</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"><div class="bdg" id="toastIc"></div><div><small>実績解除！</small><b id="toastName"></b></div></div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const clamp = (v, a = 0, b = 100) => Math.max(a, Math.min(b, v));
+const rand = n => Math.floor(Math.random() * n);
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = rand(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const pad = n => String(n).padStart(2, '0');
+
+/* ---------- 保存 ---------- */
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('nemuke_' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('nemuke_' + k, JSON.stringify(v)); } catch (e) {} }
+};
+const settings = Object.assign({ notify: true, bgm: false, sfx: true, len: 120, chara: 0 }, store.get('settings', {}));
+if (![60, 120, 180].includes(settings.len)) settings.len = 120;
+let records = store.get('records', {});
+let badges = store.get('badges', {});
+let lastEnd = store.get('lastEnd', null);
+
+/* ---------- アイコン ---------- */
+const IC = {
+  moon: '<svg viewBox="0 0 24 24"><path d="M15 3a9 9 0 1 0 6 15A7.5 7.5 0 1 1 15 3z" fill="#fff"/></svg>',
+  bolt: '<svg viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z" fill="#fff"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
+  star: '<svg viewBox="0 0 24 24"><path d="M12 2l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 16.9 6.1 20l1.2-6.5L2.5 8.9 9.1 8z" fill="#fff"/></svg>'
+};
+$$('[data-ic]').forEach(el => el.innerHTML = IC[el.dataset.ic]);
+
+/* ---------- 夜景 ---------- */
+function skyline(seed) {
+  let r = seed * 999;
+  const rnd = () => (r = (r * 9301 + 49297) % 233280) / 233280;
+  const H = 300; let x = -4, s = '';
+  while (x < 440) {
+    const w = 24 + rnd() * 44, bh = 70 + rnd() * (H - 90), y = H - bh;
+    s += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${bh.toFixed(1)}" fill="${rnd() < .5 ? '#121a4f' : '#18215f'}"/>`;
+    for (let wy = y + 8; wy < H - 8; wy += 11) for (let wx = x + 5; wx < x + w - 6; wx += 8)
+      if (rnd() < .26) s += `<rect x="${wx.toFixed(1)}" y="${wy.toFixed(1)}" width="3.5" height="5.5" fill="${rnd() < .7 ? '#ffd58a' : '#8fd8ff'}" opacity="${(.4 + rnd() * .6).toFixed(2)}"/>`;
+    x += w + 1.5;
+  }
+  return `<svg viewBox="0 0 430 ${H}" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><defs><linearGradient id="cf${seed}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7a4dff" stop-opacity=".0"/><stop offset="1" stop-color="#7a4dff" stop-opacity=".25"/></linearGradient></defs>${s}<rect width="430" height="${H}" fill="url(#cf${seed})"/></svg>`;
+}
+$$('.city').forEach(el => el.innerHTML = skyline(+el.dataset.seed));
+
+/* ---------- キャラクター ---------- */
+const CHARAS = [
+  { hair: '#2b1f1a', shirt: '#4b4f55', camo: ['#30343a', '#62676e'] },
+  { hair: '#6a4126', shirt: '#3c5b8f', camo: ['#2a4270', '#5f81b8'] },
+  { hair: '#1b2244', shirt: '#6c4b92', camo: ['#4b3170', '#9a78c4'] },
+  { hair: '#3b2a20', shirt: '#8f3f4d', camo: ['#6b2a36', '#bb6a76'] }
+];
+function charSVG(mood = 'happy', v = settings.chara, fist, s = 0) {
+  const c = CHARAS[v] || CHARAS[0], sk = '#f8d3b4', ol = '#3b2519';
+  // クマ：ねむけ30%から出はじめ、90%で最大
+  const k = clamp((s - 30) / 60, 0, 1);
+  const kuma = x => k <= 0 ? '' :
+    `<path d="M${x - 12} 110 Q${x} ${118 + k * 4} ${x + 12} 110 Q${x} ${114 + k * 2} ${x - 12} 110Z" fill="#6a3f8f" opacity="${(.25 + k * .5).toFixed(2)}"/>` +
+    `<path d="M${x - 10} ${112 + k}  Q${x} ${118 + k * 3} ${x + 10} ${112 + k}" stroke="#5a3478" stroke-width="${(1.4 + k * 1.6).toFixed(1)}" fill="none" stroke-linecap="round" opacity="${(.35 + k * .55).toFixed(2)}"/>` +
+    (k > .55 ? `<path d="M${x - 8} ${118 + k * 3} Q${x} ${122 + k * 3} ${x + 8} ${118 + k * 3}" stroke="#5a3478" stroke-width="1.4" fill="none" stroke-linecap="round" opacity="${((k - .55) * 1.6).toFixed(2)}"/>` : '');
+  const eye = x => {
+    if (mood === 'sleep') return `<path d="M${x - 9} 100 Q${x} 107 ${x + 9} 100" stroke="${ol}" stroke-width="3.2" fill="none" stroke-linecap="round"/>`;
+    if (mood === 'sleepy') return `<path d="M${x - 9} 101 Q${x} 108 ${x + 9} 101 Z" fill="#2a1712"/><path d="M${x - 11} 100.5 Q${x} 97 ${x + 11} 100.5" stroke="${ol}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+    const base = `<ellipse cx="${x}" cy="99" rx="9" ry="11.5" fill="#2a1712"/><ellipse cx="${x}" cy="103" rx="6" ry="6" fill="#6b3b22"/><circle cx="${x - 3}" cy="94" r="3.4" fill="#fff"/><circle cx="${x + 3.5}" cy="105" r="1.6" fill="#fff"/>`;
+    if (mood === 'tired') return base + `<rect x="${x - 12}" y="85" width="24" height="12" fill="${sk}"/><path d="M${x - 11} 97 Q${x} 94 ${x + 11} 97" stroke="${ol}" stroke-width="2.8" fill="none" stroke-linecap="round"/>`;
+    return base;
+  };
+  const worried = mood === 'tired' || mood === 'sleepy';
+  const brows = mood === 'sleep' ? '' : worried
+    ? `<path d="M70 84 Q80 83 89 79" stroke="${c.hair}" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M111 79 Q120 83 130 84" stroke="${c.hair}" stroke-width="3.5" fill="none" stroke-linecap="round"/>`
+    : `<path d="M70 81 Q80 75 89 79" stroke="${c.hair}" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M111 79 Q120 75 130 81" stroke="${c.hair}" stroke-width="3.5" fill="none" stroke-linecap="round"/>`;
+  const mouth = {
+    happy: `<path d="M88 116 Q100 133 112 116 Z" fill="#c2414f" stroke="${ol}" stroke-width="2" stroke-linejoin="round"/><path d="M93 124 Q100 128 107 124 Q100 131 93 124Z" fill="#ff8a95"/>`,
+    ok: `<path d="M92 119 Q100 126 108 119" stroke="${ol}" stroke-width="2.6" fill="none" stroke-linecap="round"/>`,
+    tired: `<path d="M92 122 Q96 118 100 122 Q104 126 108 122" stroke="${ol}" stroke-width="2.6" fill="none" stroke-linecap="round"/>`,
+    sleepy: `<ellipse cx="100" cy="121" rx="4.5" ry="5.5" fill="#8a3040" stroke="${ol}" stroke-width="2"/>`,
+    sleep: `<path d="M95 121 Q100 124 105 121" stroke="${ol}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`
+  }[mood];
+  const star = (x, y, r, d) => `<path class="spark" style="animation-delay:${d}s" d="M${x} ${y - r} Q${x} ${y} ${x + r} ${y} Q${x} ${y} ${x} ${y + r} Q${x} ${y} ${x - r} ${y} Q${x} ${y} ${x} ${y - r}Z" fill="#ffe27a"/>`;
+  const sparks = mood === 'happy' ? star(34, 52, 9, 0) + star(170, 64, 11, .5) + star(22, 84, 5, 1) + star(184, 36, 6, 1.4) : '';
+  const zs = mood === 'sleep' ? `<text x="150" y="58" font-size="20" font-weight="900" fill="#c9d6ff">z</text><text x="164" y="40" font-size="26" font-weight="900" fill="#c9d6ff">Z</text>` : '';
+  return `<svg viewBox="0 0 200 200" aria-hidden="true">
+<defs><pattern id="camo${v}" width="34" height="34" patternUnits="userSpaceOnUse"><rect width="34" height="34" fill="${c.shirt}"/><path d="M2 6 q8 -6 14 2 q-4 8 -12 5z M20 18 q10 -4 12 6 q-8 6 -14 0z M4 24 q6 -2 8 4 q-6 4 -9 0z" fill="${c.camo[0]}"/><path d="M18 2 q6 0 6 5 q-5 3 -8 0z M8 16 q5 -1 5 3 q-4 2 -6 0z" fill="${c.camo[1]}"/></pattern></defs>
+<path d="M34 200 Q36 158 68 146 L132 146 Q164 158 166 200Z" fill="${sk}" stroke="${ol}" stroke-width="2.4"/>
+<rect x="88" y="120" width="24" height="30" fill="${sk}"/>
+<path d="M62 200 L62 158 Q66 148 76 146 L84 146 Q100 164 116 146 L124 146 Q134 148 138 158 L138 200Z" fill="url(#camo${v})" stroke="${ol}" stroke-width="2.4" stroke-linejoin="round"/>
+<circle cx="49" cy="100" r="9" fill="${sk}" stroke="${ol}" stroke-width="2.4"/><circle cx="151" cy="100" r="9" fill="${sk}" stroke="${ol}" stroke-width="2.4"/>
+<ellipse cx="100" cy="92" rx="51" ry="48" fill="${sk}" stroke="${ol}" stroke-width="2.4"/>
+<path d="M47 98 Q38 42 100 36 Q164 40 153 98 Q148 76 138 68 L133 82 L123 64 L112 80 L101 60 L90 80 L79 63 L70 82 L64 70 Q52 78 47 98Z" fill="${c.hair}" stroke="${ol}" stroke-width="2" stroke-linejoin="round"/>
+<path d="M62 50 L70 26 L84 42 L96 18 L108 38 L124 22 L128 44 L142 40 L136 56 Q100 34 62 50Z" fill="${c.hair}" stroke="${ol}" stroke-width="2" stroke-linejoin="round"/>
+<path d="M78 52 Q92 44 104 50" stroke="#ffffff30" stroke-width="3" fill="none" stroke-linecap="round"/>
+${brows}${kuma(80)}${kuma(120)}${eye(80)}${eye(120)}
+<ellipse cx="64" cy="116" rx="7" ry="4" fill="#ff8fa0" opacity="${(.55 * (1 - k * .8)).toFixed(2)}"/><ellipse cx="136" cy="116" rx="7" ry="4" fill="#ff8fa0" opacity="${(.55 * (1 - k * .8)).toFixed(2)}"/>
+${mouth}${zs}${sparks}
+</svg>`;
+}
+function monsterSVG(size = 'big') {
+  return `<svg viewBox="0 0 220 170" aria-hidden="true"><defs><radialGradient id="mg${size}" cx=".4" cy=".35" r=".8"><stop offset="0" stop-color="#6d4de0"/><stop offset=".6" stop-color="#3a2692"/><stop offset="1" stop-color="#1c1352"/></radialGradient></defs>
+<path d="M30 150 Q8 122 30 96 Q24 60 60 52 Q76 20 110 30 Q146 18 160 52 Q196 56 192 94 Q214 122 190 150 Q110 166 30 150Z" fill="url(#mg${size})" stroke="#a88cff" stroke-width="3"/>
+<path d="M62 100 Q80 88 98 102 Q80 112 62 100Z" fill="#efeaff"/><path d="M158 100 Q140 88 122 102 Q140 112 158 100Z" fill="#efeaff"/>
+<circle cx="84" cy="101" r="5" fill="#150c3d"/><circle cx="136" cy="101" r="5" fill="#150c3d"/>
+<path d="M58 86 L100 96" stroke="#150c3d" stroke-width="6" stroke-linecap="round"/><path d="M162 86 L120 96" stroke="#150c3d" stroke-width="6" stroke-linecap="round"/>
+<path d="M92 132 Q110 124 128 132" stroke="#150c3d" stroke-width="4" fill="none" stroke-linecap="round"/>
+<text x="168" y="44" font-size="22" font-weight="900" fill="#d8ccff">z</text><text x="184" y="26" font-size="28" font-weight="900" fill="#d8ccff">Z</text></svg>`;
+}
+const BADGE_ART = {
+  moon: ['#ffd23a', '#3f5bd8', '<path d="M30 12a14 14 0 1 0 9 24 11.5 11.5 0 1 1-9-24z" fill="#ffd23a"/>'],
+  target: ['#b98cff', '#4a3fb8', '<circle cx="24" cy="24" r="12" fill="none" stroke="#fff" stroke-width="3.5"/><circle cx="24" cy="24" r="5" fill="#ff7ad0"/>'],
+  flame: ['#ffa640', '#c2452a', '<path d="M24 9c2 7 11 10 11 20a11 11 0 0 1-22 0c0-6 4-8 5-13 2 3 3 5 5 5 1-4 1-8 1-12z" fill="#ffd23a"/>'],
+  heart: ['#ff7ab0', '#b8305e', '<path d="M24 36s-12-7-12-15a6 6 0 0 1 12-2 6 6 0 0 1 12 2c0 8-12 15-12 15z" fill="#fff"/>'],
+  crown: ['#ffd23a', '#2f9b5e', '<path d="M12 33l-2-16 8 7 6-11 6 11 8-7-2 16z" fill="#ffd23a" stroke="#8a5a00" stroke-width="1.5" stroke-linejoin="round"/>'],
+  star: ['#5de6ff', '#2a5cc2', '<path d="M24 10l3.8 8 8.7 1.1-6.4 6 1.7 8.6L24 29.5l-7.8 4.2 1.7-8.6-6.4-6 8.7-1.1z" fill="#fff"/>']
+};
+const badgeSVG = (art, locked) => {
+  const [rim, fill, glyph] = BADGE_ART[art];
+  return `<svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="22" fill="${rim}"/><circle cx="24" cy="24" r="18" fill="${fill}"/>${locked ? '<text x="24" y="31" text-anchor="middle" font-size="20" font-weight="900" fill="#fff">?</text>' : glyph}</svg>`;
+};
+const BADGES = [
+  { id: 'early', name: '早めに寝た', desc: '眠気Lv.5以下で「今日は寝る」', art: 'moon' },
+  { id: 'master', name: '集中の達人', desc: '1回のプレイでミニゲーム10回成功', art: 'target' },
+  { id: 'streak', name: '連続集中', desc: '5回連続でミニゲーム成功', art: 'flame' },
+  { id: 'rest', name: '自分を休ませた', desc: '眠気が限界のときに寝ることを選ぶ', art: 'heart' },
+  { id: 'all', name: '眠気マスター', desc: '1回のプレイで全ミニゲーム＆モンスターをクリア', art: 'crown' },
+  { id: 'endure', name: '最後まで耐えた', desc: '残り時間0まで起きていた', art: 'star', hidden: true }
+];
+
+/* ---------- サウンド ---------- */
+let actx = null, bgmTimer = null;
+function ac() {
+  if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
+  if (actx.state === 'suspended') actx.resume();
+  return actx;
+}
+function tone(f, d = .12, type = 'sine', v = .08, when = 0) {
+  const a = ac(); if (!a) return;
+  const o = a.createOscillator(), g = a.createGain(), t = a.currentTime + when;
+  o.type = type; o.frequency.value = f;
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + .012); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+  o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + d + .05);
+}
+const SFX = {
+  tap: () => tone(700, .07, 'square', .035),
+  ok: () => { tone(784, .12, 'triangle', .09); tone(1047, .2, 'triangle', .09, .1); },
+  ng: () => { tone(260, .18, 'sawtooth', .05); tone(196, .3, 'sawtooth', .05, .14); },
+  star: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, .22, 'triangle', .08, i * .08)),
+  badge: () => [880, 1175, 1568].forEach((f, i) => tone(f, .25, 'sine', .07, i * .1)),
+  warn: () => { tone(440, .2, 'square', .04); tone(440, .2, 'square', .04, .3); }
+};
+function sfx(k) { if (k === 'badge' ? settings.notify : settings.sfx) SFX[k](); }
+function setBgm(on) {
+  clearInterval(bgmTimer); bgmTimer = null;
+  if (!on || !actx) return;
+  const notes = [392, 330, 294, 262, 294, 330, 392, 440, 392, 330, 262, 294, 330, 294, 262, 196];
+  let i = 0;
+  bgmTimer = setInterval(() => {
+    tone(notes[i % 16], .55, 'sine', .03);
+    if (i % 4 === 0) tone(notes[i % 16] / 2, 1.1, 'triangle', .02);
+    i++;
+  }, 440);
+}
+document.addEventListener('pointerdown', () => { ac(); if (settings.bgm && !bgmTimer) setBgm(true); }, { once: true });
+
+/* ---------- 画面切り替え ---------- */
+const NAV_SCREENS = ['home', 'records', 'badges', 'settings'];
+function show(id) {
+  $$('.screen').forEach(s => s.hidden = s.id !== id);
+  $('#nav').hidden = !NAV_SCREENS.includes(id);
+  $$('#nav button').forEach(b => b.dataset.go === id ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
+  const drowsyOn = ['play', 'mini', 'monster'].includes(id);
+  $('#drowsy').classList.toggle('on', drowsyOn);
+  if (!drowsyOn) { $('#lids').classList.remove('blink'); document.documentElement.style.setProperty('--blur', '0px'); }
+  if (id === 'home') renderHome();
+  if (id === 'badges') renderBadges();
+  if (id === 'settings') renderSettings();
+  if (id === 'records') renderRecords();
+}
+$$('[data-go]').forEach(b => b.addEventListener('click', () => { sfx('tap'); show(b.dataset.go); }));
+
+/* ---------- 時刻から眠気 ---------- */
+function baseSleep() {
+  const d = new Date(); let h = d.getHours() + d.getMinutes() / 60;
+  if (h < 6) h += 24;
+  return clamp(Math.round(h < 18 ? 12 : 12 + (h - 18) * 5), 5, 75);
+}
+const focusFrom = s => clamp(Math.round(95 - s * .45));
+const lvOf = s => Math.min(15, 1 + Math.floor(s / 100 * 15));
+const hhmm = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const dayKey = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+function setMeter(barEl, valEl, v) { barEl.style.width = v + '%'; valEl.textContent = Math.round(v) + '%'; }
+
+/* ---------- ホーム ---------- */
+function renderHome() {
+  const late = lastEnd && lastEnd.s >= 80 && Date.now() - lastEnd.t < 3 * 3600e3;
+  const s = late ? Math.round(lastEnd.s) : baseSleep();
+  const f = late ? Math.round(lastEnd.f) : focusFrom(s);
+  setMeter($('#hSleep'), $('#hSleepV'), s);
+  setMeter($('#hFocus'), $('#hFocusV'), f);
+  const mood = late ? 'sleepy' : s < 40 ? 'happy' : s < 60 ? 'ok' : 'tired';
+  $('#homeChar').innerHTML = charSVG(mood, settings.chara, undefined, s);
+  $('#homeBubble').innerHTML = late ? 'うぅ…やった…<br>でも、よくがんばったね。'
+    : s < 40 ? 'よし！<br>まだまだいけるっしょ！' : s < 60 ? 'ちょっと眠いけど<br>がんばるぞ…！' : 'ねむい…<br>でも1回だけ…';
+  $('#homeMon').innerHTML = monsterSVG('home');
+  $('#homeMon').style.opacity = (.35 + s / 150).toFixed(2);
+  $('#startBtn').innerHTML = late ? 'もう少しだけ…' : '<svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 1.5l11 6.5-11 6.5z" fill="#2a1a00"/></svg>ゲームをはじめる';
+}
+
+/* ---------- ゲーム本体 ---------- */
+let G = null;
+const later = (fn, ms) => { const id = setTimeout(fn, ms); if (G) G.timers.push(id); return id; };
+const clearTimers = () => { if (G) { G.timers.forEach(clearTimeout); G.timers = []; } };
+
+function newGame() {
+  const s0 = baseSleep();
+  G = { sleep: s0, focus: focusFrom(s0), time: settings.len, len: settings.len, points: 0, wins: 0, streak: 0, best: focusFrom(s0),
+    types: new Set(), asked: false, fromAsk: false, phase: 'hub', paused: false, hubWait: 2.5, miniLeft: 0, miniMax: 1,
+    onTimeout: null, last: null, monsters: 0, timers: [], blinkAt: 0 };
+}
+$('#startBtn').addEventListener('click', () => { sfx('ok'); newGame(); toHub(); });
+
+const LINES = [
+  [40, ['まだまだ行ける！', 'よーし、集中！', '目がさえてきた！']],
+  [60, ['ちょっと眠いかも…', 'ふぁ…あくび出た', 'まだいける…はず']],
+  [80, ['うぅ…まぶたが重い…', '……ん？', 'ねむねむ…']],
+  [101, ['もう…だめかも…', '……zzz…はっ！']]
+];
+const moodOf = s => s < 40 ? 'happy' : s < 60 ? 'ok' : s < 80 ? 'tired' : 'sleepy';
+
+function toHub() {
+  if (!G) return;
+  clearTimers();
+  G.phase = 'hub'; G.hubWait = 2;
+  show('play');
+  const lines = LINES.find(([m]) => G.sleep < m)[1];
+  $('#playBubble').innerHTML = lines[rand(lines.length)];
+  $('#playChar').innerHTML = charSVG(moodOf(G.sleep), settings.chara, undefined, G.sleep);
+  $('#playMon').innerHTML = monsterSVG('play');
+  updateHUD();
+}
+
+function updateHUD() {
+  if (!G) return;
+  $$('[data-b="sleep"]').forEach(b => b.style.width = G.sleep + '%');
+  $$('[data-b="focus"]').forEach(b => b.style.width = G.focus + '%');
+  $$('[data-v="sleep"]').forEach(v => v.textContent = Math.round(G.sleep) + '%');
+  $$('[data-v="focus"]').forEach(v => v.textContent = Math.round(G.focus) + '%');
+  const t = Math.max(0, Math.ceil(G.time));
+  $('#tTime').textContent = `${pad(Math.floor(t / 60))}:${pad(t % 60)}`;
+  $('#lvChip').textContent = `眠気 Lv.${lvOf(G.sleep)}`;
+  $('#nextN').textContent = Math.max(1, Math.ceil(G.hubWait));
+  $('#playMon').style.opacity = clamp((G.sleep - 40) / 40, 0, 1).toFixed(2);
+  const root = document.documentElement.style;
+  root.setProperty('--d', (G.sleep / 100).toFixed(3));
+  root.setProperty('--blur', (Math.max(0, (G.sleep - 60) / 40) * 1.6).toFixed(2) + 'px');
+}
+
+function tick() {
+  if (!G || G.paused || !['hub', 'mini', 'monster'].includes(G.phase)) return;
+  const dt = .1;
+  G.time -= dt;
+  G.sleep = clamp(G.sleep + dt * (.32 + G.sleep * .0045) * Math.sqrt(90 / G.len));
+  G.focus = clamp(G.focus - dt * .3);
+  if (G.phase === 'mini' || G.phase === 'monster') {
+    G.miniLeft -= dt;
+    const frac = Math.max(0, G.miniLeft / G.miniMax);
+    const [fg, num] = G.phase === 'mini' ? ['#ringFg', '#ringNum'] : ['#ringFg2', '#ringNum2'];
+    $(fg).style.strokeDashoffset = (138.2 * (1 - frac)).toFixed(1);
+    $(num).textContent = Math.max(0, Math.ceil(G.miniLeft));
+    if (G.miniLeft <= 0 && G.onTimeout) { const f = G.onTimeout; G.onTimeout = null; f(); }
+  } else if (G.phase === 'hub') {
+    G.hubWait -= dt;
+    if (G.hubWait <= 0) { launchNext(); }
+  }
+  if (!G || G.phase === 'end') return;
+  updateHUD();
+  // まばたき演出
+  if (G.sleep >= 65 && performance.now() > G.blinkAt) {
+    G.blinkAt = performance.now() + 2600 + Math.random() * 3000 - G.sleep * 15;
+    const l = $('#lids'); l.classList.add('blink'); setTimeout(() => l.classList.remove('blink'), 180 + G.sleep * 3);
+  }
+  if (G.sleep >= 100) return endGame('fell');
+  if (G.time <= 0) return endGame('clear');
+  if (G.phase === 'hub' && G.sleep >= 85 && !G.asked) { G.asked = true; openAsk(); }
+}
+setInterval(tick, 100);
+
+function launchNext() {
+  if (G.sleep >= 45 && G.monsters < 5 && G.last !== 'monster' && Math.random() < .35) return startMonster();
+  const types = ['memory', 'react', 'text'].filter(t => t !== G.last);
+  const t = types[rand(types.length)];
+  ({ memory: startMemory, react: startReact, text: startText })[t]();
+}
+
+function beginMini(type, title, sub, secs) {
+  clearTimers();
+  G.phase = 'mini'; G.last = type; G.miniLeft = G.miniMax = secs;
+  $('#miniTitle').textContent = title; $('#miniSub').textContent = sub;
+  $('#ringFg').style.strokeDashoffset = 0; $('#ringNum').textContent = secs;
+  $('#judge').hidden = true;
+  G.onTimeout = () => miniFail('時間切れ…');
+  show('mini');
+  updateHUD();
+  return $('#miniBody');
+}
+
+/* 記憶ゲーム */
+function startMemory() {
+  const lv = lvOf(G.sleep);
+  const body = beginMini('memory', '記憶ゲーム', '一瞬だけ表示された数字を覚えよう！', 12);
+  const digits = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]).slice(0, 6);
+  const showMs = Math.max(800, 2000 - lv * 70);
+  const target = rand(6);
+  const askPos = Math.random() < .5; // true: 「Xは何番目？」 false: 「N番目の数字は？」
+  const choices = askPos ? [1, 2, 3, 4, 5, 6] : shuffle(digits);
+  body.innerHTML = `<div class="mem-grid">${digits.map((d, i) => `<div class="mem-cell neon-cell"><small>${i + 1}</small><b>${d}</b></div>`).join('')}</div>
+    <p class="q" id="memQ">よーく見て…</p>
+    <div class="opts">${choices.map(n => `<button class="opt-circle" data-n="${n}" disabled>${n}</button>`).join('')}</div>`;
+  later(() => {
+    $$('.mem-cell').forEach(c => { c.classList.add('hide'); c.querySelector('b').textContent = '?'; });
+    $('#memQ').textContent = askPos ? `さあ、${digits[target]} は何番目だった？` : `${target + 1} 番目の数字はどれ？`;
+    $$('.opt-circle').forEach(b => b.disabled = false);
+  }, showMs);
+  $$('.opt-circle').forEach(b => b.addEventListener('click', () => {
+    if (G.phase !== 'mini') return;
+    sfx('tap');
+    const ok = askPos ? +b.dataset.n === target + 1 : +b.dataset.n === digits[target];
+    ok ? miniWin('memory') : miniFail(askPos ? `正解は ${target + 1} 番目` : `正解は ${digits[target]}`);
+  }));
+}
+
+/* 反応ゲーム */
+function startReact() {
+  const lv = lvOf(G.sleep), need = 6, span = Math.max(560, 1200 - lv * 40);
+  const decoyRate = lv >= 6 ? Math.min(.35, .12 + lv * .02) : 0;
+  const body = beginMini('react', '反応ゲーム', decoyRate ? 'オレンジだけタップ！青はワナだよ' : '光った場所をタップしてね！', 12);
+  body.innerHTML = `<div class="react-grid">${Array.from({ length: 9 }, (_, i) => `<button class="react-cell neon-cell" aria-label="マス${i + 1}"></button>`).join('')}</div>
+    <p class="counter" id="rc"></p>`;
+  const cells = $$('.react-cell');
+  let hits = 0, miss = 0, lit = -1, decoy = -1, prev = -1, litTimer = null;
+  const upd = () => $('#rc').textContent = `ヒット ${hits} / ${need}　ミス ${miss} / 3`;
+  const next = () => {
+    lit = -1; decoy = -1; cells.forEach(c => c.classList.remove('lit', 'hit', 'decoy'));
+    later(() => {
+      let n; do { n = rand(9); } while (n === prev);
+      prev = n;
+      if (Math.random() < decoyRate) {
+        decoy = n; cells[n].classList.add('decoy');
+        litTimer = later(next, span);
+        return;
+      }
+      lit = n; cells[lit].classList.add('lit');
+      litTimer = later(() => {
+        if (lit < 0) return;
+        miss++; upd();
+        miss >= 3 ? miniFail('見のがしちゃった…') : next();
+      }, span);
+    }, 200 + Math.random() * 450);
+  };
+  cells.forEach((c, i) => c.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    if (G.phase !== 'mini') return;
+    if (i === lit) {
+      hits++; sfx('tap'); clearTimeout(litTimer); lit = -1;
+      c.classList.remove('lit'); c.classList.add('hit'); upd();
+      hits >= need ? later(() => miniWin('react'), 150) : next();
+    } else {
+      miss++; sfx('ng'); c.classList.add('bad'); later(() => c.classList.remove('bad'), 220); upd();
+      if (miss >= 3) return miniFail(i === decoy ? '青いワナを押しちゃった…' : '押しまちがえた…');
+      if (i === decoy) { clearTimeout(litTimer); next(); }
+    }
+  }));
+  upd(); next();
+}
+
+/* 文字崩し */
+const WORDS = [
+  ['おはよう', 'おやすみ', 'おはなし', 'おはぎ'],
+  ['がんばれ', 'がんばる', 'かんぱい', 'がんたん'],
+  ['めざまし', 'めだまし', 'ねざまし', 'めさまし'],
+  ['コーヒー', 'コピー', 'ユーヒー', 'コーラー'],
+  ['ねむくない', 'ねむたい', 'ねむくなる', 'むくない'],
+  ['あさごはん', 'あさはごん', 'ささごはん', 'あさごはい'],
+  ['はみがき', 'はみかき', 'ほみがき', 'はなかき'],
+  ['しゅうちゅう', 'しゅうちょう', 'じゅうちゅう', 'しゅっちょう'],
+  ['まだいける', 'まだいけぬ', 'まだおける', 'また行ける'],
+  ['ねおち', 'ねあち', 'ねおさ', 'ぬおち'],
+  ['よふかし', 'よぶかし', 'よふがし', 'ようかし'],
+  ['まくら', 'まぐら', 'さくら', 'まくろ'],
+  ['シャワー', 'シャウー', 'ジャワー', 'シヤワー'],
+  ['ストレッチ', 'ストレッテ', 'ストッレチ', 'スレトッチ'],
+  ['おふとん', 'おぶとん', 'あふとん', 'おふとこ']
+];
+function startText() {
+  const lv = lvOf(G.sleep), g = (.35 + lv / 15 * .6).toFixed(2);
+  const body = beginMini('text', '文字崩し', lv >= 9 ? '文字はすぐ消える！見のがすな！' : '表示された文字を読み取ろう！', 7);
+  const [ans, ...wrong] = WORDS[rand(WORDS.length)];
+  const opts = shuffle([ans, ...wrong]);
+  // キャラのつぶやきは一部だけ（ねむいほど読めない）
+  const chars = [...ans], hideN = Math.min(chars.length - 1, Math.floor(lv / 5));
+  const hidden = new Set(shuffle(chars.map((_, i) => i)).slice(0, hideN));
+  const mumble = chars.map((ch, i) => hidden.has(i) ? '？' : ch).join('……');
+  body.innerHTML = `<div class="glitch${lv >= 9 ? ' fade' : ''}" style="--g:${g}">${chars.map(ch => `<span style="--sp:${(.25 + Math.random() * .5).toFixed(2)}s;animation-delay:-${Math.random().toFixed(2)}s">${ch}</span>`).join('')}</div>
+    <div class="try-row"><div class="char">${charSVG(moodOf(G.sleep), settings.chara, false, G.sleep)}</div><p>${mumble}……？</p></div>
+    <div class="opts words">${opts.map(o => `<button class="opt-word">${o}</button>`).join('')}</div>`;
+  $$('.opt-word').forEach(b => b.addEventListener('click', () => {
+    if (G.phase !== 'mini') return;
+    sfx('tap');
+    b.textContent === ans ? miniWin('text') : miniFail(`正解は「${ans}」`);
+  }));
+}
+
+/* ねむねむモンスター */
+function startMonster() {
+  clearTimers();
+  G.phase = 'monster'; G.last = 'monster'; G.monsters++;
+  const lv = lvOf(G.sleep), need = 10 + Math.round(lv * .6);
+  let hp = 100;
+  G.miniLeft = G.miniMax = 7;
+  $('#ringFg2').style.strokeDashoffset = 0; $('#ringNum2').textContent = 7;
+  $('#judge2').hidden = true;
+  $('#monBtn').innerHTML = monsterSVG('fight');
+  $('#monChar').innerHTML = charSVG(moodOf(G.sleep), settings.chara, true, G.sleep);
+  $('#hpBar').style.width = '100%'; $('#hpV').textContent = '100%';
+  $('#monTip').textContent = '負けるな…！';
+  G.monHit = () => {
+    if (G.phase !== 'monster') return;
+    hp = Math.max(0, hp - 100 / need);
+    sfx('tap');
+    const btn = $('#monBtn'); btn.classList.remove('hitfx'); void btn.offsetWidth; btn.classList.add('hitfx');
+    $('#hpBar').style.width = hp + '%'; $('#hpV').textContent = Math.round(hp) + '%';
+    if (hp <= 50) $('#monTip').textContent = 'あと少し！';
+    if (hp <= 0) miniWin('monster');
+  };
+  G.onTimeout = () => {
+    G.phase = 'judge'; sfx('ng');
+    G.sleep = clamp(G.sleep + 12); G.focus = clamp(G.focus - 10); G.streak = 0;
+    const j = $('#judge2'); j.innerHTML = 'ねむねむ…<small>ねむけ +12</small>'; j.hidden = false;
+    updateHUD();
+    later(() => G.sleep >= 100 ? endGame('fell') : toHub(), 1300);
+  };
+  show('monster');
+  updateHUD();
+}
+$('#monBtn').addEventListener('pointerdown', e => { e.preventDefault(); G && G.monHit && G.monHit(); });
+
+const CHEERS = ['あと少し！がんばろう！', 'いい感じ！目がさえてきた！', 'その調子！', '集中できてる！', 'ナイス！まだいける！'];
+function miniWin(type) {
+  if (!G || !['mini', 'monster'].includes(G.phase)) return;
+  clearTimers();
+  G.phase = 'success';
+  const monster = type === 'monster';
+  const pts = monster ? 20 : 10;
+  G.sleep = clamp(G.sleep - (monster ? 9 : 6));
+  G.focus = clamp(G.focus + (monster ? 8 : 10));
+  G.points += pts; G.wins++; G.streak++; G.types.add(type);
+  G.best = Math.max(G.best, G.focus);
+  sfx('star');
+  $('#winTitle').textContent = monster ? '撃退成功！' : 'ミッション成功！';
+  $('#winChar').innerHTML = charSVG('happy', settings.chara, true, G.sleep);
+  $('#winPts').textContent = '+' + pts;
+  $('#winMsg').textContent = `${CHEERS[rand(CHEERS.length)]}（合計 ${G.points} pt・${G.streak}連続）`;
+  $('#confetti').innerHTML = Array.from({ length: 22 }, () => `<i style="left:${rand(100)}%;background:${['#ffd23a', '#ff5fa8', '#5de6ff', '#39e3a6'][rand(4)]};animation-delay:-${(Math.random() * 2.4).toFixed(2)}s;animation-duration:${(1.8 + Math.random() * 1.4).toFixed(2)}s"></i>`).join('');
+  show('success');
+  if (G.wins >= 10) unlock('master');
+  if (G.streak >= 5) unlock('streak');
+  if (['memory', 'react', 'text', 'monster'].every(t => G.types.has(t))) unlock('all');
+}
+$('#nextBtn').addEventListener('click', () => { sfx('tap'); toHub(); });
+
+function miniFail(msg) {
+  if (!G || G.phase !== 'mini') return;
+  clearTimers();
+  G.phase = 'judge'; sfx('ng');
+  G.sleep = clamp(G.sleep + 8); G.focus = clamp(G.focus - 10); G.streak = 0;
+  const j = $('#judge'); j.innerHTML = `うぅ…しっぱい<small>${msg}<br>ねむけ +8</small>`; j.hidden = false;
+  updateHUD();
+  later(() => G.sleep >= 100 ? endGame('fell') : toHub(), 1400);
+}
+
+/* 限界の確認 */
+function openAsk() {
+  sfx('warn');
+  G.phase = 'ask';
+  $('#askChar').innerHTML = charSVG('sleepy', settings.chara, false, G.sleep);
+  $('#ask').hidden = false;
+}
+$('#askSleep').addEventListener('click', () => { $('#ask').hidden = true; G.fromAsk = true; endGame('slept'); });
+$('#askMore').addEventListener('click', () => { sfx('tap'); $('#ask').hidden = true; G.phase = 'hub'; G.hubWait = 1.5; });
+
+/* 一時停止 */
+$('#pauseBtn').addEventListener('click', () => { if (!G || G.phase !== 'hub') return; sfx('tap'); G.paused = true; $('#pause').hidden = false; });
+$('#pResume').addEventListener('click', () => { $('#pause').hidden = true; G.paused = false; });
+$('#pSleep').addEventListener('click', () => { $('#pause').hidden = true; G.paused = false; endGame('slept'); });
+$('#pQuit').addEventListener('click', () => { $('#pause').hidden = true; clearTimers(); G = null; show('home'); });
+
+/* 終了 */
+function endGame(kind) {
+  if (!G || G.phase === 'end') return;
+  clearTimers();
+  G.phase = 'end';
+  $('#ask').hidden = true; $('#pause').hidden = true;
+  const now = new Date();
+  const key = dayKey(new Date(now - 6 * 3600e3));
+  const rec = records[key] || { awake: '', wins: 0, focus: 0, plays: 0 };
+  rec.awake = hhmm(now); rec.wins += G.wins; rec.focus = Math.max(rec.focus, Math.round(G.best)); rec.plays++;
+  records[key] = rec; store.set('records', records);
+  lastEnd = { s: G.sleep, f: G.focus, t: Date.now() }; store.set('lastEnd', lastEnd);
+
+  const sub = {
+    slept: ['― 今日はここまで！ ―', '明日の自分に<br>バトンタッチ。'],
+    clear: ['― 最後まで耐えきった！ ―', 'よくがんばった！<br>さあ、寝よう。'],
+    fell: ['― 寝落ちしちゃった… それも正解 ―', 'おやすみ…<br>また明日。']
+  }[kind];
+  $('#gnSub').textContent = sub[0];
+  $('#gnBaton').innerHTML = sub[1];
+  $('#gnTime').textContent = hhmm(now);
+  $('#gnWins').textContent = G.wins + '回';
+  $('#gnFocus').textContent = Math.round(G.best) + '%';
+  $('#gnChar').innerHTML = charSVG('sleep', settings.chara, false, G.sleep);
+  show('night');
+  sfx('star');
+  const lv = lvOf(G.sleep);
+  if (kind === 'slept' && lv <= 5) unlock('early');
+  if (kind === 'slept' && G.fromAsk) unlock('rest');
+  if (kind === 'clear') unlock('endure');
+  G = null;
+}
+$('#gnHome').addEventListener('click', () => { sfx('tap'); show('home'); });
+
+/* ---------- 実績 ---------- */
+const toastQ = [];
+let toastBusy = false;
+function unlock(id) {
+  if (badges[id]) return;
+  badges[id] = dayKey(new Date()); store.set('badges', badges);
+  toastQ.push(id); runToast();
+}
+function runToast() {
+  if (toastBusy || !toastQ.length) return;
+  toastBusy = true;
+  const b = BADGES.find(x => x.id === toastQ.shift());
+  $('#toastIc').innerHTML = badgeSVG(b.art);
+  $('#toastName').textContent = b.name;
+  sfx('badge');
+  $('#toast').classList.add('show');
+  setTimeout(() => { $('#toast').classList.remove('show'); setTimeout(() => { toastBusy = false; runToast(); }, 400); }, 2400);
+}
+let badgeFilter = 'all';
+function renderBadges() {
+  const done = BADGES.filter(b => badges[b.id]).length;
+  $('#badgeCount').textContent = `達成 ${done} / ${BADGES.length}`;
+  const list = BADGES.filter(b => badgeFilter === 'all' || (badgeFilter === 'done') === !!badges[b.id]);
+  $('#badgeGrid').innerHTML = list.map(b => {
+    const got = !!badges[b.id], secret = b.hidden && !got;
+    return `<div class="badge ${got ? '' : 'locked'}"><div class="bdg">${badgeSVG(b.art, secret)}</div><b>${secret ? '？？？' : b.name}</b><small>${secret ? '？？？' : b.desc}${got ? `<br>${badges[b.id].replace(/-/g, '/')} 達成` : ''}</small></div>`;
+  }).join('') || '<p class="empty">ここに表示する実績はまだありません。</p>';
+}
+$$('#badgeTabs button').forEach(t => t.addEventListener('click', () => {
+  badgeFilter = t.dataset.f;
+  $$('#badgeTabs button').forEach(x => x.setAttribute('aria-selected', x === t));
+  renderBadges();
+}));
+
+/* ---------- 設定 ---------- */
+function renderSettings() {
+  $$('.switch').forEach(s => s.setAttribute('aria-checked', !!settings[s.dataset.key]));
+  $$('#lenSeg button').forEach(b => b.setAttribute('aria-pressed', +b.dataset.len === settings.len));
+  $('#charaPick').innerHTML = CHARAS.map((_, i) => `<button aria-label="キャラクター${i + 1}" aria-pressed="${i === settings.chara}" data-c="${i}">${charSVG('happy', i, false)}</button>`).join('');
+  $$('#charaPick button').forEach(b => b.addEventListener('click', () => { settings.chara = +b.dataset.c; save(); sfx('tap'); renderSettings(); }));
+  $('#resetBtn').textContent = '記録と実績をリセット'; resetArmed = false;
+}
+const save = () => store.set('settings', settings);
+$$('.switch').forEach(s => s.addEventListener('click', () => {
+  const k = s.dataset.key; settings[k] = !settings[k]; save();
+  if (k === 'bgm') { if (settings.bgm) ac(); setBgm(settings.bgm); }
+  sfx('tap'); renderSettings();
+}));
+$$('#lenSeg button').forEach(b => b.addEventListener('click', () => { settings.len = +b.dataset.len; save(); sfx('tap'); renderSettings(); }));
+let resetArmed = false;
+$('#resetBtn').addEventListener('click', () => {
+  if (!resetArmed) { resetArmed = true; $('#resetBtn').textContent = 'もう一度押すとリセットします'; return; }
+  records = {}; badges = {}; lastEnd = null;
+  store.set('records', records); store.set('badges', badges); store.set('lastEnd', null);
+  $('#resetBtn').textContent = 'リセットしました'; resetArmed = false;
+});
+
+/* ---------- 記録 ---------- */
+let calY, calM, calSel;
+{ const d = new Date(Date.now() - 6 * 3600e3); calY = d.getFullYear(); calM = d.getMonth(); calSel = dayKey(d); }
+function renderRecords() {
+  $('#calTitle').textContent = `${calY}年${calM + 1}月`;
+  const first = new Date(calY, calM, 1), days = new Date(calY, calM + 1, 0).getDate();
+  const offset = (first.getDay() + 6) % 7;
+  const today = dayKey(new Date(Date.now() - 6 * 3600e3));
+  let h = ['月', '火', '水', '木', '金', '土', '日'].map((w, i) => `<span class="wd ${i === 5 ? 'sat' : i === 6 ? 'sun' : ''}">${w}</span>`).join('');
+  for (let i = 0; i < offset; i++) h += '<span></span>';
+  for (let d = 1; d <= days; d++) {
+    const k = `${calY}-${pad(calM + 1)}-${pad(d)}`;
+    const cls = [records[k] ? 'has' : '', k === today ? 'today' : '', k === calSel ? 'sel' : ''].join(' ');
+    h += `<button class="${cls}" data-k="${k}">${d}</button>`;
+  }
+  $('#cal').innerHTML = h;
+  $$('#cal button').forEach(b => b.addEventListener('click', () => { calSel = b.dataset.k; renderRecords(); }));
+  const [y, m, d] = calSel.split('-').map(Number);
+  const wd = '日月火水木金土'[new Date(y, m - 1, d).getDay()];
+  const r = records[calSel];
+  $('#dayDetail').innerHTML = `<p class="day-title">${m}月${d}日（${wd}）</p>` + (r ? `<div class="rec-list">
+    <div class="rec-row"><span class="ic" style="background:#3f7bff">${IC.clock}</span>起きていた時間<b>${r.awake}</b></div>
+    <div class="rec-row"><span class="ic" style="background:#b0409a">${IC.bolt}</span>ミニゲーム成功<b>${r.wins}回</b></div>
+    <div class="rec-row"><span class="ic" style="background:#1fa47a">${IC.star}</span>最高の集中力<b>${r.focus}%</b></div>
+    <div class="rec-row"><span class="ic" style="background:#6c4b92">${IC.moon}</span>プレイ回数<b>${r.plays}回</b></div></div>`
+    : '<p class="empty">この日の記録はありません。夜にプレイすると、ここに残ります。</p>');
+}
+$('#calPrev').addEventListener('click', () => { if (--calM < 0) { calM = 11; calY--; } renderRecords(); });
+$('#calNext').addEventListener('click', () => { if (++calM > 11) { calM = 0; calY++; } renderRecords(); });
+
+show('home');
+})();
+</script>
