@@ -11,6 +11,7 @@
   color-scheme:light;
 }
 html,body{height:100%}
+[hidden]{display:none!important}
 body{margin:0;background:var(--sky);color:var(--white);overflow:hidden;touch-action:none;
   -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;
   font-family:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Meiryo",system-ui,sans-serif;font-weight:800}
@@ -146,6 +147,18 @@ button:focus-visible{outline:3px solid #fff;outline-offset:3px}
 .cc .best{font-size:11px;font-variant-numeric:tabular-nums;color:var(--blue)}
 .cc[aria-pressed="true"]{border-color:var(--yellow);background:linear-gradient(#fff6c8,#ffd95a);box-shadow:0 0 0 3px var(--blue2)}
 @media (max-width:700px){.grid-course{grid-template-columns:repeat(2,1fr)}}
+img.pt{display:block;width:100%;height:auto;max-width:100%;pointer-events:none}
+.pick .emo{width:52px}
+.stage .big{width:110px}
+.ranks img.pt{width:22px}
+.ranks div span:last-child{font-size:inherit}
+.pod .emo{width:62px}
+.res-list img.pt{width:26px}
+.mbody img.pt{display:inline-block;width:24px;vertical-align:middle}
+.lineup{display:flex;gap:2px;margin-top:-4px;transform:rotate(-4deg)}
+.lineup span{width:clamp(44px,8.5vw,80px);filter:drop-shadow(0 3px 0 rgba(15,44,107,.55))}
+@media (prefers-reduced-motion:no-preference){.lineup span{animation:hop 1.1s ease-in-out infinite}}
+@keyframes hop{50%{transform:translateY(-7px)}}
 /* result */
 .podium{display:flex;align-items:flex-end;justify-content:center;gap:8px;width:100%}
 .pod{display:flex;flex-direction:column;align-items:center;flex:1;max-width:130px}
@@ -180,6 +193,7 @@ kbd{background:#fff;color:var(--ink);border-radius:5px;padding:0 6px;font-family
   <div id="title" class="screen">
     <h1 class="logo"><span class="a">カート</span><span class="b">で</span><span class="c">ゴー！</span></h1>
     <div class="ribbon sub">みんなでわくわくレース</div>
+    <div id="lineup" class="lineup"></div>
     <div style="height:clamp(20px,12vh,120px)"></div>
     <button id="btnStart" class="btn-y ol-o">スタート ▶</button>
     <div class="round-row">
@@ -285,14 +299,14 @@ const store = {
 const settings = Object.assign({ sound: true, diff: 1 }, store.get('kdg.settings', {}));
 
 const CHARS = [
-  { name: 'ゆうき', emoji: '🧒', color: '#2f6fe0' },
-  { name: 'みゆ', emoji: '👧', color: '#ff6fae' },
-  { name: 'りく', emoji: '🐼', color: '#5b6b82' },
-  { name: 'たろう', emoji: '🦖', color: '#3dbb4f' },
-  { name: 'そら', emoji: '👦', color: '#f5a623' },
-  { name: 'もも', emoji: '🐰', color: '#c77dff' },
-  { name: 'ケン', emoji: '🐶', color: '#b5651d' },
-  { name: 'ルナ', emoji: '🐱', color: '#ff7a3d' },
+  { name: 'ゆうき', emoji: '🧒', color: '#2f6fe0', look: { type: 'kid', skin: '#ffdcc2', hair: '#7a4a2a', style: 'short' } },
+  { name: 'みゆ', emoji: '👧', color: '#ff6fae', look: { type: 'kid', skin: '#ffdcc2', hair: '#ff7eb3', style: 'twin', ribbon: '#ffd23f' } },
+  { name: 'りく', emoji: '🐼', color: '#5b6b82', look: { type: 'panda', fur: '#ffffff', dark: '#2a2a33' } },
+  { name: 'たろう', emoji: '🦖', color: '#2e9e44', look: { type: 'dino', fur: '#74d86b', dark: '#ff9d1c', belly: '#fff2b0' } },
+  { name: 'そら', emoji: '👦', color: '#f5a623', look: { type: 'kid', skin: '#ffdcc2', hair: '#f0b43c', style: 'cap', cap: '#2f6fe0' } },
+  { name: 'もも', emoji: '🐰', color: '#c77dff', look: { type: 'bunny', fur: '#fff4f8', dark: '#ff9dc0' } },
+  { name: 'ケン', emoji: '🐶', color: '#3fa7e8', look: { type: 'dog', fur: '#f2c690', dark: '#9a6232' } },
+  { name: 'ルナ', emoji: '🐱', color: '#ff7a3d', look: { type: 'cat', fur: '#ffbf7a', dark: '#e0782a' } },
 ];
 const KARTS = [
   { name: 'ブルースター', color: '#2f6fe0', sp: 3, hd: 3, ac: 3 },
@@ -681,6 +695,162 @@ function buildCourse(ci) {
   });
   DECOR[C.decor]();
 }
+/* ================= character art ================= */
+function ell(g, x, y, rx, ry, rot = 0) { g.beginPath(); g.ellipse(x, y, Math.max(0.1, rx), Math.max(0.1, ry), rot, 0, TAU); g.fill(); }
+const ANIMAL = { dog: 1, cat: 1, bunny: 1, panda: 1 };
+function drawFace(g, cx, cy, u, L, expr) {
+  const ink = '#2b1d14';
+  if (L.type === 'dog' || L.type === 'cat' || L.type === 'bunny') { g.fillStyle = L.type === 'dog' ? '#fff3e2' : '#ffffff'; ell(g, cx, cy + 0.3 * u, 0.36 * u, 0.23 * u); }
+  if (L.type === 'dino') { g.fillStyle = L.belly; ell(g, cx, cy + 0.3 * u, 0.44 * u, 0.25 * u); }
+  if (L.type === 'panda') { g.fillStyle = L.dark; [-1, 1].forEach(s => ell(g, cx + s * 0.34 * u, cy + 0.03 * u, 0.2 * u, 0.26 * u, s * 0.55)); }
+  g.fillStyle = 'rgba(255,105,140,.5)';
+  [-1, 1].forEach(s => ell(g, cx + s * 0.6 * u, cy + 0.24 * u, 0.15 * u, 0.085 * u));
+  const ex = 0.34 * u;
+  g.lineCap = 'round'; g.lineJoin = 'round';
+  [-1, 1].forEach(s => {
+    const x = cx + s * ex, y = cy;
+    const eyeInk = L.type === 'panda' ? '#ffffff' : ink;
+    if (expr === 'happy') {
+      g.strokeStyle = eyeInk; g.lineWidth = 0.075 * u;
+      g.beginPath(); g.arc(x, y + 0.06 * u, 0.12 * u, Math.PI * 1.15, Math.PI * 1.85); g.stroke();
+    } else if (expr === 'dizzy') {
+      g.strokeStyle = eyeInk; g.lineWidth = 0.045 * u; g.beginPath();
+      for (let t = 0; t <= 4 * Math.PI; t += 0.3) { const r = t / (4 * Math.PI) * 0.14 * u; const px = x + Math.cos(t * s) * r, py = y + Math.sin(t * s) * r; t ? g.lineTo(px, py) : g.moveTo(px, py); }
+      g.stroke();
+    } else {
+      if (L.type === 'panda') { g.fillStyle = '#fff'; ell(g, x, y, 0.13 * u, 0.15 * u); g.fillStyle = ink; ell(g, x, y + 0.02 * u, 0.09 * u, 0.12 * u); }
+      else { g.fillStyle = ink; ell(g, x, y, 0.115 * u, 0.165 * u); }
+      g.fillStyle = '#fff'; ell(g, x + 0.035 * u, y - 0.06 * u, 0.05 * u, 0.05 * u); ell(g, x - 0.035 * u, y + 0.06 * u, 0.022 * u, 0.022 * u);
+    }
+  });
+  // nose
+  if (L.type === 'dog') { g.fillStyle = '#3a2418'; ell(g, cx, cy + 0.2 * u, 0.1 * u, 0.065 * u); }
+  if (L.type === 'panda') { g.fillStyle = '#222'; ell(g, cx, cy + 0.2 * u, 0.075 * u, 0.05 * u); }
+  if (L.type === 'cat' || L.type === 'bunny') { g.fillStyle = '#ff7fa6'; ell(g, cx, cy + 0.19 * u, 0.06 * u, 0.042 * u); }
+  if (L.type === 'dino') { g.fillStyle = '#2e7a3a'; [-1, 1].forEach(s => ell(g, cx + s * 0.08 * u, cy + 0.2 * u, 0.025 * u, 0.025 * u)); }
+  // mouth
+  const my = cy + (ANIMAL[L.type] ? 0.3 : 0.29) * u;
+  g.strokeStyle = ink; g.lineWidth = 0.05 * u;
+  if (expr === 'happy') {
+    g.fillStyle = '#d23a55'; g.beginPath(); g.moveTo(cx - 0.13 * u, my - 0.03 * u); g.quadraticCurveTo(cx, my + 0.26 * u, cx + 0.13 * u, my - 0.03 * u); g.closePath(); g.fill();
+    g.fillStyle = '#ff9db0'; ell(g, cx, my + 0.08 * u, 0.06 * u, 0.035 * u);
+  } else if (expr === 'dizzy') {
+    g.beginPath(); for (let i = 0; i <= 8; i++) { const px = cx - 0.14 * u + i * 0.035 * u, py = my + (i % 2 ? 0.03 : -0.01) * u; i ? g.lineTo(px, py) : g.moveTo(px, py); } g.stroke();
+  } else if (ANIMAL[L.type]) {
+    g.beginPath(); g.arc(cx - 0.06 * u, my - 0.02 * u, 0.06 * u, 0.1, Math.PI - 0.1); g.arc(cx + 0.06 * u, my - 0.02 * u, 0.06 * u, 0.1, Math.PI - 0.1); g.stroke();
+  } else {
+    g.beginPath(); g.arc(cx, my - 0.08 * u, 0.11 * u, 0.25 * Math.PI, 0.75 * Math.PI); g.stroke();
+  }
+  if (L.type === 'cat') {
+    g.strokeStyle = 'rgba(60,30,20,.55)'; g.lineWidth = 0.025 * u;
+    [-1, 1].forEach(s => [-0.05, 0.05].forEach(d => { g.beginPath(); g.moveTo(cx + s * 0.3 * u, cy + (0.25 + d) * u); g.lineTo(cx + s * 0.62 * u, cy + (0.22 + d * 2) * u); g.stroke(); }));
+  }
+}
+function drawHead2D(g, cx, cy, R, L, expr) {
+  const head = L.skin || L.fur, line = 'rgba(70,35,20,.35)';
+  g.lineWidth = R * 0.06; g.strokeStyle = line;
+  const tri = (pts, fill) => { g.fillStyle = fill; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); g.fill(); g.stroke(); };
+  if (L.type === 'panda') { g.fillStyle = L.dark; [-1, 1].forEach(s => { ell(g, cx + s * 0.7 * R, cy - 0.72 * R, 0.3 * R, 0.3 * R); }); }
+  if (L.type === 'bunny') [-1, 1].forEach(s => {
+    g.fillStyle = head; ell(g, cx + s * 0.34 * R, cy - 1.12 * R, 0.24 * R, 0.62 * R, s * 0.15); g.stroke();
+    g.fillStyle = L.dark; ell(g, cx + s * 0.34 * R, cy - 1.08 * R, 0.11 * R, 0.44 * R, s * 0.15);
+  });
+  if (L.type === 'cat') [-1, 1].forEach(s => {
+    tri([[cx + s * 0.2 * R, cy - 0.9 * R], [cx + s * 0.92 * R, cy - 0.4 * R], [cx + s * 0.82 * R, cy - 1.18 * R]], head);
+    g.fillStyle = L.dark; g.beginPath(); g.moveTo(cx + s * 0.42 * R, cy - 0.82 * R); g.lineTo(cx + s * 0.8 * R, cy - 0.55 * R); g.lineTo(cx + s * 0.76 * R, cy - 1.0 * R); g.closePath(); g.fill();
+  });
+  if (L.type === 'dino') [-0.35, 0, 0.35].forEach(a => {
+    const an = -Math.PI / 2 + a, bx = cx + Math.cos(an) * R * 0.92, by = cy + Math.sin(an) * R * 0.92;
+    const px = -Math.sin(an), py = Math.cos(an);
+    tri([[bx + px * 0.18 * R, by + py * 0.18 * R], [bx - px * 0.18 * R, by - py * 0.18 * R], [cx + Math.cos(an) * R * 1.32, cy + Math.sin(an) * R * 1.32]], L.dark);
+  });
+  if (L.style === 'twin') [-1, 1].forEach(s => { g.fillStyle = L.hair; ell(g, cx + s * 1.02 * R, cy + 0.08 * R, 0.34 * R, 0.4 * R); g.stroke(); });
+  g.fillStyle = head; ell(g, cx, cy, R, R * 0.96); g.stroke();
+  if (L.type === 'kid') {
+    g.save(); g.beginPath(); g.ellipse(cx, cy, R, R * 0.96, 0, 0, TAU); g.clip();
+    g.fillStyle = L.hair; ell(g, cx, cy - 0.62 * R, 1.15 * R, 0.62 * R);
+    for (let x = -0.72; x <= 0.73; x += 0.24) ell(g, cx + x * R, cy - 0.34 * R, 0.17 * R, 0.19 * R);
+    g.restore();
+    g.beginPath(); g.ellipse(cx, cy, R, R * 0.96, 0, 0, TAU); g.stroke();
+    if (L.style === 'short') { g.strokeStyle = L.hair; g.lineWidth = R * 0.12; g.beginPath(); g.moveTo(cx, cy - 0.9 * R); g.quadraticCurveTo(cx + 0.05 * R, cy - 1.3 * R, cx + 0.32 * R, cy - 1.25 * R); g.stroke(); }
+    if (L.style === 'twin') [-1, 1].forEach(s => { g.fillStyle = L.ribbon; ell(g, cx + s * 0.8 * R, cy - 0.32 * R, 0.14 * R, 0.14 * R); ell(g, cx + s * 0.95 * R, cy - 0.4 * R, 0.12 * R, 0.08 * R, s * 0.6); });
+    if (L.style === 'cap') {
+      g.strokeStyle = line; g.lineWidth = R * 0.06;
+      g.fillStyle = L.cap; g.beginPath(); g.arc(cx, cy - 0.28 * R, 1.02 * R, Math.PI, TAU); g.closePath(); g.fill(); g.stroke();
+      g.fillStyle = '#1b3f8f'; ell(g, cx + 0.3 * R, cy - 0.28 * R, 0.85 * R, 0.14 * R);
+      g.fillStyle = '#ffd23f'; ell(g, cx, cy - 0.78 * R, 0.16 * R, 0.16 * R);
+    }
+  }
+  if (L.type === 'dog') [-1, 1].forEach(s => { g.fillStyle = L.dark; g.strokeStyle = line; ell(g, cx + s * 0.9 * R, cy - 0.05 * R, 0.25 * R, 0.52 * R, -s * 0.35); g.stroke(); });
+  if (L.type === 'cat') { g.strokeStyle = L.dark; g.lineWidth = R * 0.07; [-0.2, 0, 0.2].forEach(x => { g.beginPath(); g.moveTo(cx + x * R, cy - 0.88 * R); g.lineTo(cx + x * R, cy - 0.66 * R); g.stroke(); }); }
+  drawFace(g, cx, cy + 0.12 * R, R, L, expr);
+}
+const portraitCache = {};
+function portrait(ch, expr = 'normal') {
+  const key = ch.name + expr;
+  if (portraitCache[key]) return portraitCache[key];
+  const c = document.createElement('canvas'); c.width = c.height = 160;
+  drawHead2D(c.getContext('2d'), 80, 98, 48, ch.look, expr);
+  return portraitCache[key] = c.toDataURL();
+}
+const pimg = (ch, cls = 'pt', expr) => `<img class="${cls}" src="${portrait(ch, expr)}" alt="${ch.name}">`;
+
+const headTexCache = {};
+function headTex(ch, expr) {
+  const key = ch.name + expr;
+  if (headTexCache[key]) return headTexCache[key];
+  const L = ch.look;
+  return headTexCache[key] = canvasTex(512, 256, (g, w, h) => {
+    g.fillStyle = L.skin || L.fur; g.fillRect(0, 0, w, h);
+    if (L.type === 'kid') {
+      g.fillStyle = L.hair; g.fillRect(0, 0, w, h * 0.33);
+      g.fillRect(223, 0, w - 223, h * 0.72); g.fillRect(0, 0, 33, h * 0.72);
+      for (let x = 44; x <= 214; x += 22) ell(g, x, h * 0.33, 15, 18);
+    }
+    if (L.type === 'cat') { g.fillStyle = L.dark; [-24, 0, 24].forEach(d => g.fillRect(128 + d - 5, 58, 10, 26)); for (let x = 250; x < 500; x += 40) g.fillRect(x, 30, 14, 90); }
+    if (L.type === 'dino') { g.fillStyle = 'rgba(40,120,50,.25)'; for (let i = 0; i < 18; i++) ell(g, 230 + Math.random() * 260, 40 + Math.random() * 170, 10, 8); }
+    drawFace(g, 128, 138, 78, L, expr);
+  });
+}
+function makeDriver(ch) {
+  const L = ch.look, skin = L.skin || L.fur;
+  const lam = c => new THREE.MeshLambertMaterial({ color: c });
+  const d = new THREE.Group();
+  const torso = new THREE.Mesh(new THREE.SphereGeometry(0.55, 16, 12), lam(ch.color)); torso.scale.set(1, 1.1, 0.85); torso.position.set(0, 1.35, -0.4); d.add(torso);
+  const collar = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.08, 6, 16), lam(0xffffff)); collar.rotation.x = Math.PI / 2; collar.position.set(0, 1.9, -0.38); d.add(collar);
+  [-1, 1].forEach(s => {
+    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.78, 8), lam(ch.color)); arm.position.set(s * 0.4, 1.43, 0.06); arm.rotation.x = -1.25; d.add(arm);
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.17, 10, 8), lam(skin)); hand.position.set(s * 0.36, 1.3, 0.46); d.add(hand);
+  });
+  const wheel = new THREE.Group(); wheel.position.set(0, 1.3, 0.55); wheel.rotation.x = -0.9; d.add(wheel);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.38, 0.07, 8, 20), lam(0x1d2a44)); wheel.add(ring);
+  const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.08, 0.05), lam(0x1d2a44)); ring.add(spoke);
+  const head = new THREE.Group(); head.position.set(0, 2.42, -0.35); d.add(head);
+  const headMat = new THREE.MeshLambertMaterial({ map: headTex(ch, 'normal') });
+  const ball = new THREE.Mesh(new THREE.SphereGeometry(1, 28, 18), headMat); ball.scale.set(1, 0.95, 0.97); head.add(ball);
+  const part = (geo, color, x, y, z, sx = 1, sy = 1, sz = 1, rx = 0, rz = 0) => {
+    const m = new THREE.Mesh(geo, lam(color)); m.position.set(x, y, z); m.scale.set(sx, sy, sz); m.rotation.set(rx, 0, rz); head.add(m); return m;
+  };
+  const sph = new THREE.SphereGeometry(1, 14, 10);
+  [-1, 1].forEach(s => {
+    if (L.type === 'panda') part(sph, L.dark, s * 0.62, 0.72, -0.05, 0.3, 0.3, 0.2);
+    if (L.type === 'bunny') { part(sph, L.fur, s * 0.34, 1.25, -0.05, 0.22, 0.62, 0.13, 0, -s * 0.14); part(sph, L.dark, s * 0.35, 1.25, 0.05, 0.11, 0.46, 0.06, 0, -s * 0.14); }
+    if (L.type === 'cat') { part(new THREE.ConeGeometry(0.3, 0.55, 4), L.fur, s * 0.55, 0.85, 0, 1, 1, 0.7, 0, -s * 0.42); }
+    if (L.type === 'dog') part(sph, L.dark, s * 0.93, 0.02, -0.02, 0.24, 0.52, 0.16, 0, s * 0.35);
+    if (L.style === 'twin') { part(sph, L.hair, s * 1.0, -0.05, -0.3, 0.38, 0.42, 0.38); part(sph, L.ribbon, s * 0.8, 0.35, -0.25, 0.15, 0.15, 0.15); }
+  });
+  if (L.type === 'dino') [[0, 0.98, 0.15], [0, 0.85, -0.45], [0, 0.5, -0.85]].forEach(([x, y, z]) => {
+    const m = part(new THREE.ConeGeometry(0.2, 0.45, 6), L.dark, x, y, z); m.rotation.x = Math.atan2(z, y);
+  });
+  if (L.style === 'short') { const m = part(new THREE.ConeGeometry(0.09, 0.45, 6), L.hair, 0.08, 1.05, 0.05); m.rotation.z = -0.5; }
+  if (L.style === 'cap') {
+    part(new THREE.SphereGeometry(1.03, 22, 10, 0, TAU, 0, Math.PI * 0.42), L.cap, 0, 0.06, 0);
+    const brim = part(new THREE.CylinderGeometry(0.62, 0.62, 0.07, 20), 0x1b3f8f, 0, 0.36, 0.78, 1, 1, 0.85); brim.rotation.x = 0.28;
+    part(sph, 0xffd23f, 0, 1.08, 0, 0.14, 0.1, 0.14);
+  }
+  return { d, head, headMat, ring, expr: 'normal' };
+}
+
 /* ================= karts ================= */
 const wheelGeo = new THREE.CylinderGeometry(0.48, 0.48, 0.5, 14); wheelGeo.rotateZ(Math.PI / 2);
 const wheelMat = new THREE.MeshLambertMaterial({ color: 0x222222 });
@@ -688,14 +858,6 @@ const hubGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.55, 8); hubGeo.rotateZ(Mat
 const hubMat = new THREE.MeshLambertMaterial({ color: 0xffd23f });
 const shadowTex = canvasTex(64, 64, (g, w) => { const gr = g.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2); gr.addColorStop(0, 'rgba(0,0,0,.45)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, w); });
 const shadowMat = new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false });
-const emojiTexCache = {};
-function emojiTex(e) {
-  if (emojiTexCache[e]) return emojiTexCache[e];
-  return emojiTexCache[e] = canvasTex(128, 128, (g, w, h) => {
-    g.font = '100px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.fillText(e, w / 2, h / 2 + 6);
-  });
-}
 function makeKartMesh(ch, kt) {
   const g = new THREE.Group(), inner = new THREE.Group(); g.add(inner);
   const kc = new THREE.MeshLambertMaterial({ color: kt.color });
@@ -711,15 +873,14 @@ function makeKartMesh(ch, kt) {
     const piv = new THREE.Group(); piv.rotation.order = 'YXZ'; piv.position.set(x, 0.48, z);
     piv.add(new THREE.Mesh(wheelGeo, wheelMat)); piv.add(new THREE.Mesh(hubGeo, hubMat)); inner.add(piv); wheels.push({ piv, front });
   });
-  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.55, 0.85, 12), new THREE.MeshLambertMaterial({ color: ch.color })); torso.position.set(0, 1.3, -0.35); inner.add(torso);
-  const head = new THREE.Sprite(new THREE.SpriteMaterial({ map: emojiTex(ch.emoji) })); head.scale.set(1.9, 1.9, 1); head.position.set(0, 2.45, -0.3); inner.add(head);
+  const driver = makeDriver(ch); inner.add(driver.d);
   const flame = new THREE.Mesh(new THREE.ConeGeometry(0.35, 1.4, 10), new THREE.MeshBasicMaterial({ color: 0x66ccff, transparent: true, opacity: 0.85 }));
   flame.rotation.x = -Math.PI / 2; flame.position.set(0, 0.6, -2.2); flame.visible = false; inner.add(flame);
   const sparkMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
   const sparks = [-1.1, 1.1].map(x => { const s = new THREE.Mesh(new THREE.SphereGeometry(0.28, 8, 6), sparkMat); s.position.set(x, 0.35, -1.55); s.visible = false; inner.add(s); return s; });
   const sh = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 4.4), shadowMat); sh.rotation.x = -Math.PI / 2; sh.position.y = 0.07; g.add(sh);
   scene.add(g);
-  return { g, inner, wheels, flame, sparks, sparkMat };
+  return { g, inner, wheels, flame, sparks, sparkMat, driver };
 }
 
 /* ================= state ================= */
@@ -943,6 +1104,11 @@ function updateMeshes(dt) {
     m.g.rotation.y = k.heading;
     m.inner.rotation.y = k.visYaw + k.spinA;
     m.inner.rotation.z = k.steerSm * 0.07;
+    const dv = m.driver, expr = k.spin > 0 ? 'dizzy' : (k.boost > 0 || (k.finished && k.isPlayer)) ? 'happy' : 'normal';
+    if (dv.expr !== expr) { dv.expr = expr; dv.headMat.map = headTex(k.ch, expr); }
+    dv.head.rotation.z = k.steerSm * 0.16 + (k.drifting ? k.driftDir * 0.12 : 0);
+    dv.head.position.y = 2.42 + Math.abs(Math.sin(clock * 9 + k.x)) * Math.min(0.06, Math.abs(k.speed) * 0.002);
+    dv.ring.rotation.z = -k.steerSm * 1.2;
     for (const w of m.wheels) { w.piv.rotation.x += k.speed * dt / 0.48; if (w.front) w.piv.rotation.y = k.steerSm * 0.4; }
     const boosting = k.boost > 0;
     m.flame.visible = boosting;
@@ -1033,7 +1199,7 @@ function updateHud(dt) {
   if (hudT <= 0) {
     hudT = 0.2;
     $('#hRanks').innerHTML = racers.slice().sort((a, b) => a.rank - b.rank)
-      .map(k => `<div class="${k.isPlayer ? 'me' : ''}"><span>${k.rank + 1}</span><span>${k.ch.emoji}</span></div>`).join('');
+      .map(k => `<div class="${k.isPlayer ? 'me' : ''}"><span>${k.rank + 1}</span>${pimg(k.ch)}</div>`).join('');
   }
   drawMini();
 }
@@ -1061,13 +1227,13 @@ function showResults() {
     .sort((a, b) => a.t - b.t);
   const pod = [1, 0, 2, 3].map(i => {
     const r = rows[i], c = [ 'var(--gold)', 'var(--silver)', 'var(--bronze)', 'var(--purple)'][i], h = [104, 82, 70, 60][i];
-    return `<div class="pod"><span class="emo">${r.k.ch.emoji}</span><div class="blk ol" style="background:${c};height:${h}px"><span class="pl">${i + 1}<small>位</small></span><span class="tm">${fmt(r.t)}</span></div></div>`;
+    return `<div class="pod"><span class="emo">${pimg(r.k.ch, "pt", i === 0 ? "happy" : "normal")}</span><div class="blk ol" style="background:${c};height:${h}px"><span class="pl">${i + 1}<small>位</small></span><span class="tm">${fmt(r.t)}</span></div></div>`;
   }).join('');
   $('#podium').innerHTML = pod;
-  $('#resList').innerHTML = rows.map((r, i) => `<li class="${r.k.isPlayer ? 'me' : ''}"><b>${i + 1}</b><span>${r.k.ch.emoji}</span><span>${r.k.isPlayer ? 'あなた（' + r.k.ch.name + '）' : r.k.ch.name}</span><span class="t">${fmt(r.t)}</span></li>`).join('');
+  $('#resList').innerHTML = rows.map((r, i) => `<li class="${r.k.isPlayer ? 'me' : ''}"><b>${i + 1}</b>${pimg(r.k.ch)}<span>${r.k.isPlayer ? 'あなた（' + r.k.ch.name + '）' : r.k.ch.name}</span><span class="t">${fmt(r.t)}</span></li>`).join('');
   const place = rows.findIndex(r => r.k.isPlayer) + 1;
   const recs = store.get('kdg.records', []);
-  recs.push({ c: courseIdx, t: player.finishTime, place, ch: player.ch.emoji, name: player.ch.name, kart: player.kt.name, d: new Date().toLocaleDateString('ja-JP') });
+  recs.push({ c: courseIdx, t: player.finishTime, place, ci: CHARS.indexOf(player.ch), ch: player.ch.emoji, name: player.ch.name, kart: player.kt.name, d: new Date().toLocaleDateString('ja-JP') });
   recs.sort((a, b) => a.t - b.t);
   const keep = []; COURSES.forEach((c, ci) => keep.push(...recs.filter(r => (r.c || 0) === ci).slice(0, 10)));
   store.set('kdg.records', keep);
@@ -1143,10 +1309,10 @@ $('#hSlot').addEventListener('pointerdown', e => { e.preventDefault(); inp.item 
 
 /* ================= menus ================= */
 function renderSelect() {
-  $('#gridCh').innerHTML = CHARS.map((c, i) => `<button class="pick" data-c="${i}" aria-pressed="${i === selChar}"><span class="emo">${c.emoji}</span><span>${i === selChar ? 'あなた' : c.name}</span></button>`).join('');
+  $('#gridCh').innerHTML = CHARS.map((c, i) => `<button class="pick" data-c="${i}" aria-pressed="${i === selChar}"><span class="emo">${pimg(c)}</span><span>${i === selChar ? 'あなた' : c.name}</span></button>`).join('');
   $('#gridKt').innerHTML = KARTS.map((k, i) => `<button class="pick" data-k="${i}" aria-pressed="${i === selKart}" aria-label="${k.name}">${kartSVG(k.color)}</button>`).join('');
   const c = CHARS[selChar], k = KARTS[selKart];
-  $('#pvEmo').textContent = c.emoji; $('#pvKart').innerHTML = kartSVG(k.color);
+  $('#pvEmo').innerHTML = pimg(c, 'pt', 'happy'); $('#pvKart').innerHTML = kartSVG(k.color);
   $('#pvName').textContent = c.name + ' ／ ' + k.name;
   $('#stSp').style.width = k.sp * 20 + '%'; $('#stHd').style.width = k.hd * 20 + '%'; $('#stAc').style.width = k.ac * 20 + '%';
 }
@@ -1209,7 +1375,7 @@ function openModal(kind) {
     const rc = modalCourse;
     const recs = store.get('kdg.records', []).filter(r => (r.c || 0) === rc);
     body.innerHTML = recs.length
-      ? `<table>${recs.slice(0, 8).map((r, i) => `<tr><td>${i + 1}</td><td>${r.ch} ${r.name}</td><td>${r.place}位</td><td class="t">${fmt(r.t)}</td></tr>`).join('')}</table><p style="margin:0;opacity:.8;font-size:12px">この端末で走った記録です</p>`
+      ? `<table>${recs.slice(0, 8).map((r, i) => `<tr><td>${i + 1}</td><td>${CHARS[r.ci] ? pimg(CHARS[r.ci], 'pt sm') : r.ch} ${r.name}</td><td>${r.place}位</td><td class="t">${fmt(r.t)}</td></tr>`).join('')}</table><p style="margin:0;opacity:.8;font-size:12px">この端末で走った記録です</p>`
       : '<p style="margin:0">まだ記録がありません。レースを完走すると、ここにタイムが残ります。</p>';
     body.innerHTML = `<div class="seg" id="segCourse">${COURSES.map((c, i) => `<button data-v="${i}" aria-pressed="${i === rc}">${c.name.replace('サーキット', '').replace('ロード', '')}</button>`).join('')}</div>` + body.innerHTML;
     body.onclick = e => { const b = e.target.closest('#segCourse button'); if (!b) return; modalCourse = +b.dataset.v; sfx.click(); openModal('rank'); };
@@ -1240,6 +1406,7 @@ document.querySelectorAll('[data-modal]').forEach(b => b.addEventListener('click
 $('#mClose').addEventListener('click', () => { sfx.click(); $('#modal').hidden = true; });
 $('#modal').addEventListener('click', e => { if (e.target.id === 'modal') $('#modal').hidden = true; });
 
+$('#lineup').innerHTML = CHARS.map((c, i) => `<span style="animation-delay:${i * -0.18}s">${pimg(c, 'pt', i % 3 === 0 ? 'happy' : 'normal')}</span>`).join('');
 buildCourse(selCourse);
 setupRacers(null);
 camera.position.set(PX[0], 10, PZ[0] - 20);
