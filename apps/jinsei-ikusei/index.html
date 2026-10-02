@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#f3e6d6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>じんせい育成</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+  html,body{width:100%;height:100%;overflow:hidden;background:#3b2c22;font-family:"Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;color:#3a3530;overscroll-behavior:none}
+  button{font-family:inherit;color:inherit;border:none;background:none;cursor:pointer;touch-action:manipulation}
+  #stage{position:absolute;left:50%;top:50%;transform-origin:center center;overflow:hidden;background:linear-gradient(#e9d8c2,#d9c0a0)}
+  #stage.land{width:1536px;height:1024px}
+  #stage.port{width:900px;height:1720px}
+  #scene{position:absolute;left:0;top:0;display:block}
+  .land #scene{width:1536px;height:1024px}
+  .port #scene{width:900px;height:920px}
+  .card{position:absolute;background:rgba(255,255,255,.93);border-radius:30px;box-shadow:0 6px 20px rgba(80,50,20,.18)}
+  .pill{position:absolute;height:66px;border-radius:33px;background:rgba(255,255,255,.93);box-shadow:0 6px 18px rgba(80,50,20,.16);display:flex;align-items:center;font-weight:700;font-size:28px;color:#3c4150}
+
+  /* profile */
+  #profile{display:flex;align-items:center;padding:0 30px 0 0}
+  .land #profile{left:24px;top:24px;width:484px;height:140px;border-radius:70px}
+  .port #profile{left:16px;top:16px;width:560px;height:140px;border-radius:70px}
+  #avatar{width:128px;height:128px;border-radius:50%;margin:0 18px 0 6px;flex:none;background:linear-gradient(#bfe3ff,#e8f5ff);border:5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.15);overflow:hidden}
+  #profile .info{flex:1}
+  #pname{font-size:30px;font-weight:800;color:#3c4150}
+  .lvrow{display:flex;justify-content:space-between;align-items:baseline;margin-top:2px}
+  #plv{font-size:28px;font-weight:700;color:#3c4150}
+  #pexpT{font-size:20px;font-weight:700;color:#3c4150}
+  .bar{height:12px;border-radius:6px;background:#e3e6ec;overflow:hidden;margin-top:4px}
+  .bar>i{display:block;height:100%;border-radius:6px;transition:width .5s}
+  .enrow{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:18px;font-weight:700;color:#5a5f6e}
+  .enrow .bar{flex:1;margin:0;height:10px}
+
+  #datePill{justify-content:center;gap:16px}
+  .land #datePill{left:535px;top:26px;width:415px}
+  .port #datePill{left:16px;top:180px;width:410px}
+  #datePill .sep{width:2px;height:30px;background:#ddd}
+  #timeT{font-weight:600;color:#5b606e}
+  #wIcon{font-size:34px}
+  #coinPill,#gemPill{justify-content:space-between;padding:0 30px 0 10px;cursor:pointer}
+  .land #coinPill{left:1018px;top:26px;width:200px}
+  .land #gemPill{left:1234px;top:26px;width:184px}
+  .port #coinPill{left:440px;top:180px;width:220px}
+  .port #gemPill{left:672px;top:180px;width:212px}
+  .ico{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:32px}
+  #coinPill .ico{background:radial-gradient(circle at 40% 35%,#ffe58a,#f4b414);box-shadow:inset 0 -3px 0 #d79a0b;font-size:24px;color:#c98a00}
+  #gearBtn{position:absolute;width:66px;height:66px;border-radius:50%;background:rgba(255,255,255,.93);box-shadow:0 6px 18px rgba(80,50,20,.16);font-size:34px;display:flex;align-items:center;justify-content:center}
+  .land #gearBtn{left:1452px;top:26px}
+  .port #gearBtn{left:818px;top:46px}
+
+  /* side menu */
+  #sideMenu{position:absolute;display:flex;flex-direction:column;gap:22px}
+  .land #sideMenu{left:28px;top:182px}
+  .port #sideMenu{left:18px;top:270px;gap:16px}
+  .mbtn{width:104px;display:flex;flex-direction:column;align-items:center;gap:4px;position:relative}
+  .mbtn .mi{width:74px;height:74px;border-radius:22px;background:rgba(255,255,255,.88);box-shadow:0 4px 12px rgba(80,50,20,.2);display:flex;align-items:center;justify-content:center;font-size:40px;transition:transform .15s}
+  .mbtn:active .mi{transform:scale(.92)}
+  .mbtn span{font-size:20px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6),0 0 6px rgba(0,0,0,.35)}
+  .badge{position:absolute;top:-8px;right:4px;width:32px;height:32px;border-radius:50%;background:#ef4a4a;color:#fff;font-weight:900;font-size:22px;display:none;align-items:center;justify-content:center;border:3px solid #fff;animation:bob 1s infinite}
+  .badge.on{display:flex}
+  @keyframes bob{50%{transform:translateY(-4px)}}
+
+  /* bubble */
+  #bubble{position:absolute;background:rgba(255,255,255,.96);border-radius:40px;padding:22px 30px;font-size:24px;line-height:1.5;font-weight:700;color:#3c4150;box-shadow:0 6px 18px rgba(80,50,20,.16);width:262px;transform-origin:20% 100%}
+  .land #bubble{left:440px;top:160px}
+  .port #bubble{left:420px;top:262px;width:300px}
+  #bubble:after{content:"";position:absolute;left:58px;bottom:-26px;width:30px;height:30px;background:rgba(255,255,255,.96);border-radius:50%}
+  #bubble:before{content:"";position:absolute;left:44px;bottom:-46px;width:16px;height:16px;background:rgba(255,255,255,.96);border-radius:50%}
+  #bubble.pop{animation:pop .35s}
+  @keyframes pop{0%{transform:scale(.7);opacity:.3}70%{transform:scale(1.05)}100%{transform:scale(1);opacity:1}}
+
+  /* status */
+  #status{padding:22px 26px}
+  .land #status{left:1052px;top:118px;width:460px;height:386px}
+  .port #status{left:16px;top:935px;width:868px;height:300px}
+  .phead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .phead h2{font-size:28px;font-weight:800;color:#3c4150}
+  .smallBtn{padding:8px 24px;border-radius:20px;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.15);font-size:20px;font-weight:700}
+  #statList{display:grid;gap:4px}
+  .port #statList{grid-template-columns:1fr 1fr;column-gap:36px}
+  .srow{display:flex;align-items:center;height:76px}
+  .port .srow{height:100px}
+  .srow .si{font-size:40px;width:58px}
+  .srow .sn{font-size:22px;font-weight:800;width:104px}
+  .srow .sb{flex:1}
+  .sb .sl{font-size:19px;color:#7a8296;font-weight:600}
+  .sb .bar{height:14px;margin-top:4px}
+  .sb .sv{text-align:right;font-size:19px;font-weight:700;margin-top:2px;color:#3c4150}
+  .srow.up{animation:flash .8s}
+  @keyframes flash{30%{background:rgba(255,236,150,.7);border-radius:16px}}
+
+  /* event */
+  #eventCard{padding:20px 26px;cursor:pointer}
+  .land #eventCard{left:1052px;top:522px;width:460px;height:190px}
+  .port #eventCard{left:16px;top:1250px;width:868px;height:150px;padding:14px 26px}
+  .port #eventCard .phead{margin-bottom:6px}
+  .evrow{display:flex;align-items:center;gap:18px;border-top:2px solid #eef0f3;padding-top:14px}
+  .port .evrow{padding-top:8px}
+  #evThumb{width:100px;height:76px;border-radius:14px;background:linear-gradient(#9fd6ff,#b9e7a8);display:flex;align-items:center;justify-content:center;font-size:44px;flex:none}
+  .port #evThumb{height:66px}
+  #evTitle{font-size:22px;font-weight:800}
+  .evsub{display:flex;justify-content:space-between;margin-top:8px;font-size:19px;font-weight:700;color:#5a5f6e}
+  #evLeft.today{color:#ef4a4a}
+
+  /* goal */
+  #goal{display:flex;align-items:center;padding:0 30px 0 0;border-radius:60px}
+  .land #goal{left:24px;top:768px;width:470px;height:190px}
+  .port #goal{left:16px;top:1415px;width:868px;height:130px}
+  #treeAv{width:124px;height:124px;border-radius:50%;flex:none;margin:0 20px 0 10px;overflow:hidden;border:5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+  .port #treeAv{width:104px;height:104px}
+  #goal .gl{font-size:20px;color:#7a8296;font-weight:700}
+  #goalT{font-size:30px;font-weight:800;margin:8px 0 12px;color:#3c4150}
+  .port #goalT{font-size:28px;margin:2px 0 8px}
+  #goalSub{font-size:18px;color:#7a8296;font-weight:600;margin-top:6px}
+  .grow{display:flex;align-items:center;gap:16px}
+  .grow .bar{flex:1;margin:0;height:14px}
+  #goalN{font-size:22px;font-weight:700}
+
+  /* actions */
+  #actions{position:absolute;display:flex;gap:10px}
+  .land #actions{left:512px;top:776px}
+  .port #actions{left:16px;top:1558px;gap:8px}
+  .act{width:152px;height:172px;border-radius:30px;border:6px solid #fff;box-shadow:0 6px 16px rgba(80,50,20,.25);display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:14px 0 12px;transition:transform .12s,filter .2s;position:relative}
+  .port .act{width:136px;height:152px;padding:10px 0}
+  .act:active{transform:scale(.94)}
+  .act .ai{font-size:58px;line-height:1;margin-top:2px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.15))}
+  .port .act .ai{font-size:50px}
+  .act .an{font-size:27px;font-weight:800}
+  .act .ac{font-size:20px;font-weight:800;color:#fff;padding:3px 0;width:84%;border-radius:16px;text-align:center}
+  .act.dis{filter:grayscale(.8) brightness(.95);opacity:.7}
+  .a-study{background:linear-gradient(#dff0ff,#bfe0ff)} .a-study .ac{background:#4a94e6}
+  .a-exercise{background:linear-gradient(#ddf6e6,#bcebcd)} .a-exercise .ac{background:#3cb874}
+  .a-hobby{background:linear-gradient(#ece4ff,#d8c9ff)} .a-hobby .ac{background:#8a67e6}
+  .a-social{background:linear-gradient(#fff0d6,#ffdfae)} .a-social .ac{background:#f0a83c}
+  .a-rest{background:linear-gradient(#ffe5ec,#ffcbd8)} .a-rest .ac{background:#f07ea0}
+  #nextBtn{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:radial-gradient(circle at 50% 40%,#fff8e6,#fbe6bf);border:6px solid #fff;box-shadow:0 6px 18px rgba(80,50,20,.25);font-weight:800;font-size:27px;transition:transform .12s}
+  #nextBtn:active{transform:scale(.94)}
+  #nextBtn .ni{font-size:60px;line-height:1}
+  .land #nextBtn{left:1322px;top:752px;width:192px;height:192px;border-radius:50%}
+  .port #nextBtn{left:740px;top:1558px;width:144px;height:152px;border-radius:30px;font-size:22px}
+  .port #nextBtn .ni{font-size:46px}
+  #nextBtn.glow{animation:glow 1.4s infinite}
+  @keyframes glow{50%{box-shadow:0 0 0 10px rgba(255,200,80,.45),0 6px 18px rgba(80,50,20,.25)}}
+
+  /* fx */
+  .float{position:absolute;font-weight:900;font-size:30px;pointer-events:none;white-space:nowrap;text-shadow:0 2px 0 #fff,0 0 8px #fff;animation:floatUp 1.5s ease-out forwards;z-index:30}
+  @keyframes floatUp{0%{transform:translate(-50%,0) scale(.6);opacity:0}15%{transform:translate(-50%,-20px) scale(1.1);opacity:1}100%{transform:translate(-50%,-140px) scale(1);opacity:0}}
+  .prop{position:absolute;font-size:110px;pointer-events:none;animation:propPop 1.3s ease-out forwards;z-index:25;filter:drop-shadow(0 6px 6px rgba(0,0,0,.25))}
+  @keyframes propPop{0%{transform:translate(-50%,-50%) scale(.2) rotate(-20deg);opacity:0}25%{transform:translate(-50%,-50%) scale(1.15) rotate(8deg);opacity:1}60%{transform:translate(-50%,-50%) scale(1) rotate(-4deg);opacity:1}100%{transform:translate(-50%,-90%) scale(.9);opacity:0}}
+  #toasts{position:absolute;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:10px;z-index:40;pointer-events:none}
+  .land #toasts{top:110px}
+  .port #toasts{top:260px}
+  .toast{background:linear-gradient(90deg,#ffb432,#ff7a59);color:#fff;font-weight:800;font-size:26px;padding:12px 30px;border-radius:30px;box-shadow:0 6px 14px rgba(0,0,0,.25);animation:toastIn 2.6s forwards}
+  @keyframes toastIn{0%{transform:translateY(-20px);opacity:0}10%{transform:none;opacity:1}85%{opacity:1}100%{opacity:0;transform:translateY(-10px)}}
+
+  /* sleep curtain */
+  #sleep{position:absolute;inset:0;background:#141a35;opacity:0;pointer-events:none;transition:opacity .7s;z-index:45;display:flex;align-items:center;justify-content:center;color:#fff;font-size:64px;font-weight:800}
+  #sleep.on{opacity:1;pointer-events:auto}
+
+  /* modal */
+  #overlay{position:absolute;inset:0;background:rgba(40,28,18,.5);display:none;align-items:center;justify-content:center;z-index:50}
+  #overlay.show{display:flex}
+  #mbox{background:#fffdf8;border-radius:36px;box-shadow:0 14px 40px rgba(0,0,0,.35);width:760px;max-height:88%;display:flex;flex-direction:column;animation:pop .3s;position:relative}
+  .port #mbox{width:840px}
+  #mtitle{font-size:34px;font-weight:800;padding:30px 40px 10px;text-align:center}
+  #mbody{padding:10px 40px;overflow-y:auto;font-size:24px;line-height:1.6;flex:1}
+  #mbtns{display:flex;gap:16px;justify-content:center;padding:20px 40px 32px;flex-wrap:wrap}
+  .mb{min-width:220px;padding:18px 30px;border-radius:40px;font-size:26px;font-weight:800;background:linear-gradient(#5aa8f5,#3d84e0);color:#fff;box-shadow:0 5px 0 #2c66b8}
+  .mb:active{transform:translateY(3px);box-shadow:0 2px 0 #2c66b8}
+  .mb.sub{background:linear-gradient(#f1f2f5,#dfe2e8);color:#555;box-shadow:0 5px 0 #b9bdc6}
+  .mb.pink{background:linear-gradient(#ff8fb1,#f0688f);box-shadow:0 5px 0 #c04b6d}
+  .mb.orange{background:linear-gradient(#ffc04d,#f59a1e);box-shadow:0 5px 0 #c97710}
+  #mclose{position:absolute;right:20px;top:18px;width:56px;height:56px;border-radius:50%;background:#f0ece4;font-size:30px;font-weight:900;color:#888}
+  .big{font-size:90px;text-align:center;line-height:1.2}
+  .center{text-align:center}
+  .muted{color:#8a8f9c;font-size:21px}
+  .chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:14px 0}
+  .chip{background:#f3efe6;border-radius:20px;padding:6px 18px;font-weight:700;font-size:22px}
+  .chip.plus{background:#e3f6e9;color:#1f8a4d}
+  .chip.minus{background:#fde7ea;color:#c23a55}
+  .mlist{display:flex;flex-direction:column;gap:14px}
+  .mitem{display:flex;align-items:center;gap:18px;background:#f7f3ea;border-radius:22px;padding:16px 20px}
+  .mitem .mi2{font-size:44px;width:60px;text-align:center}
+  .mitem .mt{flex:1}
+  .mitem .mt b{display:block;font-size:24px}
+  .mitem .bar{height:12px}
+  .mitem .mbsm{min-width:150px;padding:12px 18px;font-size:22px}
+  .mbsm:disabled{opacity:.45;filter:grayscale(1)}
+  .done{color:#2aa35f;font-weight:800}
+  input.name{font-family:inherit;font-size:32px;padding:14px 22px;border-radius:20px;border:3px solid #e0d6c5;width:100%;text-align:center;outline:none;user-select:text;-webkit-user-select:text}
+  input.name:focus{border-color:#5aa8f5}
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+  .cal .h{text-align:center;font-weight:800;font-size:20px;color:#8a8f9c}
+  .cal .h.sun{color:#e05a5a}.cal .h.sat{color:#4a84e0}
+  .cal .d{aspect-ratio:1/1;background:#f7f3ea;border-radius:16px;padding:6px;font-size:19px;font-weight:700;position:relative;display:flex;flex-direction:column;align-items:center}
+  .cal .d.past{opacity:.55}
+  .cal .d.today{background:#ffe9b0;box-shadow:inset 0 0 0 3px #f5a623}
+  .cal .d .ce{font-size:30px;line-height:1.1;margin-top:2px}
+  .cal .d.empty{background:none}
+  .album{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .acard{background:#f7f3ea;border-radius:22px;padding:14px 8px;text-align:center}
+  .acard .ae{font-size:56px}
+  .acard b{display:block;font-size:20px;line-height:1.3;margin-top:4px}
+  .acard small{font-size:17px;color:#8a8f9c}
+  .acard.lock{opacity:.5}
+  .acard.lock .ae{filter:grayscale(1) brightness(.3)}
+  table.st{width:100%;border-collapse:collapse;font-size:22px}
+  table.st td{padding:8px 6px;border-bottom:2px solid #f0ebe0}
+  table.st td:last-child{text-align:right;font-weight:800}
+  .row2{display:flex;gap:14px;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:2px solid #f0ebe0}
+
+  /* svg anims */
+  #handR{animation:write 0.7s ease-in-out infinite}
+  @keyframes write{0%,100%{transform:translate(0,0)}25%{transform:translate(8px,-3px)}50%{transform:translate(14px,0)}75%{transform:translate(6px,2px)}}
+  #charAll{transform-box:fill-box;transform-origin:50% 100%}
+  #charAll.hop{animation:hop .5s}
+  @keyframes hop{30%{transform:translateY(-18px) scale(1.02)}60%{transform:translateY(2px)}}
+  #catTail{transform-box:fill-box;transform-origin:0% 100%;animation:tail 2.4s ease-in-out infinite}
+  @keyframes tail{50%{transform:rotate(-18deg)}}
+  #charHead{transform-box:fill-box;transform-origin:50% 90%;animation:breathe 4s ease-in-out infinite}
+  @keyframes breathe{50%{transform:rotate(1.2deg) translateY(2px)}}
+  .zz{animation:zz 2.5s infinite}
+  @keyframes zz{0%{opacity:0;transform:translate(0,0)}30%{opacity:1}100%{opacity:0;transform:translate(20px,-40px)}}
+</style>
+</head>
+<body>
+<div id="stage" class="land">
+  <!-- ===== ROOM SCENE ===== -->
+  <svg id="scene" viewBox="0 0 1536 1024" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="wallG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9c6ad"/><stop offset="1" stop-color="#ecdcc6"/></linearGradient>
+      <linearGradient id="skyG" x1="0" y1="0" x2="0" y2="1"><stop id="sky1" offset="0" stop-color="#5bb8f5"/><stop id="sky2" offset="1" stop-color="#d8f1ff"/></linearGradient>
+      <linearGradient id="woodG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d79a62"/><stop offset="1" stop-color="#a86a3a"/></linearGradient>
+      <linearGradient id="shelfG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#a86d3e"/><stop offset="1" stop-color="#c88a55"/></linearGradient>
+      <linearGradient id="curtG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2f5fae"/><stop offset=".3" stop-color="#4c82d4"/><stop offset=".6" stop-color="#3567b9"/><stop offset="1" stop-color="#4c82d4"/></linearGradient>
+      <radialGradient id="glowG" cx=".5" cy="0" r="1"><stop offset="0" stop-color="#fff3c4" stop-opacity=".9"/><stop offset="1" stop-color="#fff3c4" stop-opacity="0"/></radialGradient>
+      <radialGradient id="sunG"><stop offset="0" stop-color="#fff9d6"/><stop offset=".5" stop-color="#ffe680" stop-opacity=".8"/><stop offset="1" stop-color="#ffe680" stop-opacity="0"/></radialGradient>
+      <pattern id="checkP" width="44" height="44" patternUnits="userSpaceOnUse"><rect width="44" height="44" fill="#eaf2ff"/><rect width="22" height="44" fill="#9cc0f0" opacity=".7"/><rect width="44" height="22" fill="#9cc0f0" opacity=".5"/></pattern>
+      <g id="headBase">
+        <ellipse cx="590" cy="410" rx="142" ry="130" fill="#4a2f22"/>
+        <ellipse cx="466" cy="455" rx="20" ry="26" fill="#f8d5bd"/>
+        <ellipse cx="714" cy="455" rx="20" ry="26" fill="#f8d5bd"/>
+        <ellipse cx="590" cy="448" rx="122" ry="110" fill="#fde5d2"/>
+        <path d="M458 445 Q448 320 560 296 Q660 280 718 352 Q742 395 722 448 Q706 404 684 396 Q692 426 670 436 Q656 398 630 388 Q632 414 610 424 Q600 388 574 382 Q560 414 528 420 Q544 394 538 378 Q500 400 486 446 Q474 420 470 470 Z" fill="#553627"/>
+        <path d="M590 292 Q606 250 646 258 Q612 268 606 300 Z" fill="#553627"/>
+        <path d="M520 330 Q560 310 600 318" stroke="#7a5240" stroke-width="6" fill="none" stroke-linecap="round" opacity=".6"/>
+        <ellipse cx="518" cy="508" rx="22" ry="12" fill="#ff9d9d" opacity=".45"/>
+        <ellipse cx="662" cy="508" rx="22" ry="12" fill="#ff9d9d" opacity=".45"/>
+      </g>
+    </defs>
+
+    <!-- wall -->
+    <rect width="1536" height="1024" fill="url(#wallG)"/>
+    <rect x="0" y="0" width="1536" height="1024" fill="#000" opacity=".04"/>
+    <!-- picture frame -->
+    <rect x="292" y="140" width="130" height="96" rx="6" fill="#7b5638"/>
+    <rect x="302" y="150" width="110" height="76" fill="#3b6fb8"/>
+    <path d="M302 226 L340 190 L370 210 L392 186 L412 206 L412 226 Z" fill="#9ccbe8"/>
+    <!-- hanging bag -->
+    <circle cx="214" cy="270" r="7" fill="#7b5638"/>
+    <path d="M214 270 Q186 300 196 330 M214 270 Q240 300 232 330" stroke="#2e5aa0" stroke-width="7" fill="none"/>
+    <path d="M178 326 L250 326 L258 440 Q214 456 170 440 Z" fill="#3864ad"/>
+    <path d="M178 326 L250 326 L252 350 L176 350 Z" fill="#2c528f"/>
+    <!-- bookshelf -->
+    <g>
+      <rect x="262" y="245" width="196" height="460" rx="6" fill="url(#shelfG)"/>
+      <rect x="276" y="258" width="168" height="432" fill="#6d4426"/>
+      <g id="books">
+        <rect x="282" y="268" width="24" height="70" fill="#3b6fb8"/><rect x="308" y="276" width="20" height="62" fill="#e8d6a8"/><rect x="330" y="264" width="26" height="74" fill="#4e86cf"/><rect x="358" y="272" width="18" height="66" fill="#c9533f"/><rect x="378" y="268" width="24" height="70" fill="#3b6fb8"/>
+        <rect x="282" y="360" width="26" height="78" fill="#2e5aa0"/><rect x="310" y="366" width="22" height="72" fill="#5c97de"/><rect x="334" y="358" width="24" height="80" fill="#2e5aa0"/><rect x="360" y="368" width="20" height="70" fill="#f0e1c0"/><rect x="382" y="362" width="26" height="76" fill="#5c97de"/><rect x="410" y="366" width="22" height="72" fill="#2e5aa0"/>
+        <rect x="282" y="462" width="22" height="76" fill="#88a9d6"/><rect x="306" y="456" width="26" height="82" fill="#3b6fb8"/><rect x="334" y="466" width="20" height="72" fill="#e8d6a8"/>
+        <rect x="282" y="562" width="28" height="78" fill="#3b6fb8"/><rect x="312" y="570" width="22" height="70" fill="#5c97de"/><rect x="336" y="560" width="26" height="80" fill="#2e5aa0"/><rect x="364" y="572" width="22" height="68" fill="#f0e1c0"/>
+      </g>
+      <rect x="276" y="338" width="168" height="12" fill="#b77a45"/>
+      <rect x="276" y="438" width="168" height="12" fill="#b77a45"/>
+      <rect x="276" y="538" width="168" height="12" fill="#b77a45"/>
+      <rect x="276" y="640" width="168" height="12" fill="#b77a45"/>
+      <!-- small plant in shelf -->
+      <rect x="380" y="500" width="40" height="38" rx="6" fill="#f4efe6"/>
+      <path d="M400 500 Q380 470 372 476 Q386 488 396 500 M400 500 Q404 462 414 466 Q408 486 402 500 M400 500 Q426 476 432 486 Q414 492 404 502" stroke="#4f9a5a" stroke-width="7" fill="none" stroke-linecap="round"/>
+      <!-- top plant -->
+      <rect x="304" y="210" width="48" height="38" rx="6" fill="#4a4f5c"/>
+      <ellipse cx="312" cy="196" rx="22" ry="12" fill="#4f9a5a" transform="rotate(-30 312 196)"/>
+      <ellipse cx="344" cy="190" rx="22" ry="12" fill="#5bb066" transform="rotate(25 344 190)"/>
+      <ellipse cx="328" cy="180" rx="12" ry="22" fill="#4f9a5a"/>
+    </g>
+    <!-- posters -->
+    <rect x="690" y="196" width="86" height="116" rx="4" fill="#f4f0ea" transform="rotate(-3 733 254)"/>
+    <circle cx="733" cy="240" r="22" fill="#8a6a55" transform="rotate(-3 733 254)"/>
+    <rect x="708" y="262" width="50" height="34" rx="10" fill="#a9c4e0" transform="rotate(-3 733 254)"/>
+    <rect x="760" y="260" width="80" height="104" rx="4" fill="#efe8de" transform="rotate(4 800 312)"/>
+    <circle cx="800" cy="300" r="20" fill="#6b4a3a" transform="rotate(4 800 312)"/>
+    <rect x="780" y="320" width="40" height="34" rx="10" fill="#9a9aa8" transform="rotate(4 800 312)"/>
+    <rect x="740" y="380" width="70" height="90" rx="4" fill="#efe8de" transform="rotate(-2 775 425)"/>
+    <circle cx="775" cy="414" r="17" fill="#c88f6a"/>
+
+    <!-- window -->
+    <g id="window">
+      <rect x="912" y="132" width="336" height="440" fill="#f4efe8"/>
+      <rect x="926" y="146" width="308" height="412" fill="url(#skyG)"/>
+      <g id="sunG1"><circle id="sun" cx="1170" cy="210" r="70" fill="url(#sunG)"/><circle id="sunCore" cx="1170" cy="210" r="26" fill="#fffbe8"/></g>
+      <g id="moonG" opacity="0"><circle cx="1150" cy="210" r="28" fill="#fff6cc"/><circle cx="1162" cy="200" r="24" fill="url(#skyG)"/>
+        <circle cx="980" cy="190" r="3" fill="#fff"/><circle cx="1050" cy="250" r="2.5" fill="#fff"/><circle cx="1210" cy="290" r="2" fill="#fff"/><circle cx="1010" cy="300" r="2" fill="#fff"/><circle cx="1100" cy="170" r="2.5" fill="#fff"/></g>
+      <g id="clouds" fill="#fff" opacity=".85"><ellipse cx="1000" cy="240" rx="50" ry="16"/><ellipse cx="1030" cy="228" rx="30" ry="16"/><ellipse cx="1130" cy="300" rx="40" ry="12"/></g>
+      <g id="city" fill="#c9d6e6">
+        <rect x="940" y="330" width="60" height="230"/><rect x="1004" y="290" width="50" height="270"/><rect x="1060" y="350" width="70" height="210"/><rect x="1136" y="310" width="54" height="250"/><rect x="1192" y="370" width="42" height="190"/>
+      </g>
+      <g id="cityWin" fill="#e8eef6" opacity=".9">
+        <rect x="952" y="350" width="10" height="12"/><rect x="976" y="350" width="10" height="12"/><rect x="952" y="380" width="10" height="12"/><rect x="976" y="410" width="10" height="12"/>
+        <rect x="1014" y="310" width="10" height="12"/><rect x="1034" y="340" width="10" height="12"/><rect x="1014" y="370" width="10" height="12"/>
+        <rect x="1150" y="330" width="10" height="12"/><rect x="1170" y="360" width="10" height="12"/><rect x="1150" y="390" width="10" height="12"/>
+        <rect x="1076" y="370" width="10" height="12"/><rect x="1100" y="400" width="10" height="12"/>
+      </g>
+      <g fill="#6fae5c"><circle cx="950" cy="500" r="40"/><circle cx="1000" cy="520" r="36"/><circle cx="1220" cy="490" r="44"/><circle cx="1180" cy="530" r="30"/></g>
+      <rect x="926" y="470" width="308" height="8" fill="#b98a5a"/>
+      <g stroke="#b98a5a" stroke-width="6"><line x1="950" y1="478" x2="950" y2="556"/><line x1="990" y1="478" x2="990" y2="556"/><line x1="1030" y1="478" x2="1030" y2="556"/><line x1="1070" y1="478" x2="1070" y2="556"/><line x1="1110" y1="478" x2="1110" y2="556"/><line x1="1150" y1="478" x2="1150" y2="556"/><line x1="1190" y1="478" x2="1190" y2="556"/></g>
+      <rect x="1074" y="146" width="10" height="412" fill="#f4efe8"/>
+      <rect x="902" y="560" width="356" height="20" rx="4" fill="#e9e1d6"/>
+      <!-- sill plant -->
+      <path d="M960 520 L1010 520 L1002 562 L968 562 Z" fill="#f2ede6"/>
+      <ellipse cx="972" cy="500" rx="26" ry="12" fill="#5bb066" transform="rotate(-35 972 500)"/>
+      <ellipse cx="998" cy="494" rx="26" ry="12" fill="#4f9a5a" transform="rotate(30 998 494)"/>
+      <ellipse cx="986" cy="478" rx="12" ry="28" fill="#5bb066"/>
+    </g>
+    <!-- curtains -->
+    <rect x="860" y="118" width="440" height="12" rx="6" fill="#8a5a36"/>
+    <circle cx="858" cy="124" r="12" fill="#8a5a36"/><circle cx="1302" cy="124" r="12" fill="#8a5a36"/>
+    <path d="M872 128 L958 128 Q950 340 966 600 L880 610 Q862 360 872 128 Z" fill="url(#curtG)"/>
+    <path d="M1200 128 L1290 128 Q1300 360 1284 610 L1196 600 Q1212 340 1200 128 Z" fill="url(#curtG)"/>
+    <path d="M1196 128 L1214 128 Q1220 330 1200 600 L1194 600 Z" fill="#fff" opacity=".7"/>
+
+    <!-- light from window -->
+    <polygon id="sunbeam" points="926,146 1234,146 1000,760 600,760" fill="#fff6d8" opacity=".12"/>
+
+    <!-- bed -->
+    <g>
+      <rect x="640" y="520" width="440" height="160" rx="16" fill="#b98457"/>
+      <path d="M650 548 Q860 520 1070 540 L1080 660 L650 670 Z" fill="url(#checkP)"/>
+      <path d="M650 548 Q860 520 1070 540 L1072 560 Q860 540 652 570 Z" fill="#fff" opacity=".5"/>
+      <rect x="890" y="496" width="160" height="56" rx="26" fill="#5b8ed6"/>
+      <rect x="896" y="500" width="146" height="20" rx="10" fill="#7aa6e6"/>
+      <!-- cat -->
+      <g id="cat">
+        <path id="catTail" d="M862 545 Q900 540 900 510 Q900 495 890 500" stroke="#222631" stroke-width="12" fill="none" stroke-linecap="round"/>
+        <ellipse cx="830" cy="540" rx="44" ry="26" fill="#222631"/>
+        <circle cx="800" cy="510" r="28" fill="#222631"/>
+        <path d="M778 494 L782 466 L800 486 Z M808 486 L824 466 L826 494 Z" fill="#222631"/>
+        <g id="catEyes"><ellipse cx="790" cy="510" rx="5" ry="6" fill="#f2d24c"/><ellipse cx="810" cy="510" rx="5" ry="6" fill="#f2d24c"/></g>
+        <g id="catSleep" opacity="0" stroke="#f2d24c" stroke-width="3" fill="none"><path d="M784 511 Q790 515 796 511"/><path d="M804 511 Q810 515 816 511"/></g>
+        <text class="zz" id="catZ" x="826" y="470" font-size="26" font-weight="800" fill="#fff" opacity="0">z</text>
+      </g>
+    </g>
+
+    <!-- chair -->
+    <rect x="420" y="520" width="140" height="200" rx="28" fill="#3d5a8a"/>
+    <rect x="432" y="532" width="116" height="176" rx="22" fill="#4a6aa0"/>
+
+    <!-- character -->
+    <g id="charAll">
+      <!-- hood back -->
+      <path d="M500 590 Q590 540 680 590 Q640 620 590 616 Q540 620 500 590 Z" fill="#dcdad6"/>
+      <!-- body -->
+      <path d="M440 712 Q446 596 590 572 Q734 596 740 712 Z" fill="#eeedea"/>
+      <path d="M440 712 Q446 596 590 572 Q734 596 740 712" fill="none" stroke="#cfccc6" stroke-width="4"/>
+      <path d="M548 584 Q590 620 632 584" fill="none" stroke="#cfccc6" stroke-width="5"/>
+      <line x1="574" y1="600" x2="570" y2="652" stroke="#bdb9b2" stroke-width="5" stroke-linecap="round"/>
+      <line x1="606" y1="600" x2="610" y2="652" stroke="#bdb9b2" stroke-width="5" stroke-linecap="round"/>
+      <rect x="560" y="550" width="60" height="34" rx="12" fill="#f8d5bd"/>
+      <g id="charHead">
+        <use href="#headBase"/>
+        <g id="eyesN">
+          <ellipse cx="544" cy="468" rx="19" ry="25" fill="#3b2418"/><ellipse cx="636" cy="468" rx="19" ry="25" fill="#3b2418"/>
+          <circle cx="550" cy="458" r="7" fill="#fff"/><circle cx="642" cy="458" r="7" fill="#fff"/>
+          <circle cx="538" cy="478" r="3" fill="#fff" opacity=".8"/><circle cx="630" cy="478" r="3" fill="#fff" opacity=".8"/>
+          <path d="M522 440 Q544 430 564 440 M616 440 Q636 430 658 440" stroke="#4a2f22" stroke-width="5" fill="none" stroke-linecap="round"/>
+        </g>
+        <g id="eyesH" opacity="0" stroke="#3b2418" stroke-width="7" fill="none" stroke-linecap="round">
+          <path d="M524 474 Q544 450 564 474"/><path d="M616 474 Q636 450 656 474"/>
+        </g>
+        <g id="eyesT" opacity="0" stroke="#3b2418" stroke-width="6" fill="none" stroke-linecap="round">
+          <path d="M524 470 Q544 480 564 470"/><path d="M616 470 Q636 480 656 470"/>
+          <path d="M522 448 L562 456 M618 456 L658 448" stroke-width="4"/>
+        </g>
+        <path id="mouthN" d="M576 520 Q590 532 604 520" stroke="#a5523e" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <path id="mouthH" opacity="0" d="M572 514 Q590 544 608 514 Z" fill="#c9604a"/>
+        <path id="mouthT" opacity="0" d="M578 526 Q590 518 602 526" stroke="#a5523e" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <g id="sweat" opacity="0"><path d="M700 400 Q712 420 700 430 Q688 420 700 400 Z" fill="#8fd0ff"/></g>
+      </g>
+    </g>
+
+    <!-- desk -->
+    <path d="M0 708 L1536 696 L1536 1024 L0 1024 Z" fill="url(#woodG)"/>
+    <path d="M0 694 L1536 682 L1536 700 L0 714 Z" fill="#e7b07a"/>
+    <g opacity=".18" stroke="#6d3f1e" stroke-width="3" fill="none"><path d="M0 760 Q400 740 900 770 T1536 750"/><path d="M0 830 Q500 810 1000 840 T1536 820"/><path d="M0 910 Q400 890 900 920 T1536 900"/></g>
+
+    <!-- lamp -->
+    <g>
+      <polygon id="lampGlow" points="230,500 330,500 460,720 90,720" fill="url(#glowG)" opacity=".55"/>
+      <ellipse cx="150" cy="712" rx="70" ry="18" fill="#2f333d"/>
+      <path d="M150 706 L130 470 L260 450" stroke="#3a3f4a" stroke-width="12" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="130" cy="470" r="11" fill="#2f333d"/>
+      <path d="M210 420 Q270 400 320 450 L340 500 Q260 520 196 480 Z" fill="#3a3f4a"/>
+      <ellipse cx="268" cy="494" rx="70" ry="18" fill="#fff4cc" transform="rotate(-10 268 494)"/>
+    </g>
+    <!-- book stack -->
+    <rect x="120" y="680" width="200" height="34" rx="6" fill="#d9b44a"/><rect x="126" y="684" width="188" height="8" fill="#f3e6b8"/>
+    <rect x="132" y="648" width="190" height="34" rx="6" fill="#2f6a8a"/><rect x="138" y="652" width="178" height="8" fill="#cfe2ea"/>
+    <rect x="124" y="618" width="196" height="32" rx="6" fill="#4a9a8e"/><rect x="130" y="622" width="184" height="8" fill="#d5ece6"/>
+    <!-- notebook -->
+    <path d="M360 708 L590 696 L820 708 L798 742 L590 732 L382 742 Z" fill="#fbfaf6"/>
+    <path d="M590 696 L590 732" stroke="#ddd6c8" stroke-width="3"/>
+    <g stroke="#cfd7e6" stroke-width="2"><line x1="400" y1="714" x2="580" y2="706"/><line x1="395" y1="724" x2="580" y2="716"/><line x1="600" y1="706" x2="785" y2="714"/><line x1="600" y1="716" x2="790" y2="724"/></g>
+    <!-- arms -->
+    <path d="M700 640 Q740 680 690 712 L640 712 Q680 690 670 650 Z" fill="#eeedea" stroke="#cfccc6" stroke-width="3"/>
+    <ellipse cx="652" cy="712" rx="30" ry="18" fill="#fde5d2"/>
+    <g id="handR">
+      <path d="M480 636 Q440 690 500 716 L548 712 Q510 690 516 650 Z" fill="#eeedea" stroke="#cfccc6" stroke-width="3"/>
+      <line x1="530" y1="716" x2="566" y2="620" stroke="#2f333d" stroke-width="8" stroke-linecap="round"/>
+      <ellipse cx="530" cy="708" rx="28" ry="18" fill="#fde5d2"/>
+    </g>
+    <!-- mug -->
+    <g>
+      <path d="M886 660 Q920 660 920 690 Q920 718 884 714" stroke="#efeeea" stroke-width="12" fill="none"/>
+      <rect x="790" y="640" width="100" height="90" rx="18" fill="#f4f3ef"/>
+      <ellipse cx="840" cy="642" rx="50" ry="10" fill="#d7d3cb"/>
+      <path d="M816 684 L820 668 L830 680 M850 680 L860 668 L864 684" stroke="#b0aca4" stroke-width="3" fill="none"/>
+      <ellipse cx="840" cy="694" rx="24" ry="18" fill="#c9c5bd" opacity=".6"/>
+      <path id="steam" d="M830 620 Q820 600 834 586 Q846 572 836 556 M852 622 Q844 604 856 592" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round" opacity=".6"/>
+    </g>
+    <!-- laptop -->
+    <g>
+      <path d="M920 720 L1170 704 L1150 684 L940 696 Z" fill="#7d828e"/>
+      <path d="M940 698 L1150 686 L1190 580 L980 592 Z" fill="#4a4f5a"/>
+      <path d="M948 694 L1146 683 L1184 584 L986 596 Z" fill="#5b616d"/>
+      <circle cx="1068" cy="638" r="10" fill="#7d828e"/>
+    </g>
+    <!-- time tint -->
+    <rect id="tint" x="0" y="0" width="1536" height="1024" fill="#1a2350" opacity="0" pointer-events="none"/>
+    <rect id="warm" x="0" y="0" width="1536" height="1024" fill="#ff9a3c" opacity="0" pointer-events="none"/>
+  </svg>
+
+  <!-- ===== HUD ===== -->
+  <div id="profile" class="card">
+    <div id="avatar"><svg viewBox="440 270 300 300" width="100%" height="100%"><use href="#headBase"/><ellipse cx="544" cy="468" rx="19" ry="25" fill="#3b2418"/><ellipse cx="636" cy="468" rx="19" ry="25" fill="#3b2418"/><circle cx="550" cy="458" r="7" fill="#fff"/><circle cx="642" cy="458" r="7" fill="#fff"/><path d="M576 520 Q590 532 604 520" stroke="#a5523e" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M440 600 Q450 548 590 540 Q730 548 740 600 Z" fill="#2f333d"/></svg></div>
+    <div class="info">
+      <div id="pname">たかし</div>
+      <div class="lvrow"><span id="plv">Lv. 1</span><span id="pexpT">0 / 120</span></div>
+      <div class="bar"><i id="pexpB" style="background:linear-gradient(90deg,#2f8ff0,#5bb2ff)"></i></div>
+      <div class="enrow">⚡<div class="bar"><i id="enB" style="background:linear-gradient(90deg,#ffb11f,#ffd25a)"></i></div><span id="enT">100</span></div>
+    </div>
+  </div>
+  <div id="datePill" class="pill"><span id="wIcon">☀️</span><span id="dateT">4月1日 (水)</span><span class="sep"></span><span id="timeT">AM 8:00</span></div>
+  <div id="coinPill" class="pill"><span class="ico">★</span><span id="coinT">0</span></div>
+  <div id="gemPill" class="pill"><span class="ico">💎</span><span id="gemT">0</span></div>
+  <button id="gearBtn" aria-label="設定">⚙️</button>
+
+  <div id="sideMenu">
+    <button class="mbtn" id="mMission"><div class="mi">📋</div><span>ミッション</span><div class="badge" id="mBadge">!</div></button>
+    <button class="mbtn" id="mCal"><div class="mi">📅</div><span>カレンダー</span></button>
+    <button class="mbtn" id="mAlbum"><div class="mi">📔</div><span>アルバム</span><div class="badge" id="aBadge">!</div></button>
+    <button class="mbtn" id="mShop"><div class="mi">🛍️</div><span>ショップ</span></button>
+  </div>
+
+  <div id="bubble">よし、<br>今日もがんばろう！</div>
+
+  <div id="status" class="card">
+    <div class="phead"><h2>ステータス</h2><button class="smallBtn" id="detailBtn">詳細</button></div>
+    <div id="statList"></div>
+  </div>
+
+  <div id="eventCard" class="card">
+    <div class="phead"><h2>今週のイベント</h2><span style="font-size:30px;color:#aab">›</span></div>
+    <div class="evrow">
+      <div id="evThumb">☕</div>
+      <div style="flex:1">
+        <div id="evTitle">友達とカフェに行く</div>
+        <div class="evsub"><span id="evEff">👥 人間関係 +10</span><span id="evLeft">あと2日</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="goal" class="card">
+    <div id="treeAv"><svg viewBox="0 0 100 100" width="100%" height="100%"><rect width="100" height="100" fill="#cfeeff"/><rect y="72" width="100" height="28" fill="#8fd17a"/><rect x="46" y="52" width="8" height="26" fill="#8a5a36"/><circle id="tr1" cx="50" cy="40" r="22" fill="#5bb066"/><circle id="tr2" cx="36" cy="50" r="14" fill="#4f9a5a"/><circle id="tr3" cx="64" cy="50" r="14" fill="#4f9a5a"/><g id="fruits"></g></svg></div>
+    <div style="flex:1">
+      <div class="gl">現在の目標</div>
+      <div id="goalT">好きなことで生きていく</div>
+      <div class="grow"><div class="bar"><i id="goalB" style="background:linear-gradient(90deg,#2f8ff0,#45c0e8)"></i></div><span id="goalN">0 / 5</span></div>
+      <div id="goalSub"></div>
+    </div>
+  </div>
+
+  <div id="actions"></div>
+  <button id="nextBtn"><span class="ni">📘</span><span>次の日へ ›</span></button>
+
+  <div id="toasts"></div>
+  <div id="sleep">💤</div>
+  <div id="overlay"><div id="mbox"><button id="mclose">×</button><div id="mtitle"></div><div id="mbody"></div><div id="mbtns"></div></div></div>
+</div>
+
+<script>
+(()=>{
+'use strict';
+const $=s=>document.querySelector(s);
+const stage=$('#stage');
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const KEY='jinsei-ikusei-v1';
+const WD=['日','月','火','水','木','金','土'];
+const START=new Date(2026,3,1);
+
+const STATS={
+  mot:{name:'やる気',icon:'🔥',color:'linear-gradient(90deg,#2f8ff0,#5bb2ff)',desc:'高いほど、すべての行動で得られる経験値が増える'},
+  kno:{name:'知識',icon:'📗',color:'linear-gradient(90deg,#1fb57f,#3fd59c)',desc:'勉強で上がる。夢の基礎になる力'},
+  sta:{name:'体力',icon:'❤️',color:'linear-gradient(90deg,#e9447a,#ff7aa0)',desc:'運動で上がる。高いほど寝たときの回復量が増える'},
+  soc:{name:'人間関係',icon:'👥',color:'linear-gradient(90deg,#f2b01e,#ffd25a)',desc:'交流で上がる。イベントで大きく伸びることも'},
+};
+const SK=Object.keys(STATS);
+const ACTS={
+  study:{name:'勉強',icon:'📖',stat:'kno',sub:null,cost:10,prop:'✏️',
+    lines:['よし、集中して覚えるぞ！','なるほど…そういうことか！','ノートがだんだん埋まってきた','この問題、解けた！']},
+  exercise:{name:'運動',icon:'🏋️',stat:'sta',sub:['mot',3],cost:10,prop:'🏃',
+    lines:['いい汗かいた〜！','ランニング気持ちいい！','筋トレ完了！','体がかるい！']},
+  hobby:{name:'趣味',icon:'🎵',stat:'mot',sub:['kno',3],cost:10,prop:'🎸',
+    lines:['やっぱり好きなことは楽しい！','新しい曲ができそう♪','時間を忘れて夢中になった','もっと上手くなりたい！']},
+  social:{name:'交流',icon:'🧑‍🤝‍🧑',stat:'soc',sub:['mot',4],cost:10,prop:'💬',
+    lines:['友達と話すと元気が出る！','新しい友達ができた','みんなで笑った〜','いい話が聞けた！']},
+  rest:{name:'休む',icon:'🛏️',heal:20,prop:'💤',
+    lines:['ふぅ…ひと休み','ちょっと昼寝しよう','体力が戻ってきた','ネコとゴロゴロ…']},
+};
+const GOALS=[
+  {t:'好きなことを見つける',req:{mot:3},icon:'🌱'},
+  {t:'基礎をしっかり学ぶ',req:{kno:4,mot:4},icon:'📚'},
+  {t:'仲間とつながる',req:{soc:4,sta:3},icon:'🤝'},
+  {t:'作品を世に出す',req:{mot:6,kno:6,sta:5,soc:5},icon:'🎤'},
+  {t:'好きなことで生きていく',req:{mot:8,kno:7,sta:7,soc:7},icon:'🌟'},
+];
+const EVENTS=[
+  {id:'cafe',icon:'☕',t:'友達とカフェに行く',main:'soc',bg:'linear-gradient(#ffe3c2,#f3c48c)',
+    go:{label:'行く！',eff:{soc:25,mot:5,coins:-150,energy:-10,hour:3},msg:'おしゃべりが止まらなかった！また行こうね。'},
+    no:{label:'家で勉強する',eff:{kno:10},msg:'誘いを断って勉強した。ちょっとさみしい…'}},
+  {id:'library',icon:'📚',t:'図書館の特別展',main:'kno',bg:'linear-gradient(#d8e8ff,#a9c8f5)',
+    go:{label:'見に行く',eff:{kno:25,mot:5,energy:-10,hour:3},msg:'昔の名作がたくさん！頭がいっぱいになった。'},
+    no:{label:'家でゴロゴロ',eff:{energy:15},msg:'のんびり過ごした。'}},
+  {id:'sports',icon:'⚽',t:'町内スポーツ大会',main:'sta',bg:'linear-gradient(#d4f5d9,#9fdcab)',
+    go:{label:'参加する！',eff:{sta:25,soc:10,energy:-20,hour:4},msg:'チームで力を合わせて準優勝！'},
+    no:{label:'応援だけ',eff:{soc:5,mot:5},msg:'みんなを応援した。熱い試合だった！'}},
+  {id:'live',icon:'🎸',t:'好きなバンドのライブ',main:'mot',bg:'linear-gradient(#e8dcff,#b9a2f5)',
+    go:{label:'チケットを買う',eff:{mot:30,coins:-300,energy:-10,hour:4},msg:'最高のステージ！自分もあんな風になりたい！'},
+    no:{label:'配信で見る',eff:{mot:10},msg:'画面越しでも感動した。'}},
+  {id:'family',icon:'🍲',t:'家族でごはん',main:'soc',bg:'linear-gradient(#ffe2d6,#f7b59a)',
+    go:{label:'帰る',eff:{soc:12,mot:10,energy:20,hour:3},msg:'久しぶりの手料理。元気がわいてきた！'},
+    no:{label:'また今度',eff:{kno:5},msg:'今回はやめておいた。'}},
+  {id:'studygroup',icon:'📝',t:'友達と勉強会',main:'kno',bg:'linear-gradient(#e0f2ff,#b3dcf7)',
+    go:{label:'参加する',eff:{kno:15,soc:12,energy:-10,hour:3},msg:'教え合うと理解が深まる！'},
+    no:{label:'ひとりでやる',eff:{kno:8},msg:'自分のペースで進めた。'}},
+  {id:'flea',icon:'🛍️',t:'フリーマーケットに出店',main:'coins',bg:'linear-gradient(#fff3c6,#f5d97a)',
+    go:{label:'出店する',eff:{coins:600,soc:10,energy:-15,hour:4},msg:'手作りグッズが完売！'},
+    no:{label:'見るだけ',eff:{mot:5},msg:'掘り出し物を見つけた。'}},
+  {id:'birthday',icon:'🎂',t:'友達の誕生日パーティー',main:'soc',bg:'linear-gradient(#ffe0ec,#f7a9c4)',
+    go:{label:'プレゼントを持って行く',eff:{soc:28,coins:-200,energy:-10,hour:3},msg:'すごく喜んでくれた！'},
+    no:{label:'メッセージだけ送る',eff:{soc:5},msg:'おめでとうを伝えた。'}},
+  {id:'hike',icon:'⛰️',t:'山へハイキング',main:'sta',bg:'linear-gradient(#d4f0ff,#a8dca0)',
+    go:{label:'登る！',eff:{sta:22,mot:15,energy:-25,hour:5},msg:'頂上からの景色は最高だった！'},
+    no:{label:'近所を散歩',eff:{sta:6},msg:'ゆっくり歩いた。'}},
+  {id:'contest',icon:'🏆',t:'作品コンテストに応募',main:'mot',bg:'linear-gradient(#fff0c2,#f7c85a)',
+    go:{label:'応募する！',eff:{mot:15,kno:10,energy:-15,hour:3},msg:'',contest:true},
+    no:{label:'次回にする',eff:{kno:5},msg:'もっと準備してから挑戦しよう。'}},
+];
+const MORNING=[
+  {t:'いい夢を見た！',eff:{mot:10},w:3},
+  {t:'寝坊してしまった…',eff:{hour:2},w:2},
+  {t:'おばあちゃんからおこづかいをもらった！',eff:{coins:300},w:2},
+  {t:'朝の散歩で気分すっきり',eff:{energy:10,sta:5},w:3},
+  {t:'ネコがすり寄ってきた。かわいい…',eff:{mot:6},w:3},
+  {t:'ちょっと風邪気味かも…',eff:{energy:-15},w:1},
+  {t:'友達からメッセージが届いた',eff:{soc:8},w:2},
+  {t:'ニュースで面白い記事を読んだ',eff:{kno:8},w:2},
+];
+const SHOP=[
+  {id:'drink',icon:'🥤',t:'エナジードリンク',d:'体力 +30',price:200,cur:'coins',use:()=>{S.energy=clamp(S.energy+30,0,100);return['⚡ +30']}},
+  {id:'snack',icon:'🍩',t:'おやつ',d:'やる気の経験値 +15',price:120,cur:'coins',use:()=>gainExp('mot',15,true)},
+  {id:'book',icon:'📕',t:'参考書',d:'知識の経験値 +40',price:450,cur:'coins',use:()=>gainExp('kno',40,true)},
+  {id:'ticket',icon:'🎟️',t:'交流チケット',d:'人間関係の経験値 +40',price:450,cur:'coins',use:()=>gainExp('soc',40,true)},
+  {id:'shoes',icon:'👟',t:'ランニングシューズ',d:'運動の効果がずっと +25%',price:900,cur:'coins',once:true},
+  {id:'guitar',icon:'🎸',t:'いいギター',d:'趣味の効果がずっと +25%',price:1200,cur:'coins',once:true},
+  {id:'desk',icon:'💡',t:'集中ライト',d:'勉強の効果がずっと +25%',price:1200,cur:'coins',once:true},
+  {id:'full',icon:'✨',t:'全回復',d:'体力を100まで回復',price:30,cur:'gems',use:()=>{S.energy=100;return['⚡ 全回復']}},
+  {id:'time',icon:'⏰',t:'時間もどし',d:'時刻を2時間もどす',price:40,cur:'gems',use:()=>{S.hour=Math.max(8,S.hour-2);return['⏰ -2時間']}},
+];
+const BOOST={exercise:'shoes',hobby:'guitar',study:'desk'};
+
+let S=null;
+let sound=true;
+
+/* ---------- audio ---------- */
+let AC=null;
+function beep(f,d=0.12,type='sine',v=0.12,delay=0){
+  if(!S||!S.sound)return;
+  try{
+    AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+    const t=AC.currentTime+delay,o=AC.createOscillator(),g=AC.createGain();
+    o.type=type;o.frequency.setValueAtTime(f,t);
+    g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(0.001,t+d);
+    o.connect(g).connect(AC.destination);o.start(t);o.stop(t+d);
+  }catch(e){}
+}
+const sfx={
+  tap:()=>beep(660,.08,'triangle',.08),
+  act:()=>{beep(523,.1,'triangle');beep(784,.15,'triangle',.1,.08)},
+  lvl:()=>[523,659,784,1047].forEach((f,i)=>beep(f,.18,'square',.06,i*.09)),
+  coin:()=>{beep(988,.07,'square',.05);beep(1319,.15,'square',.05,.06)},
+  bad:()=>beep(200,.2,'sawtooth',.06),
+  fan:()=>[523,659,784,659,784,1047].forEach((f,i)=>beep(f,.22,'triangle',.1,i*.12)),
+};
+
+/* ---------- state ---------- */
+function newState(name){
+  const s={name:name||'たかし',day:0,hour:8,min:0,energy:100,coins:500,gems:20,plv:1,pexp:0,
+    stats:{mot:{lv:1,exp:0},kno:{lv:1,exp:0},sta:{lv:1,exp:0},soc:{lv:1,exp:0}},
+    goal:0,missions:[],events:[],album:[],counts:{study:0,exercise:0,hobby:0,social:0,rest:0},
+    today:{study:0,exercise:0,hobby:0,social:0,rest:0,total:0},owned:{},weather:'sun',sound:true,ended:false,albumNew:false,seenEvents:[]};
+  return s;
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function load(){try{const t=localStorage.getItem(KEY);if(t)return JSON.parse(t)}catch(e){}return null}
+const pNeed=lv=>100+lv*20;
+const dateOf=d=>{const x=new Date(START);x.setDate(x.getDate()+d);return x};
+const fmtDate=d=>{const x=dateOf(d);return `${x.getMonth()+1}月${x.getDate()}日 (${WD[x.getDay()]})`};
+const fmtTime=(h,m)=>{const ap=h<12?'AM':'PM';let hh=h%12;if(hh===0)hh=12;return `${ap} ${hh}:${String(m).padStart(2,'0')}`};
+
+function rollWeather(){const r=Math.random();S.weather=r<.6?'sun':r<.85?'cloud':'rain'}
+const WICON={sun:'☀️',cloud:'⛅',rain:'☔'};
+
+function genMissions(){
+  const pool=[];
+  ['study','exercise','hobby','social'].forEach(k=>{const n=rnd(1,2);pool.push({kind:'act',key:k,n,text:`${ACTS[k].name}を${n}回する`,reward:80+n*60})});
+  const n=rnd(4,5);pool.push({kind:'total',n,text:`1日に${n}回行動する（休む以外）`,reward:220});
+  pool.push({kind:'act',key:'rest',n:1,text:'休んで体力を回復する',reward:80});
+  const out=[];while(out.length<3){const m=pick(pool);if(!out.includes(m))out.push(m)}
+  S.missions=out.map(m=>({...m,claimed:false}));
+}
+function missionProg(m){return Math.min(m.n,m.kind==='total'?S.today.total:S.today[m.key])}
+function scheduleEvents(){
+  S.events=S.events.filter(e=>e.day>=S.day);
+  while(S.events.length<2){
+    const last=S.events.length?S.events[S.events.length-1].day:S.day;
+    const used=S.events.map(e=>e.id);
+    let cands=EVENTS.filter(e=>!used.includes(e.id)&&!S.seenEvents.includes(e.id));
+    if(!cands.length)cands=EVENTS.filter(e=>!used.includes(e.id));
+    S.events.push({id:pick(cands).id,day:last+rnd(2,4)});
+  }
+}
+const EV=id=>EVENTS.find(e=>e.id===id);
+
+/* ---------- exp ---------- */
+let lvUps=[];
+function gainExp(k,amt,show){
+  const s=S.stats[k];const out=[];
+  if(s.lv>=10){return[`${STATS[k].name} MAX`]}
+  s.exp+=amt;out.push(`${STATS[k].icon} ${STATS[k].name} +${amt}`);
+  while(s.exp>=100&&s.lv<10){s.exp-=100;s.lv++;lvUps.push(k)}
+  if(s.lv>=10)s.exp=0;
+  return out;
+}
+function gainP(amt){
+  S.pexp+=amt;
+  while(S.pexp>=pNeed(S.plv)){S.pexp-=pNeed(S.plv);S.plv++;S.gems+=10;toast(`🎉 ${S.name} が Lv.${S.plv} になった！ 💎+10`);sfx.lvl()}
+}
+function flushLvUps(){
+  lvUps.forEach((k,i)=>{
+    setTimeout(()=>{toast(`${STATS[k].icon} ${STATS[k].name}が Lv.${S.stats[k].lv} にアップ！`);sfx.lvl();
+      const row=document.querySelector(`.srow[data-k="${k}"]`);if(row){row.classList.remove('up');void row.offsetWidth;row.classList.add('up')}},i*350);
+  });
+  lvUps=[];
+}
+function applyEff(eff){
+  const out=[];
+  for(const k in eff){
+    const v=eff[k];
+    if(STATS[k]){out.push(...gainExp(k,v))}
+    else if(k==='energy'){S.energy=clamp(S.energy+v,0,100);out.push(`⚡ 体力 ${v>0?'+':''}${v}`)}
+    else if(k==='coins'){S.coins=Math.max(0,S.coins+v);out.push(`★ コイン ${v>0?'+':''}${v}`)}
+    else if(k==='gems'){S.gems+=v;out.push(`💎 ${v>0?'+':''}${v}`)}
+    else if(k==='hour'){S.hour=Math.min(22,S.hour+v)}
+  }
+  return out;
+}
+const chipHtml=list=>`<div class="chips">${list.map(t=>`<span class="chip ${/-\d/.test(t)?'minus':'plus'}">${t}</span>`).join('')}</div>`;
+
+/* ---------- goals ---------- */
+function goalFrac(i){const g=GOALS[i];if(!g)return 1;const ks=Object.keys(g.req);return ks.reduce((a,k)=>a+Math.min(1,S.stats[k].lv/g.req[k]),0)/ks.length}
+function checkGoal(){
+  while(S.goal<GOALS.length&&goalFrac(S.goal)>=1){
+    const g=GOALS[S.goal];S.goal++;S.gems+=30;
+    addAlbum({kind:'goal',icon:g.icon,t:g.t});
+    const last=S.goal>=GOALS.length;
+    queueModal({title:last?'🌟 夢がかなった！':'🎯 目標達成！',html:`<div class="big">${g.icon}</div><p class="center"><b>「${g.t}」</b>を達成した！</p>${chipHtml(['💎 +30'])}${last?'':`<p class="center muted">次の目標：${GOALS[S.goal].t}</p>`}`,
+      buttons:[{label:last?'つづきへ':'やった！',cls:'orange'}],onShow:sfx.fan});
+    if(last&&!S.ended){S.ended=true;queueModal(endingModal())}
+  }
+}
+function endingModal(){
+  const days=S.day+1;
+  const title=days<=40?'伝説の努力家':days<=60?'夢をつかんだ人':days<=90?'コツコツの達人':'あきらめない心の持ち主';
+  return {title:'🎉 エンディング',html:`<div class="big">🌈</div><p class="center">${S.name}は <b>${days}日</b> かけて<br>「好きなことで生きていく」夢をかなえた！</p>
+    <p class="center" style="margin-top:12px">称号：<b style="color:#f08a1e">${title}</b></p>
+    <table class="st" style="margin-top:14px">${SK.map(k=>`<tr><td>${STATS[k].icon} ${STATS[k].name}</td><td>Lv. ${S.stats[k].lv}</td></tr>`).join('')}
+    <tr><td>総行動回数</td><td>${Object.values(S.counts).reduce((a,b)=>a+b,0)} 回</td></tr><tr><td>思い出</td><td>${S.album.length} 個</td></tr></table>
+    <p class="center muted" style="margin-top:10px">このまま育成を続けることもできます</p>`,
+    buttons:[{label:'このまま続ける'},{label:'最初から',cls:'sub',fn:()=>{confirmReset()}}]};
+}
+function addAlbum(a){S.album.push({...a,day:S.day});S.albumNew=true}
+
+/* ---------- actions ---------- */
+function canAct(){return !modalOpen&&!busy}
+let busy=false;
+function doAction(key){
+  if(!canAct())return;
+  const A=ACTS[key];
+  if(S.hour>=22){say('もう夜だ…<br>そろそろ寝よう');sfx.bad();pulseNext();return}
+  if(!A.heal&&S.energy<A.cost){say('つかれて動けない…<br>休もうかな');setFace('tired');sfx.bad();return}
+  if(A.heal&&S.energy>=100){say('体力は満タンだ！<br>何かしよう');return}
+  sfx.act();
+  const out=[];
+  if(A.heal){
+    const h=A.heal+(S.stats.sta.lv>=5?5:0);
+    S.energy=clamp(S.energy+h,0,100);out.push(`⚡ +${h}`);
+  }else{
+    let base=rnd(14,22);
+    let mul=1+(S.stats.mot.lv-1)*0.06;
+    if(BOOST[key]&&S.owned[BOOST[key]])mul*=1.25;
+    if(S.weather==='rain'){if(key==='exercise')mul*=.6;if(key==='study'||key==='hobby')mul*=1.2}
+    if(S.weather==='sun'&&key==='exercise')mul*=1.15;
+    if(S.energy<30)mul*=.7;
+    const crit=Math.random()<.12;
+    if(crit)mul*=2;
+    const amt=Math.round(base*mul);
+    out.push(...gainExp(A.stat,amt));
+    if(A.sub)out.push(...gainExp(A.sub[0],A.sub[1]));
+    S.energy-=A.cost;
+    const c=rnd(10,30);S.coins+=c;out.push(`★ +${c}`);
+    if(crit)setTimeout(()=>toast('✨ 大成功！ 経験値2倍！'),200);
+    S.today.total++;
+  }
+  S.counts[key]++;S.today[key]++;
+  S.hour=Math.min(22,S.hour+2);S.min=rnd(0,59);if(S.hour>=22)S.min=0;
+  gainP(A.heal?5:15);
+  // fx
+  showProp(A.prop);
+  out.forEach((t,i)=>setTimeout(()=>floatText(t,i),i*220));
+  hop();setFace(S.energy<20?'tired':'happy');
+  say(pick(A.lines)+(S.energy<20&&!A.heal?'<br><small>…ちょっと疲れたかも</small>':''));
+  setTimeout(()=>setFace(S.energy<20?'tired':'normal'),1800);
+  flushLvUps();
+  checkGoal();
+  // mission complete notice
+  S.missions.forEach(m=>{if(!m.claimed&&!m.noticed&&missionProg(m)>=m.n){m.noticed=true;setTimeout(()=>toast(`📋 ミッション達成！「${m.text}」`),600)}});
+  render();save();
+  busy=true;setTimeout(()=>busy=false,350);
+  if(S.hour>=22){setTimeout(()=>{say('もう22時だ。<br>今日はおしまい！');pulseNext()},1400)}
+}
+function pulseNext(){$('#nextBtn').classList.add('glow')}
+
+function nextDay(){
+  if(modalOpen||busy)return;
+  busy=true;sfx.tap();
+  const sl=$('#sleep');sl.textContent='💤 おやすみ…';sl.classList.add('on');
+  setTimeout(()=>{
+    // sleep restore
+    const restore=clamp(40+Math.max(0,22-S.hour)*5+S.stats.sta.lv*2,40,90);
+    const before=S.energy;S.energy=clamp(S.energy+restore,0,100);
+    // auto claim
+    let auto=0;S.missions.forEach(m=>{if(!m.claimed&&missionProg(m)>=m.n){m.claimed=true;auto+=m.reward}});
+    if(auto){S.coins+=auto}
+    S.day++;S.hour=8;S.min=rnd(0,15);
+    S.today={study:0,exercise:0,hobby:0,social:0,rest:0,total:0};
+    S.coins+=100;
+    rollWeather();genMissions();
+    const lines=[`⚡ 体力 +${S.energy-before}`,'★ おこづかい +100'];
+    if(auto)lines.push(`📋 ミッション報酬 +${auto}`);
+    let mtxt='';
+    if(Math.random()<.4){
+      const tot=MORNING.reduce((a,m)=>a+m.w,0);let r=Math.random()*tot,mm=MORNING[0];
+      for(const m of MORNING){r-=m.w;if(r<=0){mm=m;break}}
+      mtxt=`<p class="center" style="margin-top:8px"><b>${mm.t}</b></p>`+chipHtml(applyEff(mm.eff));
+      if(mm.eff.hour)S.hour=8+mm.eff.hour;
+    }
+    sl.textContent='☀️ おはよう！';
+    render();
+    setTimeout(()=>{
+      sl.classList.remove('on');busy=false;
+      queueModal({title:`☀️ ${fmtDate(S.day)}`,html:`<p class="center">${WICON[S.weather]} 今日の天気：${{sun:'はれ',cloud:'くもり',rain:'雨'}[S.weather]}${S.weather==='rain'?'<br><span class="muted">雨の日は勉強・趣味の効果UP、運動は効果DOWN</span>':S.weather==='sun'?'<br><span class="muted">晴れの日は運動の効果UP</span>':''}</p>${chipHtml(lines)}${mtxt}`,buttons:[{label:'今日もがんばる！'}]});
+      const ev=S.events.find(e=>e.day===S.day);
+      if(ev)queueModal(eventModal(ev));
+      flushLvUps();checkGoal();
+      say(pick(['よし、今日は何しよう？','新しい一日のはじまり！','今日も一歩ずつ！']));
+      setFace('normal');
+      $('#nextBtn').classList.remove('glow');
+      render();save();
+    },700);
+  },800);
+}
+function eventModal(ev){
+  const E=EV(ev.id);
+  const effTxt=o=>Object.entries(o.eff).filter(([k])=>k!=='hour').map(([k,v])=>STATS[k]?`${STATS[k].icon}${STATS[k].name}${v>0?'+':''}${v}`:k==='energy'?`⚡${v>0?'+':''}${v}`:k==='coins'?`★${v>0?'+':''}${v}`:'').join(' ');
+  const choose=o=>{
+    S.events=S.events.filter(e=>e!==ev);
+    if(!S.seenEvents.includes(E.id))S.seenEvents.push(E.id);
+    if(o.eff.coins<0&&S.coins<-o.eff.coins){modalQ.unshift({title:'コインが足りない…',html:`<p class="center">お金が足りなくて行けなかった…</p>`,buttons:[{label:'しかたない'}]});scheduleEvents();return}
+    const res=applyEff(o.eff);let msg=o.msg;
+    if(o===E.go)addAlbum({kind:'event',icon:E.icon,t:E.t});
+    if(o.contest){
+      const sc=S.stats.mot.lv+S.stats.kno.lv+rnd(0,4);
+      if(sc>=12){res.push(...applyEff({coins:1000,gems:20}));msg='なんと入賞！賞金をもらった！';}
+      else if(sc>=8){res.push(...applyEff({coins:300}));msg='佳作に選ばれた！次はもっと上へ！';}
+      else msg='残念ながら落選…でも挑戦できたことが大事！';
+    }
+    modalQ.unshift({title:`${E.icon} ${E.t}`,html:`<p class="center">${msg}</p>${chipHtml(res)}`,buttons:[{label:'OK'}],onShow:sfx.coin});
+    scheduleEvents();flushLvUps();checkGoal();render();save();
+  };
+  return {title:`${E.icon} イベント発生！`,noClose:true,html:`<div class="big">${E.icon}</div><p class="center"><b>今日は「${E.t}」の日！</b><br>どうする？</p>
+    <div class="mlist" style="margin-top:14px"><div class="mitem"><div class="mt"><b>${E.go.label}</b><span class="muted">${effTxt(E.go)}${E.go.contest?' ＋結果しだいで賞金':''}</span></div></div>
+    <div class="mitem"><div class="mt"><b>${E.no.label}</b><span class="muted">${effTxt(E.no)}</span></div></div></div>`,
+    buttons:[{label:E.go.label,cls:'orange',fn:()=>choose(E.go)},{label:E.no.label,cls:'sub',fn:()=>choose(E.no)}]};
+}
+
+/* ---------- modal ---------- */
+const modalQ=[];let modalOpen=false,curModal=null;
+function queueModal(m){modalQ.push(m);if(!modalOpen)nextModal()}
+function nextModal(){
+  const m=modalQ.shift();
+  if(!m){modalOpen=false;curModal=null;$('#overlay').classList.remove('show');render();return}
+  modalOpen=true;showModal(m);
+}
+function showModal(m){
+  curModal=m;
+  $('#overlay').classList.add('show');
+  $('#mtitle').innerHTML=m.title;
+  $('#mbody').innerHTML=typeof m.html==='function'?m.html():m.html;
+  $('#mclose').style.display=m.noClose?'none':'block';
+  const bb=$('#mbtns');bb.innerHTML='';
+  (m.buttons||[]).forEach(b=>{
+    const el=document.createElement('button');el.className='mb '+(b.cls||'');el.innerHTML=b.label;
+    el.onclick=()=>{sfx.tap();if(b.fn)b.fn();if(!b.keep)nextModal()};bb.appendChild(el);
+  });
+  bb.style.display=(m.buttons&&m.buttons.length)?'flex':'none';
+  $('#mbody').scrollTop=0;
+  if(m.onMount)m.onMount($('#mbody'));
+  if(m.onShow)m.onShow();
+}
+$('#mclose').onclick=()=>{sfx.tap();nextModal()};
+function openMenu(m){if(modalOpen||busy)return;sfx.tap();queueModal(m)}
+
+/* ---------- menus ---------- */
+function missionModal(){
+  return {title:'📋 今日のミッション',html:()=>`<div class="mlist">${S.missions.map((m,i)=>{
+      const p=missionProg(m),ok=p>=m.n;
+      return `<div class="mitem"><div class="mi2">${m.kind==='total'?'🔥':ACTS[m.key].icon}</div><div class="mt"><b>${m.text}</b>
+      <div class="bar"><i style="width:${p/m.n*100}%;background:linear-gradient(90deg,#3cb874,#7ad99e)"></i></div><span class="muted">${p} / ${m.n}　報酬 ★${m.reward}</span></div>
+      ${m.claimed?'<span class="done">受取済 ✓</span>':`<button class="mb mbsm orange" data-i="${i}" ${ok?'':'disabled'}>受け取る</button>`}</div>`}).join('')}</div>
+      <p class="muted center" style="margin-top:14px">ミッションは毎日入れかわります（達成済みは翌日に自動で受け取り）</p>`,
+    onMount:b=>b.querySelectorAll('[data-i]').forEach(el=>el.onclick=()=>{
+      const m=S.missions[+el.dataset.i];if(m.claimed||missionProg(m)<m.n)return;
+      m.claimed=true;S.coins+=m.reward;gainP(20);sfx.coin();toast(`★ +${m.reward} コインを受け取った！`);save();render();showModal(missionModal());
+    }),buttons:[{label:'とじる',cls:'sub'}]};
+}
+function calModal(offset=0){
+  const cur=dateOf(S.day);const y=cur.getFullYear(),mo=cur.getMonth()+offset;
+  const first=new Date(y,mo,1);const last=new Date(y,mo+1,0).getDate();
+  const dayIdx=d=>Math.round((d-START)/86400000);
+  let cells=WD.map((w,i)=>`<div class="h ${i===0?'sun':i===6?'sat':''}">${w}</div>`).join('');
+  for(let i=0;i<first.getDay();i++)cells+='<div class="d empty"></div>';
+  for(let d=1;d<=last;d++){
+    const di=dayIdx(new Date(first.getFullYear(),first.getMonth(),d));
+    const ev=S.events.find(e=>e.day===di);const al=S.album.filter(a=>a.day===di);
+    let ic=ev?EV(ev.id).icon:al.length?al[0].icon:'';
+    cells+=`<div class="d ${di<S.day?'past':''} ${di===S.day?'today':''}">${d}<span class="ce">${ic}</span></div>`;
+  }
+  const evList=S.events.map(e=>`<div class="row2"><span>${EV(e.id).icon} ${EV(e.id).t}</span><span class="muted">${fmtDate(e.day)}（${e.day===S.day?'今日':'あと'+(e.day-S.day)+'日'}）</span></div>`).join('');
+  return {title:`📅 ${first.getFullYear()}年 ${first.getMonth()+1}月`,html:`<div class="cal">${cells}</div><div style="margin-top:16px"><b>予定</b>${evList}</div>`,
+    buttons:[{label:'‹ 前の月',cls:'sub',keep:true,fn:()=>showModal(calModal(offset-1))},{label:'次の月 ›',cls:'sub',keep:true,fn:()=>showModal(calModal(offset+1))},{label:'とじる'}]};
+}
+function albumModal(){
+  S.albumNew=false;save();render();
+  const slots=[...GOALS.map(g=>({kind:'goal',icon:g.icon,t:g.t})),...EVENTS.map(e=>({kind:'event',icon:e.icon,t:e.t}))];
+  return {title:'📔 アルバム',html:`<p class="muted center">思い出 ${S.album.length} 個</p><div class="album" style="margin-top:10px">${slots.map(s=>{
+      const got=S.album.find(a=>a.t===s.t);
+      return got?`<div class="acard"><div class="ae">${s.icon}</div><b>${s.t}</b><small>${fmtDate(got.day)}${s.kind==='goal'?' 目標達成':''}</small></div>`
+        :`<div class="acard lock"><div class="ae">${s.icon}</div><b>？？？</b><small>${s.kind==='goal'?'目標':'イベント'}</small></div>`}).join('')}</div>`,buttons:[{label:'とじる',cls:'sub'}]};
+}
+function shopModal(){
+  return {title:'🛍️ ショップ',html:()=>`<p class="center" style="font-weight:800">★ ${S.coins.toLocaleString()}　💎 ${S.gems}</p><div class="mlist" style="margin-top:10px">${SHOP.map((it,i)=>{
+      const owned=it.once&&S.owned[it.id];const can=(it.cur==='coins'?S.coins:S.gems)>=it.price;
+      return `<div class="mitem"><div class="mi2">${it.icon}</div><div class="mt"><b>${it.t}</b><span class="muted">${it.d}</span></div>
+      ${owned?'<span class="done">購入済 ✓</span>':`<button class="mb mbsm ${it.cur==='gems'?'pink':'orange'}" data-i="${i}" ${can?'':'disabled'}>${it.cur==='coins'?'★':'💎'} ${it.price}</button>`}</div>`}).join('')}</div>`,
+    onMount:b=>b.querySelectorAll('[data-i]').forEach(el=>el.onclick=()=>{
+      const it=SHOP[+el.dataset.i];const bal=it.cur==='coins'?'coins':'gems';
+      if(S[bal]<it.price||(it.once&&S.owned[it.id]))return;
+      S[bal]-=it.price;sfx.coin();
+      if(it.once){S.owned[it.id]=true;toast(`${it.icon} ${it.t}を手に入れた！`)}
+      else{const r=it.use();toast(`${it.icon} ${it.t}を使った！ ${r.join(' ')}`)}
+      flushLvUps();checkGoal();save();render();if(curModal&&curModal.title==='🛍️ ショップ')showModal(shopModal());
+    }),buttons:[{label:'とじる',cls:'sub'}]};
+}
+function detailModal(){
+  const cnt=S.counts;
+  return {title:'📊 くわしいステータス',html:`${SK.map(k=>{const s=S.stats[k];return `<div class="row2"><div><b>${STATS[k].icon} ${STATS[k].name}　Lv. ${s.lv}</b><br><span class="muted">${STATS[k].desc}</span></div><b>${s.lv>=10?'MAX':s.exp+' / 100'}</b></div>`}).join('')}
+    <table class="st" style="margin-top:14px"><tr><td>経過日数</td><td>${S.day+1} 日目</td></tr>
+    ${Object.keys(ACTS).map(k=>`<tr><td>${ACTS[k].icon} ${ACTS[k].name}した回数</td><td>${cnt[k]} 回</td></tr>`).join('')}
+    <tr><td>持ち物</td><td>${Object.keys(S.owned).map(id=>SHOP.find(s=>s.id===id).icon).join(' ')||'なし'}</td></tr></table>
+    <p class="muted" style="margin-top:12px">💡 やる気が高いほど全部の行動の効果UP／体力が30未満だと効果DOWN／早く寝るほど回復量が増える／たまに「大成功」で2倍！</p>`,buttons:[{label:'とじる',cls:'sub'}]};
+}
+function settingsModal(){
+  return {title:'⚙️ 設定',html:`<p style="font-weight:800">なまえ</p><input class="name" id="nmIn" maxlength="8" value="${esc(S.name)}">
+    <div class="row2" style="margin-top:16px"><b>🔊 効果音</b><button class="mb mbsm ${S.sound?'':'sub'}" id="sndBtn">${S.sound?'ON':'OFF'}</button></div>
+    <div class="row2"><b>🗑️ データを消して最初から</b><button class="mb mbsm pink" id="rstBtn">リセット</button></div>
+    <p class="muted" style="margin-top:12px">データはこの端末のブラウザに自動保存されます。</p>`,
+    onMount:b=>{
+      b.querySelector('#sndBtn').onclick=()=>{S.sound=!S.sound;save();showModal(settingsModal())};
+      b.querySelector('#rstBtn').onclick=()=>{nextModal();confirmReset()};
+    },
+    buttons:[{label:'保存してとじる',fn:()=>{const v=($('#nmIn')||{}).value;if(v&&v.trim()){S.name=v.trim().slice(0,8)}save();render()}}]};
+}
+function confirmReset(){
+  queueModal({title:'本当にリセットする？',html:'<p class="center">これまでの育成データがすべて消えます。</p>',
+    buttons:[{label:'リセットする',cls:'pink',fn:()=>{try{localStorage.removeItem(KEY)}catch(e){};S=null;modalQ.length=0;setTimeout(titleScreen,50)}},{label:'やめる',cls:'sub'}]});
+}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function titleScreen(){
+  S=newState();render();
+  queueModal({title:'🌱 じんせい育成',noClose:true,html:`<div class="big">🧑‍🎓</div><p class="center">好きなことで生きていくために、<br>毎日の行動を選んで主人公を育てよう！</p>
+    <ul style="margin:14px 0 14px 30px;font-size:22px"><li>行動すると⚡体力を使ってステータスが上がる</li><li>1日は朝8時〜夜22時。疲れたら休もう</li><li>イベントやミッションでボーナス！</li><li>5つの目標をクリアすると夢がかなう</li></ul>
+    <p style="font-weight:800">主人公のなまえ</p><input class="name" id="startName" maxlength="8" value="たかし">`,
+    buttons:[{label:'はじめる！',cls:'orange',fn:()=>{
+      const v=($('#startName').value||'').trim()||'たかし';
+      S=newState(v.slice(0,8));rollWeather();S.weather='sun';genMissions();scheduleEvents();save();render();
+      say(`よし、${esc(S.name)}の<br>新しい毎日のスタートだ！`);sfx.fan();
+    }}]});
+}
+
+/* ---------- fx ---------- */
+function charPos(){return stage.classList.contains('port')?{x:300,y:380}:{x:590,y:450}}
+function floatText(t,i){
+  const p=charPos();const el=document.createElement('div');el.className='float';el.textContent=t;
+  el.style.left=(p.x+(i%2?110:-90))+'px';el.style.top=(p.y-20-i*8)+'px';
+  el.style.color=/-\d/.test(t)?'#e0445f':'#2a8a50';
+  stage.appendChild(el);setTimeout(()=>el.remove(),1600);
+}
+function showProp(e){
+  const p=charPos();const el=document.createElement('div');el.className='prop';el.textContent=e;
+  el.style.left=(p.x+170)+'px';el.style.top=(p.y-60)+'px';stage.appendChild(el);setTimeout(()=>el.remove(),1400);
+}
+function toast(t){const el=document.createElement('div');el.className='toast';el.textContent=t;$('#toasts').appendChild(el);setTimeout(()=>el.remove(),2700)}
+function hop(){const c=$('#charAll');c.classList.remove('hop');void c.getBBox();c.classList.add('hop')}
+function say(html){const b=$('#bubble');b.innerHTML=html;b.classList.remove('pop');void b.offsetWidth;b.classList.add('pop')}
+function setFace(f){
+  const set=(id,on)=>$(id).setAttribute('opacity',on?1:0);
+  set('#eyesN',f==='normal');set('#eyesH',f==='happy');set('#eyesT',f==='tired');
+  set('#mouthN',f==='normal');set('#mouthH',f==='happy');set('#mouthT',f==='tired');set('#sweat',f==='tired');
+}
+
+/* ---------- render ---------- */
+function renderScene(){
+  const h=S.hour+S.min/60;
+  let c1,c2,tint=0,warm=0,night=false;
+  if(h<10){c1='#8fd3ff';c2='#eef8ff'}
+  else if(h<16){c1='#4fb0f2';c2='#d4efff'}
+  else if(h<18){c1='#7fa8e0';c2='#ffd6a0';warm=.08}
+  else if(h<20){c1='#4a4f8f';c2='#ff9a66';warm=.12;tint=.12}
+  else{c1='#141b45';c2='#333a78';tint=.3;night=true}
+  if(S.weather==='rain'&&!night){c1='#8b98aa';c2='#c9d1dc';tint=Math.max(tint,.08)}
+  else if(S.weather==='cloud'&&!night){c2='#e6eef5'}
+  $('#sky1').setAttribute('stop-color',c1);$('#sky2').setAttribute('stop-color',c2);
+  $('#tint').setAttribute('opacity',tint);$('#warm').setAttribute('opacity',warm);
+  const sunY=h<12?260-(h-8)*25:160+(h-12)*30;
+  $('#sun').setAttribute('cy',sunY);$('#sunCore').setAttribute('cy',sunY);
+  $('#sunG1').setAttribute('opacity',night||S.weather==='rain'?0:1);
+  $('#moonG').setAttribute('opacity',night?1:0);
+  $('#clouds').setAttribute('opacity',night?.15:S.weather==='sun'?.7:1);
+  $('#city').setAttribute('fill',night?'#2b3263':'#c9d6e6');
+  $('#cityWin').setAttribute('fill',night?'#ffe18a':'#e8eef6');
+  $('#sunbeam').setAttribute('opacity',night||S.weather==='rain'?0:.12);
+  $('#lampGlow').setAttribute('opacity',night?.95:h>=18?.75:.5);
+  $('#catEyes').setAttribute('opacity',night?0:1);$('#catSleep').setAttribute('opacity',night?1:0);$('#catZ').setAttribute('opacity',night?1:0);
+}
+function renderStats(){
+  $('#statList').innerHTML=SK.map(k=>{const s=S.stats[k],m=s.lv>=10;
+    return `<div class="srow" data-k="${k}"><div class="si">${STATS[k].icon}</div><div class="sn">${STATS[k].name}</div><div class="sb"><div class="sl">Lv. ${s.lv}</div><div class="bar"><i style="width:${m?100:s.exp}%;background:${STATS[k].color}"></i></div><div class="sv">${m?'MAX':s.exp+' / 100'}</div></div></div>`}).join('');
+}
+function renderActions(){
+  const wrap=$('#actions');
+  if(!wrap.children.length){
+    wrap.innerHTML=Object.entries(ACTS).map(([k,a])=>`<button class="act a-${k}" data-k="${k}"><span class="ai">${a.icon}</span><span class="an">${a.name}</span><span class="ac">${a.heal?'⚡ +'+a.heal:'⚡ -'+a.cost}</span></button>`).join('');
+    wrap.querySelectorAll('.act').forEach(b=>b.onclick=()=>doAction(b.dataset.k));
+  }
+  wrap.querySelectorAll('.act').forEach(b=>{const a=ACTS[b.dataset.k];
+    b.classList.toggle('dis',S.hour>=22||(!a.heal&&S.energy<a.cost)||(a.heal&&S.energy>=100))});
+}
+function render(){
+  if(!S)return;
+  $('#pname').textContent=S.name;
+  $('#plv').textContent=`Lv. ${S.plv}`;
+  $('#pexpT').textContent=`${S.pexp} / ${pNeed(S.plv)}`;
+  $('#pexpB').style.width=(S.pexp/pNeed(S.plv)*100)+'%';
+  $('#enB').style.width=S.energy+'%';$('#enT').textContent=S.energy;
+  $('#enB').style.background=S.energy<30?'linear-gradient(90deg,#f05a5a,#ff8a7a)':'linear-gradient(90deg,#ffb11f,#ffd25a)';
+  $('#wIcon').textContent=WICON[S.weather];
+  $('#dateT').textContent=fmtDate(S.day);
+  $('#timeT').textContent=fmtTime(S.hour,S.min);
+  $('#coinT').textContent=S.coins.toLocaleString();
+  $('#gemT').textContent=S.gems.toLocaleString();
+  renderStats();renderActions();renderScene();
+  // event
+  const ev=S.events[0];
+  if(ev){const E=EV(ev.id);$('#evThumb').textContent=E.icon;$('#evThumb').style.background=E.bg;$('#evTitle').textContent=E.t;
+    const v=Object.entries(E.go.eff).find(([k])=>STATS[k]||k==='coins');
+    $('#evEff').textContent=v?(STATS[v[0]]?`${STATS[v[0]].icon} ${STATS[v[0]].name} +${v[1]}`:`★ コイン +${v[1]}`):'';
+    const left=ev.day-S.day;const el=$('#evLeft');el.textContent=left<=0?'今日！':`あと${left}日`;el.classList.toggle('today',left<=0)}
+  // goal
+  if(S.goal<GOALS.length){const g=GOALS[S.goal];$('#goalT').textContent=g.t;
+    $('#goalB').style.width=(goalFrac(S.goal)*100)+'%';
+    $('#goalSub').textContent='条件：'+Object.entries(g.req).map(([k,v])=>`${STATS[k].name}Lv${v}${S.stats[k].lv>=v?'✓':''}`).join('・');}
+  else{$('#goalT').textContent='夢をかなえた！🌟';$('#goalB').style.width='100%';$('#goalSub').textContent='このまま自由に育成できます'}
+  $('#goalN').textContent=`${S.goal} / ${GOALS.length}`;
+  // tree grows
+  const sc=0.55+S.goal*0.1;['#tr1','#tr2','#tr3'].forEach((id,i)=>$(id).setAttribute('transform',`translate(50 50) scale(${sc}) translate(-50 -50)`));
+  $('#fruits').innerHTML=[[42,34],[58,38],[38,52],[62,52],[50,26]].slice(0,S.goal).map(([x,y])=>`<circle cx="${x}" cy="${y}" r="4" fill="#ff6b6b" transform="translate(50 50) scale(${sc}) translate(-50 -50)"/>`).join('');
+  // badges
+  $('#mBadge').classList.toggle('on',S.missions.some(m=>!m.claimed&&missionProg(m)>=m.n));
+  $('#aBadge').classList.toggle('on',!!S.albumNew);
+  $('#nextBtn').classList.toggle('glow',S.hour>=22||(S.energy<10&&S.hour>=18));
+}
+
+/* ---------- idle chatter ---------- */
+setInterval(()=>{
+  if(!S||modalOpen||busy)return;
+  let l;
+  if(S.hour>=22)l='もう夜だ。<br>「次の日へ」で寝よう';
+  else if(S.energy<20)l=pick(['ちょっとつかれたな…','休むのも大事だよね']);
+  else if(S.events[0]&&S.events[0].day-S.day===1)l=`明日は「${EV(S.events[0].id).t}」だ！`;
+  else if(S.missions.some(m=>!m.claimed&&missionProg(m)>=m.n))l='ミッション達成してる！<br>報酬を受け取ろう';
+  else l=pick(['よし、<br>今日はこのタスクをやってみよう！','好きなことで<br>生きていきたいな','何からやろうかな？','コツコツが大事！',`目標は<br>「${S.goal<5?GOALS[S.goal].t:'もっと上へ'}」`]);
+  say(l);
+},11000);
+
+/* ---------- layout ---------- */
+function fit(){
+  const vw=window.innerWidth,vh=window.innerHeight;
+  const port=vw/vh<0.95;
+  stage.className=port?'port':'land';
+  const W=port?900:1536,H=port?1720:1024;
+  const s=Math.min(vw/W,vh/H);
+  stage.style.transform=`translate(-50%,-50%) scale(${s})`;
+}
+window.addEventListener('resize',fit);
+
+/* ---------- bind ---------- */
+$('#nextBtn').onclick=nextDay;
+$('#mMission').onclick=()=>openMenu(missionModal());
+$('#mCal').onclick=()=>openMenu(calModal());
+$('#mAlbum').onclick=()=>openMenu(albumModal());
+$('#mShop').onclick=()=>openMenu(shopModal());
+$('#coinPill').onclick=()=>openMenu(shopModal());
+$('#gemPill').onclick=()=>openMenu(shopModal());
+$('#gearBtn').onclick=()=>openMenu(settingsModal());
+$('#detailBtn').onclick=()=>openMenu(detailModal());
+$('#eventCard').onclick=()=>openMenu(calModal());
+$('#bubble').onclick=()=>{if(S){hop();setFace('happy');sfx.tap();say(pick(['なに？','がんばるぞー！','えへへ','いい天気だね','応援ありがとう！']));setTimeout(()=>setFace('normal'),1200)}};
+
+fit();
+const saved=load();
+if(saved&&saved.stats){S=Object.assign(newState(),saved);render();say(`おかえり！<br>${fmtDate(S.day)}の続きだよ`);
+  const ev=S.events.find(e=>e.day===S.day);if(ev&&!S.seenEvents.includes(ev.id+'@'+S.day)){}}
+else titleScreen();
+})();
+</script>
+<script src="../../playtime.js" defer></script>
+</body>
+</html>
