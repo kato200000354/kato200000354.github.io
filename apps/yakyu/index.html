@@ -125,6 +125,9 @@ button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer
 @media (orientation:portrait){
   #pbar{bottom:calc(max(14px,env(safe-area-inset-bottom)) + max(112px,calc(var(--u)*30)))}
   #msg{top:24%}
+  #goal,#tim{min-width:0;width:calc(50vw - 14px)}
+  #goal{right:auto;left:max(8px,env(safe-area-inset-left));top:calc(max(8px,env(safe-area-inset-top)) + 92px)}
+  #tim{top:calc(max(8px,env(safe-area-inset-top)) + 92px)}
 }
 </style>
 </head>
@@ -734,7 +737,7 @@ const BR=[-0.82,0,-0.18];
 const lerp3=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];
 const add3=(a,b,k=1)=>[a[0]+b[0]*k,a[1]+b[1]*k,a[2]+b[2]*k];
 const batDir=(phi,e)=>[Math.sin(phi)*Math.cos(e),Math.sin(e),-Math.cos(phi)*Math.cos(e)];
-const KF=[{r:0.6,h:[0.02,1.5,-0.24],phi:-0.3,e:1.05},{r:1.45,h:[0.38,1.02,0.18],phi:1.75,e:-0.06},{r:2.15,h:[0.06,1.38,0.4],phi:3.9,e:0.6}];
+const KF=[{r:0.6,h:[0.0,1.3,-0.24],phi:-0.3,e:1.05},{r:1.45,h:[0.38,0.92,0.18],phi:1.75,e:-0.06},{r:2.15,h:[0.06,1.2,0.4],phi:3.9,e:0.6}];
 function drawBatter(){
   const p=swing?Math.min(1,swing.p):-1,idle=Math.sin(clock*2.2);
   let a,b,t;
@@ -745,22 +748,23 @@ function drawBatter(){
   const J=v=>add3(BR,v);
   const f=[Math.cos(r),0,Math.sin(r)],ss=[-Math.sin(r),0,Math.cos(r)];
   const rh=0.5+(r-0.6)*0.75,hs=[-Math.sin(rh),0,Math.cos(rh)];
-  const hipC=J([0,0.92,0]),sC=J([0.03,1.42,0]);
-  const lS=add3(sC,ss,0.21),rS=add3(sC,ss,-0.21),lH=add3(hipC,hs,0.14),rH=add3(hipC,hs,-0.14);
+  const hipC=J([0,0.8,0]),sC=J([0.03,1.22,0]);
+  const lS=add3(sC,ss,0.2),rS=add3(sC,ss,-0.2),lH=add3(hipC,hs,0.15),rH=add3(hipC,hs,-0.15);
   const fF=J([0.08,0.05,0.44]),bF=J([-0.06,0.05,-0.38]);
-  const fK=J([0.2,0.5,0.3]),bK=lerp3(J([0.15,0.5,-0.22]),J([0.24,0.4,-0.04]),Math.min(1,pp*1.6));
+  const fK=J([0.18,0.42,0.28]),bK=lerp3(J([0.14,0.42,-0.22]),J([0.22,0.34,-0.04]),Math.min(1,pp*1.6));
   const H1=J(hand),bd=batDir(phi,e),H2=add3(H1,bd,0.09);
   const elb=(S,Hd,o)=>add3(add3(lerp3(S,Hd,0.5),[0,-0.12,0]),o);
   const rE=elb(rS,H1,p<0?[-0.08,0.12,-0.1]:[0,0,0]),lE=elb(lS,H2,[0.02,0,0.06]);
-  const head=add3(sC,[0.04,0.3,0.02]);
+  const head=add3(sC,[0.04,0.33,0.02]);
   const items=[];
   const seg=(A,B,w,col,bias=0)=>items.push({d:(toCam(...A)[2]+toCam(...B)[2])/2+bias,f:()=>limb(A,B,w,col)});
-  seg(rH,bK,0.2,'#f4f4f4');seg(bK,bF,0.15,'#1a2a5a');
-  seg(lH,fK,0.2,'#f4f4f4');seg(fK,fF,0.15,'#1a2a5a');
+  const bM=lerp3(bK,bF,0.3),fM=lerp3(fK,fF,0.3);
+  seg(rH,bK,0.25,'#f4f4f4');seg(bM,bF,0.17,'#1a2a5a');seg(bK,bM,0.22,'#f4f4f4',-0.01);
+  seg(lH,fK,0.25,'#f4f4f4');seg(fM,fF,0.17,'#1a2a5a');seg(fK,fM,0.22,'#f4f4f4',-0.01);
   items.push({d:toCam(...bF)[2],f:()=>shoe(bF)});items.push({d:toCam(...fF)[2],f:()=>shoe(fF)});
   items.push({d:(toCam(...hipC)[2]+toCam(...sC)[2])/2,f:()=>torso(lS,rS,rH,lH,f)});
-  seg(rS,rE,0.13,'#1a2a5a',-0.02);seg(rE,H1,0.11,'#1a2a5a',-0.02);
-  seg(lS,lE,0.13,'#1a2a5a',-0.02);seg(lE,H2,0.11,'#1a2a5a',-0.02);
+  seg(rS,rE,0.15,'#1a2a5a',-0.02);seg(rE,H1,0.13,'#1a2a5a',-0.02);
+  seg(lS,lE,0.15,'#1a2a5a',-0.02);seg(lE,H2,0.13,'#1a2a5a',-0.02);
   items.push({d:toCam(...H1)[2]-0.05,f:()=>{dot(H1,0.075,'#f8f8f8');dot(H2,0.075,'#f8f8f8');}});
   items.push({d:toCam(...add3(H1,bd,0.4))[2]-0.06,f:()=>bat(add3(H1,bd,-0.07),add3(H1,bd,0.86))});
   items.push({d:toCam(...head)[2]-0.12,f:()=>helmet(head)});
@@ -772,13 +776,13 @@ function dot(A,r,col){const a=P(...A);if(!a)return;ctx.fillStyle=col;ctx.beginPa
 function shoe(A){const a=P(...A);if(!a)return;const c=ctx;c.fillStyle='#16213f';c.beginPath();c.ellipse(a.x,a.y,0.16*a.s,0.08*a.s,0,0,7);c.fill();c.fillStyle='#fff';c.fillRect(a.x-0.12*a.s,a.y+0.03*a.s,0.24*a.s,0.025*a.s);}
 function torso(lS,rS,rH,lH,f){
   const q=[lS,rS,rH,lH].map(v=>P(...v));if(q.some(v=>!v))return;const c=ctx,s=(q[0].s+q[2].s)/2;
-  c.fillStyle='#f7f7f7';c.strokeStyle='#f7f7f7';c.lineJoin='round';c.lineWidth=0.2*s;
+  c.fillStyle='#f7f7f7';c.strokeStyle='#f7f7f7';c.lineJoin='round';c.lineWidth=0.3*s;
   c.beginPath();q.forEach((v,i)=>i?c.lineTo(v.x,v.y):c.moveTo(v.x,v.y));c.closePath();c.stroke();c.fill();
   c.strokeStyle='#1a2a5a';c.lineWidth=0.06*s;c.beginPath();c.moveTo(q[3].x,q[3].y);c.lineTo(q[2].x,q[2].y);c.stroke();
   const back=(-f[0])*0.8+(-f[2])*(-4)>0;
-  if(back){const m=P(...lerp3(lerp3(lS,rS,0.5),lerp3(lH,rH,0.5),0.42).map((v,i)=>v-f[i]*0.12));if(m){c.save();c.translate(m.x,m.y);c.font=`900 ${0.32*m.s}px sans-serif`;c.textAlign='center';c.textBaseline='middle';c.lineWidth=0.04*m.s;c.strokeStyle='#fff';c.fillStyle='#1a2a5a';c.strokeText('7',0,0);c.fillText('7',0,0);c.restore();}}
+  if(back){const m=P(...lerp3(lerp3(lS,rS,0.5),lerp3(lH,rH,0.5),0.42).map((v,i)=>v-f[i]*0.12));if(m){c.save();c.translate(m.x,m.y);c.font=`900 ${0.3*m.s}px sans-serif`;c.textAlign='center';c.textBaseline='middle';c.lineWidth=0.04*m.s;c.strokeStyle='#fff';c.fillStyle='#1a2a5a';c.strokeText('7',0,0);c.fillText('7',0,0);c.restore();}}
 }
-function helmet(A){const a=P(...A);if(!a)return;const c=ctx,r=0.22*a.s;
+function helmet(A){const a=P(...A);if(!a)return;const c=ctx,r=0.26*a.s;
   const g=c.createRadialGradient(a.x-r*0.35,a.y-r*0.4,r*0.1,a.x,a.y,r);g.addColorStop(0,'#3b5694');g.addColorStop(1,'#14224a');
   c.fillStyle=g;c.beginPath();c.arc(a.x,a.y,r,0,7);c.fill();
   c.fillStyle='#14224a';c.beginPath();c.ellipse(a.x+r*0.75,a.y+r*0.25,r*0.42,r*0.22,-0.3,0,7);c.fill();
@@ -802,13 +806,13 @@ function drawShadow(x,z){const p=P(x,0,z);if(!p)return;ctx.fillStyle='rgba(0,0,0
 
 function drawScoreboard(){
   const a=P(-26,32,149.9),b=P(26,12.5,149.9);if(!a||!b)return;const c=ctx,w=b.x-a.x,h=b.y-a.y;
-  const n=Math.max(G.innings||9,9),cols=n+4,cw=w/(cols+1.6),fs=Math.max(6,h*0.17);
+  const n=Math.max(G.innings||9,9),cw=w/(n+3+3.6),fs=Math.max(6,h*0.17);
   c.save();c.font=`800 ${fs}px sans-serif`;c.textAlign='center';c.textBaseline='middle';
-  const y0=a.y+h*0.2,y1=a.y+h*0.52,y2=a.y+h*0.8,x0=a.x+cw*1.6;
+  const y0=a.y+h*0.2,y1=a.y+h*0.52,y2=a.y+h*0.8,x0=a.x+cw*3.0;
   c.fillStyle='#ffe27a';
   for(let i=0;i<n;i++)c.fillText(i+1,x0+cw*(i+0.5),y0);
   ['R','H','E'].forEach((t,i)=>c.fillText(t,x0+cw*(n+0.9+i),y0));
-  c.fillStyle='#fff';c.font=`800 ${fs*0.85}px sans-serif`;c.fillText('あなた',a.x+cw*0.85,y1);c.fillText('相手',a.x+cw*0.85,y2);
+  c.fillStyle='#fff';c.font=`800 ${fs*0.8}px sans-serif`;c.fillText('あなた',a.x+cw*1.5,y1);c.fillText('相手',a.x+cw*1.5,y2);
   c.font=`800 ${fs}px sans-serif`;
   if(G.line){for(let r=0;r<2;r++){const L=G.line[r],y=r?y2:y1;
       for(let i=0;i<n;i++){let v=L[i];if(v==null&&r===0&&i===G.inning-1&&G.phase!=='over'&&G.half!=='bot')v=G.runsInn;if(v!=null)c.fillText(v,x0+cw*(i+0.5),y);}
@@ -921,10 +925,13 @@ resize();
 let last=performance.now();
 function loop(now){const dt=Math.min(0.05,(now-last)/1000);last=now;
   if(G.phase==='title'){clock+=dt;if(pitcher.t<0&&Math.random()<dt*0.3)pitcher.t=0;if(pitcher.t>=0){pitcher.t+=dt/1.15;if(pitcher.t>1.1)pitcher.t=-1;}}
-  else if(!G.paused)update(dt);
+  else if(!G.paused)update(G.phase==='play'?dt*1.35:dt);
   render();requestAnimationFrame(loop);}
 requestAnimationFrame(loop);
 if(location.hash==='#play'){newGame();}
+// TESTHOOK
+const _m=location.hash.match(/^#sim=([\d.]+)(?:,([\d.]+))?(?:,(\w+))?(?:,(-?[\d.]+))?/);
+if(_m){if(_m[3])G.diff=_m[3];newGame();Math.random=mulberry(+(_m[2]||1)*1000+3);const T=+_m[1];let sw=false;for(let t=0;t<T;t+=1/60){if(!sw&&_m[2]&&ball&&ball.mode==='pitch'&&ball.t>=ball.T-0.09+((+_m[2])%1-0.5)*0.0){cur.x=ball.Tg.x;cur.y=ball.Tg.y-(_m[4]?+_m[4]:-0.03);doSwing();sw=true;}update(1/60);}$('hud').style.transition='none';}
 </script>
 <script src="../../playtime.js" defer></script>
 </body>
