@@ -50,7 +50,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 #cats button{display:flex;align-items:center;gap:12px;height:62px;padding:0 14px;background:#fff;border:4px solid #17305e;border-radius:16px;font-weight:900;font-size:23px;color:#17305e;box-shadow:0 4px 0 rgba(0,0,0,.2);transition:transform .15s}
 #cats button b{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:#17305e;font-size:21px}
 #cats button.on{background:linear-gradient(#ff5d3d,#d9221c);color:#fff;border-color:#fff;box-shadow:0 0 0 4px #b8160f,0 6px 0 4px rgba(0,0,0,.2);transform:translateX(14px)}
-#cats button.on b{background:#fff}
+#cats button.on b{background:#fff;color:#e8302a}
 #songlist{position:absolute;left:300px;top:0;width:620px;height:720px}
 .song{position:absolute;left:20px;width:560px;height:74px;display:flex;align-items:center;gap:14px;padding:0 16px 0 8px;background:rgba(255,250,240,.96);border:4px solid #17305e;border-radius:16px;box-shadow:0 4px 0 rgba(0,0,0,.2);transition:top .18s ease,opacity .18s,transform .18s,left .18s;cursor:pointer}
 .song .jacket{width:56px;height:56px;flex:none;font-size:30px}
@@ -311,7 +311,7 @@ const SONGS=[
 const DIFFS=[
   {n:'かんたん',ic:'🌸',col:'#2f9a2a',desc:'はじめての人にぴったり！\nのんびり　ゆっくり　たたこう！'},
   {n:'ふつう',ic:'🌿',col:'#1f72c8',desc:'ちょっと慣れてきたら！\nリズムにのって　楽しくたたこう！'},
-  {n:'むずかしい',ic:'💥',col:'#e05a12',desc:'むずかしい　リズムにのって\nしっかりたたこう！'},
+  {n:'むずかしい',ic:'💥',col:'#e05a12',desc:'しっかり練習した人むけ！\nリズムにのって　しっかりたたこう！'},
   {n:'おに',ic:'👹',col:'#6a2fc0',desc:'ここからは鬼の領域…！\n細かいリズムと連打に挑め！'}];
 const JW={normal:[0.045,0.10,0.135],easy:[0.065,0.13,0.16],fine:[0.032,0.075,0.11]};
 const KEYS={A:{don:['KeyF','KeyJ'],ka:['KeyD','KeyK']},B:{don:['KeyD','KeyK'],ka:['KeyF','KeyJ']}};
@@ -758,6 +758,7 @@ function startGame(song,diff){
      score:0,combo:0,maxCombo:0,good:0,ok:0,bad:0,roll:0,gauge:0,gain,lose:gain*[0.5,1,1.6,2][diff],
      ptr:0,flyers:[],rings:[],jt:null,flash:{don:-9,ka:-9,side:0},rollPop:-9,banner:null,paused:false,done:false,
      endT:hits[hits.length-1].t+M.bar*1.1,lastAutoRoll:0,sunPulse:-9,lastBar:-1,touched:false,auto:S.auto};
+  if(AC.state==='suspended')AC.resume();
   G.startAt=AC.currentTime+2.4;startMusic(M,G.startAt);
   mode='play';document.querySelectorAll('.screen').forEach(e=>e.classList.remove('on'));
 }
@@ -878,8 +879,8 @@ function drawGame(c,T,dt){
   drawChar(c,110,92-bounce*0.6,50,ch,{arm:g.combo>=10?(beatPh<0.5?0.9:0.4):0.2,blink:(T%3.2)<0.12,happy:g.gauge>=80});
   c.fillStyle='rgba(255,255,255,.92)';rr(c,730,12,470,58,18);c.fill();c.strokeStyle='#17305e';c.lineWidth=4;c.stroke();
   txt(c,g.song.title,1180,42,34,'#17305e',null,0,'right');
-  const gw=180;c.fillStyle=GENRE_COL[g.song.genre];rr(c,1020-gw/2+80,74,gw,30,15);c.fill();c.strokeStyle='#fff';c.lineWidth=3;c.stroke();
-  txt(c,GENRES[g.song.genre]+'・'+DIFFS[g.diff].n,1110,90,17,'#fff');
+  c.fillStyle=GENRE_COL[g.song.genre];rr(c,540,24,176,34,17);c.fill();c.strokeStyle='#fff';c.lineWidth=3;c.stroke();
+  txt(c,GENRES[g.song.genre]+'・'+DIFFS[g.diff].n,628,42,17,'#fff');
   // gauge
   const gx=520,gy=124,gwid=640,gh=28;
   c.fillStyle='#1d1d1d';rr(c,gx-4,gy-4,gwid+8,gh+8,10);c.fill();
@@ -922,7 +923,7 @@ function drawGame(c,T,dt){
   // target
   c.fillStyle='#2a2a2a';circ(c,LANE.hitX,LCY,48);c.fill();
   c.strokeStyle='#777';c.lineWidth=4;circ(c,LANE.hitX,LCY,50);c.stroke();c.strokeStyle='#999';c.lineWidth=3;circ(c,LANE.hitX,LCY,35);c.stroke();
-  const pps=560*S.speed/M.bar;
+  const pps=720*S.speed/M.bar;
   c.save();c.beginPath();c.rect(300,LANE.y-60,W-300,LANE.h+90);c.clip();
   // bar lines
   for(let b=Math.max(0,Math.floor(t/M.bar));b<LAYOUT.length;b++){const x=LANE.hitX+(b*M.bar-t)*pps;if(x>W)break;if(x<300)continue;c.fillStyle='rgba(255,255,255,.55)';c.fillRect(x-1,LANE.y,2,LANE.h);}
@@ -969,6 +970,9 @@ function drawGame(c,T,dt){
     txt(c,'♪ '+g.song.title+'　はじまるよ！',760,LCY,36,'#fff','#e8302a',8);c.globalAlpha=1;
     const hint=g.touched?'まんなか＝ドン　ふち・はし＝カッ':(S.keys==='A'?'F・J＝ドン　　D・K＝カッ':'D・K＝ドン　　F・J＝カッ');
     c.fillStyle='rgba(255,255,255,.9)';rr(c,440,456,400,40,20);c.fill();txt(c,hint,640,476,20,'#17305e');}
+  if(AC.state!=='running'&&!g.paused){c.fillStyle='rgba(10,10,40,.6)';c.fillRect(0,0,W,H);
+    c.fillStyle='#fff';rr(c,340,300,600,110,30);c.fill();c.strokeStyle='#17305e';c.lineWidth=5;c.stroke();
+    txt(c,'画面をタップしてスタート！',640,355,36,'#e8302a');}
   // banner
   if(g.banner){const k=now-g.banner.t0;const dur=g.banner.big?2.6:1.2;
     if(k<dur){const s=Math.min(1,k*6);const y=g.banner.big?LCY:LANE.y-40;c.save();c.translate(g.banner.big?760:280,y);c.scale(s,s);
@@ -1024,7 +1028,9 @@ cv.addEventListener('pointerdown',e=>{
   if(mode!=='play'||!G)return;e.preventDefault();initAudio();
   const r=cv.getBoundingClientRect();const x=(e.clientX-r.left)/r.width*W,y=(e.clientY-r.top)/r.height*H;
   if(Math.hypot(x-1250,y-30)<40){pauseGame();return;}
-  if(G.paused||y<100)return;
+  if(G.paused)return;
+  if(AC.state!=='running'){AC.resume();return;}
+  if(y<100)return;
   if(e.pointerType==='touch')G.touched=true;
   const d=Math.hypot(x-DRUM.x,y-DRUM.y);let kind;
   if(d<DRUM.r*0.78)kind='don';else if(d<DRUM.r+30)kind='ka';else kind=(x<330||x>950)?'ka':'don';
