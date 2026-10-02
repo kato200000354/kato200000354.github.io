@@ -111,10 +111,13 @@
   .port #goal{left:16px;top:1415px;width:868px;height:130px}
   #treeAv{width:124px;height:124px;border-radius:50%;flex:none;margin:0 20px 0 10px;overflow:hidden;border:5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.15)}
   .port #treeAv{width:104px;height:104px}
-  #goal .gl{font-size:20px;color:#7a8296;font-weight:700}
+  #goal .gl{font-size:18px;color:#7a8296;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px}
+  .port #goal .gl{max-width:680px}
   #goalT{font-size:30px;font-weight:800;margin:8px 0 12px;color:#3c4150}
   .port #goalT{font-size:28px;margin:2px 0 8px}
-  #goalSub{font-size:18px;color:#7a8296;font-weight:600;margin-top:6px}
+  #goalSub{font-size:18px;color:#7a8296;font-weight:600;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px}
+  .port #goalSub{max-width:680px}
+  #goalT.long{font-size:24px}
   .grow{display:flex;align-items:center;gap:16px}
   .grow .bar{flex:1;margin:0;height:14px}
   #goalN{font-size:22px;font-weight:700}
@@ -565,7 +568,7 @@
   <div id="goal" class="card">
     <div id="treeAv"><svg viewBox="0 0 100 100" width="100%" height="100%"><rect width="100" height="100" fill="#cfeeff"/><rect y="72" width="100" height="28" fill="#8fd17a"/><rect x="46" y="52" width="8" height="26" fill="#8a5a36"/><circle id="tr1" cx="50" cy="40" r="22" fill="#5bb066"/><circle id="tr2" cx="36" cy="50" r="14" fill="#4f9a5a"/><circle id="tr3" cx="64" cy="50" r="14" fill="#4f9a5a"/><g id="fruits"></g></svg></div>
     <div style="flex:1">
-      <div class="gl">現在の目標</div>
+      <div class="gl" id="goalL">現在の目標</div>
       <div id="goalT">好きなことで生きていく</div>
       <div class="grow"><div class="bar"><i id="goalB" style="background:linear-gradient(90deg,#2f8ff0,#45c0e8)"></i></div><span id="goalN">0 / 5</span></div>
       <div id="goalSub"></div>
@@ -580,7 +583,700 @@
   <div id="overlay"><div id="mbox"><button id="mclose">×</button><div id="mtitle"></div><div id="mbody"></div><div id="mbtns"></div></div></div>
 </div>
 
-<script src="__NEWSCRIPT__"></script>
+<script>
+(()=>{
+'use strict';
+const $=s=>document.querySelector(s);
+const stage=$('#stage');
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const KEY='jinsei-ikusei-v2';
+const MAXLV=10;
+
+const STATS={
+  mot:{name:'やる気',icon:'🔥',color:'linear-gradient(90deg,#2f8ff0,#5bb2ff)',desc:'高いほど、すべての行動で得られる経験値が増える'},
+  kno:{name:'知識',icon:'📗',color:'linear-gradient(90deg,#1fb57f,#3fd59c)',desc:'勉強系の行動で上がる。夢の基礎になる力'},
+  sta:{name:'体力',icon:'❤️',color:'linear-gradient(90deg,#e9447a,#ff7aa0)',desc:'運動系の行動で上がる。高いほど寝たときの回復量が増える'},
+  soc:{name:'人間関係',icon:'👥',color:'linear-gradient(90deg,#f2b01e,#ffd25a)',desc:'交流系の行動で上がる。イベントで大きく伸びることも'},
+};
+const SK=Object.keys(STATS);
+const expNeed=lv=>60+lv*20;
+
+/* 行動の基本データ（名前・アイコン・セリフは成長段階ごとに変わる） */
+const ACTS={
+  study:{stat:'kno',sub:null,cost:10,cls:'study'},
+  exercise:{stat:'sta',sub:['mot',3],cost:10,cls:'exercise'},
+  hobby:{stat:'mot',sub:['kno',3],cost:10,cls:'hobby'},
+  social:{stat:'soc',sub:['mot',4],cost:10,cls:'social'},
+  rest:{heal:20,cls:'rest'},
+};
+const AK=Object.keys(ACTS);
+const REST_LINES=['ふぅ…ひと休み','ちょっと昼寝しよう','体力が戻ってきた','ネコとゴロゴロ…'];
+
+const STAGES=[
+  {id:'baby',name:'赤ちゃん',icon:'👶',len:5,a0:0,a1:1,mul:.6,
+    goal:{t:'はじめての一歩',req:{sta:2,mot:2},icon:'👣'},
+    look:{hair:'baby',k:.58,fill:'#fff3c4',stroke:'#f0d98a',deco:['dBib'],pen:null,props:['pBlocks','pBottle','pBear','pMobile']},
+    acts:{study:['絵本','📕'],exercise:['はいはい','🐾'],hobby:['おもちゃ','🧸'],social:['だっこ','🤱'],rest:['ねんね','🌙']},
+    lines:{study:['あー！（絵本に夢中）','わんわん…？','ぱちぱち！'],exercise:['はいはい、はいはい！','つかまり立ち…できた！','あんよ、あんよ！'],
+      hobby:['ガラガラ♪','きゃはは！','つみき、ぽーん！'],social:['ママ〜！','だっこ、うれしい','にこにこ♪'],rest:['すやすや…','むにゃむにゃ','zzz…']},
+    idle:['ばぶー','あうー？','きゃっきゃっ','だぁ！']},
+  {id:'toddler',name:'幼児',icon:'🧒',len:7,a0:2,a1:5,mul:.7,
+    goal:{t:'おしゃべり上手になる',req:{soc:3,kno:2},icon:'🗣️'},
+    look:{hair:'short',k:.68,fill:'#bfe0ff',stroke:'#9cc6ee',deco:['dSmock'],pen:'crayon',props:['pNote','pBlocks','pBear']},
+    acts:{study:['ひらがな','🔤'],exercise:['こうえん','🛝'],hobby:['おえかき','🖍️'],social:['おともだち','🧸'],rest:['おひるね','💤']},
+    lines:{study:['あ・い・う・え・お！','じが かけた！','これ なあに？'],exercise:['すべりだい たのしい！','はしるの はやいよ！','ブランコ こげた！'],
+      hobby:['ママのかお かいた！','くれよん たのしい','おほしさま かいた'],social:['いっしょに あそぼ！','おともだち できた！','かして？ いいよ！'],rest:['おひるね…','むにゃ…','ねむねむ']},
+    idle:['なにして あそぶ？','おなか すいた〜','みてみて！','だいすき！']},
+  {id:'child',name:'小学生',icon:'🎒',len:9,a0:6,a1:11,mul:.85,
+    goal:{t:'夢中になれるものを見つける',req:{mot:4,kno:3},icon:'🔍'},
+    look:{hair:'normal',k:.8,fill:'#ff9f5a',stroke:'#e8833e',deco:['dTee'],pen:'pencil',props:['pNote','pMug','pGlobe']},
+    acts:{study:['宿題','✏️'],exercise:['外遊び','⚽'],hobby:['工作','🎨'],social:['あそぶ','🧑‍🤝‍🧑'],rest:['休む','🛏️']},
+    lines:{study:['宿題おわり！','九九ぜんぶ言えた！','漢字テスト100点！'],exercise:['ドッジボール楽しい！','逆上がりできた！','鬼ごっこ、つかまらないぞ'],
+      hobby:['すごいのができた！','工作って楽しい！','夢中になっちゃった'],social:['秘密基地つくった！','友達と大笑い！','またあしたね！'],rest:REST_LINES},
+    idle:['きょうは何して遊ぼう？','給食おいしかった！','大きくなったら何になろう','宿題…あとでやろ']},
+  {id:'middle',name:'中学生',icon:'🏫',len:8,a0:12,a1:14,mul:1,
+    goal:{t:'仲間とがんばる',req:{soc:4,sta:5},icon:'🏀'},
+    look:{hair:'normal',k:.9,fill:'#2a3352',stroke:'#1d2440',deco:['dGaku'],pen:'pencil',props:['pNote','pMug','pGlobe']},
+    acts:{study:['勉強','📖'],exercise:['部活','🏀'],hobby:['趣味','🎵'],social:['交流','💬'],rest:['休む','🛏️']},
+    lines:{study:['テスト範囲、おわった！','数学わかってきた','英単語ばっちり'],exercise:['部活きつい…でも楽しい！','レギュラーめざすぞ！','シュート決まった！'],
+      hobby:['新しい曲できそう♪','好きなことは楽しい！','時間を忘れて夢中に'],social:['部活のみんなと帰った','友達と語り合った','いい仲間がいる！'],rest:REST_LINES},
+    idle:['部活がんばろう','テストが近い…','将来どうしようかな','好きなことって何だろう']},
+  {id:'high',name:'高校生',icon:'🎓',len:8,a0:15,a1:17,mul:1.1,
+    goal:{t:'進路を決める',req:{kno:6,mot:6},icon:'🧭'},
+    look:{hair:'normal',k:.96,fill:'#34415f',stroke:'#273250',deco:['dBlazer'],pen:'pencil',props:['pNote','pMug','pLaptop']},
+    acts:{study:['受験勉強','📚'],exercise:['部活','🏃'],hobby:['趣味','🎸'],social:['交流','🧑‍🤝‍🧑'],rest:['休む','🛏️']},
+    lines:{study:['志望校に向けてがんばる！','過去問、解けた！','集中モード！'],exercise:['最後の大会に向けて！','いい汗かいた〜','自己ベスト更新！'],
+      hobby:['将来これを仕事にしたい','新しい曲ができた♪','時間を忘れて夢中に'],social:['文化祭の準備たのしい','友達と将来の話をした','一生の友達だ！'],rest:REST_LINES},
+    idle:['進路、どうしよう','好きなことで生きていきたい','もうすぐ大人か…','がんばるぞ！']},
+  {id:'adult',name:'大人',icon:'🌟',len:Infinity,a0:18,mul:1.2,
+    goal:{t:'好きなことで生きていく',req:{mot:9,kno:8,sta:8,soc:8},icon:'🌈'},
+    look:{hair:'normal',k:1,fill:'#eeedea',stroke:'#cfccc6',deco:['dHood','dHoodie'],pen:'pencil',props:['pNote','pMug','pLaptop']},
+    acts:{study:['勉強','📖'],exercise:['運動','🏋️'],hobby:['趣味','🎵'],social:['交流','🧑‍🤝‍🧑'],rest:['休む','🛏️']},
+    lines:{study:['よし、集中して覚えるぞ！','なるほど…そういうことか！','この問題、解けた！'],exercise:['いい汗かいた〜！','ランニング気持ちいい！','体がかるい！'],
+      hobby:['やっぱり好きなことは楽しい！','新しい作品ができそう♪','もっと上手くなりたい！'],social:['友達と話すと元気が出る！','新しい仲間ができた','いい話が聞けた！'],rest:REST_LINES},
+    idle:['よし、<br>今日はこのタスクをやってみよう！','好きなことで<br>生きていきたいな','コツコツが大事！','何からやろうかな？']},
+];
+const ALLDECO=['dHood','dHoodie','dBib','dSmock','dTee','dGaku','dBlazer'];
+const ALLPROPS=['pNote','pBlocks','pBottle','pBear','pMobile','pMug','pGlobe','pLaptop'];
+
+function stageAt(d){
+  let acc=0;
+  for(let i=0;i<STAGES.length;i++){const L=STAGES[i].len;if(d<acc+L)return{i,st:STAGES[i],dayIn:d-acc,start:acc};acc+=L}
+}
+function ageAt(d){
+  const {st,dayIn}=stageAt(d);
+  if(st.len===Infinity)return st.a0+Math.floor(dayIn/3);
+  return Math.min(st.a1,st.a0+Math.floor(dayIn*(st.a1-st.a0+1)/st.len));
+}
+const cur=()=>stageAt(S.day);
+const actName=k=>cur().st.acts[k][0];
+const actIcon=k=>cur().st.acts[k][1];
+const lifeLabel=d=>`${stageAt(d).st.name}・${ageAt(d)}歳`;
+
+/* イベント（st = 発生する成長段階の範囲） */
+const EVENTS=[
+  {id:'walk',st:[0,1],icon:'🌸',t:'はじめてのお散歩',bg:'linear-gradient(#ffe0ec,#c9ecb0)',
+    go:{label:'おでかけする',eff:{sta:15,mot:10,energy:-10,hour:2},msg:'ベビーカーからお花が見えた！'},no:{label:'おうちでのんびり',eff:{energy:15},msg:'ゆっくり過ごした。'}},
+  {id:'relatives',st:[0,2],icon:'👵',t:'親戚が会いに来た',bg:'linear-gradient(#fff0d6,#f7cf9a)',
+    go:{label:'会う！',eff:{soc:20,coins:300,hour:2},msg:'たくさん抱っこしてもらった！おこづかいも！'},no:{label:'お昼寝中…',eff:{energy:20},msg:'ぐっすり眠っていた。'}},
+  {id:'photo',st:[0,1],icon:'📷',t:'家族で写真館',bg:'linear-gradient(#e8f0ff,#c4d4f5)',
+    go:{label:'撮ってもらう',eff:{soc:12,mot:12,hour:2},msg:'にっこり笑顔で撮れた！'},no:{label:'また今度',eff:{kno:5},msg:'今回はやめておいた。'}},
+  {id:'undokai',st:[1,1],icon:'🏃',t:'保育園の運動会',bg:'linear-gradient(#d4f5d9,#9fdcab)',
+    go:{label:'はしる！',eff:{sta:22,soc:8,energy:-15,hour:3},msg:'かけっこで1等賞！'},no:{label:'見学する',eff:{soc:5},msg:'みんなを応援した。'}},
+  {id:'zoo',st:[1,2],icon:'🦁',t:'どうぶつえんに行く',bg:'linear-gradient(#fff3c6,#bfe3a0)',
+    go:{label:'行く！',eff:{kno:15,mot:12,energy:-10,hour:4},msg:'ゾウさん大きかった！'},no:{label:'おうちで図鑑',eff:{kno:6},msg:'図鑑で動物を見た。'}},
+  {id:'ensoku',st:[2,2],icon:'🍙',t:'遠足',bg:'linear-gradient(#d4f0ff,#b9e7a8)',
+    go:{label:'参加する',eff:{sta:15,soc:15,energy:-15,hour:4},msg:'みんなで食べるおにぎりは最高！'},no:{label:'お休みする',eff:{energy:15},msg:'家でゆっくりした。'}},
+  {id:'matsuri',st:[2,4],icon:'🏮',t:'夏祭り',bg:'linear-gradient(#ffe0c2,#f5a37a)',
+    go:{label:'行く！',eff:{soc:15,mot:12,coins:-100,hour:3},msg:'金魚すくい、2匹とれた！'},no:{label:'花火を家から見る',eff:{mot:5},msg:'窓から花火が見えた。'}},
+  {id:'library',st:[2,5],icon:'📚',t:'図書館の特別展',bg:'linear-gradient(#d8e8ff,#a9c8f5)',
+    go:{label:'見に行く',eff:{kno:25,mot:5,energy:-10,hour:3},msg:'名作がたくさん！頭がいっぱいになった。'},no:{label:'家でゴロゴロ',eff:{energy:15},msg:'のんびり過ごした。'}},
+  {id:'sports',st:[2,5],icon:'⚽',t:'町内スポーツ大会',bg:'linear-gradient(#d4f5d9,#9fdcab)',
+    go:{label:'参加する！',eff:{sta:25,soc:10,energy:-20,hour:4},msg:'チームで力を合わせて準優勝！'},no:{label:'応援だけ',eff:{soc:5,mot:5},msg:'熱い試合だった！'}},
+  {id:'family',st:[2,5],icon:'🍲',t:'家族でごちそう',bg:'linear-gradient(#ffe2d6,#f7b59a)',
+    go:{label:'みんなで食べる',eff:{soc:12,mot:10,energy:20,hour:3},msg:'おなかいっぱい。元気がわいてきた！'},no:{label:'また今度',eff:{kno:5},msg:'今回はやめておいた。'}},
+  {id:'studygroup',st:[2,5],icon:'📝',t:'友達と勉強会',bg:'linear-gradient(#e0f2ff,#b3dcf7)',
+    go:{label:'参加する',eff:{kno:15,soc:12,energy:-10,hour:3},msg:'教え合うと理解が深まる！'},no:{label:'ひとりでやる',eff:{kno:8},msg:'自分のペースで進めた。'}},
+  {id:'hike',st:[2,5],icon:'⛰️',t:'山へハイキング',bg:'linear-gradient(#d4f0ff,#a8dca0)',
+    go:{label:'登る！',eff:{sta:22,mot:15,energy:-25,hour:5},msg:'頂上からの景色は最高だった！'},no:{label:'近所を散歩',eff:{sta:6},msg:'ゆっくり歩いた。'}},
+  {id:'flea',st:[2,5],icon:'🛍️',t:'フリーマーケット',bg:'linear-gradient(#fff3c6,#f5d97a)',
+    go:{label:'お店を出す',eff:{coins:600,soc:10,energy:-15,hour:4},msg:'手作りグッズが完売！'},no:{label:'見るだけ',eff:{mot:5},msg:'掘り出し物を見つけた。'}},
+  {id:'birthday',st:[2,5],icon:'🎂',t:'友達の誕生日パーティー',bg:'linear-gradient(#ffe0ec,#f7a9c4)',
+    go:{label:'プレゼントを持って行く',eff:{soc:28,coins:-200,energy:-10,hour:3},msg:'すごく喜んでくれた！'},no:{label:'メッセージだけ',eff:{soc:5},msg:'おめでとうを伝えた。'}},
+  {id:'bunkasai',st:[3,4],icon:'🎭',t:'文化祭',bg:'linear-gradient(#efe0ff,#c9a8f0)',
+    go:{label:'クラスで出し物',eff:{soc:18,mot:15,energy:-15,hour:4},msg:'クラスがひとつになった！'},no:{label:'見て回る',eff:{mot:6},msg:'いろんな出し物を楽しんだ。'}},
+  {id:'cafe',st:[3,5],icon:'☕',t:'友達とカフェに行く',bg:'linear-gradient(#ffe3c2,#f3c48c)',
+    go:{label:'行く！',eff:{soc:25,mot:5,coins:-150,energy:-10,hour:3},msg:'おしゃべりが止まらなかった！'},no:{label:'家で勉強する',eff:{kno:10},msg:'ちょっとさみしい…'}},
+  {id:'live',st:[3,5],icon:'🎸',t:'好きなバンドのライブ',bg:'linear-gradient(#e8dcff,#b9a2f5)',
+    go:{label:'チケットを買う',eff:{mot:30,coins:-300,energy:-10,hour:4},msg:'最高のステージ！自分もあんな風になりたい！'},no:{label:'配信で見る',eff:{mot:10},msg:'画面越しでも感動した。'}},
+  {id:'contest',st:[3,5],icon:'🏆',t:'作品コンテストに応募',bg:'linear-gradient(#fff0c2,#f7c85a)',
+    go:{label:'応募する！',eff:{mot:15,kno:10,energy:-15,hour:3},msg:'',contest:true},no:{label:'次回にする',eff:{kno:5},msg:'もっと準備してから挑戦しよう。'}},
+  {id:'mogi',st:[4,4],icon:'📝',t:'全国模試',bg:'linear-gradient(#e0ecff,#a9c0ee)',
+    go:{label:'受ける',eff:{kno:25,energy:-20,hour:4},msg:'手ごたえあり！'},no:{label:'次回にする',eff:{energy:10},msg:'今回は見送った。'}},
+  {id:'setsumeikai',st:[5,5],icon:'💼',t:'あこがれの会社の説明会',bg:'linear-gradient(#e6eef6,#b8c8dc)',
+    go:{label:'参加する',eff:{kno:15,soc:12,energy:-10,hour:3},msg:'夢がぐっと近づいた気がする！'},no:{label:'自分で調べる',eff:{kno:6},msg:'ネットで調べてみた。'}},
+];
+const EV=id=>EVENTS.find(e=>e.id===id);
+const MORNING=[
+  {t:'いい夢を見た！',eff:{mot:10},w:3},
+  {t:'寝坊してしまった…',eff:{hour:2},w:2},
+  {t:'おばあちゃんからおこづかいをもらった！',eff:{coins:300},w:2},
+  {t:'朝の散歩で気分すっきり',eff:{energy:10,sta:5},w:3},
+  {t:'ネコがすり寄ってきた。かわいい…',eff:{mot:6},w:3},
+  {t:'ちょっと風邪気味かも…',eff:{energy:-15},w:1},
+  {t:'家族に「がんばってるね」とほめられた',eff:{soc:8},w:2},
+  {t:'ふしぎな発見をした！',eff:{kno:8},w:2},
+];
+const SHOP=[
+  {id:'drink',icon:'🥤',t:'元気ドリンク',d:'体力 +30',price:200,cur:'coins',use:()=>{S.energy=clamp(S.energy+30,0,100);return['⚡ +30']}},
+  {id:'snack',icon:'🍩',t:'おやつ',d:'やる気の経験値 +15',price:120,cur:'coins',use:()=>gainExp('mot',15)},
+  {id:'book',icon:'📕',t:'本',d:'知識の経験値 +40',price:450,cur:'coins',use:()=>gainExp('kno',40)},
+  {id:'ticket',icon:'🎟️',t:'おでかけチケット',d:'人間関係の経験値 +40',price:450,cur:'coins',use:()=>gainExp('soc',40)},
+  {id:'shoes',icon:'👟',t:'かっこいい靴',d:'運動系の効果がずっと +25%',price:900,cur:'coins',once:true},
+  {id:'guitar',icon:'🎸',t:'あこがれの道具',d:'趣味系の効果がずっと +25%',price:1200,cur:'coins',once:true},
+  {id:'desk',icon:'💡',t:'集中ライト',d:'勉強系の効果がずっと +25%',price:1200,cur:'coins',once:true},
+  {id:'full',icon:'✨',t:'全回復',d:'体力を100まで回復',price:30,cur:'gems',use:()=>{S.energy=100;return['⚡ 全回復']}},
+  {id:'time',icon:'⏰',t:'時間もどし',d:'時刻を2時間もどす',price:40,cur:'gems',use:()=>{S.hour=Math.max(8,S.hour-2);return['⏰ -2時間']}},
+];
+const BOOST={exercise:'shoes',hobby:'guitar',study:'desk'};
+
+let S=null;
+
+/* ---------- audio ---------- */
+let AC=null;
+function beep(f,d=0.12,type='sine',v=0.12,delay=0){
+  if(!S||!S.sound)return;
+  try{
+    AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+    const t=AC.currentTime+delay,o=AC.createOscillator(),g=AC.createGain();
+    o.type=type;o.frequency.setValueAtTime(f,t);
+    g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(0.001,t+d);
+    o.connect(g).connect(AC.destination);o.start(t);o.stop(t+d);
+  }catch(e){}
+}
+const sfx={
+  tap:()=>beep(660,.08,'triangle',.08),
+  act:()=>{beep(523,.1,'triangle');beep(784,.15,'triangle',.1,.08)},
+  lvl:()=>[523,659,784,1047].forEach((f,i)=>beep(f,.18,'square',.06,i*.09)),
+  coin:()=>{beep(988,.07,'square',.05);beep(1319,.15,'square',.05,.06)},
+  bad:()=>beep(200,.2,'sawtooth',.06),
+  fan:()=>[523,659,784,659,784,1047].forEach((f,i)=>beep(f,.22,'triangle',.1,i*.12)),
+};
+
+/* ---------- state ---------- */
+function newState(name){
+  return {name:name||'たかし',day:0,hour:8,min:0,energy:100,coins:300,gems:20,plv:1,pexp:0,
+    stats:{mot:{lv:1,exp:0},kno:{lv:1,exp:0},sta:{lv:1,exp:0},soc:{lv:1,exp:0}},
+    goalsDone:[],missions:[],events:[],album:[],counts:{study:0,exercise:0,hobby:0,social:0,rest:0},
+    today:{study:0,exercise:0,hobby:0,social:0,rest:0,total:0},owned:{},weather:'sun',sound:true,ended:false,albumNew:false,seenEvents:[]};
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function load(){try{const t=localStorage.getItem(KEY);if(t)return JSON.parse(t)}catch(e){}return null}
+const pNeed=lv=>100+lv*20;
+const fmtTime=(h,m)=>{const ap=h<12?'AM':'PM';let hh=h%12;if(hh===0)hh=12;return `${ap} ${hh}:${String(m).padStart(2,'0')}`};
+
+function rollWeather(){const r=Math.random();S.weather=r<.6?'sun':r<.85?'cloud':'rain'}
+const WICON={sun:'☀️',cloud:'⛅',rain:'☔'};
+
+function genMissions(){
+  const pool=[];
+  ['study','exercise','hobby','social'].forEach(k=>{const n=rnd(1,2);pool.push({kind:'act',key:k,n,text:`${actName(k)}を${n}回する`,reward:80+n*60})});
+  const n=rnd(4,5);pool.push({kind:'total',n,text:`1日に${n}回行動する（${actName('rest')}以外）`,reward:220});
+  pool.push({kind:'act',key:'rest',n:1,text:`${actName('rest')}で体力を回復する`,reward:80});
+  const out=[];while(out.length<3){const m=pick(pool);if(!out.includes(m))out.push(m)}
+  S.missions=out.map(m=>({...m,claimed:false}));
+}
+function missionProg(m){return Math.min(m.n,m.kind==='total'?S.today.total:S.today[m.key])}
+function evFits(E,d){const i=stageAt(d).i;return i>=E.st[0]&&i<=E.st[1]}
+function scheduleEvents(){
+  S.events=S.events.filter(e=>e.day>=S.day&&evFits(EV(e.id),e.day));
+  S.events.sort((a,b)=>a.day-b.day);
+  let guard=0;
+  while(S.events.length<2&&guard++<40){
+    const last=S.events.length?S.events[S.events.length-1].day:S.day;
+    const day=last+rnd(2,3);
+    const used=S.events.map(e=>e.id);
+    let cands=EVENTS.filter(e=>evFits(e,day)&&!used.includes(e.id)&&!S.seenEvents.includes(e.id));
+    if(!cands.length)cands=EVENTS.filter(e=>evFits(e,day)&&!used.includes(e.id));
+    if(!cands.length){S.events.push({id:null,day,skip:true});continue}
+    S.events.push({id:pick(cands).id,day});
+  }
+  S.events=S.events.filter(e=>!e.skip);
+}
+
+/* ---------- exp ---------- */
+let lvUps=[];
+function gainExp(k,amt){
+  const s=S.stats[k];
+  if(s.lv>=MAXLV)return[`${STATS[k].name} MAX`];
+  s.exp+=amt;
+  while(s.lv<MAXLV&&s.exp>=expNeed(s.lv)){s.exp-=expNeed(s.lv);s.lv++;lvUps.push(k)}
+  if(s.lv>=MAXLV)s.exp=0;
+  return[`${STATS[k].icon} ${STATS[k].name} +${amt}`];
+}
+function gainP(amt){
+  S.pexp+=amt;
+  while(S.pexp>=pNeed(S.plv)){S.pexp-=pNeed(S.plv);S.plv++;S.gems+=10;toast(`🎉 ${S.name} が Lv.${S.plv} になった！ 💎+10`);sfx.lvl()}
+}
+function flushLvUps(){
+  lvUps.forEach((k,i)=>{
+    setTimeout(()=>{toast(`${STATS[k].icon} ${STATS[k].name}が Lv.${S.stats[k].lv} にアップ！`);sfx.lvl();
+      const row=document.querySelector(`.srow[data-k="${k}"]`);if(row){row.classList.remove('up');void row.offsetWidth;row.classList.add('up')}},i*350);
+  });
+  lvUps=[];
+}
+function applyEff(eff){
+  const out=[];
+  for(const k in eff){
+    const v=eff[k];
+    if(STATS[k])out.push(...gainExp(k,v));
+    else if(k==='energy'){S.energy=clamp(S.energy+v,0,100);out.push(`⚡ 体力 ${v>0?'+':''}${v}`)}
+    else if(k==='coins'){S.coins=Math.max(0,S.coins+v);out.push(`★ コイン ${v>0?'+':''}${v}`)}
+    else if(k==='gems'){S.gems+=v;out.push(`💎 ${v>0?'+':''}${v}`)}
+    else if(k==='hour'){S.hour=Math.min(22,S.hour+v)}
+  }
+  return out;
+}
+const chipHtml=list=>`<div class="chips">${list.map(t=>`<span class="chip ${/-\d/.test(t)?'minus':'plus'}">${t}</span>`).join('')}</div>`;
+
+/* ---------- goals ---------- */
+function goalFrac(g){const ks=Object.keys(g.req);return ks.reduce((a,k)=>{const s=S.stats[k];const v=s.lv-1+(s.lv>=MAXLV?0:s.exp/expNeed(s.lv));return a+Math.min(1,v/(g.req[k]-1))},0)/ks.length}
+function goalMet(g){return Object.keys(g.req).every(k=>S.stats[k].lv>=g.req[k])}
+function checkGoal(){
+  const {i,st}=cur();
+  if(S.goalsDone.includes(i)||!goalMet(st.goal))return;
+  const g=st.goal;S.goalsDone.push(i);S.gems+=30;
+  addAlbum({kind:'goal',icon:g.icon,t:g.t});
+  const last=i===STAGES.length-1;
+  queueModal({title:last?'🌈 夢がかなった！':'🎯 目標達成！',html:`<div class="big">${g.icon}</div><p class="center"><b>「${g.t}」</b>を達成した！</p>${chipHtml(['💎 +30'])}${last?'':`<p class="center muted">${STAGES[i+1].name}になるまで、のびのび育てよう</p>`}`,
+    buttons:[{label:last?'つづきへ':'やった！',cls:'orange'}],onShow:sfx.fan});
+  if(last&&!S.ended){S.ended=true;queueModal(endingModal())}
+}
+function endingModal(){
+  const age=ageAt(S.day);
+  const ok=S.goalsDone.length;
+  const title=ok>=6&&age<=21?'伝説の努力家':ok>=5?'夢をつかんだ人':age<=24?'コツコツの達人':'あきらめない心の持ち主';
+  return {title:'🎉 エンディング',html:`<div class="big">🌈</div><p class="center">赤ちゃんだった${esc(S.name)}は <b>${age}歳</b> で<br>「好きなことで生きていく」夢をかなえた！</p>
+    <p class="center" style="margin-top:12px">称号：<b style="color:#f08a1e">${title}</b></p>
+    <table class="st" style="margin-top:14px">${SK.map(k=>`<tr><td>${STATS[k].icon} ${STATS[k].name}</td><td>Lv. ${S.stats[k].lv}</td></tr>`).join('')}
+    <tr><td>達成した目標</td><td>${ok} / ${STAGES.length}</td></tr>
+    <tr><td>総行動回数</td><td>${Object.values(S.counts).reduce((a,b)=>a+b,0)} 回</td></tr><tr><td>思い出</td><td>${S.album.length} 個</td></tr></table>
+    <p class="center muted" style="margin-top:10px">このまま育成を続けることもできます</p>`,
+    buttons:[{label:'このまま続ける'},{label:'最初から',cls:'sub',fn:()=>{confirmReset()}}]};
+}
+function addAlbum(a){S.album.push({...a,day:S.day,label:lifeLabel(S.day)});S.albumNew=true}
+
+/* ---------- actions ---------- */
+let busy=false;
+function doAction(key){
+  if(modalOpen||busy)return;
+  const A=ACTS[key];const {st}=cur();
+  if(S.hour>=22){say('もう夜だ…<br>そろそろ寝よう');sfx.bad();pulseNext();return}
+  if(!A.heal&&S.energy<A.cost){say(st.id==='baby'?'ふぇぇ…<br>（ねむいみたい）':'つかれて動けない…<br>休もうかな');setFace('tired');sfx.bad();return}
+  if(A.heal&&S.energy>=100){say(st.id==='baby'?'きゃっきゃっ！<br>（元気いっぱい）':'体力は満タンだ！<br>何かしよう');return}
+  sfx.act();
+  const out=[];
+  if(A.heal){
+    const h=A.heal+(S.stats.sta.lv>=5?5:0);
+    S.energy=clamp(S.energy+h,0,100);out.push(`⚡ +${h}`);
+  }else{
+    let mul=st.mul*(1+(S.stats.mot.lv-1)*0.06);
+    if(BOOST[key]&&S.owned[BOOST[key]])mul*=1.25;
+    if(S.weather==='rain'){if(key==='exercise')mul*=.6;if(key==='study'||key==='hobby')mul*=1.2}
+    if(S.weather==='sun'&&key==='exercise')mul*=1.15;
+    if(S.energy<30)mul*=.7;
+    const crit=Math.random()<.12;
+    if(crit)mul*=2;
+    out.push(...gainExp(A.stat,Math.max(1,Math.round(rnd(14,22)*mul))));
+    if(A.sub)out.push(...gainExp(A.sub[0],A.sub[1]));
+    S.energy-=A.cost;
+    const c=rnd(10,30);S.coins+=c;out.push(`★ +${c}`);
+    if(crit)setTimeout(()=>toast('✨ 大成功！ 経験値2倍！'),200);
+    S.today.total++;
+  }
+  S.counts[key]++;S.today[key]++;
+  S.hour=Math.min(22,S.hour+2);S.min=S.hour>=22?0:rnd(0,59);
+  gainP(A.heal?5:15);
+  showProp(actIcon(key));
+  out.forEach((t,i)=>setTimeout(()=>floatText(t,i),i*220));
+  hop();setFace(S.energy<20?'tired':'happy');
+  say(pick(st.lines[key])+(S.energy<20&&!A.heal?'<br><small>…ちょっと疲れたかも</small>':''));
+  setTimeout(()=>setFace(S.energy<20?'tired':'normal'),1800);
+  flushLvUps();checkGoal();
+  S.missions.forEach(m=>{if(!m.claimed&&!m.noticed&&missionProg(m)>=m.n){m.noticed=true;setTimeout(()=>toast(`📋 ミッション達成！「${m.text}」`),600)}});
+  render();save();
+  busy=true;setTimeout(()=>busy=false,350);
+  if(S.hour>=22)setTimeout(()=>{say('もう22時だ。<br>今日はおしまい！');pulseNext()},1400);
+}
+function pulseNext(){$('#nextBtn').classList.add('glow')}
+
+function nextDay(){
+  if(modalOpen||busy)return;
+  busy=true;sfx.tap();
+  const sl=$('#sleep');sl.textContent=cur().st.id==='baby'?'💤 すやすや…':'💤 おやすみ…';sl.classList.add('on');
+  setTimeout(()=>{
+    const before=cur();
+    const restore=clamp(40+Math.max(0,22-S.hour)*5+S.stats.sta.lv*2,40,90);
+    const e0=S.energy;S.energy=clamp(S.energy+restore,0,100);
+    let auto=0;S.missions.forEach(m=>{if(!m.claimed&&missionProg(m)>=m.n){m.claimed=true;auto+=m.reward}});
+    S.coins+=auto;
+    S.day++;S.hour=8;S.min=rnd(0,15);
+    S.today={study:0,exercise:0,hobby:0,social:0,rest:0,total:0};
+    S.coins+=100;
+    const now=cur();
+    const grew=now.i!==before.i;
+    rollWeather();genMissions();
+    const lines=[`⚡ 体力 +${S.energy-e0}`,'★ おこづかい +100'];
+    if(auto)lines.push(`📋 ミッション報酬 +${auto}`);
+    let mtxt='';
+    if(!grew&&Math.random()<.4){
+      const tot=MORNING.reduce((a,m)=>a+m.w,0);let r=Math.random()*tot,mm=MORNING[0];
+      for(const m of MORNING){r-=m.w;if(r<=0){mm=m;break}}
+      mtxt=`<p class="center" style="margin-top:8px"><b>${mm.t}</b></p>`+chipHtml(applyEff(mm.eff));
+      if(mm.eff.hour)S.hour=8+mm.eff.hour;
+    }
+    scheduleEvents();
+    sl.textContent='☀️ おはよう！';
+    if(grew){$('#actions').innerHTML='';applyLook()}
+    render();
+    setTimeout(()=>{
+      sl.classList.remove('on');busy=false;
+      if(grew){
+        const missed=!S.goalsDone.includes(before.i);
+        S.gems+=20;S.energy=100;
+        addAlbum({kind:'grow',icon:now.st.icon,t:`${now.st.name}になった`});
+        queueModal({title:'🎉 大きくなった！',html:`<div class="big">${now.st.icon}</div><p class="center">${esc(S.name)}は <b>${now.st.name}（${ageAt(S.day)}歳）</b>になった！</p>
+          ${missed?`<p class="center muted">${before.st.name}の目標「${before.st.goal.t}」は達成できなかった…<br>でも、これからの毎日でとりかえせる！</p>`:`<p class="center muted">${before.st.name}の目標もばっちり達成！</p>`}
+          ${chipHtml(['💎 お祝い +20','⚡ 体力 全回復'])}
+          <p class="center" style="margin-top:6px">新しい目標：<b>${now.st.goal.icon} ${now.st.goal.t}</b></p>
+          <p class="center muted">できる行動が変わったよ：${AK.map(k=>now.st.acts[k][1]+now.st.acts[k][0]).join('・')}</p>`,
+          buttons:[{label:'これからもよろしく！',cls:'orange'}],onShow:sfx.fan});
+      }else{
+        queueModal({title:`☀️ ${now.dayIn+1}日目の朝`,html:`<p class="center">${lifeLabel(S.day)}　${WICON[S.weather]} ${{sun:'はれ',cloud:'くもり',rain:'雨'}[S.weather]}${S.weather==='rain'?'<br><span class="muted">雨の日は勉強・趣味系の効果UP、運動系は効果DOWN</span>':S.weather==='sun'?'<br><span class="muted">晴れの日は運動系の効果UP</span>':''}</p>${chipHtml(lines)}${mtxt}`,buttons:[{label:'今日もがんばる！'}]});
+      }
+      const ev=S.events.find(e=>e.day===S.day);
+      if(ev)queueModal(eventModal(ev));
+      flushLvUps();checkGoal();
+      say(grew?pick(now.st.idle):pick(now.st.id==='baby'?['あぶぅ！','おはよ…ばぶ']:['よし、今日は何しよう？','新しい一日のはじまり！','今日も一歩ずつ！']));
+      setFace('normal');
+      $('#nextBtn').classList.remove('glow');
+      render();save();
+    },700);
+  },800);
+}
+function eventModal(ev){
+  const E=EV(ev.id);
+  const effTxt=o=>Object.entries(o.eff).filter(([k])=>k!=='hour').map(([k,v])=>STATS[k]?`${STATS[k].icon}${STATS[k].name}${v>0?'+':''}${v}`:k==='energy'?`⚡${v>0?'+':''}${v}`:k==='coins'?`★${v>0?'+':''}${v}`:'').join(' ');
+  const choose=o=>{
+    S.events=S.events.filter(e=>e!==ev&&!(e.id===ev.id&&e.day===ev.day));
+    if(!S.seenEvents.includes(E.id))S.seenEvents.push(E.id);
+    if(o.eff.coins<0&&S.coins<-o.eff.coins){modalQ.unshift({title:'コインが足りない…',html:`<p class="center">お金が足りなくて行けなかった…</p>`,buttons:[{label:'しかたない'}]});scheduleEvents();save();render();return}
+    const res=applyEff(o.eff);let msg=o.msg;
+    if(o===E.go)addAlbum({kind:'event',icon:E.icon,t:E.t});
+    if(o.contest){
+      const sc=S.stats.mot.lv+S.stats.kno.lv+rnd(0,4);
+      if(sc>=12){res.push(...applyEff({coins:1000,gems:20}));msg='なんと入賞！賞金をもらった！'}
+      else if(sc>=8){res.push(...applyEff({coins:300}));msg='佳作に選ばれた！次はもっと上へ！'}
+      else msg='残念ながら落選…でも挑戦できたことが大事！';
+    }
+    modalQ.unshift({title:`${E.icon} ${E.t}`,html:`<p class="center">${msg}</p>${chipHtml(res)}`,buttons:[{label:'OK'}],onShow:sfx.coin});
+    scheduleEvents();flushLvUps();checkGoal();render();save();
+  };
+  return {title:`${E.icon} イベント発生！`,noClose:true,html:`<div class="big">${E.icon}</div><p class="center"><b>今日は「${E.t}」の日！</b><br>どうする？</p>
+    <div class="mlist" style="margin-top:14px"><div class="mitem"><div class="mt"><b>${E.go.label}</b><span class="muted">${effTxt(E.go)}${E.go.contest?' ＋結果しだいで賞金':''}</span></div></div>
+    <div class="mitem"><div class="mt"><b>${E.no.label}</b><span class="muted">${effTxt(E.no)}</span></div></div></div>`,
+    buttons:[{label:E.go.label,cls:'orange',fn:()=>choose(E.go)},{label:E.no.label,cls:'sub',fn:()=>choose(E.no)}]};
+}
+
+/* ---------- modal ---------- */
+const modalQ=[];let modalOpen=false,curModal=null;
+function queueModal(m){modalQ.push(m);if(!modalOpen)nextModal()}
+function nextModal(){
+  const m=modalQ.shift();
+  if(!m){modalOpen=false;curModal=null;$('#overlay').classList.remove('show');render();return}
+  modalOpen=true;showModal(m);
+}
+function showModal(m){
+  curModal=m;
+  $('#overlay').classList.add('show');
+  $('#mtitle').innerHTML=m.title;
+  $('#mbody').innerHTML=typeof m.html==='function'?m.html():m.html;
+  $('#mclose').style.display=m.noClose?'none':'block';
+  const bb=$('#mbtns');bb.innerHTML='';
+  (m.buttons||[]).forEach(b=>{
+    const el=document.createElement('button');el.className='mb '+(b.cls||'');el.innerHTML=b.label;
+    el.onclick=()=>{sfx.tap();if(b.fn)b.fn();if(!b.keep)nextModal()};bb.appendChild(el);
+  });
+  bb.style.display=(m.buttons&&m.buttons.length)?'flex':'none';
+  $('#mbody').scrollTop=0;
+  if(m.onMount)m.onMount($('#mbody'));
+  if(m.onShow)m.onShow();
+}
+$('#mclose').onclick=()=>{sfx.tap();nextModal()};
+function openMenu(m){if(modalOpen||busy)return;sfx.tap();queueModal(m)}
+
+/* ---------- menus ---------- */
+function missionModal(){
+  return {title:'📋 今日のミッション',html:()=>`<div class="mlist">${S.missions.map((m,i)=>{
+      const p=missionProg(m),ok=p>=m.n;
+      return `<div class="mitem"><div class="mi2">${m.kind==='total'?'🔥':actIcon(m.key)}</div><div class="mt"><b>${m.text}</b>
+      <div class="bar"><i style="width:${p/m.n*100}%;background:linear-gradient(90deg,#3cb874,#7ad99e)"></i></div><span class="muted">${p} / ${m.n}　報酬 ★${m.reward}</span></div>
+      ${m.claimed?'<span class="done">受取済 ✓</span>':`<button class="mb mbsm orange" data-i="${i}" ${ok?'':'disabled'}>受け取る</button>`}</div>`}).join('')}</div>
+      <p class="muted center" style="margin-top:14px">ミッションは毎日入れかわります（達成済みは翌日に自動で受け取り）</p>`,
+    onMount:b=>b.querySelectorAll('[data-i]').forEach(el=>el.onclick=()=>{
+      const m=S.missions[+el.dataset.i];if(m.claimed||missionProg(m)<m.n)return;
+      m.claimed=true;S.coins+=m.reward;gainP(20);sfx.coin();toast(`★ +${m.reward} コインを受け取った！`);save();render();showModal(missionModal());
+    }),buttons:[{label:'とじる',cls:'sub'}]};
+}
+function calModal(){
+  const c=cur();
+  const tl=STAGES.map((st,i)=>{
+    const mark=i<c.i?(S.goalsDone.includes(i)?'⭕':'✖️'):i===c.i&&S.goalsDone.includes(i)?'⭕':'';
+    return `<div class="ts ${i===c.i?'now':i<c.i?'past':''}"><span class="te">${st.icon}</span>${st.name}<br>${st.len===Infinity?st.a0+'歳〜':st.a0+'〜'+st.a1+'歳'}${mark?`<span class="tm">${mark}</span>`:''}</div>`}).join('');
+  const n=c.st.len===Infinity?14:c.st.len;
+  const base=c.st.len===Infinity?S.day:c.start;
+  let cells='';
+  for(let k=0;k<n;k++){
+    const di=base+k;
+    const ev=S.events.find(e=>e.day===di);const al=S.album.find(a=>a.day===di&&a.kind==='event');
+    const ic=ev?EV(ev.id).icon:al?al.icon:'';
+    cells+=`<div class="d ${di<S.day?'past':''} ${di===S.day?'today':''}">${di-c.start+1}<small>日目</small><span class="ce">${ic}</span></div>`;
+  }
+  const left=c.st.len===Infinity?'':`<p class="center muted">${STAGES[c.i+1].name}になるまで あと <b>${c.st.len-c.dayIn}</b> 日</p>`;
+  const evList=S.events.map(e=>`<div class="row2"><span>${EV(e.id).icon} ${EV(e.id).t}</span><span class="muted">${e.day===S.day?'今日':'あと'+(e.day-S.day)+'日'}</span></div>`).join('');
+  return {title:'📅 成長カレンダー',html:`<div class="tl">${tl}</div>${left}<p style="font-weight:800;margin:8px 0">${c.st.icon} ${c.st.name}の日々</p><div class="cal">${cells}</div><div style="margin-top:16px"><b>予定</b>${evList||'<p class="muted">なし</p>'}</div>`,
+    buttons:[{label:'とじる',cls:'sub'}]};
+}
+function albumModal(){
+  S.albumNew=false;save();render();
+  const slots=[
+    ...STAGES.slice(1).map(st=>({kind:'grow',icon:st.icon,t:`${st.name}になった`})),
+    ...STAGES.map(st=>({kind:'goal',icon:st.goal.icon,t:st.goal.t})),
+    ...EVENTS.map(e=>({kind:'event',icon:e.icon,t:e.t}))];
+  const kindName={grow:'成長',goal:'目標',event:'イベント'};
+  return {title:'📔 アルバム',html:`<p class="muted center">思い出 ${S.album.length} 個</p><div class="album" style="margin-top:10px">${slots.map(s=>{
+      const got=S.album.find(a=>a.t===s.t);
+      return got?`<div class="acard"><div class="ae">${s.icon}</div><b>${s.t}</b><small>${got.label||''}${s.kind==='goal'?' 目標達成':''}</small></div>`
+        :`<div class="acard lock"><div class="ae">${s.icon}</div><b>？？？</b><small>${kindName[s.kind]}</small></div>`}).join('')}</div>`,buttons:[{label:'とじる',cls:'sub'}]};
+}
+function shopModal(){
+  return {title:'🛍️ ショップ',html:()=>`<p class="center" style="font-weight:800">★ ${S.coins.toLocaleString()}　💎 ${S.gems}</p><div class="mlist" style="margin-top:10px">${SHOP.map((it,i)=>{
+      const owned=it.once&&S.owned[it.id];const can=(it.cur==='coins'?S.coins:S.gems)>=it.price;
+      return `<div class="mitem"><div class="mi2">${it.icon}</div><div class="mt"><b>${it.t}</b><span class="muted">${it.d}</span></div>
+      ${owned?'<span class="done">購入済 ✓</span>':`<button class="mb mbsm ${it.cur==='gems'?'pink':'orange'}" data-i="${i}" ${can?'':'disabled'}>${it.cur==='coins'?'★':'💎'} ${it.price}</button>`}</div>`}).join('')}</div>`,
+    onMount:b=>b.querySelectorAll('[data-i]').forEach(el=>el.onclick=()=>{
+      const it=SHOP[+el.dataset.i];const bal=it.cur==='coins'?'coins':'gems';
+      if(S[bal]<it.price||(it.once&&S.owned[it.id]))return;
+      S[bal]-=it.price;sfx.coin();
+      if(it.once){S.owned[it.id]=true;toast(`${it.icon} ${it.t}を手に入れた！`)}
+      else{const r=it.use();toast(`${it.icon} ${it.t}を使った！ ${r.join(' ')}`)}
+      flushLvUps();checkGoal();save();render();if(curModal&&curModal.title==='🛍️ ショップ')showModal(shopModal());
+    }),buttons:[{label:'とじる',cls:'sub'}]};
+}
+function detailModal(){
+  const c=cur();
+  return {title:'📊 くわしいステータス',html:`${SK.map(k=>{const s=S.stats[k];return `<div class="row2"><div><b>${STATS[k].icon} ${STATS[k].name}　Lv. ${s.lv}</b><br><span class="muted">${STATS[k].desc}</span></div><b>${s.lv>=MAXLV?'MAX':s.exp+' / '+expNeed(s.lv)}</b></div>`}).join('')}
+    <table class="st" style="margin-top:14px"><tr><td>いまの成長段階</td><td>${c.st.icon} ${c.st.name}（${ageAt(S.day)}歳）</td></tr><tr><td>生まれてからの日数</td><td>${S.day+1} 日目</td></tr>
+    ${AK.map(k=>`<tr><td>${actIcon(k)} ${actName(k)}した回数</td><td>${S.counts[k]} 回</td></tr>`).join('')}
+    <tr><td>持ち物</td><td>${Object.keys(S.owned).map(id=>SHOP.find(s=>s.id===id).icon).join(' ')||'なし'}</td></tr></table>
+    <p class="muted" style="margin-top:12px">💡 大きくなるほど行動の効果がアップ／やる気が高いほど全部の行動の効果UP／体力が30未満だと効果DOWN／早く寝るほど回復量が増える／たまに「大成功」で2倍！</p>`,buttons:[{label:'とじる',cls:'sub'}]};
+}
+function settingsModal(){
+  return {title:'⚙️ 設定',html:`<p style="font-weight:800">なまえ</p><input class="name" id="nmIn" maxlength="8" value="${esc(S.name)}">
+    <div class="row2" style="margin-top:16px"><b>🔊 効果音</b><button class="mb mbsm ${S.sound?'':'sub'}" id="sndBtn">${S.sound?'ON':'OFF'}</button></div>
+    <div class="row2"><b>🗑️ データを消して最初から</b><button class="mb mbsm pink" id="rstBtn">リセット</button></div>
+    <p class="muted" style="margin-top:12px">データはこの端末のブラウザに自動保存されます。</p>`,
+    onMount:b=>{
+      b.querySelector('#sndBtn').onclick=()=>{S.sound=!S.sound;save();showModal(settingsModal())};
+      b.querySelector('#rstBtn').onclick=()=>{nextModal();confirmReset()};
+    },
+    buttons:[{label:'保存してとじる',fn:()=>{const v=($('#nmIn')||{}).value;if(v&&v.trim())S.name=v.trim().slice(0,8);save();render()}}]};
+}
+function confirmReset(){
+  queueModal({title:'本当にリセットする？',html:'<p class="center">これまでの育成データがすべて消えます。</p>',
+    buttons:[{label:'リセットする',cls:'pink',fn:()=>{try{localStorage.removeItem(KEY)}catch(e){};S=null;modalQ.length=0;setTimeout(titleScreen,50)}},{label:'やめる',cls:'sub'}]});
+}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function titleScreen(){
+  S=newState();$('#actions').innerHTML='';applyLook();render();
+  queueModal({title:'👶 じんせい育成',noClose:true,html:`<div class="big">👶➡️🧒➡️🎒➡️🌟</div><p class="center">赤ちゃんから大人になるまで、<br>毎日の過ごし方を選んで育てよう！</p>
+    <ul style="margin:14px 0 14px 30px;font-size:22px"><li>赤ちゃん→幼児→小学生→中学生→高校生→大人と成長する</li><li>成長するとできる行動や見た目が変わる</li><li>行動すると⚡体力を使ってステータスが上がる。疲れたら休もう</li><li>それぞれの時期の目標を達成しよう。最後の夢は「好きなことで生きていく」</li></ul>
+    <p style="font-weight:800">赤ちゃんのなまえ</p><input class="name" id="startName" maxlength="8" value="たかし">`,
+    buttons:[{label:'うまれた！',cls:'orange',fn:()=>{
+      const v=($('#startName').value||'').trim()||'たかし';
+      S=newState(v.slice(0,8));S.weather='sun';genMissions();scheduleEvents();save();applyLook();render();
+      say(`${esc(S.name)}が うまれたよ！<br>ばぶー！`);sfx.fan();
+    }}]});
+}
+
+/* ---------- look ---------- */
+function applyLook(){
+  const {st}=cur();const L=st.look;
+  const tf=`translate(590 712) scale(${L.k}) translate(-590 -712)`;
+  $('#charScale').setAttribute('transform',tf);$('#armScale').setAttribute('transform',tf);
+  ['#hairB','#avHB'].forEach(id=>$(id).setAttribute('href','#hb-'+L.hair));
+  ['#hairF','#avHF'].forEach(id=>$(id).setAttribute('href','#hf-'+L.hair));
+  ['#cBody','#sleeveL','#sleeveR'].forEach(id=>{$(id).setAttribute('fill',L.fill);$(id).setAttribute('stroke',L.stroke)});
+  $('#avBody').setAttribute('fill',L.fill);
+  ALLDECO.forEach(id=>$('#'+id).style.display=L.deco.includes(id)?'':'none');
+  ALLPROPS.forEach(id=>$('#'+id).style.display=L.props.includes(id)?'':'none');
+  const pen=$('#pen');
+  if(!L.pen)pen.style.display='none';
+  else{pen.style.display='';
+    if(L.pen==='crayon'){pen.setAttribute('stroke','#e8484d');pen.setAttribute('stroke-width','14');pen.setAttribute('x2','552');pen.setAttribute('y2','658')}
+    else{pen.setAttribute('stroke','#2f333d');pen.setAttribute('stroke-width','8');pen.setAttribute('x2','566');pen.setAttribute('y2','620')}}
+  $('#brows').style.display=st.id==='baby'?'none':'';
+  $('#handR').style.animationPlayState=L.pen?'running':'paused';
+}
+
+/* ---------- fx ---------- */
+function charPos(){
+  const k=cur().st.look.k;const y=712-(712-450)*k;
+  return stage.classList.contains('port')?{x:(590-256)*0.879,y:y*0.879-30}:{x:590,y};
+}
+function floatText(t,i){
+  const p=charPos();const el=document.createElement('div');el.className='float';el.textContent=t;
+  el.style.left=(p.x+(i%2?110:-90))+'px';el.style.top=(p.y-20-i*8)+'px';
+  el.style.color=/-\d/.test(t)?'#e0445f':'#2a8a50';
+  stage.appendChild(el);setTimeout(()=>el.remove(),1600);
+}
+function showProp(e){
+  const p=charPos();const el=document.createElement('div');el.className='prop';el.textContent=e;
+  el.style.left=(p.x+170)+'px';el.style.top=(p.y-60)+'px';stage.appendChild(el);setTimeout(()=>el.remove(),1400);
+}
+function toast(t){const el=document.createElement('div');el.className='toast';el.textContent=t;$('#toasts').appendChild(el);setTimeout(()=>el.remove(),2700)}
+function hop(){const c=$('#charAll');c.classList.remove('hop');void c.getBBox();c.classList.add('hop')}
+function say(html){const b=$('#bubble');b.innerHTML=html;b.classList.remove('pop');void b.offsetWidth;b.classList.add('pop')}
+function setFace(f){
+  const set=(id,on)=>$(id).setAttribute('opacity',on?1:0);
+  set('#eyesN',f==='normal');set('#eyesH',f==='happy');set('#eyesT',f==='tired');
+  set('#mouthN',f==='normal');set('#mouthH',f==='happy');set('#mouthT',f==='tired');set('#sweat',f==='tired');
+}
+
+/* ---------- render ---------- */
+function renderScene(){
+  const h=S.hour+S.min/60;
+  let c1,c2,tint=0,warm=0,night=false;
+  if(h<10){c1='#8fd3ff';c2='#eef8ff'}
+  else if(h<16){c1='#4fb0f2';c2='#d4efff'}
+  else if(h<18){c1='#7fa8e0';c2='#ffd6a0';warm=.08}
+  else if(h<20){c1='#4a4f8f';c2='#ff9a66';warm=.12;tint=.12}
+  else{c1='#141b45';c2='#333a78';tint=.3;night=true}
+  if(S.weather==='rain'&&!night){c1='#8b98aa';c2='#c9d1dc';tint=Math.max(tint,.08)}
+  else if(S.weather==='cloud'&&!night)c2='#e6eef5';
+  $('#sky1').setAttribute('stop-color',c1);$('#sky2').setAttribute('stop-color',c2);
+  $('#tint').setAttribute('opacity',tint);$('#warm').setAttribute('opacity',warm);
+  const sunY=h<12?260-(h-8)*25:160+(h-12)*30;
+  $('#sun').setAttribute('cy',sunY);$('#sunCore').setAttribute('cy',sunY);
+  $('#sunG1').setAttribute('opacity',night||S.weather==='rain'?0:1);
+  $('#moonG').setAttribute('opacity',night?1:0);
+  $('#clouds').setAttribute('opacity',night?.15:S.weather==='sun'?.7:1);
+  $('#city').setAttribute('fill',night?'#2b3263':'#c9d6e6');
+  $('#cityWin').setAttribute('fill',night?'#ffe18a':'#e8eef6');
+  $('#sunbeam').setAttribute('opacity',night||S.weather==='rain'?0:.12);
+  $('#lampGlow').setAttribute('opacity',night?.95:h>=18?.75:.5);
+  $('#catEyes').setAttribute('opacity',night?0:1);$('#catSleep').setAttribute('opacity',night?1:0);$('#catZ').setAttribute('opacity',night?1:0);
+}
+function renderStats(){
+  $('#statList').innerHTML=SK.map(k=>{const s=S.stats[k],m=s.lv>=MAXLV,need=expNeed(s.lv);
+    return `<div class="srow" data-k="${k}"><div class="si">${STATS[k].icon}</div><div class="sn">${STATS[k].name}</div><div class="sb"><div class="sl">Lv. ${s.lv}</div><div class="bar"><i style="width:${m?100:s.exp/need*100}%;background:${STATS[k].color}"></i></div><div class="sv">${m?'MAX':s.exp+' / '+need}</div></div></div>`}).join('');
+}
+function renderActions(){
+  const wrap=$('#actions');
+  if(!wrap.children.length){
+    wrap.innerHTML=AK.map(k=>{const a=ACTS[k],nm=actName(k);
+      return `<button class="act a-${a.cls}" data-k="${k}"><span class="ai">${actIcon(k)}</span><span class="an ${nm.length>=4?'sm':''}">${nm}</span><span class="ac">${a.heal?'⚡ +'+a.heal:'⚡ -'+a.cost}</span></button>`}).join('');
+    wrap.querySelectorAll('.act').forEach(b=>b.onclick=()=>doAction(b.dataset.k));
+  }
+  wrap.querySelectorAll('.act').forEach(b=>{const a=ACTS[b.dataset.k];
+    b.classList.toggle('dis',!!(S.hour>=22||(!a.heal&&S.energy<a.cost)||(a.heal&&S.energy>=100)))});
+}
+function render(){
+  if(!S)return;
+  const c=cur();
+  $('#pnameT').textContent=S.name;
+  $('#pstage').textContent=`${c.st.icon} ${c.st.name}`;
+  $('#plv').textContent=`Lv. ${S.plv}`;
+  $('#pexpT').textContent=`${S.pexp} / ${pNeed(S.plv)}`;
+  $('#pexpB').style.width=(S.pexp/pNeed(S.plv)*100)+'%';
+  $('#enB').style.width=S.energy+'%';$('#enT').textContent=S.energy;
+  $('#enB').style.background=S.energy<30?'linear-gradient(90deg,#f05a5a,#ff8a7a)':'linear-gradient(90deg,#ffb11f,#ffd25a)';
+  $('#wIcon').textContent=WICON[S.weather];
+  $('#dateT').textContent=`${ageAt(S.day)}歳・${c.dayIn+1}日目`;
+  $('#timeT').textContent=fmtTime(S.hour,S.min);
+  $('#coinT').textContent=S.coins.toLocaleString();
+  $('#gemT').textContent=S.gems.toLocaleString();
+  renderStats();renderActions();renderScene();
+  const ev=S.events[0];
+  $('#eventCard').style.visibility=ev?'visible':'hidden';
+  if(ev){const E=EV(ev.id);$('#evThumb').textContent=E.icon;$('#evThumb').style.background=E.bg;$('#evTitle').textContent=E.t;
+    const v=Object.entries(E.go.eff).find(([k])=>STATS[k]||k==='coins');
+    $('#evEff').textContent=v?(STATS[v[0]]?`${STATS[v[0]].icon} ${STATS[v[0]].name} +${v[1]}`:`★ コイン +${v[1]}`):'';
+    const left=ev.day-S.day;const el=$('#evLeft');el.textContent=left<=0?'今日！':`あと${left}日`;el.classList.toggle('today',left<=0)}
+  // goal
+  const g=c.st.goal,done=S.goalsDone.includes(c.i);
+  $('#goalT').textContent=(done?'✓ ':'')+g.t;
+  $('#goalB').style.width=(done?100:goalFrac(g)*100)+'%';
+  $('#goalN').textContent=`${S.goalsDone.length} / ${STAGES.length}`;
+  $('#goalT').classList.toggle('long',g.t.length>10);
+  $('#goalL').textContent='現在の目標'+(c.st.len===Infinity?'':`（${STAGES[c.i+1].name}まで あと${c.st.len-c.dayIn}日）`);
+  $('#goalSub').textContent=done?(c.i===STAGES.length-1?'夢をかなえた！自由に育成できます':'達成！ 次の成長を待とう'):'条件：'+Object.entries(g.req).map(([k,v])=>`${STATS[k].name}Lv${v}${S.stats[k].lv>=v?'✓':''}`).join('・');
+  const sc=0.45+c.i*0.11;['#tr1','#tr2','#tr3'].forEach(id=>$(id).setAttribute('transform',`translate(50 50) scale(${sc}) translate(-50 -50)`));
+  $('#fruits').innerHTML=[[42,34],[58,38],[38,52],[62,52],[50,26],[50,46]].slice(0,S.goalsDone.length).map(([x,y])=>`<circle cx="${x}" cy="${y}" r="4" fill="#ff6b6b" transform="translate(50 50) scale(${sc}) translate(-50 -50)"/>`).join('');
+  $('#mBadge').classList.toggle('on',S.missions.some(m=>!m.claimed&&missionProg(m)>=m.n));
+  $('#aBadge').classList.toggle('on',!!S.albumNew);
+  $('#nextBtn').classList.toggle('glow',!!(S.hour>=22||(S.energy<10&&S.hour>=18)));
+}
+
+/* ---------- idle chatter ---------- */
+setInterval(()=>{
+  if(!S||modalOpen||busy)return;
+  const {st}=cur();let l;
+  if(S.hour>=22)l=st.id==='baby'?'ふぁ〜…<br>（ねむそう）':'もう夜だ。<br>「次の日へ」で寝よう';
+  else if(S.energy<20)l=st.id==='baby'?'ふぇ…<br>（つかれたみたい）':pick(['ちょっとつかれたな…','休むのも大事だよね']);
+  else if(S.events[0]&&S.events[0].day-S.day===1)l=`明日は「${EV(S.events[0].id).t}」だ！`;
+  else if(S.missions.some(m=>!m.claimed&&missionProg(m)>=m.n))l='ミッション達成してる！<br>報酬を受け取ろう';
+  else l=pick(st.idle);
+  say(l);
+},11000);
+
+/* ---------- layout ---------- */
+function fit(){
+  const vw=window.innerWidth,vh=window.innerHeight;
+  const port=vw/vh<0.95;
+  stage.className=port?'port':'land';
+  const W=port?900:1536,H=port?1720:1024;
+  const s=Math.min(vw/W,vh/H);
+  stage.style.left=((vw-W*s)/2)+'px';stage.style.top=((vh-H*s)/2)+'px';
+  stage.style.transform=`scale(${s})`;
+}
+window.addEventListener('resize',fit);
+
+/* ---------- bind ---------- */
+$('#nextBtn').onclick=nextDay;
+$('#mMission').onclick=()=>openMenu(missionModal());
+$('#mCal').onclick=()=>openMenu(calModal());
+$('#mAlbum').onclick=()=>openMenu(albumModal());
+$('#mShop').onclick=()=>openMenu(shopModal());
+$('#coinPill').onclick=()=>openMenu(shopModal());
+$('#gemPill').onclick=()=>openMenu(shopModal());
+$('#gearBtn').onclick=()=>openMenu(settingsModal());
+$('#detailBtn').onclick=()=>openMenu(detailModal());
+$('#eventCard').onclick=()=>openMenu(calModal());
+$('#bubble').onclick=()=>{if(S&&!modalOpen){hop();setFace('happy');sfx.tap();say(pick(cur().st.idle));setTimeout(()=>setFace('normal'),1200)}};
+
+fit();
+const saved=load();
+if(saved&&saved.stats&&saved.goalsDone){
+  S=Object.assign(newState(),saved);scheduleEvents();applyLook();render();checkGoal();
+  say(`おかえり！<br>${lifeLabel(S.day)}の続きだよ`);
+  const ev=S.events.find(e=>e.day<=S.day);if(ev)queueModal(eventModal(ev));
+}else titleScreen();
+})();
+</script>
 <script src="../../playtime.js" defer></script>
 </body>
 </html>
