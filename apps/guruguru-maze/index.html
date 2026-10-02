@@ -1,0 +1,1043 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>ぐるぐるボール迷路</title>
+<meta name="description" content="球体の表面に広がる3D迷路。スマホを傾けてボールを転がし、ゴールの旗をめざそう！">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;800;900&display=swap">
+<style>
+:root{
+  --navy:#0b2a6e; --blue:#1d5fd8; --blue2:#3d8cff; --panel:rgba(16,52,140,.88);
+  --yellow:#ffd83a; --yellow2:#ffae00; --ink:#0d2352; --white:#fff;
+  color-scheme:light;
+}
+html,body{height:100%;margin:0}
+[hidden]{display:none!important}
+body{background:linear-gradient(#5ec8ff,#c4ecff 55%,#9be07a);color:var(--white);overflow:hidden;touch-action:none;
+  -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;
+  font-family:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Meiryo",system-ui,sans-serif;font-weight:800;
+  transition:background .6s}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0}
+#bg{position:fixed;inset:0;transition:opacity .8s}
+canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
+.cloud{position:fixed;background:#fff;border-radius:99px;opacity:.75;filter:blur(1px);pointer-events:none}
+.cloud::before,.cloud::after{content:"";position:absolute;background:#fff;border-radius:50%}
+.cloud::before{width:55%;height:180%;left:15%;bottom:20%}
+.cloud::after{width:40%;height:140%;left:50%;bottom:25%}
+
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;
+  padding:max(14px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom));box-sizing:border-box}
+.inner{width:100%;max-width:440px;display:flex;flex-direction:column;align-items:center;height:100%}
+
+/* buttons */
+.btn-y{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;max-width:300px;height:64px;border-radius:40px;
+  background:linear-gradient(#fff27a,var(--yellow) 40%,var(--yellow2));color:#103a8c;font-size:26px;font-weight:900;
+  box-shadow:0 5px 0 #c97c00,0 10px 18px rgba(0,0,0,.25),inset 0 2px 0 rgba(255,255,255,.8);letter-spacing:.06em;
+  text-shadow:0 1px 0 rgba(255,255,255,.6);transition:transform .08s}
+.btn-y:active{transform:translateY(4px);box-shadow:0 1px 0 #c97c00,0 4px 10px rgba(0,0,0,.25)}
+.btn-b{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;max-width:300px;height:52px;border-radius:30px;
+  background:linear-gradient(#4f9bff,#1d5fd8);font-size:19px;box-shadow:0 4px 0 #0c3a95,0 8px 14px rgba(0,0,0,.2),inset 0 2px 0 rgba(255,255,255,.35)}
+.btn-b:active{transform:translateY(3px);box-shadow:0 1px 0 #0c3a95}
+.round{width:76px;height:76px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;gap:2px;
+  background:linear-gradient(#3d86f0,#1546b0);box-shadow:0 4px 0 #0b2f80,0 8px 14px rgba(0,0,0,.25),inset 0 2px 0 rgba(255,255,255,.35);border:3px solid #9cc8ff}
+.round span{font-size:28px;line-height:1}
+.back{width:44px;height:44px;border-radius:50%;background:linear-gradient(#5ca4ff,#1f63d9);border:3px solid #fff;font-size:22px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 0 #0c3a95}
+.hdr{display:flex;align-items:center;gap:10px;width:100%;margin-bottom:12px}
+.hdr h2{flex:1;margin:0;text-align:center;font-size:22px;padding:8px 0;border-radius:30px;background:rgba(10,40,120,.75);margin-right:54px;text-shadow:0 2px 0 rgba(0,0,0,.3)}
+
+/* title */
+#title .logo{margin-top:4vh;text-align:center;line-height:1.05;transform:rotate(-4deg)}
+.logo b{display:block;font-size:min(15vw,64px);font-weight:900;letter-spacing:.02em;
+  background:linear-gradient(#fff36b,#ffb300 55%,#ff7a00);-webkit-background-clip:text;background-clip:text;color:transparent;
+  -webkit-text-stroke:2px #0b2a6e;filter:drop-shadow(0 4px 0 #0b2a6e) drop-shadow(0 8px 10px rgba(0,0,0,.3))}
+.logo b.l2{background:linear-gradient(#bff6ff,#3ec3ff 50%,#1b76e8);-webkit-background-clip:text;background-clip:text}
+.logo i{display:inline-block;font-style:normal;margin-top:10px;padding:6px 18px;border-radius:30px;background:#0b2a6e;font-size:16px;border:2px solid #7fb7ff}
+#title .spacer{flex:1}
+#title .row{display:flex;gap:18px;margin-top:22px}
+
+/* stage select */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;overflow:auto;padding:2px}
+.card{position:relative;border-radius:18px;padding:10px 8px 8px;background:linear-gradient(#2f7cf0,#173f9e);border:3px solid #7fb7ff;
+  box-shadow:0 5px 12px rgba(0,0,0,.25);display:flex;flex-direction:column;align-items:center;gap:4px;text-align:left}
+.card.sel{border-color:#ffe066;box-shadow:0 0 0 3px #ffb300,0 5px 12px rgba(0,0,0,.25)}
+.card .nm{align-self:flex-start;font-size:15px;display:flex;align-items:center;gap:6px}
+.card .nm em{font-style:normal;width:22px;height:22px;border-radius:50%;background:#fff;color:#1d5fd8;display:inline-flex;align-items:center;justify-content:center;font-size:14px}
+.ball{width:92px;height:92px;border-radius:50%;position:relative;box-shadow:inset -10px -12px 20px rgba(0,0,0,.35),0 6px 10px rgba(0,0,0,.25)}
+.ball::before{content:"";position:absolute;inset:8%;border-radius:50%;
+  background:repeating-linear-gradient(0deg,transparent 0 9px,rgba(255,255,255,.35) 9px 12px),repeating-linear-gradient(90deg,transparent 0 13px,rgba(0,0,0,.18) 13px 16px);
+  -webkit-mask:radial-gradient(circle,#000 60%,transparent 72%);mask:radial-gradient(circle,#000 60%,transparent 72%)}
+.ball::after{content:"";position:absolute;left:18%;top:12%;width:34%;height:24%;border-radius:50%;background:rgba(255,255,255,.55);filter:blur(4px)}
+.card .lock{position:absolute;top:44px;font-size:34px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.5))}
+.card.locked .ball{filter:grayscale(.6) brightness(.7)}
+.stars{font-size:18px;letter-spacing:2px;color:#ffd23a;text-shadow:0 2px 0 #a86800}
+.stars .off{color:rgba(255,255,255,.35);text-shadow:none}
+.tip{margin-top:12px;font-size:13px;padding:8px 14px;border-radius:20px;background:rgba(10,40,120,.8)}
+
+/* panels */
+.panel{width:100%;border-radius:22px;background:#fff;color:var(--ink);padding:16px;box-sizing:border-box;box-shadow:0 8px 20px rgba(0,0,0,.25);border:4px solid #8ec2ff}
+.intro-top{margin-top:2px;text-align:center}
+.pill{display:inline-block;padding:4px 18px;border-radius:20px;background:#0b2a6e;font-size:14px;border:2px solid #7fb7ff}
+.intro-top h1{margin:8px 0 0;font-size:30px;text-shadow:0 3px 0 #0b2a6e,0 0 10px rgba(0,0,0,.3)}
+.intro-bottom{margin-top:auto;width:100%;display:flex;flex-direction:column;align-items:center;gap:12px}
+.intro-desc{width:100%;text-align:center;font-size:15px;line-height:1.6;padding:12px;border-radius:18px;background:rgba(8,30,90,.72);box-sizing:border-box}
+.intro-desc small{display:block;color:#bfe0ff;font-size:12px;margin-top:4px}
+
+/* hud */
+#hud{pointer-events:none}
+#hud .top{display:flex;width:100%;align-items:flex-start;gap:8px}
+.hbox{background:rgba(10,40,120,.82);border:2px solid rgba(160,200,255,.6);border-radius:16px;padding:4px 14px;text-align:center;min-width:70px}
+.hbox small{display:block;font-size:11px;color:#bcdcff}
+.hbox b{font-size:24px;font-variant-numeric:tabular-nums}
+#pauseBtn{pointer-events:auto;width:52px;height:52px;border-radius:50%;background:linear-gradient(#5ca4ff,#1f63d9);border:3px solid #fff;font-size:22px;box-shadow:0 3px 0 #0c3a95}
+#compass{margin-top:10px;width:54px;height:54px;border-radius:50%;background:rgba(10,40,120,.55);border:2px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;position:relative}
+#compass .arr{width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:24px solid #ff4b4b;filter:drop-shadow(0 2px 0 #7a0000);transform-origin:50% 60%}
+#compass .fl{position:absolute;bottom:-18px;font-size:11px;white-space:nowrap;text-shadow:0 1px 2px #000}
+#hud .bottom{margin-top:auto;display:flex;align-items:flex-end;width:100%;justify-content:space-between}
+.hint{font-size:13px;text-align:center;padding:8px 14px;border-radius:18px;background:rgba(10,40,120,.7)}
+.side{display:flex;flex-direction:column;gap:8px;pointer-events:auto}
+.side button{width:48px;height:48px;border-radius:50%;background:rgba(15,55,150,.85);border:2px solid #9cc8ff;font-size:20px}
+#msg{position:fixed;left:0;right:0;top:38%;text-align:center;font-size:56px;font-weight:900;pointer-events:none;color:#fff;
+  -webkit-text-stroke:2px #0b2a6e;text-shadow:0 5px 0 #0b2a6e,0 10px 20px rgba(0,0,0,.35);transition:transform .2s,opacity .3s}
+#toast{position:fixed;left:50%;top:24%;transform:translateX(-50%);padding:8px 18px;border-radius:20px;background:rgba(200,30,30,.9);font-size:18px;pointer-events:none;transition:opacity .4s}
+#stick{position:fixed;width:110px;height:110px;margin:-55px 0 0 -55px;border-radius:50%;border:3px solid rgba(255,255,255,.6);background:rgba(10,40,120,.25);pointer-events:none}
+#stick i{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:rgba(255,255,255,.85);box-shadow:0 3px 8px rgba(0,0,0,.3)}
+
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(5,20,60,.55);display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box}
+.mbox{width:100%;max-width:360px;border-radius:24px;background:linear-gradient(#2a74ea,#163f9f);border:4px solid #9cc8ff;padding:16px;box-sizing:border-box;box-shadow:0 12px 30px rgba(0,0,0,.4);display:flex;flex-direction:column;gap:12px;align-items:center;max-height:100%;overflow:auto}
+.mbox h3{margin:0;font-size:24px;width:100%;text-align:center;padding:6px;border-radius:16px;background:rgba(5,25,80,.5)}
+.goal-t{font-size:min(16vw,70px);font-weight:900;background:linear-gradient(#fff36b,#ffb300 55%,#ff7a00);-webkit-background-clip:text;background-clip:text;color:transparent;
+  -webkit-text-stroke:2px #0b2a6e;filter:drop-shadow(0 4px 0 #0b2a6e);transform:rotate(-5deg);margin:4px 0}
+.res{width:100%;background:#fff;color:var(--ink);border-radius:16px;padding:6px 14px;box-sizing:border-box}
+.res div{display:flex;justify-content:space-between;align-items:center;padding:8px 0;font-size:16px}
+.res div+div{border-top:1px solid #dbe6f7}
+.res b{font-size:22px;font-variant-numeric:tabular-nums}
+.big-stars{font-size:44px;letter-spacing:6px}
+.newrec{color:#ff3d6e;font-size:14px}
+.how li{display:flex;gap:12px;align-items:center;padding:10px 0;font-size:15px;line-height:1.5}
+.how li+li{border-top:1px solid #dbe6f7}
+.how ul{list-style:none;margin:0;padding:0}
+.how .ic{flex:none;width:54px;height:54px;border-radius:14px;background:linear-gradient(#bfe2ff,#7cbcff);display:flex;align-items:center;justify-content:center;font-size:30px}
+.set{width:100%;display:flex;justify-content:space-between;align-items:center;background:rgba(5,25,80,.45);border-radius:14px;padding:10px 14px;box-sizing:border-box;font-size:16px}
+.tog{min-width:84px;height:38px;border-radius:20px;background:#6f86b8;font-size:15px}
+.tog.on{background:linear-gradient(#5fe07a,#21a540)}
+.seg{display:flex;gap:4px}
+.seg button{padding:6px 10px;border-radius:12px;background:#6f86b8;font-size:14px}
+.seg button.on{background:linear-gradient(#ffe46b,#ffb300);color:#103a8c}
+.rec{width:100%;background:#fff;color:var(--ink);border-radius:16px;padding:4px 12px;box-sizing:border-box}
+.rec div{display:flex;align-items:center;gap:8px;padding:9px 0;font-size:15px}
+.rec div+div{border-top:1px solid #dbe6f7}
+.rec .t{margin-left:auto;font-variant-numeric:tabular-nums;font-size:17px}
+.rec .stars{font-size:14px}
+#err{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center;background:#0b2a6e}
+</style>
+</head>
+<body>
+<div id="bg"></div>
+<div class="cloud" style="width:140px;height:40px;left:-20px;top:16%"></div>
+<div class="cloud" style="width:110px;height:32px;right:-10px;top:30%"></div>
+<div class="cloud" style="width:170px;height:46px;left:55%;bottom:8%"></div>
+<canvas id="c"></canvas>
+
+<!-- タイトル -->
+<section class="screen" id="title">
+  <div class="inner">
+    <div class="logo"><b>ぐるぐる</b><b class="l2">ボール迷路</b><i>〜 球体の迷路の大冒険 〜</i></div>
+    <div class="spacer"></div>
+    <button class="btn-y" id="tStart">スタート ▶</button>
+    <div class="row">
+      <button class="round" id="tSet"><span>⚙️</span>設定</button>
+      <button class="round" id="tRec"><span>🏆</span>記録</button>
+      <button class="round" id="tHow"><span>📖</span>遊び方</button>
+    </div>
+  </div>
+</section>
+
+<!-- ステージ選択 -->
+<section class="screen" id="select" hidden style="background:linear-gradient(#1b5fd6,#0e3a9c)">
+  <div class="inner">
+    <div class="hdr"><button class="back" id="sBack">←</button><h2>ステージ選択</h2></div>
+    <div class="grid" id="grid"></div>
+    <div class="tip">⭐ ステージをクリアして、もっと難しい迷路に挑戦しよう！</div>
+  </div>
+</section>
+
+<!-- ステージ紹介 -->
+<section class="screen" id="intro" hidden>
+  <div class="inner">
+    <div class="hdr" style="margin-bottom:0"><button class="back" id="iBack">←</button><div style="flex:1"></div></div>
+    <div class="intro-top"><span class="pill" id="iNum">ステージ1</span><h1 id="iName">草原の迷路</h1><div class="stars" id="iStars"></div></div>
+    <div class="intro-bottom">
+      <div class="intro-desc"><span id="iDesc"></span><small id="iInfo"></small></div>
+      <div class="intro-desc" style="padding:8px">📱 スマホを傾けて、ボールをゴールの🚩まで導こう！</div>
+      <button class="btn-y" id="iStart">スタート ▶</button>
+    </div>
+  </div>
+</section>
+
+<!-- HUD -->
+<section class="screen" id="hud" hidden>
+  <div class="top">
+    <button id="pauseBtn">❚❚</button>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center">
+      <div class="hbox"><small>タイム</small><b id="hTime">00:00</b></div>
+      <div id="compass"><div class="arr" id="arr"></div><span class="fl">ゴール</span></div>
+    </div>
+    <div class="hbox"><small>コイン</small><b id="hCoin">🪙0/0</b></div>
+  </div>
+  <div class="bottom">
+    <div style="width:48px"></div>
+    <div class="hint" id="hint">📱 スマホを傾けて操作</div>
+    <div class="side">
+      <button id="bZoom" title="ズーム">🔍</button>
+      <button id="bRotL" title="左回転">⟲</button>
+      <button id="bRotR" title="右回転">⟳</button>
+    </div>
+  </div>
+</section>
+<div id="stick" hidden><i></i></div>
+<div id="msg" hidden></div>
+<div id="toast" hidden></div>
+
+<!-- 一時停止 -->
+<div class="modal" id="pause" hidden>
+  <div class="mbox">
+    <h3>一時停止</h3>
+    <button class="btn-y" id="pRes" style="height:56px;font-size:22px">▶ つづける</button>
+    <button class="btn-b" id="pRetry">🔄 やりなおす</button>
+    <button class="btn-b" id="pCal">📱 傾きをリセット</button>
+    <button class="btn-b" id="pSel">🗺️ ステージ選択</button>
+    <button class="btn-b" id="pTitle">🏠 タイトルへ戻る</button>
+  </div>
+</div>
+
+<!-- ゴール -->
+<div class="modal" id="goal" hidden>
+  <div class="mbox" style="background:linear-gradient(#3b8cff,#1a4fbf)">
+    <div class="goal-t">ゴール！</div>
+    <div class="stars big-stars" id="gStars"></div>
+    <div class="res">
+      <div><span>⏱️ クリアタイム</span><b id="gTime">00:00</b></div>
+      <div><span>🪙 コイン</span><b id="gCoin">0/0</b></div>
+      <div><span>🏆 ベスト</span><b id="gBest">--</b></div>
+    </div>
+    <div class="newrec" id="gNew" hidden>✨ 新記録！ ✨</div>
+    <button class="btn-y" id="gNext">次へ ▶</button>
+    <button class="btn-b" id="gRetry">🔄 もう一回挑戦する</button>
+    <button class="btn-b" id="gSel">🗺️ ステージ選択</button>
+  </div>
+</div>
+
+<!-- 遊び方 -->
+<div class="modal" id="how" hidden>
+  <div class="mbox">
+    <h3>遊び方</h3>
+    <div class="panel how"><ul>
+      <li><span class="ic">📱</span><span>スマホを傾けて<br>ボールを転がそう！<br><small>（ドラッグ・矢印キーでもOK）</small></span></li>
+      <li><span class="ic">🕳️</span><span>穴に落ちないように<br>気をつけよう！</span></li>
+      <li><span class="ic">🚩</span><span>ゴールの旗にたどり着くと<br>ステージクリア！</span></li>
+      <li><span class="ic">🧭</span><span>上の赤い矢印が<br>ゴールの方向を教えてくれるよ</span></li>
+      <li><span class="ic">⭐</span><span>速くゴールするほど<br>星がたくさんもらえる！</span></li>
+    </ul></div>
+    <button class="btn-y" id="hClose">閉じる</button>
+  </div>
+</div>
+
+<!-- 設定 -->
+<div class="modal" id="settings" hidden>
+  <div class="mbox">
+    <h3>設定</h3>
+    <div class="set"><span>🔊 効果音</span><button class="tog" id="sSound"></button></div>
+    <div class="set"><span>📱 傾き操作</span><button class="tog" id="sTilt"></button></div>
+    <div class="set"><span>感度</span><div class="seg" id="sSens"><button data-v="0">ひくい</button><button data-v="1">ふつう</button><button data-v="2">たかい</button></div></div>
+    <div class="set"><span>🗑️ 記録を消す</span><button class="tog" id="sReset" style="background:#d94a5c">消す</button></div>
+    <button class="btn-y" id="setClose">閉じる</button>
+  </div>
+</div>
+
+<!-- 記録 -->
+<div class="modal" id="records" hidden>
+  <div class="mbox">
+    <h3>🏆 ベスト記録</h3>
+    <div class="rec" id="recList"></div>
+    <button class="btn-y" id="rClose">閉じる</button>
+  </div>
+</div>
+
+<div id="err" hidden>3D表示（WebGL）が使えないため遊べません。<br>別のブラウザでお試しください。</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const show = (el, v = true) => { (typeof el === 'string' ? $(el) : el).hidden = !v; };
+
+/* ================= ステージ定義 ================= */
+const STAGES = [
+  { name:'草原の迷路', N:4, acc:15, fric:2.0, maxV:7,  holes:0, coins:4,
+    desc:'のどかな草原に浮かぶ迷路。まずはここで操作に慣れよう！',
+    ground:['#f3d27a','#d8b24f'], wall:'#3f9b3a', wall2:'#62c24c', wallTop:true, holeCol:'#2a1a0a', holeGlow:null,
+    bg:'linear-gradient(#5ec8ff,#c4ecff 55%,#9be07a)', ball:['#7ee06a','#2e8a2a'], clouds:true },
+  { name:'氷の迷路', N:5, acc:11, fric:0.45, maxV:8, holes:0, coins:5,
+    desc:'つるつる滑る氷の迷路。スピードの出しすぎに注意！',
+    ground:['#eaf7ff','#c4e6fb'], wall:'#6cc3f0', wall2:'#a9e3ff', ice:true, holeCol:'#14324a', holeGlow:null,
+    bg:'linear-gradient(#6fc6ff,#e3f6ff 60%,#ffffff)', ball:['#bfe9ff','#3a8fd0'], clouds:true },
+  { name:'火山の迷路', N:6, acc:15, fric:2.0, maxV:7, holes:5, coins:6,
+    desc:'マグマの穴があちこちに！落ちないように進もう。',
+    ground:['#6b4535','#4d2f25'], wall:'#9c3a22', wall2:'#c4562c', holeCol:'#ff5a00', holeGlow:'#ff7a00',
+    bg:'linear-gradient(#2b0f12,#7a2414 55%,#e2632a)', ball:['#ff9a4a','#8a2410'], clouds:false },
+  { name:'宇宙の迷路', N:7, acc:10, fric:1.0, maxV:6.5, holes:6, coins:7,
+    desc:'ふわふわ無重力。ブラックホールに吸い込まれないで！',
+    ground:['#3d3570','#2b2556'], wall:'#7d6cf0', wall2:'#b08cff', glow:true, holeCol:'#000000', holeGlow:'#b07aff',
+    bg:'radial-gradient(circle at 50% 40%,#3b2a7a,#120a35 60%,#05030f)', ball:['#a58bff','#3b2290'], clouds:false, stars:true },
+  { name:'海底の迷路', N:8, acc:20, fric:3.4, maxV:6.5, holes:7, coins:8,
+    desc:'水の抵抗でゆっくり進む、広い海の迷路。サンゴの壁をぬけよう。',
+    ground:['#efdfab','#d6c184'], wall:'#ff7f8e', wall2:'#29b3a8', holeCol:'#06283d', holeGlow:'#2bd6ff',
+    bg:'linear-gradient(#0a5d8f,#0e8ab7 50%,#4fd0d6)', ball:['#6fe0ff','#0c6aa0'], clouds:false, bubbles:true },
+  { name:'天空の迷路', N:9, acc:15, fric:1.6, maxV:7.5, holes:12, coins:9,
+    desc:'雲の上の最難関。穴だらけの巨大迷路に挑戦！',
+    ground:['#ffffff','#e3ecf8'], wall:'#f2c94c', wall2:'#ffe08a', holeCol:'#7fb6ff', holeGlow:'#cfe6ff',
+    bg:'linear-gradient(#ffcf9e,#ffe9c9 40%,#9fd2ff)', ball:['#fff2b0','#d49a1a'], clouds:true },
+];
+const CELL = 2.6, WALL_T = 0.34, WALL_H = 0.9, BALL_R = 0.5;
+
+/* ================= セーブ ================= */
+const SAVE_KEY = 'guruguru-maze-v1';
+let save = { unlocked:1, best:{}, sound:true, tilt:true, sens:1 };
+try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); if (s) save = Object.assign(save, s); } catch (e) {}
+const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} };
+
+/* ================= サウンド ================= */
+let actx = null;
+function ac() { if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (actx && actx.state === 'suspended') actx.resume(); return actx; }
+function tone(f, d, type = 'sine', vol = .2, f2 = null, delay = 0) {
+  if (!save.sound) return; const a = ac(); if (!a) return;
+  const t = a.currentTime + delay, o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + d);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + d);
+  o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + d + .02);
+}
+const sfx = {
+  coin(){ tone(988,.08,'square',.12); tone(1319,.25,'square',.12,null,.07); },
+  bump(v){ tone(140,.08,'triangle',Math.min(.25,v*.05),70); },
+  fall(){ tone(600,.7,'sawtooth',.12,60); },
+  goal(){ [523,659,784,1047].forEach((f,i)=>tone(f,.3,'square',.12,null,i*.12)); tone(1568,.6,'triangle',.15,null,.5); },
+  beep(h){ tone(h?1046:523,.18,'square',.12); },
+  click(){ tone(700,.06,'triangle',.12); },
+};
+
+/* ================= 乱数 ================= */
+function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+/* ================= three ================= */
+let renderer;
+const canvas = $('#c');
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
+} catch (e) { show('#err'); return; }
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.setClearColor(0x000000, 0);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 400);
+const col = h => new THREE.Color(h).convertSRGBToLinear();
+
+const hemi = new THREE.HemisphereLight(0xdff2ff, 0x557040, 0.75); scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xffffff, 1.05);
+sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
+Object.assign(sun.shadow.camera, { left:-9, right:9, top:9, bottom:-9, near:1, far:50 });
+sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.03;
+scene.add(sun, sun.target);
+
+// ボール用の環境マップ
+const envTex = (() => {
+  const es = new THREE.Scene();
+  const g = new THREE.SphereGeometry(10, 32, 16), cs = [];
+  const p = g.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    const y = p.getY(i) / 10, c = new THREE.Color();
+    if (y > 0) c.lerpColors(new THREE.Color(0xffffff), new THREE.Color(0x4aa8ff), y);
+    else c.lerpColors(new THREE.Color(0xd8e8c8), new THREE.Color(0x3a5a2a), -y);
+    cs.push(c.r, c.g, c.b);
+  }
+  g.setAttribute('color', new THREE.Float32BufferAttribute(cs, 3));
+  es.add(new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors:true, side:THREE.BackSide })));
+  const s = new THREE.Mesh(new THREE.SphereGeometry(1.5, 16, 8), new THREE.MeshBasicMaterial({ color:0xffffff }));
+  s.position.set(4, 7, 3); es.add(s);
+  const pm = new THREE.PMREMGenerator(renderer);
+  const t = pm.fromScene(es, 0.02).texture; pm.dispose(); return t;
+})();
+
+const ballMesh = new THREE.Mesh(new THREE.SphereGeometry(BALL_R, 40, 24),
+  new THREE.MeshStandardMaterial({ color:0xe8eef5, metalness:1, roughness:0.16, envMap:envTex, envMapIntensity:1.2 }));
+ballMesh.castShadow = true;
+
+let starPts = null;
+{
+  const g = new THREE.BufferGeometry(), arr = [];
+  const r = rng(7);
+  for (let i = 0; i < 900; i++) { const v = new THREE.Vector3(r()*2-1, r()*2-1, r()*2-1).normalize().multiplyScalar(150 + r()*80); arr.push(v.x, v.y, v.z); }
+  g.setAttribute('position', new THREE.Float32BufferAttribute(arr, 3));
+  starPts = new THREE.Points(g, new THREE.PointsMaterial({ color:0xffffff, size:1.2, sizeAttenuation:true }));
+  starPts.visible = false; scene.add(starPts);
+}
+
+/* ================= 迷路生成（立方体球） ================= */
+const FACES = [
+  [[1,0,0],[0,0,-1],[0,1,0]], [[-1,0,0],[0,0,1],[0,1,0]],
+  [[0,1,0],[1,0,0],[0,0,-1]], [[0,-1,0],[1,0,0],[0,0,1]],
+  [[0,0,1],[1,0,0],[0,1,0]],  [[0,0,-1],[-1,0,0],[0,1,0]],
+].map(f => f.map(a => new THREE.Vector3(...a)));
+
+function generate(N, seed) {
+  const rnd = rng(seed);
+  const pts = [], ptMap = new Map(), cells = [], edges = [], edgeMap = new Map();
+  const corner = (F, i, j) => {
+    const s = Math.tan((-1 + 2*i/N) * Math.PI/4), t = Math.tan((-1 + 2*j/N) * Math.PI/4);
+    const v = F[0].clone().addScaledVector(F[1], s).addScaledVector(F[2], t).normalize();
+    const key = v.toArray().map(x => Math.round(x * 1e4)).join(',');
+    let id = ptMap.get(key); if (id === undefined) { id = pts.length; pts.push(v); ptMap.set(key, id); }
+    return id;
+  };
+  for (const F of FACES) for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+    const c = [corner(F,i,j), corner(F,i+1,j), corner(F,i+1,j+1), corner(F,i,j+1)];
+    const center = new THREE.Vector3(); c.forEach(k => center.add(pts[k])); center.normalize();
+    const cell = { id:cells.length, center, edges:[] }; cells.push(cell);
+    for (let k = 0; k < 4; k++) {
+      const a = c[k], b = c[(k+1)%4], key = Math.min(a,b) + '_' + Math.max(a,b);
+      let e = edgeMap.get(key);
+      if (!e) { e = { id:edges.length, a, b, cells:[], open:false }; edges.push(e); edgeMap.set(key, e); }
+      e.cells.push(cell.id); cell.edges.push(e.id);
+    }
+  }
+  const other = (e, id) => e.cells[0] === id ? e.cells[1] : e.cells[0];
+  // 穴掘り法
+  const seen = new Uint8Array(cells.length);
+  const st = [0]; seen[0] = 1;
+  while (st.length) {
+    const cur = st[st.length - 1];
+    const opts = cells[cur].edges.map(i => edges[i]).filter(e => e.cells.length === 2 && !seen[other(e, cur)]);
+    if (!opts.length) { st.pop(); continue; }
+    const e = opts[Math.floor(rnd() * opts.length)];
+    e.open = true; const n = other(e, cur); seen[n] = 1; st.push(n);
+  }
+  // 少しだけ近道を開けて迷いやすく
+  edges.forEach(e => { if (!e.open && e.cells.length === 2 && rnd() < 0.04) e.open = true; });
+  cells.forEach(c => c.nbrs = c.edges.map(i => edges[i]).filter(e => e.open).map(e => other(e, c.id)));
+  return { N, pts, cells, edges };
+}
+function bfs(maze, from) {
+  const d = new Int32Array(maze.cells.length).fill(-1); d[from] = 0; const q = [from];
+  for (let h = 0; h < q.length; h++) for (const n of maze.cells[q[h]].nbrs) if (d[n] < 0) { d[n] = d[q[h]] + 1; q.push(n); }
+  return d;
+}
+
+/* ================= ステージ構築 ================= */
+let world = null, S = null;   // S: 現在のステージ状態
+let stageIdx = 0;
+
+function nlerp(a, b, t) { return a.clone().multiplyScalar(1 - t).addScaledVector(b, t).normalize(); }
+function pivotAt(dir, R) {
+  const o = new THREE.Object3D();
+  o.position.copy(dir).multiplyScalar(R);
+  o.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir);
+  return o;
+}
+
+function buildStage(idx) {
+  if (world) { scene.remove(world); world.traverse(o => { if (o.geometry && o !== ballMesh) o.geometry.dispose(); }); }
+  const st = STAGES[idx];
+  const maze = generate(st.N, 1000 + idx * 77);
+  const R = st.N * CELL / (Math.PI / 2);
+  const rnd = rng(500 + idx);
+  world = new THREE.Group(); scene.add(world);
+
+  // 地面
+  const gg = new THREE.SphereGeometry(R, 128, 80), gp = gg.attributes.position, gc = [];
+  const c1 = col(st.ground[0]), c2 = col(st.ground[1]), tmp = new THREE.Color();
+  for (let i = 0; i < gp.count; i++) {
+    const x = gp.getX(i)/R, y = gp.getY(i)/R, z = gp.getZ(i)/R;
+    const n = 0.5 + 0.25*Math.sin(x*9+y*4) * Math.cos(z*7-x*3) + 0.25*Math.sin(y*23+z*17)*Math.sin(x*19);
+    tmp.copy(c1).lerp(c2, Math.max(0, Math.min(1, n))); gc.push(tmp.r, tmp.g, tmp.b);
+  }
+  gg.setAttribute('color', new THREE.Float32BufferAttribute(gc, 3));
+  const ground = new THREE.Mesh(gg, new THREE.MeshStandardMaterial({ vertexColors:true, roughness:st.ice ? .35 : .95, metalness:0 }));
+  ground.receiveShadow = true; world.add(ground);
+
+  // 壁
+  const walls = maze.edges.filter(e => !e.open);
+  const K = 3;
+  const wmat = new THREE.MeshStandardMaterial({ color:0xffffff, roughness:st.ice ? .15 : .9, metalness:st.ice ? .1 : 0,
+    transparent:!!st.ice, opacity:st.ice ? .82 : 1, emissive:st.glow ? col(st.wall) : 0x000000, emissiveIntensity:st.glow ? .35 : 0 });
+  const im = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), wmat, walls.length * K);
+  im.castShadow = true; im.receiveShadow = true;
+  const m4 = new THREE.Matrix4(), X = new THREE.Vector3(), Y = new THREE.Vector3(), Z = new THREE.Vector3(), P = new THREE.Vector3();
+  const wc1 = col(st.wall), wc2 = col(st.wall2);
+  let k = 0;
+  const wallData = [];
+  for (const e of walls) {
+    const a = maze.pts[e.a], b = maze.pts[e.b];
+    const m = new THREE.Vector3().crossVectors(a, b).normalize();
+    const mid = nlerp(a, b, .5);
+    const half = Math.acos(Math.min(1, a.dot(b))) / 2;
+    wallData.push({ a, b, m, mid, cull:Math.cos(half + 1.6 / R) });
+    const wcol = new THREE.Color().copy(wc1).lerp(wc2, rnd() * (st.N >= 8 && idx === 4 ? 1 : .5));
+    for (let s = 0; s < K; s++) {
+      const p0 = nlerp(a, b, s/K), p1 = nlerp(a, b, (s+1)/K);
+      Y.copy(p0).add(p1).normalize();
+      Z.copy(p1).sub(p0); const len = Z.length() * R + WALL_T; Z.normalize();
+      X.crossVectors(Y, Z).normalize();
+      P.copy(Y).multiplyScalar(R + WALL_H/2 - 0.05);
+      m4.makeBasis(X.clone().multiplyScalar(WALL_T), Y.clone().multiplyScalar(WALL_H), Z.clone().multiplyScalar(len)).setPosition(P);
+      im.setMatrixAt(k, m4); im.setColorAt(k, wcol); k++;
+    }
+  }
+  im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true;
+  world.add(im);
+
+  // スタート・ゴール
+  const front = new THREE.Vector3(0.25, 0.35, 1).normalize();
+  let start = 0, best = -2;
+  maze.cells.forEach(c => { const d = c.center.dot(front); if (d > best) { best = d; start = c.id; } });
+  const dist = bfs(maze, start);
+  let goal = start; dist.forEach((d, i) => { if (d > dist[goal]) goal = i; });
+  const goalDir = maze.cells[goal].center.clone();
+
+  // ゴールの旗
+  const fp = pivotAt(goalDir, R);
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, 2.4, 10), new THREE.MeshStandardMaterial({ color:0xeeeeee, metalness:.6, roughness:.3, envMap:envTex }));
+  pole.position.y = 1.2; pole.castShadow = true; fp.add(pole);
+  const flagG = new THREE.BufferGeometry();
+  flagG.setAttribute('position', new THREE.Float32BufferAttribute([0,2.35,0, 0,1.65,0, 1.0,2.0,0], 3)); flagG.computeVertexNormals();
+  const flag = new THREE.Mesh(flagG, new THREE.MeshStandardMaterial({ color:col('#ff2d3a'), side:THREE.DoubleSide, emissive:col('#ff2d3a'), emissiveIntensity:.25 }));
+  flag.castShadow = true; fp.add(flag);
+  const ring = new THREE.Mesh(new THREE.RingGeometry(.75, 1.0, 40), new THREE.MeshBasicMaterial({ color:0xffe14a, transparent:true, opacity:.85, side:THREE.DoubleSide }));
+  ring.rotation.x = -Math.PI/2; ring.position.y = .03; fp.add(ring);
+  const knob = new THREE.Mesh(new THREE.SphereGeometry(.12, 12, 8), new THREE.MeshStandardMaterial({ color:0xffd23a, metalness:.8, roughness:.2, envMap:envTex }));
+  knob.position.y = 2.45; fp.add(knob);
+  world.add(fp);
+
+  // コイン（行き止まり優先）
+  const used = new Set([start, goal]);
+  const nearStart = new Set([start, ...maze.cells[start].nbrs]);
+  const deadEnds = maze.cells.filter(c => c.nbrs.length === 1 && !used.has(c.id));
+  const shuffle = arr => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; };
+  shuffle(deadEnds);
+  const coins = [];
+  const coinGeo = new THREE.CylinderGeometry(.42, .42, .1, 28);
+  const coinMat = new THREE.MeshStandardMaterial({ color:col('#ffcc22'), metalness:1, roughness:.25, envMap:envTex, emissive:col('#5a3a00'), emissiveIntensity:.4 });
+  for (let i = 0; i < st.coins; i++) {
+    let c = deadEnds.pop();
+    if (!c) { const free = maze.cells.filter(x => !used.has(x.id)); c = free[Math.floor(rnd() * free.length)]; }
+    used.add(c.id);
+    const pv = pivotAt(c.center, R + .75);
+    const cm = new THREE.Mesh(coinGeo, coinMat); cm.rotation.x = Math.PI/2; cm.castShadow = true;
+    const spin = new THREE.Object3D(); spin.add(cm); pv.add(spin);
+    world.add(pv); coins.push({ dir:c.center.clone(), obj:pv, spin, got:false, t:0 });
+  }
+
+  // 穴
+  const holes = [];
+  if (st.holes) {
+    const holeMat = new THREE.MeshBasicMaterial({ color:col(st.holeCol) });
+    const rimMat = new THREE.MeshBasicMaterial({ color:st.holeGlow ? col(st.holeGlow) : 0x000000, transparent:true, opacity:st.holeGlow ? .9 : .35 });
+    const cand = [];
+    maze.cells.forEach(c => {
+      if (used.has(c.id) || nearStart.has(c.id) || c.id === goal) return;
+      if (c.nbrs.length === 1) cand.push({ c, off:0 });
+      else if (c.nbrs.length === 2) {
+        const a = maze.cells[c.nbrs[0]].center, b = maze.cells[c.nbrs[1]].center;
+        const ax = b.clone().sub(a); ax.addScaledVector(c.center, -ax.dot(c.center)).normalize();
+        const da = a.clone().sub(c.center).normalize(), db = b.clone().sub(c.center).normalize();
+        if (da.dot(db) < -0.8) cand.push({ c, off:1, ax });   // まっすぐな通路
+      }
+    });
+    shuffle(cand);
+    cand.sort((p, q) => q.off - p.off);
+    const taken = new Set();
+    for (const h of cand) {
+      if (holes.length >= st.holes) break;
+      if (taken.has(h.c.id) || h.c.nbrs.some(n => taken.has(n))) continue;
+      taken.add(h.c.id);
+      let dir = h.c.center.clone(), r = .62;
+      if (h.off) {
+        const perp = new THREE.Vector3().crossVectors(h.c.center, h.ax).normalize();
+        dir.addScaledVector(perp, (rnd() < .5 ? -1 : 1) * 0.5 / R).normalize(); r = .58;
+      }
+      const pv = pivotAt(dir, R + .02);
+      const disc = new THREE.Mesh(new THREE.CircleGeometry(r, 32), holeMat); disc.rotation.x = -Math.PI/2; pv.add(disc);
+      const rim = new THREE.Mesh(new THREE.RingGeometry(r, r + .12, 32), rimMat); rim.rotation.x = -Math.PI/2; rim.position.y = .005; pv.add(rim);
+      world.add(pv); holes.push({ dir, r, cell:h.c.id, rim });
+    }
+  }
+
+  // 背景の飾り（周囲に浮かぶ小島）
+  if (st.clouds || st.bubbles) {
+    const dm = new THREE.MeshStandardMaterial({ color:st.bubbles ? 0xbff4ff : 0xffffff, transparent:true, opacity:st.bubbles ? .4 : .9, roughness:1 });
+    for (let i = 0; i < 10; i++) {
+      const g = new THREE.Group();
+      for (let j = 0; j < 4; j++) {
+        const s = new THREE.Mesh(new THREE.SphereGeometry(1 + rnd() * 1.4, 14, 10), dm);
+        s.position.set((rnd() - .5) * 4, (rnd() - .5) * 1, (rnd() - .5) * 2.5); g.add(s);
+        if (st.bubbles) break;
+      }
+      const d = new THREE.Vector3(rnd()*2-1, rnd()*2-1, rnd()*2-1).normalize();
+      g.position.copy(d).multiplyScalar(R * 4 + 25 + rnd() * 25);
+      g.userData.spin = (rnd() - .5) * .1;
+      world.add(g);
+    }
+  }
+  starPts.visible = !!st.stars;
+
+  world.add(ballMesh);
+  hemi.groundColor.set(st.stars ? 0x332266 : idx === 2 ? 0x803020 : 0x557040);
+
+  // 最短経路の長さで目標タイムを決める
+  const pathLen = dist[goal];
+  S = { idx, st, maze, R, walls:wallData, start, goal, goalDir, flag, ring, coins, holes, pathLen,
+        par: Math.round(pathLen * CELL / (st.maxV * .55) + 6) };
+  document.body.style.background = st.bg;
+  resetBall();
+}
+
+/* ================= ボール状態 ================= */
+const ball = { P:new THREE.Vector3(), V:new THREE.Vector3(), f:new THREE.Vector3(), lastSafe:0 };
+let rotAngle = 0;
+function resetBall(cellId) {
+  const c = S.maze.cells[cellId ?? S.start];
+  ball.P.copy(c.center).multiplyScalar(S.R + BALL_R);
+  ball.V.set(0, 0, 0);
+  if (cellId === undefined) {
+    // 最初の向き：最初の通路の方向を「前」にする
+    const n = c.center, nb = S.maze.cells[c.nbrs[0]].center;
+    ball.f.copy(nb).sub(n); ball.f.addScaledVector(n, -ball.f.dot(n)).normalize();
+  }
+  ball.lastSafe = c.id;
+  ballMesh.position.copy(ball.P); ballMesh.scale.setScalar(1);
+}
+
+/* ================= 入力 ================= */
+const keys = {};
+addEventListener('keydown', e => {
+  keys[e.code] = true;
+  if (e.code === 'Escape' || e.code === 'KeyP') { if (mode === 'play') pauseGame(); else if (mode === 'paused') resumeGame(); }
+  if (e.code === 'KeyZ' && mode === 'play') cycleZoom();
+});
+addEventListener('keyup', e => { keys[e.code] = false; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; if (mode === 'play') pauseGame(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden && mode === 'play') pauseGame(); });
+
+const stick = { on:false, id:null, ox:0, oy:0, x:0, y:0 };
+const stickEl = $('#stick'), knobEl = $('#stick i');
+canvas.addEventListener('pointerdown', e => {
+  if (mode !== 'play' && mode !== 'ready') return;
+  stick.on = true; stick.id = e.pointerId; stick.ox = e.clientX; stick.oy = e.clientY; stick.x = stick.y = 0;
+  stickEl.style.left = e.clientX + 'px'; stickEl.style.top = e.clientY + 'px'; knobEl.style.transform = ''; show(stickEl);
+  usingTouch = true; updateHint();
+});
+addEventListener('pointermove', e => {
+  if (!stick.on || e.pointerId !== stick.id) return;
+  let dx = e.clientX - stick.ox, dy = e.clientY - stick.oy; const L = Math.hypot(dx, dy), M = 50;
+  if (L > M) { dx *= M / L; dy *= M / L; }
+  stick.x = dx / M; stick.y = -dy / M;
+  knobEl.style.transform = `translate(${dx}px,${dy}px)`;
+});
+const endStick = e => { if (e.pointerId === stick.id) { stick.on = false; stick.x = stick.y = 0; show(stickEl, false); } };
+addEventListener('pointerup', endStick); addEventListener('pointercancel', endStick);
+
+// 傾きセンサー
+const tilt = { got:false, b:0, g:0, b0:null, g0:null, last:0 };
+let usingTouch = false;
+addEventListener('deviceorientation', e => {
+  if (e.beta == null || e.gamma == null) return;
+  tilt.got = true; tilt.b = e.beta; tilt.g = e.gamma; tilt.last = performance.now();
+  if (tilt.b0 === null) { tilt.b0 = e.beta; tilt.g0 = e.gamma; }
+});
+function calibrate() { tilt.b0 = tilt.got ? tilt.b : null; tilt.g0 = tilt.got ? tilt.g : null; }
+async function askTilt() {
+  if (!save.tilt) return;
+  try {
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+      const r = await DeviceOrientationEvent.requestPermission(); if (r !== 'granted') { save.tilt = false; persist(); }
+    }
+  } catch (e) {}
+}
+const tiltActive = () => save.tilt && tilt.got && performance.now() - tilt.last < 1500;
+function updateHint() {
+  $('#hint').textContent = tiltActive() && !usingTouch ? '📱 スマホを傾けて操作' : (matchMedia('(pointer:coarse)').matches ? '👆 ドラッグで操作' : '⌨️ 矢印キー / WASD / ドラッグで操作');
+}
+
+function readInput(out) {
+  let x = 0, y = 0;
+  if (keys.ArrowLeft || keys.KeyA) x -= 1; if (keys.ArrowRight || keys.KeyD) x += 1;
+  if (keys.ArrowUp || keys.KeyW) y += 1; if (keys.ArrowDown || keys.KeyS) y -= 1;
+  if (keys.KeyQ) rotAngle += .03; if (keys.KeyE) rotAngle -= .03;
+  if (stick.on) { x = stick.x; y = stick.y; }
+  else if (!x && !y && tiltActive() && tilt.b0 !== null) {
+    const range = [28, 20, 13][save.sens];
+    let db = tilt.b - tilt.b0, dg = tilt.g - tilt.g0;
+    const ang = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+    let tx = dg, ty = -db;
+    if (ang === 90) { tx = db; ty = dg; } else if (ang === -90 || ang === 270) { tx = -db; ty = -dg; } else if (ang === 180) { tx = -dg; ty = db; }
+    const dead = 1.5;
+    x = Math.abs(tx) < dead ? 0 : (tx - Math.sign(tx) * dead) / range;
+    y = Math.abs(ty) < dead ? 0 : (ty - Math.sign(ty) * dead) / range;
+  }
+  const L = Math.hypot(x, y); if (L > 1) { x /= L; y /= L; }
+  out.x = x; out.y = y;
+}
+
+/* ================= 物理 ================= */
+const v1 = new THREE.Vector3(), v2 = new THREE.Vector3(), v3 = new THREE.Vector3(), nrm = new THREE.Vector3(), rgt = new THREE.Vector3();
+const inp = { x:0, y:0 };
+let bumpCool = 0;
+function physics(dt) {
+  const st = S.st, R = S.R, Rb = R + BALL_R;
+  nrm.copy(ball.P).normalize();
+  rgt.crossVectors(ball.f, nrm).normalize();
+  // 入力 → 接平面上の加速度
+  v1.copy(ball.f).multiplyScalar(inp.y).addScaledVector(rgt, inp.x);
+  ball.V.addScaledVector(v1, st.acc * dt);
+  ball.V.multiplyScalar(Math.exp(-st.fric * dt));
+  const sp = ball.V.length(); if (sp > st.maxV) ball.V.multiplyScalar(st.maxV / sp);
+
+  const steps = 4, h = dt / steps;
+  let maxHit = 0;
+  for (let s = 0; s < steps; s++) {
+    ball.P.addScaledVector(ball.V, h);
+    const L0 = ball.V.length();
+    ball.P.setLength(Rb);
+    nrm.copy(ball.P).normalize();
+    ball.V.addScaledVector(nrm, -ball.V.dot(nrm)); if (ball.V.lengthSq() > 1e-8) ball.V.setLength(L0);
+    // 壁との衝突
+    const lim = BALL_R + WALL_T / 2;
+    for (const w of S.walls) {
+      if (nrm.dot(w.mid) < w.cull) continue;
+      const sd = nrm.dot(w.m);
+      v1.copy(nrm).addScaledVector(w.m, -sd);   // 大円への射影
+      let dist;
+      v2.crossVectors(w.a, v1); const in1 = v2.dot(w.m) >= 0;
+      v2.crossVectors(v1, w.b); const in2 = v2.dot(w.m) >= 0;
+      if (in1 && in2) {
+        dist = Math.abs(Math.asin(Math.max(-1, Math.min(1, sd)))) * R;
+        v3.copy(w.m).multiplyScalar(sd >= 0 ? 1 : -1);
+      } else {
+        const e = nrm.dot(w.a) > nrm.dot(w.b) ? w.a : w.b;
+        dist = Math.acos(Math.min(1, nrm.dot(e))) * R;
+        v3.copy(nrm).sub(e);
+      }
+      if (dist >= lim) continue;
+      v3.addScaledVector(nrm, -v3.dot(nrm));
+      if (v3.lengthSq() < 1e-12) continue;
+      v3.normalize();
+      ball.P.addScaledVector(v3, (lim - dist) * Rb / R);
+      ball.P.setLength(Rb); nrm.copy(ball.P).normalize();
+      const vn = ball.V.dot(v3);
+      if (vn < 0) { ball.V.addScaledVector(v3, -vn * (st.ice ? 1.45 : 1.25)); maxHit = Math.max(maxHit, -vn); }
+    }
+  }
+  if (maxHit > 2.2 && bumpCool <= 0) { sfx.bump(maxHit); bumpCool = .12; if (navigator.vibrate && maxHit > 4) navigator.vibrate(15); }
+  bumpCool -= dt;
+
+  // 前方向ベクトルを平行移動
+  nrm.copy(ball.P).normalize();
+  ball.f.addScaledVector(nrm, -ball.f.dot(nrm)).normalize();
+  if (rotAngle) {
+    v1.crossVectors(nrm, ball.f);
+    ball.f.multiplyScalar(Math.cos(rotAngle)).addScaledVector(v1, Math.sin(rotAngle)).normalize();
+    rotAngle = 0;
+  }
+
+  // 転がる見た目
+  const spd = ball.V.length();
+  if (spd > 1e-4) {
+    v1.crossVectors(nrm, ball.V).normalize();
+    ballMesh.rotateOnWorldAxis(v1, spd * dt / BALL_R);
+  }
+  ballMesh.position.copy(ball.P);
+}
+
+function nearestCell(dir) {
+  let best = -2, id = 0;
+  for (const c of S.maze.cells) { const d = c.center.dot(dir); if (d > best) { best = d; id = c.id; } }
+  return id;
+}
+
+/* ================= ゲーム進行 ================= */
+let mode = 'menu';    // menu | intro | ready | play | paused | falling | goal
+let elapsed = 0, readyT = 0, fallT = 0, fallHole = null, penalty = 0, coinsGot = 0;
+let zoomLv = 1, introBlend = 0;
+const ZOOMS = [{ h:7, b:4.2 }, { h:11, b:6 }, { h:0, b:0 }];
+
+function setScreen(id) {
+  ['#title', '#select', '#intro', '#hud'].forEach(s => show(s, s === id));
+}
+function fmt(t) { const m = Math.floor(t / 60), s = Math.floor(t % 60); return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0'); }
+function fmtMs(t) { return fmt(t) + '.' + String(Math.floor(t * 10 % 10)); }
+function starsFor(t) { return t <= S.par ? 3 : t <= S.par * 1.7 ? 2 : 1; }
+function starHTML(n) { let s = ''; for (let i = 0; i < 3; i++) s += i < n ? '★' : '<span class="off">★</span>'; return s; }
+
+let msgTimer = 0;
+function flashMsg(t, dur = .8) { const m = $('#msg'); m.textContent = t; show(m); m.style.transform = 'scale(1.25)'; requestAnimationFrame(() => m.style.transform = 'scale(1)'); msgTimer = dur; }
+let toastTimer = 0;
+function toast(t) { $('#toast').textContent = t; show('#toast'); toastTimer = 1.4; }
+
+function openTitle() {
+  mode = 'menu'; setScreen('#title'); closeModals();
+  if (!S || S.idx !== 0) buildStage(0);
+}
+function openSelect() {
+  mode = 'menu'; setScreen('#select'); closeModals();
+  const g = $('#grid'); g.innerHTML = '';
+  STAGES.forEach((st, i) => {
+    const locked = i >= save.unlocked, b = save.best[i];
+    const el = document.createElement('button');
+    el.className = 'card' + (locked ? ' locked' : '') + (i === stageIdx ? ' sel' : '');
+    el.innerHTML = `<span class="nm"><em>${i + 1}</em>${st.name}</span>
+      <span class="ball" style="background:radial-gradient(circle at 35% 30%,${st.ball[0]},${st.ball[1]})"></span>
+      ${locked ? '<span class="lock">🔒</span>' : ''}
+      <span class="stars">${starHTML(b ? b.stars : 0)}</span>`;
+    el.onclick = () => {
+      if (locked) { sfx.beep(false); toast('前のステージをクリアしよう！'); return; }
+      sfx.click(); openIntro(i);
+    };
+    g.appendChild(el);
+  });
+}
+function openIntro(i) {
+  stageIdx = i; mode = 'intro'; closeModals(); setScreen('#intro');
+  buildStage(i);
+  const st = STAGES[i], b = save.best[i];
+  $('#iNum').textContent = 'ステージ' + (i + 1);
+  $('#iName').textContent = st.name;
+  $('#iDesc').textContent = st.desc;
+  $('#iInfo').textContent = `迷路の広さ ${st.N}×${st.N}×6面 ／ コイン ${st.coins}枚` + (st.holes ? ` ／ 穴 ${S.holes.length}個` : '') + (b ? ` ／ ベスト ${fmtMs(b.time)}` : '');
+  $('#iStars').innerHTML = starHTML(b ? b.stars : 0);
+}
+async function startGame() {
+  ac(); await askTilt();
+  closeModals(); setScreen('#hud');
+  resetBall(); calibrate();
+  S.coins.forEach(c => { c.got = false; c.obj.visible = true; c.obj.scale.setScalar(1); });
+  coinsGot = 0; elapsed = 0; penalty = 0; readyT = 3; mode = 'ready'; introBlend = 0; usingTouch = false;
+  updateHUD(); updateHint(); flashMsg('3', 1);
+  lastCount = 3; sfx.beep(false);
+}
+let lastCount = 3;
+function pauseGame() { if (mode !== 'play' && mode !== 'ready') return; pausedFrom = mode; mode = 'paused'; show('#pause'); stick.on = false; show(stickEl, false); }
+let pausedFrom = 'play';
+function resumeGame() { show('#pause', false); mode = pausedFrom; calibrate(); }
+function closeModals() { ['#pause', '#goal', '#how', '#settings', '#records'].forEach(m => show(m, false)); }
+
+function updateHUD() {
+  $('#hTime').textContent = fmt(elapsed + penalty);
+  $('#hCoin').textContent = `🪙${coinsGot}/${S.coins.length}`;
+}
+
+function winGame() {
+  mode = 'goal'; sfx.goal(); if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
+  const t = elapsed + penalty, stars = starsFor(t);
+  const prev = save.best[S.idx];
+  const isNew = !prev || t < prev.time;
+  if (isNew) save.best[S.idx] = { time:t, stars:Math.max(stars, prev ? prev.stars : 0), coins:coinsGot };
+  else prev.stars = Math.max(prev.stars, stars);
+  if (save.unlocked < S.idx + 2) save.unlocked = Math.min(STAGES.length, S.idx + 2);
+  persist();
+  setTimeout(() => {
+    $('#gStars').innerHTML = starHTML(stars);
+    $('#gTime').textContent = fmtMs(t);
+    $('#gCoin').textContent = `${coinsGot}/${S.coins.length}`;
+    $('#gBest').textContent = fmtMs(save.best[S.idx].time);
+    show('#gNew', isNew && !!prev);
+    $('#gNext').textContent = S.idx < STAGES.length - 1 ? '次へ ▶' : '🎉 ステージ選択へ';
+    show('#goal'); show('#hud', false);
+  }, 900);
+}
+
+function cycleZoom() { zoomLv = (zoomLv + 1) % 3; sfx.click(); }
+
+/* ================= UI配線 ================= */
+$('#tStart').onclick = () => { sfx.click(); ac(); openSelect(); };
+$('#tHow').onclick = () => { sfx.click(); show('#how'); };
+$('#hClose').onclick = () => { sfx.click(); show('#how', false); };
+$('#tSet').onclick = () => { sfx.click(); renderSettings(); show('#settings'); };
+$('#setClose').onclick = () => { sfx.click(); show('#settings', false); };
+$('#tRec').onclick = () => { sfx.click(); renderRecords(); show('#records'); };
+$('#rClose').onclick = () => { sfx.click(); show('#records', false); };
+$('#sBack').onclick = () => { sfx.click(); openTitle(); };
+$('#iBack').onclick = () => { sfx.click(); openSelect(); };
+$('#iStart').onclick = () => { sfx.click(); startGame(); };
+$('#pauseBtn').onclick = () => { sfx.click(); pauseGame(); };
+$('#pRes').onclick = () => { sfx.click(); resumeGame(); };
+$('#pRetry').onclick = () => { sfx.click(); startGame(); };
+$('#pCal').onclick = () => { sfx.click(); calibrate(); toast('今の傾きを水平にしました'); resumeGame(); };
+$('#pSel').onclick = () => { sfx.click(); openSelect(); };
+$('#pTitle').onclick = () => { sfx.click(); openTitle(); };
+$('#gNext').onclick = () => { sfx.click(); if (S.idx < STAGES.length - 1) openIntro(S.idx + 1); else openSelect(); };
+$('#gRetry').onclick = () => { sfx.click(); startGame(); };
+$('#gSel').onclick = () => { sfx.click(); openSelect(); };
+$('#bZoom').onclick = cycleZoom;
+const holdBtn = (el, d) => {
+  let t = null;
+  const go = e => { e.preventDefault(); clearInterval(t); t = setInterval(() => { rotAngle += d; }, 16); };
+  const stop = () => clearInterval(t);
+  el.addEventListener('pointerdown', go); el.addEventListener('pointerup', stop); el.addEventListener('pointerleave', stop); el.addEventListener('pointercancel', stop);
+};
+holdBtn($('#bRotL'), .035); holdBtn($('#bRotR'), -.035);
+
+function renderSettings() {
+  const ts = (el, on) => { el.classList.toggle('on', on); el.textContent = on ? 'オン' : 'オフ'; };
+  ts($('#sSound'), save.sound); ts($('#sTilt'), save.tilt);
+  $('#sSens').querySelectorAll('button').forEach(b => b.classList.toggle('on', +b.dataset.v === save.sens));
+}
+$('#sSound').onclick = () => { save.sound = !save.sound; persist(); renderSettings(); sfx.click(); };
+$('#sTilt').onclick = async () => { save.tilt = !save.tilt; persist(); if (save.tilt) await askTilt(); renderSettings(); sfx.click(); };
+$('#sSens').onclick = e => { const b = e.target.closest('button'); if (!b) return; save.sens = +b.dataset.v; persist(); renderSettings(); sfx.click(); };
+$('#sReset').onclick = () => {
+  if (!confirm('ベスト記録とステージの解放をすべて消しますか？')) return;
+  save.best = {}; save.unlocked = 1; persist(); toast('記録を消しました');
+};
+function renderRecords() {
+  $('#recList').innerHTML = STAGES.map((st, i) => {
+    const b = save.best[i];
+    return `<div><span>${i + 1}. ${st.name}</span><span class="stars">${starHTML(b ? b.stars : 0)}</span><span class="t">${b ? fmtMs(b.time) : (i < save.unlocked ? '--:--' : '🔒')}</span></div>`;
+  }).join('');
+}
+
+/* ================= メインループ ================= */
+function resize() {
+  const w = innerWidth, h = innerHeight;
+  renderer.setSize(w, h, false); camera.aspect = w / h;
+  camera.fov = w / h < 0.7 ? 58 : 48; camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+
+const camTarget = new THREE.Vector3(), camPos = new THREE.Vector3(), camUp = new THREE.Vector3(0, 1, 0), lookPt = new THREE.Vector3();
+let t0 = performance.now(), clock = 0;
+const arrEl = $('#arr');
+
+function frame(now) {
+  requestAnimationFrame(frame);
+  let dt = Math.min(1 / 30, (now - t0) / 1000); t0 = now; clock += dt;
+  if (!S) return;
+
+  // メッセージ
+  if (msgTimer > 0) { msgTimer -= dt; if (msgTimer <= 0) show('#msg', false); }
+  if (toastTimer > 0) { toastTimer -= dt; if (toastTimer <= 0) show('#toast', false); }
+
+  if (mode === 'ready') {
+    readyT -= dt;
+    const c = Math.ceil(readyT);
+    if (c !== lastCount && c > 0) { lastCount = c; flashMsg(String(c), 1); sfx.beep(false); }
+    if (readyT <= 0) { mode = 'play'; flashMsg('スタート！', .8); sfx.beep(true); lastCount = 0; }
+  }
+  if (mode === 'play') {
+    readInput(inp);
+    physics(dt);
+    elapsed += dt;
+    const nd = v1.copy(ball.P).normalize();
+    // コイン
+    for (const c of S.coins) if (!c.got && nd.dot(c.dir) > Math.cos(0.95 / S.R)) {
+      c.got = true; c.t = 0; coinsGot++; sfx.coin();
+    }
+    // 穴
+    let inHole = null;
+    for (const h of S.holes) if (Math.acos(Math.min(1, nd.dot(h.dir))) * S.R < h.r - .2) { inHole = h; break; }
+    if (inHole) {
+      mode = 'falling'; fallT = 0; fallHole = inHole; sfx.fall(); if (navigator.vibrate) navigator.vibrate(120);
+    } else {
+      const cid = nearestCell(nd);
+      if (!S.holes.some(h => h.cell === cid)) ball.lastSafe = cid;
+    }
+    // ゴール
+    if (mode === 'play' && Math.acos(Math.min(1, nd.dot(S.goalDir))) * S.R < 0.9) winGame();
+    if (clock % .25 < dt) updateHint();
+    updateHUD();
+  } else if (mode === 'falling') {
+    fallT += dt;
+    const target = v2.copy(fallHole.dir).multiplyScalar(S.R + BALL_R);
+    ball.P.lerp(target, Math.min(1, dt * 8));
+    const k = Math.min(1, fallT / .7);
+    ballMesh.position.copy(ball.P).setLength(S.R + BALL_R - k * 1.4);
+    ballMesh.scale.setScalar(1 - k * .7);
+    if (fallT > 1) {
+      penalty += 3; toast('落ちちゃった！ +3秒');
+      resetBall(ball.lastSafe); mode = 'play'; updateHUD();
+    }
+  }
+
+  // コインの回転・取得演出
+  for (const c of S.coins) {
+    if (!c.obj.visible) continue;
+    c.spin.rotation.y += dt * 3;
+    if (c.got) { c.t += dt; c.obj.scale.setScalar(Math.max(0.001, 1 + c.t * 2)); c.spin.position.y = c.t * 3; if (c.t > .3) c.obj.visible = false; }
+    else c.spin.position.y = Math.sin(clock * 3 + c.dir.x * 9) * .12;
+  }
+  S.flag.rotation.y = Math.sin(clock * 3) * .25;
+  S.ring.scale.setScalar(1 + Math.sin(clock * 4) * .08);
+  S.holes.forEach(h => { if (S.st.holeGlow) h.rim.material.opacity = .6 + Math.sin(clock * 4) * .3; });
+  world.children.forEach(o => { if (o.userData.spin) o.rotation.y += o.userData.spin * dt; });
+
+  // カメラ
+  const R = S.R;
+  if (mode === 'menu' || mode === 'intro') {
+    const d = R * (mode === 'intro' ? 2.35 : 2.6) + 3;
+    const a = clock * .18;
+    camPos.set(Math.sin(a) * d, d * .38 + Math.sin(clock * .3) * 2, Math.cos(a) * d);
+    camera.position.lerp(camPos, 1 - Math.exp(-dt * 2));
+    camUp.lerp(v3.set(0, 1, 0), 1 - Math.exp(-dt * 3)).normalize();
+    camera.up.copy(camUp);
+    lookPt.lerp(v2.set(0, mode === 'intro' ? -R * .05 : -R * .4, 0), 1 - Math.exp(-dt * 3));
+    camera.lookAt(lookPt);
+    sun.position.copy(camera.position).add(v1.set(R * 1.2, R * 2, R)); sun.target.position.set(0, 0, 0);
+    sun.shadow.camera.left = sun.shadow.camera.bottom = -R * 1.2; sun.shadow.camera.right = sun.shadow.camera.top = R * 1.2;
+    sun.shadow.camera.far = R * 6; sun.shadow.camera.updateProjectionMatrix();
+    ballMesh.visible = true;
+  } else {
+    nrm.copy(ball.P).normalize();
+    const f = ball.f;
+    introBlend = Math.min(1, introBlend + dt * .7);
+    const Z = ZOOMS[zoomLv];
+    const h = zoomLv === 2 ? R * 1.9 + 6 : Z.h, b = zoomLv === 2 ? 2 : Z.b;
+    camPos.copy(nrm).multiplyScalar(R + h).addScaledVector(f, -b);
+    const k = 1 - Math.exp(-dt * (2 + introBlend * 5));
+    camera.position.lerp(camPos, k);
+    // 球の内側に入り込まないように
+    if (camera.position.length() < R + 2) camera.position.setLength(R + 2);
+    camUp.lerp(f, k).normalize(); camera.up.copy(camUp);
+    lookPt.lerp(v2.copy(ball.P).addScaledVector(f, zoomLv === 2 ? 0 : 1.2), k);
+    camera.lookAt(lookPt);
+    // 影はボールの周りだけ
+    rgt.crossVectors(f, nrm);
+    sun.position.copy(ball.P).addScaledVector(nrm, 14).addScaledVector(rgt, 5).addScaledVector(f, -3);
+    sun.target.position.copy(ball.P);
+    const sz = zoomLv === 2 ? R * 1.2 : 11;
+    if (sun.shadow.camera.right !== sz) {
+      sun.shadow.camera.left = sun.shadow.camera.bottom = -sz; sun.shadow.camera.right = sun.shadow.camera.top = sz;
+      sun.shadow.camera.far = 60; sun.shadow.camera.updateProjectionMatrix();
+    }
+
+    // ゴールの方向
+    v3.copy(S.goalDir).addScaledVector(nrm, -S.goalDir.dot(nrm));
+    const gx = v3.dot(rgt), gy = v3.dot(f);
+    arrEl.style.transform = `rotate(${Math.atan2(gx, gy)}rad)`;
+  }
+
+  renderer.render(scene, camera);
+}
+
+renderSettings();
+buildStage(0);
+camera.position.set(0, 20, 40);
+openTitle();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
