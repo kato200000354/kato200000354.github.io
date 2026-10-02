@@ -121,10 +121,10 @@ button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer
 
 @media (max-aspect-ratio:1/1){
   #goal{display:none}
-  #rec{top:auto;bottom:calc(max(8px,env(safe-area-inset-bottom)) + max(140px,calc(var(--u)*32)));}
+  #rec{top:calc(max(8px,env(safe-area-inset-top)) + 116px)}
   #hi{display:none}
   #tm{top:calc(max(8px,env(safe-area-inset-top)) + 54px);right:max(8px,env(safe-area-inset-right))}
-  #pow{width:min(52vw,320px);bottom:calc(max(8px,env(safe-area-inset-bottom)) + max(150px,calc(var(--u)*30)))}
+  #pow{width:min(86vw,360px);bottom:calc(max(8px,env(safe-area-inset-bottom)) + max(150px,calc(var(--u)*30)))}
   #hint{display:none}
   #dist{top:30%}
 }
@@ -421,13 +421,13 @@ function resize(){
   DPR=Math.min(2,window.devicePixelRatio||1);
   W=innerWidth;H=innerHeight;
   cv.width=W*DPR;cv.height=H*DPR;
-  F=Math.min(H*1.1,W*.95);
+  F=W<H?Math.min(H*1.1,W*1.25):Math.min(H*1.1,W*.95);
   CX=W*.5;
-  HOR=H*.36;
-  if(W<H){HOR=H*.4}
-  // 縦長のときはホームが下に来すぎないよう調整
-  const plateY=HOR+F*CAM.y/(-CAM.z);
-  if(plateY<H*.86)HOR+=H*.86-plateY;
+  HOR=H*.33;
+  // ホームベースが画面のどこに来るかで地平線を決める（縦長は操作ボタンの上に）
+  const plateTarget=W<H?H*.66:H*.86;
+  HOR=plateTarget-F*CAM.y/(-CAM.z);
+  if(W>=H)HOR=Math.max(HOR,H*.33);
   buildBg();
 }
 addEventListener('resize',resize);
@@ -488,6 +488,7 @@ function release(){
   G.charging=false;
   const p=.25+.75*G.charge;
   G.swingPow=p;G.swingT=0;G.swings++;
+  $('hint').hidden=true;
   G.swingCursor={x:cur.x,y:cur.y};
 }
 function powerFromCharge(t){ // 0→1→0 を往復
@@ -643,7 +644,7 @@ function endGame(){
   $('rCombo').textContent=G.maxCombo+'連発';
   $('rAvg').textContent=G.swings?(G.hits/G.swings).toFixed(3).replace(/^0/,''):'.000';
   const s=G.score;
-  const rk=s>=12000?['S','#ffd63a']:s>=7000?['A','#ff7a3a']:s>=3500?['B','#5ad1ff']:s>=1000?['C','#7dff9a']:['D','#ccc'];
+  const rk=s>=15000?['S','#ffd63a']:s>=9000?['A','#ff7a3a']:s>=4500?['B','#5ad1ff']:s>=1500?['C','#7dff9a']:['D','#ccc'];
   $('rank').textContent=rk[0];$('rank').style.color=rk[1];
   updHUD();
   setTimeout(()=>{$('endOv').hidden=false;$('hud').classList.add('off')},1200);
@@ -738,11 +739,11 @@ function update(dt){
     if(G.trail.length>90)G.trail.shift();
     // カメラ追従
     const q=P(b.x,b.y,b.z);
-    const need=(H*.18)-(q.y-camShift);
+    const need=(H*.24)-(q.y-camShift);
     camShiftT=Math.max(0,Math.min(bgTop*.95,need));
     if(b.landed){b.end-=dt;if(b.end<=0){G.ball=null;G.state='play';G.wait=.8;camShiftT=0;G.trail=[]}}
   }else camShiftT=0;
-  camShift+=(camShiftT-camShift)*Math.min(1,dt*4);
+  camShift+=(camShiftT-camShift)*Math.min(1,dt*(G.state==='flight'?7:3));
 
   // パーティクル
   for(const p of G.particles){
@@ -847,11 +848,11 @@ function drawZone(){
   ctx.restore();
 }
 function drawBall(x,y,z,golden,alpha){
-  const q=P(x,y,z);let r=Math.max(2.2,q.s*.037);
+  const q=P(x,y,z);let r=Math.max(3,q.s*.037);
   if(z<0)alpha*=Math.max(0,1+z/1.6);
   ctx.globalAlpha=alpha;
   if(golden){ctx.fillStyle='rgba(255,214,58,.45)';ctx.beginPath();ctx.arc(q.x,q.y,r*2.2,0,7);ctx.fill()}
-  else if(r<5){ctx.fillStyle='rgba(255,255,255,.35)';ctx.beginPath();ctx.arc(q.x,q.y,r*2,0,7);ctx.fill()}
+  else if(r<6){ctx.fillStyle='rgba(255,255,255,.4)';ctx.beginPath();ctx.arc(q.x,q.y,r*2.6,0,7);ctx.fill()}
   const g=ctx.createRadialGradient(q.x-r*.35,q.y-r*.35,r*.1,q.x,q.y,r);
   g.addColorStop(0,golden?'#fff6c0':'#fff');g.addColorStop(1,golden?'#e0a000':'#c9ccd4');
   ctx.fillStyle=g;ctx.beginPath();ctx.arc(q.x,q.y,r,0,7);ctx.fill();
