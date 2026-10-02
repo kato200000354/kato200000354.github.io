@@ -45,7 +45,8 @@ h1 span{color:var(--accent)}
 .stat .num small{font-size:14px;margin-left:2px}
 .stat .lbl{font-size:12px;font-weight:700;color:var(--muted)}
 .stat.total .num{color:var(--accent)}
-.meta .r{display:flex;gap:8px}
+.meta{flex-wrap:wrap}
+.meta .r{display:flex;flex-wrap:wrap;gap:2px 8px;margin-left:auto;justify-content:flex-end}
 .total-time{margin:10px 0 0;font-size:13px;font-weight:700;color:var(--muted)}
 .total-time b{color:var(--ink);font-size:15px}
 .line-note{display:block;margin-top:6px;font-size:12px;color:var(--muted)}
@@ -91,7 +92,7 @@ footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--muted);f
       <div class="stat"><div class="lbl">ゲーム</div><div class="num"><span id="s-game">–</span><small>個</small></div></div>
       <div class="stat"><div class="lbl">アプリ</div><div class="num"><span id="s-app">–</span><small>個</small></div></div>
     </div>
-    <p class="total-time" id="total-time" hidden>みんなが遊んだ時間：合計 <b id="total-time-v"></b></p>
+    <p class="total-time" id="total-time" hidden>累計プレイ時間（みんなの合計）：<b id="total-time-v"></b></p>
     <a class="line-add" href="https://line.me/R/ti/p/@744txljx" target="_blank" rel="noopener"><span class="ic">LINE</span>まいにちらぼを友だち追加</a>
     <span class="line-note">新しいゲームができたら LINE でお知らせします</span>
   </header>
@@ -107,7 +108,7 @@ footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--muted);f
         <option value="new">新しい順</option>
         <option value="old">古い順</option>
         <option value="pop">人気順</option>
-        <option value="time">プレイ時間順</option>
+        <option value="time">累計プレイ時間順</option>
         <option value="name">名前順</option>
       </select>
     </label>
@@ -175,41 +176,75 @@ sortSel.addEventListener('change', () => {
 });
 render();
 
-// 遊ばれた回数を読み込む（取れなかった作品は回数を表示しない）
-WORKS.forEach(async w => {
-  try {
-    const res = await fetch(`${COUNTER}/get/${NS}/${w.id}`);
-    w.plays = res.ok ? (await res.json()).value : res.status === 404 ? 0 : null;
-  } catch { w.plays = null; }
-  if (w.plays == null) return;
-  const el = cardOf(w.id).querySelector('.plays');
-  el.textContent = `▶ ${w.plays.toLocaleString()}回`;
-  el.hidden = false;
-  if (sortSel.value === 'pop') render();
-});
-// プレイ時間を読み込む（このサイト内の作品だけ。30秒単位で記録されている）
+// 遊ばれた回数とプレイ時間（30秒単位で記録）を読み込む。
+// まず1時間ごとの集計（counts.json）と、前回ブラウザに覚えた値を表示する。
+// そのあと最新の値をカウンターに問い合わせる（「10秒間に30回まで」なので順番にゆっくり）
 const fmtTime = s => s < 60 ? '1分未満' : s < 3600 ? `${Math.floor(s / 60)}分` : `${Math.floor(s / 3600)}時間${Math.floor(s % 3600 / 60) ? Math.floor(s % 3600 / 60) + '分' : ''}`;
-const timed = WORKS.filter(w => w.href.startsWith('apps/'));
-let pending = timed.length;
-timed.forEach(async w => {
-  try {
-    const res = await fetch(`${COUNTER}/get/${NS}/${w.id}-t30`);
-    w.secs = res.ok ? (await res.json()).value * 30 : res.status === 404 ? 0 : null;
-  } catch { w.secs = null; }
+let cache = {};
+try { cache = JSON.parse(localStorage.getItem('works-counts')) || {}; } catch {}
+try {
+  const snap = (await (await fetch('counts.json', {cache: 'no-cache'})).json()).counts || {};
+  for (const [k, v] of Object.entries(snap)) cache[k] = Math.max(v, cache[k] ?? 0); // 数は減らないので大きいほうを使う
+} catch {}
+const saveCache = () => { try { localStorage.setItem('works-counts', JSON.stringify(cache)); } catch {} };
+
+function show(w) {
+  if (w.plays != null) {
+    const el = cardOf(w.id).querySelector('.plays');
+    el.textContent = `▶ ${w.plays.toLocaleString()}回`;
+    el.hidden = false;
+  }
   if (w.secs != null) {
     const el = cardOf(w.id).querySelector('.secs');
-    el.textContent = `⏱ ${fmtTime(w.secs)}`;
+    el.textContent = `⏱ 累計${fmtTime(w.secs)}`;
+    el.title = 'これまでにみんなが遊んだ時間の合計';
     el.hidden = false;
-    if (sortSel.value === 'time') render();
   }
-  if (--pending === 0) {
-    const known = timed.filter(x => x.secs != null);
-    if (known.length) {
-      document.getElementById('total-time-v').textContent = fmtTime(known.reduce((t, x) => t + x.secs, 0));
-      document.getElementById('total-time').hidden = false;
-    }
-  }
+}
+function showTotal() {
+  const known = WORKS.filter(x => x.secs != null);
+  if (!known.length) return;
+  document.getElementById('total-time-v').textContent = fmtTime(known.reduce((t, x) => t + x.secs, 0));
+  document.getElementById('total-time').hidden = false;
+}
+const timed = w => w.href.startsWith('apps/'); // プレイ時間はこのサイト内の作品だけ
+
+WORKS.forEach(w => {
+  if (cache[w.id] != null) w.plays = cache[w.id];
+  if (timed(w) && cache[w.id + '-t30'] != null) w.secs = cache[w.id + '-t30'] * 30;
+  show(w);
 });
+showTotal();
+if (['pop', 'time'].includes(sortSel.value)) render();
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function getCount(key) {
+  for (let tries = 0; tries < 4; tries++) {
+    try {
+      const res = await fetch(`${COUNTER}/get/${NS}/${key}`);
+      if (res.status === 429) { await sleep(10000); continue; }
+      return res.ok ? (await res.json()).value : res.status === 404 ? 0 : null;
+    } catch { return null; }
+  }
+  return null;
+}
+(async () => {
+  await sleep(1500);
+  const jobs = WORKS.flatMap(w => [[w, w.id, 'plays'], ...(timed(w) ? [[w, w.id + '-t30', 'secs']] : [])]);
+  for (const [w, key, field] of jobs) {
+    const v = await getCount(key);
+    if (v != null && v >= (cache[key] ?? 0)) {
+      cache[key] = v;
+      w[field] = field === 'secs' ? v * 30 : v;
+      show(w);
+      if (field === 'secs') showTotal();
+      if ((field === 'plays' && sortSel.value === 'pop') || (field === 'secs' && sortSel.value === 'time')) render();
+    }
+    await sleep(450); // 10秒に22回程度（作品を開いたときの記録のぶんを残しておく）
+  }
+  saveCache();
+  showTotal();
+})();
 // カードを開いたら1回として数える
 grid.addEventListener('click', e => {
   const c = e.target.closest('.card');
