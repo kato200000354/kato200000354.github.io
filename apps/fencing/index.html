@@ -107,7 +107,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 #gpop.show{opacity:1;transition:none}
 
 @media (orientation:portrait){
-  .gauge{width:56vw;bottom:calc(max(14px,env(safe-area-inset-bottom)) + clamp(120px,32vmin,200px) + 8vmin)}
+  .gauge{width:66vw;bottom:calc(max(14px,env(safe-area-inset-bottom)) + clamp(64px,16.5vmin,112px) * 2 + clamp(72px,19vmin,128px) + 10vmin)}
   .pl{padding-right:1.4vmin}
   .race{top:calc(max(8px,env(safe-area-inset-top)) + clamp(56px,16vmin,110px))}
 }
@@ -133,7 +133,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
   background:linear-gradient(180deg,rgba(18,42,92,.92),rgba(8,20,50,.94));border:2px solid rgba(150,200,255,.45);box-shadow:0 20px 60px rgba(0,0,0,.5)}
 .logo{display:flex;align-items:center;justify-content:center;gap:12px}
 .logo svg{width:clamp(40px,10vmin,64px);height:auto}
-h1{margin:0;font-weight:800;font-size:clamp(24px,6.5vmin,42px);line-height:1.1;letter-spacing:.03em;
+h1{margin:0;font-weight:800;font-size:clamp(19px,min(6.2vw,7.5vh),40px);white-space:nowrap;line-height:1.1;letter-spacing:.03em;
   background:linear-gradient(180deg,#fff,#a9d6ff);-webkit-background-clip:text;background-clip:text;color:transparent}
 .en{font-family:"Barlow Condensed",sans-serif;font-weight:700;letter-spacing:.3em;color:#8fc3ff;font-size:clamp(12px,2.8vmin,16px)}
 .lead{color:#c7dbf7;font-size:14px;margin:10px 0 14px}
@@ -428,9 +428,9 @@ const crowdBase = [];
     const sc = rand(.9, 1.1);
     m.compose(new THREE.Vector3(p[0], p[1], p[2]), q, new THREE.Vector3(sc, sc, sc));
     crowdB.setMatrixAt(i, m); crowdH.setMatrixAt(i, m);
-    crowdB.setColorAt(i, shirtCols[(Math.random() * shirtCols.length) | 0]);
+    crowdB.setColorAt(i, shirtCols[(Math.random() * shirtCols.length) | 0].clone().multiplyScalar(rand(.35, .6)));
     const hc = Math.random() < .5 ? skinCols[(Math.random() * skinCols.length) | 0] : new THREE.Color(0x2a2220);
-    crowdH.setColorAt(i, hc);
+    crowdH.setColorAt(i, hc.clone().multiplyScalar(.6));
     crowdBase.push({ p, q: q.clone(), sc, ph: Math.random() * 6.28 });
   });
 }
@@ -567,7 +567,7 @@ function makeFencer(stripe) {
   const neck = new THREE.Mesh(new THREE.CylinderGeometry(.055, .06, .1, 10), suitM); neck.position.y = .58; torso.add(neck);
   const head = new THREE.Group(); head.position.y = .7; torso.add(head);
   const back = new THREE.Mesh(new THREE.SphereGeometry(.125, 20, 14), suitM); back.scale.set(1, 1.12, 1.05); back.position.z = -.02; back.castShadow = true; head.add(back);
-  const front = new THREE.Mesh(new THREE.SphereGeometry(.12, 22, 16, -Math.PI * .42, Math.PI * .84, .12, Math.PI * .78), maskMeshM);
+  const front = new THREE.Mesh(new THREE.SphereGeometry(.12, 22, 16, Math.PI * .08, Math.PI * .84, .12, Math.PI * .78), maskMeshM);
   front.scale.set(1.04, 1.2, 1); front.position.z = .035; head.add(front);
   const rim = new THREE.Mesh(new THREE.TorusGeometry(.12, .012, 6, 24, Math.PI * 1.1), suitShade);
   rim.rotation.set(0, Math.PI / 2, Math.PI / 2 + .3); rim.scale.set(1.1, 1.25, 1); rim.position.set(0, .0, .04); head.add(rim);
@@ -579,7 +579,7 @@ function makeFencer(stripe) {
   const elR = limb(.27, .047, suitM); shR.userData.end.add(elR);
   const gloveR = new THREE.Mesh(new THREE.SphereGeometry(.052, 12, 10), shoeM); elR.userData.end.add(gloveR);
   const sword = makeSword(.88); sword.rotation.order = 'XYZ'; elR.userData.end.add(sword);
-  const tipGlow = glowSprite(0xff2040, .0); sword.userData.tip.add(tipGlow);
+  const tipGlow = glowSprite(0xff4a1a, .0); sword.userData.tip.add(tipGlow);
 
   const shL = limb(.29, .052, suitM); shL.position.set(.2, .5, 0); shL.rotation.order = 'YXZ'; torso.add(shL);
   const elL = limb(.26, .047, suitM); shL.userData.end.add(elL);
@@ -609,12 +609,13 @@ function poseFencer(f, p, t) {
   const span = (a, b) => .43 * Math.cos(a) + .45 * Math.cos(a + b);
   f.hips.position.y = Math.min(span(fh, fk), span(bh, bkn)) + .12 + bob;
   f.hips.position.z = L * .12;
-  f.torso.rotation.set(.08 + .3 * L - .22 * W - K * .5, .5 - .25 * L, 0);
+  const lean = .08 + .3 * L - .22 * W - K * .5;
+  f.torso.rotation.set(lean, .5 - .25 * L, 0);
   f.head.rotation.set(-.05 - .25 * L + .15 * W, -.4 + .2 * L, 0);
   // sword arm (compensate torso twist)
-  f.shR.rotation.set(-(1.1 + .42 * E) + .6 * W - .25 * R, -.42 + .22 * L + R * .5, -.08 + R * .35);
+  f.shR.rotation.set(-(1.12 + .4 * E) - lean * .9 + .6 * W - .25 * R, -.42 + .22 * L + R * .5, -.08 + R * .35);
   f.elR.rotation.set(-.62 * (1 - E) - .7 * W, 0, 0);
-  f.sword.rotation.set(-.18 * (1 - E) + .2 * W, 0, R * .9);
+  f.sword.rotation.set(-.12 * (1 - E) - .55 * E + .2 * W, 0, .14 * (1 - W) + R * .9);
   // back arm
   f.shL.rotation.set(.45 - .7 * L, 0, 1.15 - .6 * L);
   f.elL.rotation.set(0, 0, 1.35 - 1.2 * L);
@@ -1002,8 +1003,8 @@ function startGame() {
   D = DIFF[diffKey];
   G.mode = 'play'; G.score = [0, 0]; G.time = BOUT_TIME; G.overtime = false;
   G.stats = { atk: 0, hit: 0, parry: 0, perfect: 0, dodge: 0 };
-  lampOn = 0;
-  $('#time').classList.remove('ot');
+  lampOn = 0; G.lastSec = -1;
+  $('#time').classList.remove('ot'); $('#time').textContent = fmtTime(BOUT_TIME);
   $('#title').hidden = true; $('#result').hidden = true; $('#pause').hidden = true; $('#hud').hidden = false;
   if (murmur) murmur.gain.setTargetAtTime(.035, AC.currentTime, .5);
   updateScoreUI();
@@ -1112,7 +1113,7 @@ function render() {
   } else {
     poseFencer(opp, { lunge: O.lungeVis, ext: Math.max(O.lungeVis, O.st === 'stunned' ? .3 : 0), windup: O.windVis, parry: O.parryVis, recoil: O.recoil }, t);
   }
-  opp.tipGlow.scale.setScalar(O.windVis > 0 ? .1 + .12 * O.windVis + .04 * Math.sin(t * 40) : 0);
+  opp.tipGlow.scale.setScalar(O.windVis > 0 ? .14 + .18 * O.windVis + .05 * Math.sin(t * 40) : 0);
   // ---- camera ----
   let cx = P.x, cz = P.z, cy = 1.6;
   if (G.mode === 'title') {
