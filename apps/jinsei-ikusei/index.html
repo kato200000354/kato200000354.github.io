@@ -10,7 +10,7 @@
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
   html,body{width:100%;height:100%;overflow:hidden;background:#3b2c22;font-family:"Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;color:#3a3530;overscroll-behavior:none}
   button{font-family:inherit;color:inherit;border:none;background:none;cursor:pointer;touch-action:manipulation}
-  #stage{position:absolute;left:50%;top:50%;transform-origin:center center;overflow:hidden;background:linear-gradient(#e9d8c2,#d9c0a0)}
+  #stage{position:absolute;left:0;top:0;transform-origin:0 0;overflow:hidden;background:linear-gradient(#e9d8c2,#d9c0a0)}
   #stage.land{width:1536px;height:1024px}
   #stage.port{width:900px;height:1720px}
   #scene{position:absolute;left:0;top:0;display:block}
@@ -65,7 +65,7 @@
 
   /* bubble */
   #bubble{position:absolute;background:rgba(255,255,255,.96);border-radius:40px;padding:22px 30px;font-size:24px;line-height:1.5;font-weight:700;color:#3c4150;box-shadow:0 6px 18px rgba(80,50,20,.16);width:262px;transform-origin:20% 100%}
-  .land #bubble{left:440px;top:160px}
+  .land #bubble{left:730px;top:140px}
   .port #bubble{left:420px;top:262px;width:300px}
   #bubble:after{content:"";position:absolute;left:58px;bottom:-26px;width:30px;height:30px;background:rgba(255,255,255,.96);border-radius:50%}
   #bubble:before{content:"";position:absolute;left:44px;bottom:-46px;width:16px;height:16px;background:rgba(255,255,255,.96);border-radius:50%}
@@ -81,7 +81,7 @@
   .smallBtn{padding:8px 24px;border-radius:20px;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.15);font-size:20px;font-weight:700}
   #statList{display:grid;gap:4px}
   .port #statList{grid-template-columns:1fr 1fr;column-gap:36px}
-  .srow{display:flex;align-items:center;height:76px}
+  .srow{display:flex;align-items:center;height:70px}
   .port .srow{height:100px}
   .srow .si{font-size:40px;width:58px}
   .srow .sn{font-size:22px;font-weight:800;width:104px}
@@ -999,7 +999,7 @@ function renderActions(){
     wrap.querySelectorAll('.act').forEach(b=>b.onclick=()=>doAction(b.dataset.k));
   }
   wrap.querySelectorAll('.act').forEach(b=>{const a=ACTS[b.dataset.k];
-    b.classList.toggle('dis',S.hour>=22||(!a.heal&&S.energy<a.cost)||(a.heal&&S.energy>=100))});
+    b.classList.toggle('dis',!!(S.hour>=22||(!a.heal&&S.energy<a.cost)||(a.heal&&S.energy>=100)))});
 }
 function render(){
   if(!S)return;
@@ -1033,7 +1033,7 @@ function render(){
   // badges
   $('#mBadge').classList.toggle('on',S.missions.some(m=>!m.claimed&&missionProg(m)>=m.n));
   $('#aBadge').classList.toggle('on',!!S.albumNew);
-  $('#nextBtn').classList.toggle('glow',S.hour>=22||(S.energy<10&&S.hour>=18));
+  $('#nextBtn').classList.toggle('glow',!!(S.hour>=22||(S.energy<10&&S.hour>=18)));
 }
 
 /* ---------- idle chatter ---------- */
@@ -1055,7 +1055,8 @@ function fit(){
   stage.className=port?'port':'land';
   const W=port?900:1536,H=port?1720:1024;
   const s=Math.min(vw/W,vh/H);
-  stage.style.transform=`translate(-50%,-50%) scale(${s})`;
+  stage.style.left=((vw-W*s)/2)+'px';stage.style.top=((vh-H*s)/2)+'px';
+  stage.style.transform=`scale(${s})`;
 }
 window.addEventListener('resize',fit);
 
@@ -1075,7 +1076,7 @@ $('#bubble').onclick=()=>{if(S){hop();setFace('happy');sfx.tap();say(pick(['な�
 fit();
 const saved=load();
 if(saved&&saved.stats){S=Object.assign(newState(),saved);render();say(`おかえり！<br>${fmtDate(S.day)}の続きだよ`);
-  const ev=S.events.find(e=>e.day===S.day);if(ev&&!S.seenEvents.includes(ev.id+'@'+S.day)){}}
+  const ev=S.events.find(e=>e.day<=S.day);if(ev)queueModal(eventModal(ev));}
 else titleScreen();
 })();
 </script>
