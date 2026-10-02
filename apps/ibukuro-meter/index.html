@@ -1,0 +1,843 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#fff4f5">
+<title>胃袋メーター</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fff4f5;--card:#ffffff;--line:#f6dde2;--pink:#ec6f8f;--pink2:#f59bb2;--pinkSoft:#ffe4ea;--pinkPale:#fff0f3;
+  --text:#4b3a3d;--sub:#937f83;--green:#4fae8e;--greenSoft:#e3f5ee;--yellow:#fbe7a6;--yellowSoft:#fff6d8;--blue:#7cc3e6;--brown:#8a5a3c;
+  --r:18px;--shadow:0 4px 14px rgba(236,111,143,.10);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic",sans-serif;font-size:15px;line-height:1.55;min-height:100vh}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+input,textarea,select{font:inherit;color:inherit}
+.app{max-width:480px;margin:0 auto;padding:12px 16px calc(96px + env(safe-area-inset-bottom))}
+h1{font-size:24px;margin:0;letter-spacing:.04em}
+h2{font-size:16px;margin:0 0 8px;color:var(--pink);font-weight:700}
+.top{display:flex;align-items:center;gap:10px;padding:6px 0 12px}
+.top .ttl{flex:1}
+.top .sub{font-size:12px;color:var(--sub)}
+.iconbtn{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-size:20px;background:var(--card);box-shadow:var(--shadow)}
+.card{background:var(--card);border-radius:var(--r);padding:16px;margin:0 0 14px;box-shadow:var(--shadow);border:1px solid var(--line)}
+.card.pinkbg{background:linear-gradient(180deg,#fff,#fff3f6)}
+.row{display:flex;align-items:center;gap:10px}
+.between{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.muted{color:var(--sub);font-size:12px}
+.small{font-size:13px}
+.big{font-size:40px;font-weight:700;line-height:1.1}
+.big small{font-size:18px;font-weight:500}
+.accent{color:var(--pink)}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px 16px;border-radius:999px;background:var(--pink);color:#fff;font-weight:700;font-size:16px;box-shadow:0 4px 10px rgba(236,111,143,.3)}
+.btn:active{transform:scale(.98)}
+.btn.ghost{background:#fff;color:var(--pink);border:1.5px solid var(--pink2);box-shadow:none}
+.btn.yellow{background:var(--yellowSoft);color:var(--text);border:1.5px solid var(--yellow);box-shadow:none}
+.btn.sm{padding:8px 14px;font-size:14px;width:auto}
+.btn .plus{width:26px;height:26px;border-radius:50%;background:#fff;color:var(--pink);display:grid;place-items:center;font-size:20px;line-height:1}
+.pill{display:inline-block;padding:3px 12px;border-radius:999px;background:var(--pinkSoft);color:var(--pink);font-size:13px;font-weight:700}
+.pill.y{background:var(--yellowSoft);color:#a07a10}
+.pill.g{background:var(--greenSoft);color:var(--green)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tile{background:var(--pinkPale);border-radius:14px;padding:10px;text-align:center}
+.tile .v{font-size:24px;font-weight:700;color:var(--pink)}
+.list{border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.li{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);background:#fff;width:100%;text-align:left}
+.li:last-child{border-bottom:0}
+.li .t{font-weight:700;width:44px;flex:none;font-size:14px}
+.li .n{flex:1;min-width:0}
+.li .n div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.li .k{font-size:12px;color:var(--sub);flex:none}
+.empty{padding:18px;text-align:center;color:var(--sub);font-size:13px}
+.bubble{position:relative;background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:8px 12px;font-size:13px;text-align:center}
+.meterwrap{position:relative;display:flex;align-items:center;gap:4px}
+.meter{position:relative;flex:none}
+.meter .pct{position:absolute;left:0;right:0;top:52%;text-align:center;transform:translateY(-50%)}
+.meter .pct b{font-size:44px;line-height:1}
+.meter .pct span{font-size:18px;font-weight:700}
+.meter .pct .lb{display:block;font-size:12px;margin-top:2px}
+.avatar{position:relative;display:grid;place-items:center;border-radius:50%;background:var(--pinkPale);flex:none}
+.avatar .face{position:absolute;right:-4px;bottom:-4px;font-size:22px;background:#fff;border-radius:50%;width:32px;height:32px;display:grid;place-items:center;box-shadow:var(--shadow)}
+.bar{height:12px;border-radius:999px;background:var(--pinkSoft);overflow:hidden}
+.bar>i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--green),#7fd0a8);transition:width .6s}
+.bar.pk>i{background:linear-gradient(90deg,var(--pink),var(--pink2))}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav.tabs .in{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr)}
+nav.tabs button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 8px;font-size:10px;white-space:nowrap;letter-spacing:-.03em;color:var(--sub);border-radius:22px 22px 0 0}
+nav.tabs button .ic{height:26px;display:grid;place-items:center;font-size:21px;filter:grayscale(.6);opacity:.8}
+nav.tabs button.on{color:var(--pink);background:var(--pinkSoft);font-weight:700}
+nav.tabs button.on .ic{filter:none;opacity:1}
+.seg{display:flex;background:var(--pinkPale);border-radius:999px;padding:3px}
+.seg button{flex:1;padding:7px 4px;border-radius:999px;font-size:13px;color:var(--sub)}
+.seg button.on{background:#fff;color:var(--pink);font-weight:700;box-shadow:var(--shadow)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:6px 11px;border-radius:999px;background:#fff;border:1.5px solid var(--line);font-size:13px}
+.chip.on{background:var(--pinkSoft);border-color:var(--pink2);color:var(--pink);font-weight:700}
+.field{margin:0 0 14px}
+.field label.l{display:block;font-size:13px;font-weight:700;margin:0 0 6px}
+.inp{width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;background:#fff;font-size:16px}
+textarea.inp{min-height:70px;resize:vertical}
+.stepper{display:flex;align-items:center;gap:8px}
+.stepper button{width:40px;height:40px;border-radius:50%;background:var(--pinkSoft);color:var(--pink);font-size:20px;font-weight:700}
+.stepper input{text-align:center;flex:1}
+.dots{display:flex;gap:8px;align-items:center}
+.dots button{width:26px;height:26px;border-radius:50%;border:2px solid var(--pink2);background:#fff}
+.dots button.on{background:var(--pink);border-color:var(--pink)}
+.hearts button{font-size:26px;filter:grayscale(1);opacity:.35;width:auto;height:auto;border:0}
+.hearts button.on{filter:none;opacity:1;background:none}
+.swatches{display:flex;gap:10px}
+.swatches button{width:34px;height:34px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1.5px var(--line)}
+.swatches button.on{box-shadow:0 0 0 3px var(--pink)}
+.slider{width:100%;accent-color:var(--green)}
+.scale{display:flex;justify-content:space-between;font-size:11px;color:var(--sub)}
+.modalbg{position:fixed;inset:0;background:rgba(75,58,61,.35);z-index:50;display:flex;align-items:flex-end;justify-content:center}
+.modal{background:var(--bg);width:100%;max-width:480px;max-height:92vh;overflow:auto;border-radius:24px 24px 0 0;padding:18px 16px calc(20px + env(safe-area-inset-bottom));animation:up .25s ease}
+@keyframes up{from{transform:translateY(40px);opacity:0}}
+.modal .mh{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.modal .mh h3{margin:0;font-size:18px;color:var(--pink)}
+.toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--text);color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;z-index:60;max-width:90vw;text-align:center;animation:up .2s}
+.wv{animation:wv 3.5s linear infinite}
+@keyframes wv{to{transform:translateX(-50px)}}
+.bob{animation:bob 2.6s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-4px)}}
+/* garden */
+.garden{position:relative;border-radius:18px;padding:12px 10px 14px;background:radial-gradient(circle at 30% 20%,#d9f1c4,#bfe3a5 60%,#a9d78e);border:3px solid #fff;box-shadow:0 0 0 2px #e7d6c5,var(--shadow);display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.garden:before{content:"";position:absolute;left:6px;right:6px;bottom:4px;height:14px;background:repeating-linear-gradient(90deg,#fff 0 6px,transparent 6px 14px);opacity:.9;border-radius:3px}
+.plot{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding-bottom:4px;z-index:1}
+.plot .bed{position:relative;width:86px;height:58px;display:grid;place-items:end center}
+.plot .soil{position:absolute;left:6px;right:6px;bottom:0;height:24px;border-radius:50%;background:radial-gradient(ellipse at 50% 35%,#a87250,#7a4a2e)}
+.plot .pond{position:absolute;left:2px;right:2px;bottom:0;height:30px;border-radius:50%;background:radial-gradient(ellipse at 50% 40%,#bfe7f7,#6fbfe0);border:3px solid #f1efe8}
+.plot .crop{position:relative;z-index:1;font-size:26px;line-height:1;margin-bottom:10px;letter-spacing:-4px;white-space:nowrap}
+.plot .crop.s1{font-size:20px}
+.plot .crop.s3{font-size:26px}
+.plot .tag{background:#fffdf7;border-radius:8px;padding:1px 8px;font-size:12px;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.08);text-align:center;min-width:64px}
+.plot .tag .st{display:block;font-size:10px;letter-spacing:1px}
+.stages{display:grid;grid-template-columns:72px repeat(4,1fr);gap:4px;align-items:center;font-size:12px}
+.stages .sc{height:36px;display:grid;place-items:end center;position:relative}
+.stages .sc .soil,.stages .sc .pond{position:absolute;left:10%;right:10%;bottom:2px;height:12px;border-radius:50%}
+.stages .sc .soil{background:#8b5a3a}.stages .sc .pond{background:#8fd0ec}
+.stages .sc span{position:relative;z-index:1;font-size:16px;margin-bottom:6px;letter-spacing:-3px}
+.stages .sc.cur{background:var(--pinkPale);border-radius:10px}
+.pick{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.pick button{background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:6px 2px;font-size:11px;text-align:center}
+.pick button .e{font-size:24px;display:block}
+.pick button.on{border-color:var(--pink);background:var(--pinkPale);font-weight:700}
+.album{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px}
+.album .wk{flex:none;width:150px;background:var(--pinkPale);border-radius:14px;padding:8px}
+.album .mini{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:#c6e6ae;border-radius:10px;padding:6px;font-size:16px;text-align:center}
+/* rhythm */
+.tl{position:relative;padding-left:4px}
+.tl .ev{display:grid;grid-template-columns:50px 16px 1fr auto;gap:8px;align-items:start;padding:8px 0}
+.tl .dot{width:12px;height:12px;border-radius:50%;background:var(--pink);margin-top:5px;box-shadow:0 0 0 3px var(--pinkSoft)}
+.tl .gap{margin:2px 0 2px 58px;font-size:12px;color:var(--pink);background:var(--pinkPale);border-radius:999px;padding:4px 12px;display:inline-block}
+.minidots{display:inline-flex;gap:4px;vertical-align:middle}
+.minidots i{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--pink2)}
+.minidots i.on{background:var(--pink);border-color:var(--pink)}
+.bodychips{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.bodychips button{background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:8px 2px;text-align:center;font-size:13px;font-weight:700}
+.bodychips button .e{display:block;font-size:20px}
+.bodychips button small{display:block;font-weight:400;font-size:11px;color:var(--sub)}
+.bodychips button.lv1{background:var(--yellowSoft)}.bodychips button.lv2{background:var(--pinkSoft)}
+.datenav{display:flex;align-items:center;justify-content:space-between;background:#fff;border-radius:999px;padding:4px;border:1px solid var(--line);margin-bottom:12px}
+.datenav button{width:36px;height:36px;border-radius:50%;color:var(--pink);font-size:18px;font-weight:700}
+.datenav .d{flex:1;text-align:center;font-weight:700;background:var(--pinkSoft);border-radius:999px;padding:6px 0;margin:0 6px}
+.massage{width:180px;height:180px;margin:10px auto;border-radius:50%;background:var(--pinkPale);position:relative;border:2px dashed var(--pink2)}
+.massage .hand{position:absolute;left:50%;top:50%;width:150px;height:150px;margin:-75px 0 0 -75px;animation:spin 6s linear infinite}
+.massage .hand i{position:absolute;left:50%;top:-6px;margin-left:-14px;font-size:26px;font-style:normal}
+@keyframes spin{to{transform:rotate(360deg)}}
+.chart text{font-size:10px;fill:var(--sub)}
+.note{font-size:11px;color:var(--sub);text-align:center;margin:6px 0 0}
+.sectionnote{background:var(--pinkPale);border-radius:14px;padding:10px 12px;font-size:13px}
+.stomachbtn{display:flex;gap:10px;align-items:center;width:100%;text-align:left}
+.foot{font-size:11px;color:var(--sub);text-align:center;padding:8px 0 4px}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<nav class="tabs"><div class="in" id="tabs"></div></nav>
+<div id="modalRoot"></div>
+<script>
+'use strict';
+/* ============ データ ============ */
+const KEY = 'ibukuro-meter-v1';
+const DEF = {meals:[], urges:[], poops:[], feels:[], water:{}, body:{}, memos:{},
+  settings:{avatar:'girl', factor:1, lightTh:30, lieTh:35, waterGoal:2000}};
+function clone(o){return JSON.parse(JSON.stringify(o))}
+function load(){
+  try{
+    const s = JSON.parse(localStorage.getItem(KEY));
+    if(!s) return clone(DEF);
+    const d = clone(DEF);
+    for(const k in d) if(s[k]!==undefined) d[k] = k==='settings' ? Object.assign(d.settings, s.settings) : s[k];
+    return d;
+  }catch(e){return clone(DEF)}
+}
+let S = load();
+function save(){try{localStorage.setItem(KEY, JSON.stringify(S))}catch(e){}}
+const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+
+/* ============ ユーティリティ ============ */
+const MIN = 60000, HOUR = 3600000, DAY = 86400000;
+const esc = s => String(s??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2,'0');
+const hm = t => {const d=new Date(t);return pad(d.getHours())+':'+pad(d.getMinutes())};
+const dkey = t => {const d=new Date(t);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
+const dayStart = t => {const d=new Date(t);d.setHours(0,0,0,0);return d.getTime()};
+const WD = ['日','月','火','水','木','金','土'];
+const md = t => {const d=new Date(t);return (d.getMonth()+1)+'月'+d.getDate()+'日（'+WD[d.getDay()]+'）'};
+const mdShort = t => {const d=new Date(t);return (d.getMonth()+1)+'/'+d.getDate()};
+function dur(ms){
+  ms = Math.max(0, ms);
+  const h = Math.floor(ms/HOUR), m = Math.round((ms%HOUR)/MIN);
+  if(m===60) return (h+1)+'時間';
+  return h ? (m ? h+'時間'+m+'分' : h+'時間') : m+'分';
+}
+function toLocalInput(t){const d=new Date(t);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())}
+function weekStart(t){const d=new Date(t);d.setHours(0,0,0,0);d.setDate(d.getDate()-((d.getDay()+6)%7));return d.getTime()}
+function weekEnd(ws){const d=new Date(ws);d.setDate(d.getDate()+7);return d.getTime()}
+function mealSlot(t){const h=new Date(t).getHours();return h<5?'夜食':h<11?'朝食':h<15?'昼食':h<18?'間食':h<22?'夕食':'夜食'}
+const SLOT_ICON = {'朝食':'🍳','昼食':'🍱','間食':'🍰','夕食':'🍛','夜食':'🌙'};
+function toast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2200)}
+
+/* ============ 胃のモデル ============
+   固形は一定ペースで（約3.5kcal/分 ≒ 0.4%/分）、液体は半減期20分で胃から出ていく、という目安の計算。
+   factor が大きいほど消化がゆっくり（記録した体感で学習）。 */
+const SPLIT = {meal:[.75,.25], snack:[.85,.15], drink:[.1,.9]};
+const KIND_LABEL = {meal:'食事', snack:'間食', drink:'飲み物'};
+function mealLoad(m){const L=(m.kcal||0)*0.115; return m.kind==='drink' ? Math.max(8,L) : L}
+function simulate(meals, t0, t1){
+  const f = S.settings.factor, rate = 0.4/f, lk = Math.pow(.5, 1/(20*f));
+  const ms = meals.filter(m=>m.t>t0-MIN && m.t<=t1).sort((a,b)=>a.t-b.t);
+  let s=0, l=0, i=0; const out=[];
+  for(let t=t0; t<=t1; t+=MIN){
+    while(i<ms.length && ms[i].t<=t){const L=mealLoad(ms[i]);const sp=SPLIT[ms[i].kind]||SPLIT.meal;s+=L*sp[0];l+=L*sp[1];i++}
+    out.push({t, s, l, v:Math.min(100, s+l)});
+    s = Math.max(0, s-rate); l *= lk; if(l<.05) l=0;
+  }
+  return out;
+}
+function stomach(meals = S.meals, now = Date.now()){
+  now = Math.ceil(now/MIN)*MIN;
+  const back = 720, fwd = 720;
+  const sim = simulate(meals, now-back*MIN, now+fwd*MIN);
+  const cur = sim[back];
+  const find = th => {for(let i=back;i<sim.length;i++) if(sim[i].v < th) return sim[i].t; return null};
+  const past = meals.filter(m=>m.t<=now).sort((a,b)=>b.t-a.t);
+  return {now, sim, back, cur, v:cur.v, solid:cur.s, liquid:cur.l,
+    lightAt:find(S.settings.lightTh), lieAt:find(S.settings.lieTh), last:past[0]||null};
+}
+function loadLabel(v){return v>=80?'いっぱい':v>=55?'ややいっぱい':v>=30?'ふつう':v>=10?'軽め':'からっぽ'}
+function moodIdx(v){return v>=80?0:v>=55?1:v>=30?2:3}
+const MOOD_FACE = ['😣','😥','🙂','😊'];
+const MOOD_SAY = ['うっ…苦しい…','まだお腹にいる感じ…','だいぶ軽くなってきた！','すっきり〜♪'];
+const MOOD_BUBBLE = ['ちょっと休憩しよ〜','まだ消化中だよ〜','もう少しで軽くなるよ〜','いい感じ！'];
+
+/* ============ 食材ガーデン ============ */
+const CATS = [
+  {k:'mame', n:'まめ', e:'🫛', pond:false, tip:'お味噌汁に豆腐、納豆をプラス♪', say:['ここに何が育つかな','芽が出たよ！','あと一歩で実りそう！','さやがいっぱい！よく食べてるね♪']},
+  {k:'goma', n:'ごま・種実', e:'🥜', pond:false, tip:'ヨーグルトにナッツをトッピング', say:['ここに何が育つかな','芽が出たよ！','もう少しで実りそう♪','ごまが実った！']},
+  {k:'wakame', n:'わかめ', e:'🌿', pond:true, tip:'味噌汁やスープにわかめを♪', say:['池はまだ静か…','ゆらゆら芽が出たよ','わかめが伸びてきた！','わっさわさ！立派なわかめ']},
+  {k:'yasai', n:'やさい', e:'🥕', pond:false, tip:'サラダをもうひと皿♪', say:['ここに何が育つかな','芽が出たよ！','少しずつ大きく♪','野菜畑がにぎやか！']},
+  {k:'sakana', n:'さかな', e:'🐟', pond:true, tip:'焼き魚やツナ缶もOK', say:['池はまだ静か…','魚がちらっと見えた！','魚が泳いでるよ','魚がいっぱい！今週よく食べたね']},
+  {k:'kinoko', n:'きのこ', e:'🍄', pond:false, tip:'お味噌汁にきのこをプラス♪', say:['ここに何が育つかな','ちびきのこ発見！','きのこが増えてきた','きのこが立派に育った！']},
+  {k:'imo', n:'いも', e:'🍠', pond:false, tip:'ふかし芋や肉じゃがで♪', say:['ここに何が育つかな','おいもの葉っぱ！','モリモリ育ってる','もうすぐ収穫♪']},
+  {k:'nama', n:'生の食材', e:'🍎', pond:false, tip:'果物や生野菜をひとつ', say:['ここに何が育つかな','芽が出たよ！','実がつき始めた','フレッシュな実がいっぱい！']},
+  {k:'hakko', n:'発酵食品', e:'🫙', pond:false, tip:'納豆・ヨーグルト・味噌で', say:['ここに何が育つかな','発酵はじまり…','発酵パワー育ってる！','発酵パワーしっかり！素敵◎']},
+];
+const CAT = Object.fromEntries(CATS.map(c=>[c.k,c]));
+const STAGE_NAME = ['まだ登場してない','1回食べた','何回か食べた','今週よく食べた'];
+function stageOf(n){return n<=0?0:n===1?1:n<=3?2:3}
+function weekCounts(ws){
+  const we = weekEnd(ws), c = Object.fromEntries(CATS.map(x=>[x.k,0]));
+  for(const m of S.meals) if(m.t>=ws && m.t<we) for(const k of (m.cats||[])) if(k in c) c[k]++;
+  return c;
+}
+function cropHTML(cat, st){
+  if(st===0) return cat.pond ? '' : '<span style="font-size:14px;opacity:.6">・</span>';
+  if(st===1) return cat.pond ? (cat.k==='sakana'?'🫧':'🌱') : '🌱';
+  if(st===2) return (cat.pond && cat.k==='sakana') ? '🫧'+cat.e : '🌿'+cat.e;
+  return cat.e+cat.e+cat.e;
+}
+
+/* ============ プリセット ============ */
+const PRESETS = [
+  {n:'おにぎり（鮭）', kcal:200, kind:'meal', cats:['sakana'], e:'🍙'},
+  {n:'ごはん・ハンバーグ・サラダ・味噌汁', kcal:680, kind:'meal', cats:['yasai','nama','hakko','wakame'], e:'🍽️'},
+  {n:'焼き魚定食', kcal:600, kind:'meal', cats:['sakana','hakko','wakame'], e:'🐟'},
+  {n:'納豆ごはん', kcal:400, kind:'meal', cats:['mame','hakko'], e:'🍚'},
+  {n:'ラーメン', kcal:550, kind:'meal', cats:[], e:'🍜'},
+  {n:'パスタ', kcal:600, kind:'meal', cats:['yasai'], e:'🍝'},
+  {n:'パン', kcal:250, kind:'snack', cats:[], e:'🥐'},
+  {n:'サラダ', kcal:100, kind:'snack', cats:['yasai','nama'], e:'🥗'},
+  {n:'ヨーグルト', kcal:90, kind:'snack', cats:['hakko'], e:'🥛'},
+  {n:'フルーツ', kcal:80, kind:'snack', cats:['nama'], e:'🍎'},
+  {n:'お菓子', kcal:200, kind:'snack', cats:[], e:'🍪'},
+  {n:'カフェラテ（無糖）', kcal:80, kind:'drink', cats:[], e:'☕'},
+  {n:'ジュース', kcal:120, kind:'drink', cats:[], e:'🧃'},
+];
+const TEISHOKU = {
+  main:[{n:'焼き魚',e:'🐟',kcal:200,cats:['sakana']},{n:'鶏のから揚げ',e:'🍗',kcal:300,cats:[]},{n:'豆腐ハンバーグ',e:'🍘',kcal:250,cats:['mame']},{n:'お刺身',e:'🍣',kcal:150,cats:['sakana','nama']}],
+  side:[{n:'ひじき煮',e:'🥢',kcal:80,cats:['wakame','mame']},{n:'きんぴらごぼう',e:'🥕',kcal:90,cats:['yasai','goma']},{n:'おひたし',e:'🥬',kcal:40,cats:['yasai','goma']},{n:'納豆',e:'🫘',kcal:100,cats:['mame','hakko']},{n:'サラダ',e:'🥗',kcal:60,cats:['yasai','nama']},{n:'きのこソテー',e:'🍄',kcal:60,cats:['kinoko']}],
+  soup:[{n:'味噌汁',e:'🥣',kcal:40,cats:['hakko','wakame']},{n:'すまし汁',e:'🍵',kcal:20,cats:['wakame']},{n:'豚汁',e:'🍲',kcal:120,cats:['yasai','imo','hakko']},{n:'けんちん汁',e:'🫕',kcal:90,cats:['yasai','kinoko','imo']}],
+};
+
+/* ============ 絵 ============ */
+let svgN = 0;
+const ST_PATH = 'M92 6 L116 6 L116 38 C116 54 124 60 140 58 C172 54 192 78 190 108 C188 152 152 188 102 188 C72 188 52 176 42 164 L30 176 C20 184 6 176 13 164 L33 140 C22 118 28 94 48 82 C68 70 88 68 92 50 Z';
+function stomachSVG(pct, w, opt={}){
+  const id = 'st'+(++svgN);
+  const y = 188 - Math.max(0,Math.min(100,pct))/100*136;
+  let wave = 'M0 '+y;
+  for(let x=0;x<400;x+=50) wave += ' Q'+(x+12.5)+' '+(y-5)+' '+(x+25)+' '+y+' T'+(x+50)+' '+y;
+  wave += ' L400 200 L0 200 Z';
+  let bub = '';
+  if(pct>8){const n=Math.round(pct/12);for(let i=0;i<n;i++){const bx=40+((i*53)%140), by=y+10+((i*37)%Math.max(10,188-y-16));bub+=`<circle cx="${bx}" cy="${Math.min(by,180)}" r="${3+(i%3)*2}" fill="${i%2?'#fff':'#e04f74'}" opacity="${i%2?.6:.45}"/>`}}
+  let face = '';
+  if(opt.face){
+    const m = moodIdx(pct);
+    const mouth = m===3?'<path d="M104 132 Q112 142 120 132" stroke="#5a3a3f" stroke-width="3" fill="#e46" stroke-linecap="round"/>'
+      : m===2?'<path d="M104 134 Q112 140 120 134" stroke="#5a3a3f" stroke-width="3" fill="none" stroke-linecap="round"/>'
+      : m===1?'<path d="M104 136 L120 136" stroke="#5a3a3f" stroke-width="3" fill="none" stroke-linecap="round"/>'
+      : '<path d="M102 138 Q107 132 112 138 Q117 132 122 138" stroke="#5a3a3f" stroke-width="3" fill="none" stroke-linecap="round"/>';
+    const eyes = m===0?'<path d="M88 118 l8 4 l-8 4 M136 118 l-8 4 l8 4" stroke="#5a3a3f" stroke-width="3" fill="none" stroke-linecap="round"/>'
+      :'<ellipse cx="92" cy="122" rx="4.5" ry="6" fill="#5a3a3f"/><ellipse cx="132" cy="122" rx="4.5" ry="6" fill="#5a3a3f"/>';
+    face = eyes+'<ellipse cx="80" cy="136" rx="9" ry="5" fill="#ff8fab" opacity=".7"/><ellipse cx="144" cy="136" rx="9" ry="5" fill="#ff8fab" opacity=".7"/>'+mouth;
+  }
+  return `<svg viewBox="0 0 200 196" width="${w}" height="${w*0.98}" aria-hidden="true">
+  <defs><clipPath id="${id}"><path d="${ST_PATH}"/></clipPath>
+  <linearGradient id="${id}g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9fb7"/><stop offset="1" stop-color="#f06a8e"/></linearGradient></defs>
+  <path d="${ST_PATH}" fill="#fff4f6"/>
+  <g clip-path="url(#${id})"><g class="wv"><path d="${wave}" fill="url(#${id}g)" opacity=".92"/></g>${bub}</g>
+  <path d="${ST_PATH}" fill="none" stroke="#f3a5b8" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M60 92 C70 84 82 80 92 80" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round" opacity=".8"/>
+  ${face}</svg>`;
+}
+function gutSVG(w, status){
+  const col = ['#f590aa','#f6c85f','#ec6f8f'][status];
+  return `<svg viewBox="0 0 120 120" width="${w}" height="${w}" aria-hidden="true">
+  <path d="M28 28 H92 C104 28 104 44 92 44 H30 C18 44 18 60 30 60 H90 C102 60 102 76 90 76 H30 C18 76 18 92 30 92 H70 C82 92 86 104 74 108" fill="none" stroke="#f7b9c8" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  <path class="gutpath" data-col="${col}" d="M28 28 H92 C104 28 104 44 92 44 H30 C18 44 18 60 30 60 H90 C102 60 102 76 90 76 H30 C18 76 18 92 30 92 H70 C82 92 86 104 74 108" fill="none" stroke="#fde3ea" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <g class="gutdots"></g></svg>`;
+}
+const AVATARS = [{k:'girl',n:'女の子',e:'👩'},{k:'boy',n:'男の子',e:'👦'},{k:'penguin',n:'ペンギン',e:'🐧'},{k:'cat',n:'ねこ',e:'🐱'},{k:'ikun',n:'胃くん',e:''}];
+function avatarHTML(v, size=84){
+  const a = AVATARS.find(x=>x.k===S.settings.avatar)||AVATARS[0];
+  const m = moodIdx(v);
+  if(a.k==='ikun') return `<div class="avatar bob" style="width:${size}px;height:${size}px;background:none">${stomachSVG(v, size, {face:true})}</div>`;
+  return `<div class="avatar bob" style="width:${size}px;height:${size}px;font-size:${size*.58}px">${a.e}<span class="face">${MOOD_FACE[m]}</span></div>`;
+}
+
+/* ============ 画面 ============ */
+const UI = {tab:'home', day:Date.now(), ts:{main:null, side:[], soup:null}};
+const TABS = [
+  {k:'home', n:'ホーム', ic:()=> '🏠'},
+  {k:'stomach', n:'胃の様子', ic:()=> stomachSVG(40, 24)},
+  {k:'gut', n:'おなかのリズム', ic:()=> gutSVG(24, 0)},
+  {k:'garden', n:'食材ガーデン', ic:()=> '🌱'},
+  {k:'log', n:'記録', ic:()=> '📖'},
+];
+function renderTabs(){
+  document.getElementById('tabs').innerHTML = TABS.map(t=>`<button data-act="tab" data-k="${t.k}" class="${UI.tab===t.k?'on':''}"><span class="ic">${t.ic()}</span>${t.n}</button>`).join('');
+}
+function render(){
+  const v = VIEWS[UI.tab]();
+  document.getElementById('app').innerHTML = v;
+  renderTabs();
+  drawGutDots();
+}
+function drawGutDots(){
+  document.querySelectorAll('path.gutpath').forEach(p=>{
+    const g = p.parentNode.querySelector('.gutdots'); if(!g || !p.getTotalLength) return;
+    const L = p.getTotalLength(), col = p.dataset.col; let h='';
+    for(let i=1;i<=7;i++){const pt=p.getPointAtLength(L*i/8);h+=`<circle cx="${pt.x}" cy="${pt.y}" r="3.2" fill="${i%3===0?'#fff':col}"/>`}
+    g.innerHTML = h;
+  });
+}
+function mealRow(m){
+  return `<button class="li" data-act="editMeal" data-id="${m.id}"><span class="t">${hm(m.t)}</span><span class="n"><div><b>${esc(m.slot||mealSlot(m.t))}</b>　<span class="small">${esc(m.name)}</span></div>${m.cats&&m.cats.length?`<div class="muted">${m.cats.map(k=>CAT[k]?CAT[k].e:'').join(' ')}</div>`:''}</span><span class="k">約${m.kcal}kcal</span></button>`;
+}
+function lieBlock(st){
+  const ok = st.v < S.settings.lieTh;
+  const start = st.last ? st.last.t : st.now;
+  const total = (st.lieAt||st.now) - start;
+  const p = ok ? 100 : Math.max(3, Math.min(97, (st.now-start)/Math.max(1,total)*100));
+  return `<div class="card"><div class="between"><h2 style="margin:0">🛏️ 横になっていい目安</h2>${ok?'<span class="pill g">OK！</span>':''}</div>
+  <p class="small" style="margin:6px 0 10px">${ok?'いまは横になっても食べ物が上がりにくそうです。おやすみ前の目安にどうぞ。'
+    :`いまはまだ、横になるのはおすすめしません。<br>あと <b class="accent">${dur(st.lieAt-st.now)}</b> 待つと（${hm(st.lieAt)}ごろ）、横になっても食べ物が上がりにくくなります。`}</p>
+  <div class="bar"><i style="width:${p}%"></i></div>
+  <div class="between muted" style="margin-top:4px"><span>${ok?'':'まだ待ってね'}</span><span>${ok?'OK！':hm(st.lieAt)+' でOK'}</span></div></div>`;
+}
+function predText(st){
+  if(st.v < S.settings.lightTh) return 'いまは「軽い」状態です';
+  return `あと約${dur(st.lightAt-st.now)}で<br>いつもの「軽い」状態になりそうです`;
+}
+function bigMeter(st){
+  return `<div class="meterwrap">
+    <div class="meter">${stomachSVG(st.v, 200)}
+      <div class="pct"><b>${Math.round(st.v)}</b><span>%</span><span class="lb">胃の負担（推定）</span>
+      <span class="pill" style="margin-top:6px;background:#fff">${loadLabel(st.v)}</span></div></div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px">
+      <div class="bubble">${MOOD_BUBBLE[moodIdx(st.v)]}</div>${avatarHTML(st.v, 84)}
+    </div></div>`;
+}
+
+/* ---------- ホーム ---------- */
+function homeView(){
+  const st = stomach(), today = S.meals.filter(m=>dkey(m.t)===dkey(Date.now())).sort((a,b)=>b.t-a.t);
+  const g = gutState(), w = S.water[dkey(Date.now())]||0;
+  const wc = weekCounts(weekStart(Date.now())), grown = CATS.filter(c=>wc[c.k]>0).length;
+  return `<div class="top"><div style="width:52px">${stomachSVG(st.v,52,{face:true})}</div>
+    <div class="ttl"><h1>胃袋メーター</h1><div class="sub">食べたものと時間から、いまの胃の状態を見える化</div></div></div>
+  <div class="card pinkbg">
+    <div class="between"><h2 style="margin:0">いまの胃の状態</h2><span class="muted">${hm(Date.now())} 現在</span></div>
+    ${bigMeter(st)}
+    <div class="sectionnote" style="margin-top:8px">${st.last?`最終食事：<b>${dur(st.now-st.last.t)}前</b>（${hm(st.last.t)} ${esc(st.last.slot||mealSlot(st.last.t))}）<br>${predText(st)}`:'まだ食事の記録がありません。<br>食べたら「食事を記録する」から教えてね。'}</div>
+  </div>
+  <button class="btn" data-act="addMeal" style="margin-bottom:14px">食事を記録する <span class="plus">＋</span></button>
+  <div class="card"><h2>今日の記録</h2>
+    ${today.length?`<div class="list">${today.map(mealRow).join('')}</div><p class="muted" style="margin:6px 2px 0">合計 約${today.reduce((a,m)=>a+(+m.kcal||0),0)}kcal</p>`:'<div class="empty">今日の食事はまだありません</div>'}
+  </div>
+  ${lieBlock(st)}
+  <div class="grid2">
+    <button class="card" data-act="tab" data-k="gut" style="text-align:left;margin:0">
+      <div class="muted">おなかのリズム</div>
+      <div class="row" style="margin-top:4px">${gutSVG(44, g.status)}<div><b style="font-size:20px">${g.last?Math.floor(g.since/HOUR)+'時間':'—'}</b><div class="muted">${g.last?'最終排便から':'記録なし'}</div></div></div>
+      <span class="pill ${g.status===1?'y':''}" style="margin-top:6px">${g.label}</span>
+    </button>
+    <button class="card" data-act="tab" data-k="garden" style="text-align:left;margin:0">
+      <div class="muted">今週の食材ガーデン</div>
+      <div style="font-size:22px;margin:6px 0;letter-spacing:-2px">${CATS.filter(c=>wc[c.k]>0).map(c=>c.e).join('')||'🌱'}</div>
+      <span class="pill g">${grown} / 9 種類</span>
+    </button>
+  </div>
+  <div class="card" style="margin-top:14px"><div class="between"><h2 style="margin:0">💧 水分</h2><b>${(w/1000).toFixed(1)} / ${(S.settings.waterGoal/1000).toFixed(1)}L</b></div>
+    <div class="bar" style="margin:10px 0"><i style="width:${Math.min(100,w/S.settings.waterGoal*100)}%;background:linear-gradient(90deg,#7cc3e6,#a6dcf3)"></i></div>
+    <div class="row"><button class="btn ghost sm" data-act="water" data-ml="200" style="flex:1">＋コップ1杯</button><button class="btn ghost sm" data-act="water" data-ml="500" style="flex:1">＋ペットボトル</button><button class="btn ghost sm" data-act="water" data-ml="-200">−</button></div>
+  </div>
+  <div class="grid3" style="margin-top:4px">
+    <div class="tile"><div style="font-size:22px">🍽️</div><div class="small">「食べたい」と「からだの今」を両方見える化</div></div>
+    <div class="tile"><div style="font-size:22px">🌙</div><div class="small">夜遅い食事の判断に。逆流を予防！</div></div>
+    <div class="tile"><div style="font-size:22px">🚽</div><div class="small">排便も記録して体調の変化に気づける</div></div>
+  </div>
+  <p class="foot">※数値は推定値で、個人差があります。医療行為ではありません。<br>体調が悪いときは医師に相談してください。</p>`;
+}
+
+/* ---------- 胃の様子 ---------- */
+function forecastChart(st){
+  const W=320,H=140,pl=26,pr=8,pt=10,pb=22, span=360;
+  const pts = st.sim.slice(st.back-60, st.back+span+1);
+  const x = i => pl + i/(pts.length-1)*(W-pl-pr), y = v => pt + (1-v/100)*(H-pt-pb);
+  let d = pts.map((p,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(p.v).toFixed(1)).join(' ');
+  const area = d+` L${x(pts.length-1)} ${y(0)} L${x(0)} ${y(0)} Z`;
+  const nx = x(60), ty = y(S.settings.lightTh), ly = y(S.settings.lieTh);
+  let ticks=''; for(let h=0;h<=6;h+=2){const xi=x(60+h*60);ticks+=`<text x="${xi}" y="${H-6}" text-anchor="middle">${h?'+'+h+'h':'いま'}</text>`}
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="これから6時間の胃の負担の予測">
+    ${[0,50,100].map(v=>`<line x1="${pl}" x2="${W-pr}" y1="${y(v)}" y2="${y(v)}" stroke="#f6dde2"/><text x="${pl-4}" y="${y(v)+3}" text-anchor="end">${v}</text>`).join('')}
+    <line x1="${pl}" x2="${W-pr}" y1="${ty}" y2="${ty}" stroke="#4fae8e" stroke-dasharray="4 4"/>
+    <text x="${W-pr}" y="${ty-3}" text-anchor="end" style="fill:#4fae8e">軽い</text>
+    <path d="${area}" fill="#ffe4ea"/><path d="${d}" fill="none" stroke="#ec6f8f" stroke-width="2.5" stroke-linejoin="round"/>
+    <line x1="${nx}" x2="${nx}" y1="${pt}" y2="${H-pb}" stroke="#937f83" stroke-dasharray="2 3"/>
+    <circle cx="${nx}" cy="${y(st.v)}" r="4.5" fill="#ec6f8f" stroke="#fff" stroke-width="2"/>${ticks}</svg>`;
+}
+function stomachView(){
+  const st = stomach();
+  const tot = st.solid+st.liquid, sp = tot>0.5?Math.round(st.solid/tot*100):0;
+  const today = S.meals.filter(m=>dkey(m.t)===dkey(Date.now())).sort((a,b)=>b.t-a.t);
+  const f = S.settings.factor, pace = f>1.15?'ゆっくりめ':f<.87?'はやめ':'ふつう';
+  const steps = [0,60,120,180].map(mn=>st.last?Math.round(stomach(S.meals, st.last.t+mn*MIN).v):null);
+  return `<div class="top"><div class="ttl"><h1>胃の様子</h1><div class="sub">いまの胃の状態（推定）</div></div><button class="iconbtn" data-act="help">？</button></div>
+  <div class="card pinkbg">${bigMeter(st)}
+    <p style="text-align:center;margin:6px 0 0;font-weight:700">${MOOD_SAY[moodIdx(st.v)]}</p></div>
+  <div class="card"><h2>詳しい胃の状態（推定）</h2>
+    <div class="grid2">
+      <div class="tile"><div class="muted">推定胃負担</div><div class="v">${Math.round(st.v)}<small>%</small></div><div class="muted">（${loadLabel(st.v)}）</div></div>
+      <div class="tile"><div class="muted">最終食事から</div><div class="v" style="font-size:20px;color:var(--text)">${st.last?dur(st.now-st.last.t):'—'}</div><div class="muted">${st.last?hm(st.last.t)+' '+esc(st.last.slot||mealSlot(st.last.t)):''}</div></div>
+      <div class="tile"><div class="muted">消化の進み具合</div><div class="small">固形：<b>${tot>0.5?sp:0}%</b>　液体：<b>${tot>0.5?100-sp:0}%</b></div><div class="muted">いま胃にあるものの内訳</div></div>
+      <div class="tile"><div class="muted">予測</div><div class="small">${predText(st)}</div></div>
+    </div>
+    <h2 style="margin-top:16px">これから6時間の予測</h2>${forecastChart(st)}
+    <p class="note">※体調や日によって変わります　あなたの消化ペース：<b>${pace}</b></p>
+  </div>
+  ${st.last?`<div class="card"><h2>時間とともに胃の中身が変化</h2><p class="muted" style="margin:-4px 0 8px">最終食事（${hm(st.last.t)}）からの目安</p>
+    <div class="grid2" style="grid-template-columns:repeat(4,1fr);gap:4px;text-align:center">
+    ${steps.map((v,i)=>`<div><div class="muted">${i?i+'時間後':'食後すぐ'}</div>${stomachSVG(v,64)}<div style="font-weight:700;font-size:18px">${v}<small>%</small></div><div style="font-size:18px">${MOOD_FACE[moodIdx(v)]}</div></div>`).join('')}
+    </div><p class="note">※数値は推定値であり、個人差があります</p></div>`:''}
+  ${lieBlock(st)}
+  <div class="card"><h2>学習して、あなたの傾向を予測！</h2>
+    <p class="small" style="margin:0 0 10px">食後や寝る前に体の感覚を教えてもらうと、より正確に予測できるようになります。</p>
+    ${feelSlider('fl','軽さ','😌',['軽い','ふつう','重い'],2)}
+    ${feelSlider('fb','ふくらみ','🎈',['なし','','あり'],1)}
+    ${feelSlider('fn','気持ち悪さ','😖',['なし','','つらい'],0)}
+    <button class="btn" data-act="feel" style="margin-top:6px">記録して予測を更新する</button>
+    <p class="note">いまの予測 ${Math.round(st.v)}% と、あなたの体感をくらべて調整します（記録 ${S.feels.length} 回）</p>
+  </div>
+  <div class="card"><div class="between"><h2 style="margin:0">今日の記録</h2><button class="btn sm" data-act="addMeal">＋ 食事</button></div>
+    <div style="margin-top:10px">${today.length?`<div class="list">${today.map(mealRow).join('')}</div>`:'<div class="empty">今日の食事はまだありません</div>'}</div></div>`;
+}
+function feelSlider(id,label,e,sc,def){
+  return `<div class="field"><div class="row"><span style="font-size:22px">${e}</span><b class="small" style="width:72px">${label}</b>
+  <div style="flex:1"><input type="range" class="slider" id="${id}" min="0" max="4" step="1" value="${def}"><div class="scale"><span>${sc[0]}</span><span>${sc[1]}</span><span>${sc[2]}</span></div></div></div></div>`;
+}
+
+/* ---------- おなかのリズム ---------- */
+function gutState(){
+  const ps = [...S.poops].sort((a,b)=>b.t-a.t), last = ps[0]||null, now = Date.now();
+  const since = last ? now-last.t : 0;
+  const status = !last ? 0 : since<30*HOUR ? 0 : since<54*HOUR ? 1 : 2;
+  const label = !last ? '記録をはじめよう' : ['スムーズ','やや滞り気味','滞りあり'][status];
+  const iv = []; for(let i=0;i<Math.min(ps.length-1,10);i++) iv.push((ps[i].t-ps[i+1].t)/HOUR);
+  let cyc = null;
+  if(iv.length>=2){const mu=iv.reduce((a,b)=>a+b,0)/iv.length;const sd=Math.sqrt(iv.reduce((a,b)=>a+(b-mu)**2,0)/iv.length);cyc=[Math.max(1,Math.round(mu-sd/2)),Math.round(mu+sd/2)]}
+  return {last, since, status, label, cyc, dayN: last ? Math.floor((dayStart(now)-dayStart(last.t))/DAY)+1 : 0};
+}
+const BODY = [
+  {k:'hari',n:'張り',e:'🎈',lv:['なし','軽い','強い']},
+  {k:'pain',n:'腹痛',e:'😣',lv:['なし','少し','ある']},
+  {k:'naus',n:'吐き気',e:'🤢',lv:['なし','少し','ある']},
+  {k:'gas',n:'ガス',e:'💨',lv:['なし','少し','多い']},
+  {k:'app',n:'食欲',e:'🍚',lv:['普通','少ない','ない']},
+];
+function gutView(){
+  const g = gutState(), today = dkey(Date.now()), w = S.water[today]||0, goal = S.settings.waterGoal;
+  const since = g.last ? S.meals.filter(m=>m.t>g.last.t) : [];
+  const advice = g.status===0 ? (g.last?'いい調子です。この調子で水分もとってね':'便意を感じたら下のボタンから記録してみよう')
+    : g.status===1 ? '水分や食物繊維を意識して、腸をやさしく動かしましょう 🌿' : '無理せず、水分・食物繊維・軽い運動を。続くときは医師に相談を';
+  const body = S.body[today]||{};
+  const h = Math.floor(g.since/HOUR), m = Math.floor((g.since%HOUR)/MIN);
+  return `<div class="top"><div style="width:52px">${gutSVG(52,g.status)}</div><div class="ttl"><h1>おなかのリズム 💗</h1><div class="sub">腸の様子を見て、心地よい毎日へ</div></div></div>
+  <div class="card"><h2>腸のリズム</h2>
+    <div class="row" style="align-items:flex-start"><div style="flex:1">
+      <div class="muted">最終排便から</div>
+      ${g.last?`<div class="big">${h}<small>時間</small>${m}<small>分</small></div><div class="small">${g.dayN}日目（${hm(g.last.t)} ${mdShort(g.last.t)}）</div>`:'<div class="big" style="font-size:28px">— </div><div class="small">まだ記録がありません</div>'}
+    </div>${gutSVG(110,g.status)}</div>
+    <div class="sectionnote" style="margin-top:10px"><b class="accent">${g.label}</b>${g.last?'です':''}<br>${advice}</div>
+    <div class="row muted" style="justify-content:flex-end;gap:10px;margin-top:6px"><span>🩷 スムーズ</span><span>💛 やや滞り</span><span>❤️ 滞りあり</span></div>
+  </div>
+  <div class="card"><h2>この間にとった食事</h2>
+    <div class="row"><b style="font-size:28px">${since.length}</b><span>回</span><div style="flex:1;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">${since.slice(-5).map(x=>`<div style="text-align:center"><div style="font-size:22px">${SLOT_ICON[x.slot||mealSlot(x.t)]||'🍽️'}</div><div class="muted">${esc(x.slot||mealSlot(x.t))}</div></div>`).join('')}</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card" style="margin:0"><h2>💧 水分</h2><div style="font-size:22px;font-weight:700">${(w/1000).toFixed(1)}<span class="muted"> / ${(goal/1000).toFixed(1)}L</span></div>
+      <div class="bar" style="margin:8px 0"><i style="width:${Math.min(100,w/goal*100)}%;background:linear-gradient(90deg,#ec6f8f,#f59bb2)"></i></div>
+      <div class="muted">${w>=goal?'目標達成！':'あとコップ約'+Math.ceil((goal-w)/200)+'杯分'}</div>
+      <button class="btn ghost sm" data-act="water" data-ml="200" style="width:100%;margin-top:8px">＋コップ1杯</button></div>
+    <div class="card" style="margin:0"><h2>🕒 お通じのリズム</h2><div class="muted">平均サイクル（あなたの傾向）</div>
+      <div style="font-size:22px;font-weight:700;margin:4px 0">${g.cyc?`約 ${g.cyc[0]}〜${g.cyc[1]} 時間`:'—'}</div>
+      <div class="muted">${g.cyc?'便意を見送ると、次回まで長く空く傾向があります':'排便を3回以上記録すると表示されます'}</div></div>
+  </div>
+  <h2 style="margin:16px 4px 8px">今日の体の様子 <span class="muted" style="font-weight:400">タップで変更</span></h2>
+  <div class="bodychips" style="margin-bottom:14px">${BODY.map(b=>{const l=body[b.k]||0;return `<button class="lv${l}" data-act="body" data-k="${b.k}"><span class="e">${b.e}</span>${b.n}<small>${b.lv[l]}</small></button>`}).join('')}</div>
+  <div class="card pinkbg"><h2 style="text-align:center">便意を感じたらタップ！</h2>
+    <div class="grid2"><button class="btn" data-act="urge" data-go="1" style="font-size:14px;padding:12px 6px;border-radius:16px;flex-direction:column;gap:0">🚽 便意がきた！<small style="font-weight:400;font-size:12px">今すぐトイレへ</small></button>
+    <button class="btn yellow" data-act="urge" data-go="0" style="font-size:14px;padding:12px 6px;border-radius:16px;flex-direction:column;gap:0">🕒 便意がきたけど…<small style="font-weight:400;font-size:12px">今は行けない</small></button></div>
+    <button class="btn ghost sm" data-act="addPoop" style="margin:10px auto 0;display:flex">＋ 排便だけ記録する</button>
+  </div>
+  ${flowCard()}
+  <div class="card"><div class="between"><div><h2>今日のおなかケア</h2><div class="small">30秒マッサージでスッキリをサポート♪</div></div><span style="font-size:40px">🧘</span></div>
+    <button class="btn ghost" data-act="massage" style="margin-top:10px">おなかケアをみる ▶</button></div>
+  <div class="card"><h2>こんなときにおすすめ</h2><div class="small">・朝起きたあと<br>・食後30分以内<br>・便意を感じたとき<br>・リラックスできるタイミング</div>
+    <div class="bubble" style="margin-top:8px">がまんしないで、タイミングを大切にしてね 🌸</div></div>
+  <div class="card"><h2>腸の詰まり感って？</h2><p class="small" style="margin:0">腸の中に便やガスがたまると、おなかが重く感じたり、張ったりしやすくなります。水分・食物繊維・発酵食品・適度な運動を意識して、腸をやさしく動かしてあげましょう 🌿</p></div>`;
+}
+function flowCard(){
+  const d0 = dayStart(UI.day), d1 = d0+DAY;
+  const ev = [...S.urges.filter(u=>u.t>=d0&&u.t<d1).map(u=>({...u,type:'urge'})), ...S.poops.filter(p=>p.t>=d0&&p.t<d1).map(p=>({...p,type:'poop'}))].sort((a,b)=>a.t-b.t);
+  const dots = (n,max=5)=>'<span class="minidots">'+Array.from({length:max},(_,i)=>`<i class="${i<n?'on':''}"></i>`).join('')+'</span>';
+  let h='', prevU=null;
+  for(const e of ev){
+    if(e.type==='urge'){
+      if(prevU) h += `<div class="gap">前回から ${dur(e.t-prevU)} あいています</div>`;
+      prevU = e.t;
+      h += `<div class="ev"><b>${hm(e.t)}</b><span class="dot"></span><div><b>便意あり</b><div class="muted">強さ：${['','弱','やや弱','中','やや強','強'][e.s]} ${dots(e.s)}</div></div><div style="text-align:right"><span class="pill ${e.go?'':'y'}">${e.go?'トイレへ':'見送り'}</span><br><button class="muted" data-act="del" data-kind="urges" data-id="${e.id}">削除</button></div></div>`;
+    }else{
+      h += `<div class="ev"><b>${hm(e.t)}</b><span class="dot" style="background:var(--green);box-shadow:0 0 0 3px var(--greenSoft)"></span><div><b>排便した！</b><div class="muted">硬さ ${dots(e.hard,6)}　量 ${dots(e.amt,6)}</div><div class="muted">すっきり感 ${'💗'.repeat(e.ref)}${e.color?` <i style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${esc(e.color)};vertical-align:middle"></i>`:''}</div>${e.memo?`<div class="small">「${esc(e.memo)}」</div>`:''}</div><div style="text-align:right"><button class="muted" data-act="editPoop" data-id="${e.id}">編集</button></div></div>`;
+    }
+  }
+  return `<div class="card"><h2>今日のながれ</h2>
+    <div class="datenav"><button data-act="day" data-d="-1">‹</button><span class="d">${md(UI.day)}</span><button data-act="day" data-d="1">›</button></div>
+    <div class="tl">${h||'<div class="empty">この日の便意・排便の記録はありません</div>'}</div></div>`;
+}
+
+/* ---------- 食材ガーデン ---------- */
+function gardenView(){
+  const ws = weekStart(Date.now()), we = weekEnd(ws)-DAY, c = weekCounts(ws);
+  const low = CATS.map(x=>({...x,st:stageOf(c[x.k])})).sort((a,b)=>a.st-b.st || CATS.indexOf(a)-CATS.indexOf(b)).slice(0,3);
+  const order = ['mame','goma','wakame','yasai','hakko','sakana','kinoko','imo','nama'];
+  const today = dkey(Date.now());
+  return `<div class="top"><div class="ttl"><h1>🌸 食材ガーデン 🌱</h1><div class="sub">食べたもので、わたしの庭が育つよ</div></div><button class="iconbtn" data-act="gardenHelp">？</button></div>
+  <div style="text-align:center;margin-bottom:10px"><span class="pill" style="background:var(--pink);color:#fff;padding:5px 18px">今週のお庭（${mdShort(ws)}〜${mdShort(we)}）</span>
+  <div class="muted" style="margin-top:6px">毎日コンプリートしなくてOK！1週間かけて、わたしの庭を育てよう♪</div></div>
+  <div class="garden" style="margin-bottom:14px">${order.map(k=>{const cat=CAT[k],st=stageOf(c[k]);return `<button class="plot" data-act="plot" data-k="${k}"><div class="bed"><div class="${cat.pond?'pond':'soil'}"></div><div class="crop s${st}">${cropHTML(cat,st)}</div></div><div class="tag">${cat.n}<span class="st">${'●'.repeat(st)}${'○'.repeat(3-st)}</span></div></button>`}).join('')}</div>
+  <div class="card"><h2>💡 今日ひとつ足すなら？ <span class="muted" style="font-weight:400">（無理しなくて大丈夫◎）</span></h2>
+    <div class="grid3">${low.map(x=>`<button class="tile" data-act="quickCat" data-k="${x.k}"><div style="font-size:28px">${x.e}</div><div class="small">${x.tip}</div><span class="pill" style="margin-top:4px;font-size:11px">${x.n}</span></button>`).join('')}</div>
+    <p class="note">タップすると、その食材を食べた記録をつけられます</p></div>
+  ${teishokuCard()}
+  <div class="card"><h2>✨ 庭の育ち方（全食材共通の4段階）</h2>
+    <div class="grid2" style="grid-template-columns:repeat(4,1fr);gap:4px;text-align:center">${STAGE_NAME.map((n,i)=>`<div class="tile" style="padding:6px 2px"><div style="font-size:20px;height:28px">${['🟫','🌱','🌿','🥕🥕'][i]}</div><div style="font-size:11px">${['①','②','③','④'][i]} ${n}</div></div>`).join('')}</div>
+    <h2 style="margin-top:16px">今週の食材ガーデン</h2>
+    <div class="stages">${CATS.map(cat=>{const st=stageOf(c[cat.k]);return `<div class="small"><b>${cat.e} ${cat.n}</b><div class="muted">${c[cat.k]}回</div></div>`+[0,1,2,3].map(i=>`<div class="sc ${i===st?'cur':''}"><div class="${cat.pond?'pond':'soil'}"></div><span>${i?cropHTML(cat,i):''}</span></div>`).join('')}).join('')}</div>
+    <p class="note">※このお庭はイメージです。実際の栄養価や必要量を示すものではありません。</p></div>
+  ${albumCard()}
+  <div class="card"><h2>✏️ ひとことメモ</h2><p class="muted" style="margin:-4px 0 8px">今日の気づきや、うれしかったことを自由にメモしてみよう♪</p>
+    <textarea class="inp" id="memo" placeholder="例：きのこのお味噌汁がおいしかった！">${esc(S.memos[today]||'')}</textarea>
+    <button class="btn sm" data-act="saveMemo" style="margin-top:8px;margin-left:auto;display:flex">保存</button></div>
+  <div class="card"><h2>こんな時は、無理しなくて大丈夫◎</h2><div class="small">✔ 胃の調子がよくないとき<br>✔ 今日も食欲がないとき<br>✔ 同じものばかりだったとき<br>✔ お外ごはんが続いたとき</div>
+    <div class="row" style="margin-top:8px"><span style="font-size:36px">🐰</span><div class="bubble">がんばりすぎなくていいんだよ〜</div></div></div>
+  <div class="card pinkbg"><h2>💗 わたしを責めない食材ガーデン</h2><p class="small" style="margin:0">「足りない」と思うより、「今日も食べてくれてありがとう」の気持ちで、ゆるっと育てようね 🌱💕</p></div>`;
+}
+function teishokuCard(){
+  const t = UI.ts, sel = [t.main!=null?TEISHOKU.main[t.main]:null, ...t.side.map(i=>TEISHOKU.side[i]), t.soup!=null?TEISHOKU.soup[t.soup]:null].filter(Boolean);
+  const grow = {}; sel.forEach(x=>x.cats.forEach(k=>grow[k]=(grow[k]||0)+1));
+  const kcal = 240 + sel.reduce((a,x)=>a+x.kcal,0);
+  const pick = (arr,key,isOn)=>`<div class="pick">${arr.map((x,i)=>`<button class="${isOn(i)?'on':''}" data-act="ts" data-g="${key}" data-i="${i}"><span class="e">${x.e}</span>${x.n}</button>`).join('')}</div>`;
+  return `<div class="card"><h2>🍱 定食をつくってみよう！</h2><p class="muted" style="margin:-4px 0 10px">選んだ食材で、庭のどこが育つか見てみよう♪（ごはん付き）</p>
+    <div class="small" style="font-weight:700;margin-bottom:4px">① 主菜を選ぶ</div>${pick(TEISHOKU.main,'main',i=>t.main===i)}
+    <div class="small" style="font-weight:700;margin:10px 0 4px">② 小鉢を選ぶ（2つまで）</div>${pick(TEISHOKU.side,'side',i=>t.side.includes(i))}
+    <div class="small" style="font-weight:700;margin:10px 0 4px">③ 汁物を選ぶ</div>${pick(TEISHOKU.soup,'soup',i=>t.soup===i)}
+    <div class="sectionnote" style="margin-top:12px"><div class="between"><b>この定食で育つのは…</b><span class="muted">約${kcal}kcal</span></div>
+    <div style="margin-top:6px;font-size:13px">${Object.keys(grow).length?Object.entries(grow).map(([k,n])=>`<span style="display:inline-block;margin:2px 8px 2px 0">${CAT[k].e} ${CAT[k].n} ${'💗'.repeat(n)}</span>`).join(''):'<span class="muted">まだ選ばれていません</span>'}</div></div>
+    <button class="btn" data-act="tsSave" style="margin-top:10px;${sel.length?'':'opacity:.5'}" ${sel.length?'':'disabled'}>この定食を食べた！記録する</button></div>`;
+}
+function albumCard(){
+  const ws = weekStart(Date.now()); const weeks=[];
+  for(let i=0;i<8;i++){const w=ws-i*7*DAY;const d=new Date(ws);d.setDate(d.getDate()-7*i);const s=d.getTime();const c=weekCounts(s);if(i===0||Object.values(c).some(v=>v>0))weeks.push({s,c})}
+  return `<div class="card"><h2>📷 これまでのお庭アルバム</h2><div class="album">${weeks.map(w=>{
+    const top = CATS.slice().sort((a,b)=>w.c[b.k]-w.c[a.k])[0];
+    return `<div class="wk"><div class="muted" style="text-align:center">${mdShort(w.s)}〜${mdShort(w.s+6*DAY)}</div><div class="mini">${CATS.map(cat=>{const st=stageOf(w.c[cat.k]);return `<span>${st?cat.e:'🟫'}</span>`}).join('')}</div><div class="small" style="text-align:center;margin-top:4px">${w.c[top.k]?top.n+'がよく育った週♪':'これから育つよ'}</div></div>`}).join('')}</div>
+  <p class="note">ふり返ると、自分の“食べ方のくせ”が見えてくるかも！</p></div>`;
+}
+
+/* ---------- 記録 ---------- */
+function logView(){
+  const d0 = dayStart(UI.day), d1 = d0+DAY, k = dkey(UI.day);
+  const items = [
+    ...S.meals.filter(m=>m.t>=d0&&m.t<d1).map(m=>({t:m.t,e:SLOT_ICON[m.slot||mealSlot(m.t)]||'🍽️',n:`${m.slot||mealSlot(m.t)}：${m.name}`,s:`約${m.kcal}kcal・${KIND_LABEL[m.kind]||''}`,act:'editMeal',id:m.id})),
+    ...S.poops.filter(p=>p.t>=d0&&p.t<d1).map(p=>({t:p.t,e:'🚽',n:'排便',s:`すっきり感 ${'💗'.repeat(p.ref)}`,act:'editPoop',id:p.id})),
+    ...S.urges.filter(u=>u.t>=d0&&u.t<d1).map(u=>({t:u.t,e:'⏰',n:'便意'+(u.go?'（トイレへ）':'（見送り）'),s:'強さ '+u.s+'/5',act:'del',kind:'urges',id:u.id})),
+    ...S.feels.filter(f=>f.t>=d0&&f.t<d1).map(f=>({t:f.t,e:'📝',n:'体感の記録',s:`軽さ ${['軽い','やや軽い','ふつう','やや重い','重い'][f.light]}・予測 ${Math.round(f.pred)}%`,act:'del',kind:'feels',id:f.id})),
+  ].sort((a,b)=>a.t-b.t);
+  const w = S.water[k]||0, body = S.body[k];
+  // 週のまとめ
+  const ws = weekStart(UI.day), we = weekEnd(ws);
+  const wm = S.meals.filter(m=>m.t>=ws&&m.t<we), days = new Set(wm.map(m=>dkey(m.t))).size||1;
+  const wp = S.poops.filter(p=>p.t>=ws&&p.t<we).length;
+  const late = wm.filter(m=>{const h=new Date(m.t).getHours();return (h>=21||h<4)&&m.kind!=='drink'}).length;
+  const wc = weekCounts(ws);
+  return `<div class="top"><div class="ttl"><h1>記録</h1><div class="sub">ふり返りと設定</div></div></div>
+  <div class="datenav"><button data-act="day" data-d="-1">‹</button><span class="d">${md(UI.day)}</span><button data-act="day" data-d="1">›</button></div>
+  <div class="card"><h2>この日の記録</h2>
+    ${items.length?`<div class="list">${items.map(i=>`<div class="li"><span class="t">${hm(i.t)}</span><span style="font-size:20px">${i.e}</span><span class="n"><div><b class="small">${esc(i.n)}</b></div><div class="muted">${esc(i.s)}</div></span>${i.act==='del'?`<button class="muted" data-act="del" data-kind="${i.kind}" data-id="${i.id}">削除</button>`:`<button class="muted" data-act="${i.act}" data-id="${i.id}">編集</button>`}</div>`).join('')}</div>`:'<div class="empty">この日の記録はありません</div>'}
+    <div class="muted" style="margin-top:8px">💧 水分 ${(w/1000).toFixed(1)}L${body?'　｜　'+BODY.filter(b=>body[b.k]).map(b=>b.n+'：'+b.lv[body[b.k]]).join('、'):''}</div>
+    ${S.memos[k]?`<div class="sectionnote" style="margin-top:8px">✏️ ${esc(S.memos[k])}</div>`:''}
+    <div class="row" style="margin-top:10px"><button class="btn sm" data-act="addMeal" data-day="1" style="flex:1">＋ 食事</button><button class="btn ghost sm" data-act="addPoop" data-day="1" style="flex:1">＋ 排便</button></div>
+  </div>
+  <div class="card"><h2>📊 週のまとめ（${mdShort(ws)}〜${mdShort(we-DAY)}）</h2>
+    <div class="grid3">
+      <div class="tile"><div class="muted">食事</div><div class="v">${wm.length}<small>回</small></div></div>
+      <div class="tile"><div class="muted">1日平均</div><div class="v" style="font-size:18px">${Math.round(wm.reduce((a,m)=>a+(+m.kcal||0),0)/days)}<small>kcal</small></div></div>
+      <div class="tile"><div class="muted">排便</div><div class="v">${wp}<small>回</small></div></div>
+      <div class="tile"><div class="muted">夜遅い食事</div><div class="v">${late}<small>回</small></div></div>
+      <div class="tile"><div class="muted">育った食材</div><div class="v">${CATS.filter(c=>wc[c.k]>0).length}<small>/9</small></div></div>
+      <div class="tile"><div class="muted">体感記録</div><div class="v">${S.feels.filter(f=>f.t>=ws&&f.t<we).length}<small>回</small></div></div>
+    </div></div>
+  <div class="card"><h2>🎨 選べるアバター</h2>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px">${AVATARS.map(a=>`<button data-act="avatar" data-k="${a.k}" style="text-align:center;padding:6px;border-radius:14px;${S.settings.avatar===a.k?'background:var(--pinkSoft);font-weight:700':''}"><div style="font-size:36px;height:44px;display:grid;place-items:center">${a.e||stomachSVG(30,40,{face:true})}</div><div class="small">${a.n}</div></button>`).join('')}</div></div>
+  <div class="card"><h2>⚙️ 設定</h2>
+    <div class="field"><label class="l">水分の目標（L）</label><div class="seg">${[1500,2000,2500].map(v=>`<button class="${S.settings.waterGoal===v?'on':''}" data-act="waterGoal" data-v="${v}">${v/1000}L</button>`).join('')}</div></div>
+    <div class="field"><label class="l">消化ペース（学習結果）</label><div class="between small"><span>${S.settings.factor>1.15?'ゆっくりめ':S.settings.factor<.87?'はやめ':'ふつう'}（係数 ${S.settings.factor.toFixed(2)}）</span><button class="btn ghost sm" data-act="resetFactor">リセット</button></div></div>
+    <div class="field"><label class="l">データのバックアップ</label><div class="row"><button class="btn ghost sm" data-act="export" style="flex:1">書き出す</button><button class="btn ghost sm" data-act="import" style="flex:1">読み込む</button></div>
+      <p class="muted" style="margin:6px 0 0">データはこの端末のブラウザにだけ保存されます。機種変更の前に書き出しておくと安心です。</p></div>
+    <button class="btn ghost sm" data-act="wipe" style="color:#c44;border-color:#f0b8b8;width:100%">すべてのデータを消す</button></div>
+  <p class="foot">胃袋メーター ── あなたの毎日に寄り添い、やさしくサポートします。<br>※医療行為ではありません。体調が悪いときは医師に相談してください。</p>`;
+}
+const VIEWS = {home:homeView, stomach:stomachView, gut:gutView, garden:gardenView, log:logView};
+
+/* ============ モーダル ============ */
+function openModal(title, body, onMount){
+  const root = document.getElementById('modalRoot');
+  root.innerHTML = `<div class="modalbg" data-act="closeBg"><div class="modal" role="dialog" aria-label="${esc(title)}"><div class="mh"><h3>${esc(title)}</h3><button class="iconbtn" data-act="close" aria-label="閉じる">✕</button></div>${body}</div></div>`;
+  document.body.style.overflow='hidden';
+  if(onMount) onMount(root.querySelector('.modal'));
+}
+function closeModal(){document.getElementById('modalRoot').innerHTML='';document.body.style.overflow='';if(massageTimer){clearInterval(massageTimer);massageTimer=null}}
+
+let draft = null;
+function mealModal(m, presetCats, dayMode){
+  const base = dayMode && dkey(UI.day)!==dkey(Date.now()) ? dayStart(UI.day)+12*HOUR : Date.now();
+  draft = m ? clone(m) : {id:null, t:base, name:'', kcal:300, kind:'meal', cats:presetCats||[]};
+  openModal(m?'食事を編集':'食事を記録する', `
+    <div class="field"><label class="l">よく食べるもの（タップで入力）</label><div class="chips">${PRESETS.map((p,i)=>`<button class="chip" data-act="preset" data-i="${i}">${p.e} ${p.n}</button>`).join('')}</div></div>
+    <div class="field"><label class="l">食べたもの</label><input class="inp" id="mName" value="${esc(draft.name)}" placeholder="例：ごはん・ハンバーグ・サラダ"></div>
+    <div class="field"><label class="l">カロリーの目安（kcal）</label><div class="stepper"><button data-act="kcal" data-d="-50">−</button><input class="inp" id="mKcal" type="number" inputmode="numeric" value="${draft.kcal}"><button data-act="kcal" data-d="50">＋</button></div></div>
+    <div class="field"><label class="l">種類</label><div class="seg" id="mKind">${Object.entries(KIND_LABEL).map(([k,n])=>`<button data-act="kind" data-k="${k}" class="${draft.kind===k?'on':''}">${n}</button>`).join('')}</div></div>
+    <div class="field"><label class="l">食べた時間</label><input class="inp" id="mTime" type="datetime-local" value="${toLocalInput(draft.t)}"></div>
+    <div class="field"><label class="l">入っていた食材（食材ガーデンが育つよ🌱）</label><div class="chips" id="mCats">${CATS.map(c=>`<button class="chip ${draft.cats.includes(c.k)?'on':''}" data-act="cat" data-k="${c.k}">${c.e} ${c.n}</button>`).join('')}</div></div>
+    <div class="sectionnote" id="mPrev" style="margin-bottom:12px"></div>
+    <button class="btn" data-act="saveMeal">${m?'保存する':'記録する'}</button>
+    ${m?'<button class="btn ghost" data-act="delMeal" style="margin-top:8px">この記録を削除</button>':''}`,
+  ()=>{
+    ['mName','mKcal','mTime'].forEach(id=>document.getElementById(id).addEventListener('input', mealPreview));
+    mealPreview();
+  });
+}
+function readMealForm(){
+  draft.name = document.getElementById('mName').value.trim();
+  draft.kcal = Math.max(0, Math.round(+document.getElementById('mKcal').value||0));
+  const tv = document.getElementById('mTime').value; const t = tv ? new Date(tv).getTime() : NaN;
+  if(!isNaN(t)) draft.t = t;
+}
+function mealPreview(){
+  readMealForm();
+  const others = S.meals.filter(x=>x.id!==draft.id);
+  const now = Date.now();
+  const before = stomach(others, now).v;
+  const after = stomach([...others, {...draft}], now).v;
+  const imm = draft.t<=now ? (()=>{const a=stomach(others, draft.t).v,b=stomach([...others,{...draft}], draft.t).v;return [a,b]})() : null;
+  const el = document.getElementById('mPrev'); if(!el) return;
+  el.innerHTML = draft.t>now ? 'これからの予定として記録されます'
+    : `<div class="row" style="justify-content:center;gap:14px">${stomachSVG(before,50)}<span class="accent" style="font-size:20px">→</span>${stomachSVG(after,50)}</div>
+    <div style="text-align:center">いまの胃の負担 <b>${Math.round(before)}%</b> → <b class="accent">${Math.round(after)}%</b>${imm&&now-draft.t>10*MIN?`<div class="muted">（食べた直後は ${Math.round(imm[0])}% → ${Math.round(imm[1])}%）</div>`:''}</div>`;
+}
+
+function poopModal(p, urgeId, dayMode){
+  const base = dayMode && dkey(UI.day)!==dkey(Date.now()) ? dayStart(UI.day)+12*HOUR : Date.now();
+  draft = p ? clone(p) : {id:null, t:base, hard:3, amt:3, ref:3, color:'#a0673f', memo:'', urge:urgeId||null};
+  const COLORS = ['#4a2c1a','#6b3f22','#a0673f','#d39b6a','#e8bf8f'];
+  const dots = (k,max,lo,hi)=>`<div class="dots" data-k="${k}">${Array.from({length:max},(_,i)=>`<button class="${i<draft[k]?'on':''}" data-act="pd" data-k="${k}" data-v="${i+1}" aria-label="${i+1}"></button>`).join('')}</div><div class="scale" style="max-width:${max*34}px"><span>${lo}</span><span>${hi}</span></div>`;
+  openModal(p?'排便の記録を編集':'排便の記録', `
+    <div class="field"><label class="l">硬さ</label>${dots('hard',6,'やわらかい','かたい')}</div>
+    <div class="field"><label class="l">量</label>${dots('amt',6,'少ない','多い')}</div>
+    <div class="field"><label class="l">すっきり感</label><div class="dots hearts">${[1,2,3,4,5].map(i=>`<button class="${i<=draft.ref?'on':''}" data-act="pd" data-k="ref" data-v="${i}">💗</button>`).join('')}</div></div>
+    <div class="field"><label class="l">色の目安（参考）</label><div class="swatches">${COLORS.map(c=>`<button class="${draft.color===c?'on':''}" style="background:${c}" data-act="pcol" data-c="${c}" aria-label="色"></button>`).join('')}</div></div>
+    <div class="field"><label class="l">時間</label><input class="inp" id="pTime" type="datetime-local" value="${toLocalInput(draft.t)}"></div>
+    <div class="field"><label class="l">メモ（任意）</label><input class="inp" id="pMemo" value="${esc(draft.memo)}" placeholder="例：スッキリした！ 出にくかった など"></div>
+    <button class="btn" data-act="savePoop">記録する</button>
+    ${p?'<button class="btn ghost" data-act="delPoop" style="margin-top:8px">この記録を削除</button>':''}`);
+}
+function rerenderPoopModal(){
+  document.querySelectorAll('[data-act="pd"]').forEach(b=>{const k=b.dataset.k,v=+b.dataset.v;b.classList.toggle('on',v<=draft[k])});
+  document.querySelectorAll('[data-act="pcol"]').forEach(b=>b.classList.toggle('on',b.dataset.c===draft.color));
+}
+function urgeModal(go){
+  draft = {s:3, go};
+  openModal(go?'便意がきた！':'便意がきたけど…', `
+    <div class="field"><label class="l">便意の強さ</label><div class="dots">${[1,2,3,4,5].map(i=>`<button class="${i<=3?'on':''}" data-act="us" data-v="${i}"></button>`).join('')}</div><div class="scale" style="max-width:170px"><span>弱</span><span>強</span></div></div>
+    ${go?`<p class="small">トイレに行ったら、結果を教えてね。</p>
+      <div class="grid2"><button class="btn" data-act="urgeSave" data-r="poop">排便した！</button><button class="btn ghost" data-act="urgeSave" data-r="none">出なかった</button></div>
+      <button class="btn yellow sm" data-act="urgeSave" data-r="later" style="margin:10px auto 0;display:flex">あとで記録する</button>`
+    :`<p class="small">見送った記録も、あなたのリズムを知るヒントになります。<br>がまんしすぎず、行けるタイミングで行ってね 🌸</p><button class="btn" data-act="urgeSave" data-r="skip">見送りとして記録</button>`}`);
+}
+let massageTimer = null;
+function massageModal(){
+  let left = 30;
+  openModal('30秒おなかケア', `<p class="small" style="margin-top:0">おへそを中心に、手のひらで「の」の字を描くように、時計まわりにやさしくさすりましょう。</p>
+    <div class="massage"><div class="hand"><i>🖐️</i></div><div style="position:absolute;inset:0;display:grid;place-items:center;font-size:40px;font-weight:700;color:var(--pink)" id="msec">30</div></div>
+    <p class="note">ゆっくり深呼吸しながら、力を入れすぎないでね</p>
+    <button class="btn" data-act="close" style="margin-top:12px">おわる</button>`);
+  massageTimer = setInterval(()=>{left--;const el=document.getElementById('msec');if(!el){clearInterval(massageTimer);return}
+    el.textContent = left>0?left:'✨'; if(left<=0){clearInterval(massageTimer);massageTimer=null;toast('おつかれさま！おなかがポカポカ♪')}},1000);
+}
+
+/* ============ 操作 ============ */
+const ACT = {
+  tab(el){UI.tab=el.dataset.k;if(UI.tab==='gut'||UI.tab==='log')UI.day=Date.now();render();scrollTo(0,0)},
+  day(el){UI.day+=(+el.dataset.d)*DAY; if(UI.day>Date.now()) UI.day=Date.now(); render()},
+  close(){closeModal()},
+  closeBg(el,e){if(e.target===el) closeModal()},
+  addMeal(el){mealModal(null,null,!!el.dataset.day)},
+  editMeal(el){const m=S.meals.find(x=>x.id===el.dataset.id); if(m) mealModal(m)},
+  preset(el){const p=PRESETS[+el.dataset.i];draft.name=p.n;draft.kind=p.kind;draft.cats=[...p.cats];
+    document.getElementById('mName').value=p.n;document.getElementById('mKcal').value=p.kcal;
+    document.querySelectorAll('#mKind button').forEach(b=>b.classList.toggle('on',b.dataset.k===p.kind));
+    document.querySelectorAll('#mCats button').forEach(b=>b.classList.toggle('on',draft.cats.includes(b.dataset.k)));mealPreview()},
+  kcal(el){const i=document.getElementById('mKcal');i.value=Math.max(0,(+i.value||0)+(+el.dataset.d));mealPreview()},
+  kind(el){draft.kind=el.dataset.k;document.querySelectorAll('#mKind button').forEach(b=>b.classList.toggle('on',b===el));mealPreview()},
+  cat(el){const k=el.dataset.k;draft.cats=draft.cats.includes(k)?draft.cats.filter(x=>x!==k):[...draft.cats,k];el.classList.toggle('on')},
+  saveMeal(){readMealForm();
+    if(!draft.name){draft.name={meal:'食事',snack:'間食',drink:'飲み物'}[draft.kind]}
+    draft.slot = draft.kind==='drink'?'飲み物':mealSlot(draft.t);
+    const isNew=!draft.id;
+    if(isNew){draft.id=uid();S.meals.push(draft)} else {const i=S.meals.findIndex(x=>x.id===draft.id);S.meals[i]=draft}
+    save();closeModal();render();
+    const grown=draft.cats.map(k=>CAT[k].e).join('');
+    toast(isNew?(grown?'記録しました！ガーデンに '+grown+' が育つよ':'記録しました！'):'保存しました')},
+  delMeal(){if(!confirm('この食事の記録を削除しますか？'))return;S.meals=S.meals.filter(x=>x.id!==draft.id);save();closeModal();render()},
+  water(el){const k=dkey(Date.now());S.water[k]=Math.max(0,(S.water[k]||0)+(+el.dataset.ml));save();render();if(+el.dataset.ml>0)toast('💧 +'+el.dataset.ml+'ml')},
+  body(el){const k=dkey(Date.now()),b=S.body[k]||(S.body[k]={});b[el.dataset.k]=((b[el.dataset.k]||0)+1)%3;save();render()},
+  urge(el){urgeModal(el.dataset.go==='1')},
+  us(el){draft.s=+el.dataset.v;el.parentNode.querySelectorAll('button').forEach((b,i)=>b.classList.toggle('on',i<draft.s))},
+  urgeSave(el){const r=el.dataset.r;const u={id:uid(),t:Date.now(),s:draft.s,go:draft.go?1:0,result:r};S.urges.push(u);save();
+    if(r==='poop'){poopModal(null,u.id)}else{closeModal();render();toast(r==='skip'?'見送りを記録しました':r==='none'?'記録しました。また来たら教えてね':'便意を記録しました')}},
+  addPoop(el){poopModal(null,null,!!el.dataset.day)},
+  editPoop(el){const p=S.poops.find(x=>x.id===el.dataset.id);if(p)poopModal(p)},
+  pd(el){draft[el.dataset.k]=+el.dataset.v;rerenderPoopModal()},
+  pcol(el){draft.color=el.dataset.c;rerenderPoopModal()},
+  savePoop(){const tv=document.getElementById('pTime').value;const t=tv?new Date(tv).getTime():NaN;if(!isNaN(t))draft.t=t;
+    draft.memo=document.getElementById('pMemo').value.trim();
+    if(!draft.id){draft.id=uid();S.poops.push(draft)}else{const i=S.poops.findIndex(x=>x.id===draft.id);S.poops[i]=draft}
+    save();closeModal();UI.day=draft.t;render();toast('記録しました。おつかれさま！')},
+  delPoop(){if(!confirm('この排便の記録を削除しますか？'))return;S.poops=S.poops.filter(x=>x.id!==draft.id);save();closeModal();render()},
+  del(el){if(!confirm('この記録を削除しますか？'))return;const k=el.dataset.kind;S[k]=S[k].filter(x=>x.id!==el.dataset.id);save();render()},
+  feel(){
+    const light=+document.getElementById('fl').value, bloat=+document.getElementById('fb').value, naus=+document.getElementById('fn').value;
+    const st=stomach(), pred=st.v;
+    const target=[8,22,42,62,82][light]+bloat*2;
+    let f=S.settings.factor, msg='';
+    if(Math.abs(target-pred)>12 && (st.last && st.now-st.last.t<8*HOUR)){
+      f=f*(1+0.25*(target-pred)/100); f=Math.max(.6,Math.min(1.8,f));
+      msg = target>pred ? '思ったより重いんだね。消化をゆっくりめに予測します' : '思ったより軽いんだね。消化をはやめに予測します';
+    }else msg='予測と体感がだいたい合っています◎';
+    S.settings.factor=+f.toFixed(3);
+    S.feels.push({id:uid(),t:Date.now(),light,bloat,naus,pred});
+    save();render();toast(msg);
+    if(naus>=3) setTimeout(()=>toast('気持ち悪さが強いときは、無理せず休んでね'),2400);
+  },
+  avatar(el){S.settings.avatar=el.dataset.k;save();render()},
+  waterGoal(el){S.settings.waterGoal=+el.dataset.v;save();render()},
+  resetFactor(){S.settings.factor=1;save();render();toast('消化ペースを「ふつう」に戻しました')},
+  ts(el){const g=el.dataset.g,i=+el.dataset.i,t=UI.ts;
+    if(g==='side'){t.side=t.side.includes(i)?t.side.filter(x=>x!==i):(t.side.length>=2?[t.side[1],i]:[...t.side,i])}
+    else t[g]=t[g]===i?null:i; render()},
+  tsSave(){const t=UI.ts;const sel=[t.main!=null?TEISHOKU.main[t.main]:null,...t.side.map(i=>TEISHOKU.side[i]),t.soup!=null?TEISHOKU.soup[t.soup]:null].filter(Boolean);
+    if(!sel.length)return;const cats=[...new Set(sel.flatMap(x=>x.cats))];
+    const m={id:uid(),t:Date.now(),name:'定食（ごはん・'+sel.map(x=>x.n).join('・')+'）',kcal:240+sel.reduce((a,x)=>a+x.kcal,0),kind:'meal',cats};
+    m.slot=mealSlot(m.t);S.meals.push(m);UI.ts={main:null,side:[],soup:null};save();render();toast('記録しました！庭が育ったよ '+cats.map(k=>CAT[k].e).join(''))},
+  quickCat(el){mealModal(null,[el.dataset.k])},
+  plot(el){const cat=CAT[el.dataset.k],c=weekCounts(weekStart(Date.now()))[cat.k],st=stageOf(c);
+    openModal(cat.e+' '+cat.n, `<div style="text-align:center"><div class="plot" style="margin:0 auto;width:120px"><div class="bed" style="transform:scale(1.4);margin:20px 0"><div class="${cat.pond?'pond':'soil'}"></div><div class="crop s${st}">${cropHTML(cat,st)}</div></div></div>
+      <p><b>今週 ${c} 回</b>（${STAGE_NAME[st]}）</p><div class="bubble">${cat.say[st]}</div><p class="small">ヒント：${cat.tip}</p></div>
+      <button class="btn" data-act="quickCat" data-k="${cat.k}">${cat.n}を食べた記録をつける</button>`)},
+  gardenHelp(){openModal('食材ガーデンって？',`<p class="small">食事を記録するときに「入っていた食材」を選ぶと、今週のお庭の区画が育ちます。</p><p class="small">0回：まだ登場してない → 1回：芽が出た → 2〜3回：大きくなってきた → 4回以上：よく食べた！</p><p class="small">お庭は毎週月曜日に新しくなり、前の週は「アルバム」に残ります。</p><p class="muted">※このお庭はイメージです。実際の栄養価や必要量を示すものではありません。</p>`)},
+  help(){openModal('胃の負担（推定）の考え方',`<p class="small">記録したカロリーと種類から、胃にどれくらい入っているかを推定しています。</p><p class="small">・固形のものは、一定のペース（約3〜4kcal/分）で少しずつ腸へ送られる<br>・飲み物は早めに（半分になるまで約20分）出ていく<br>・「学習」で体感を記録すると、あなたのペースに合わせて調整されます</p><p class="small">「横になっていい目安」は、胃の負担が${S.settings.lieTh}%を下回るまでの時間です。一般的に、食後は2〜3時間あけてから横になると逆流しにくいと言われています。</p><p class="muted">※あくまで目安で、医療的な判断ではありません。</p>`)},
+  massage(){massageModal()},
+  saveMemo(){const k=dkey(Date.now()),v=document.getElementById('memo').value.trim();if(v)S.memos[k]=v;else delete S.memos[k];save();toast('メモを保存しました ✏️')},
+  export(){const blob=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ibukuro-meter-'+dkey(Date.now())+'.json';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)},
+  import(){const i=document.createElement('input');i.type='file';i.accept='application/json,.json';i.onchange=()=>{const f=i.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!d||!Array.isArray(d.meals))throw 0;if(!confirm('いまのデータを読み込んだデータで置きかえますか？'))return;localStorage.setItem(KEY,JSON.stringify(d));S=load();render();toast('読み込みました')}catch(e){toast('読み込めないファイルでした')}};r.readAsText(f)};i.click()},
+  wipe(){if(!confirm('すべての記録を消します。元に戻せません。よろしいですか？'))return;S=clone(DEF);save();render();toast('データを消しました')},
+};
+document.addEventListener('click', e=>{
+  const el = e.target.closest('[data-act]'); if(!el) return;
+  const f = ACT[el.dataset.act]; if(!f) return;
+  if(el.dataset.act==='closeBg' && e.target!==el) return;
+  f(el, e);
+});
+document.addEventListener('keydown', e=>{if(e.key==='Escape') closeModal()});
+
+/* 1分ごとにメーターを更新（入力中・モーダル表示中は止める） */
+setInterval(()=>{
+  if(document.getElementById('modalRoot').innerHTML) return;
+  const a = document.activeElement; if(a && (a.tagName==='TEXTAREA'||a.tagName==='INPUT')) return;
+  render();
+}, 60000);
+document.addEventListener('visibilitychange', ()=>{if(!document.hidden && !document.getElementById('modalRoot').innerHTML) render()});
+render();
+</script>
+</body>
+</html>
