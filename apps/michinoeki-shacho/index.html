@@ -1,0 +1,874 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#1d3a78">
+<title>にっぽん鉄道社長</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#1d3a78;--navy2:#132a5c;--red:#e8455a;--ink:#1b1b1b}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{width:100%;height:100%;overflow:hidden;background:#3a9be2;font-family:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Yu Gothic UI","Meiryo",sans-serif;color:var(--ink);overscroll-behavior:none;user-select:none;-webkit-user-select:none}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;touch-action:manipulation}
+input{font-family:inherit}
+#map{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#map text{font-family:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Meiryo",sans-serif}
+.lbl{font-weight:900;font-size:19px;text-anchor:middle;fill:#1b1b1b}
+.stt{font-weight:900;font-size:15px;text-anchor:middle;fill:#fff}
+.sq{font-weight:900;font-size:19px;text-anchor:middle;fill:#fff}
+.lb{fill:#fff;stroke:#1b1b1b;stroke-width:3}
+.lb.dest{fill:#ffe14d}
+.bob{animation:bob 1.3s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.pulse{transform-box:fill-box;transform-origin:center;animation:pulse 1.4s ease-out infinite}
+@keyframes pulse{0%{transform:scale(.6);opacity:1}100%{transform:scale(1.8);opacity:0}}
+.flag{transform-box:fill-box;transform-origin:left center;animation:flag .8s ease-in-out infinite alternate}
+@keyframes flag{from{transform:scaleX(1) skewY(0)}to{transform:scaleX(.85) skewY(6deg)}}
+.spin{transform-box:fill-box;transform-origin:center;animation:spin 3s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.cand .ring{transform-box:fill-box;transform-origin:center;animation:cand 1s ease-in-out infinite alternate}
+@keyframes cand{from{transform:scale(.9)}to{transform:scale(1.12)}}
+.floater{font-weight:900;font-size:30px;text-anchor:middle;paint-order:stroke;stroke:#fff;stroke-width:6px;animation:fl 1.6s ease-out forwards}
+@keyframes fl{from{transform:translateY(0);opacity:1}to{transform:translateY(-70px);opacity:0}}
+
+/* ---------- HUD ---------- */
+#hud[hidden]{display:none}
+#plist{position:fixed;left:12px;top:12px;display:flex;flex-direction:column;gap:9px;z-index:5;pointer-events:none}
+.pc{position:relative;width:262px;height:68px;border-radius:16px;border:3px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.3);display:flex;align-items:center;padding-left:74px;color:#fff;transition:transform .25s,box-shadow .25s}
+.pc .av{position:absolute;left:-4px;top:50%;transform:translateY(-50%);width:68px;height:68px;border-radius:50%;background:#e9f6ff;border:3px solid #fff;overflow:hidden;box-shadow:0 2px 5px rgba(0,0,0,.3)}
+.pc .av svg{width:100%;height:100%;display:block}
+.pc .row1{font-weight:900;font-size:16px;text-shadow:0 1px 2px rgba(0,0,0,.35);white-space:nowrap}
+.pc .num{display:inline-block;background:rgba(255,255,255,.28);border-radius:7px;padding:0 6px;margin-right:6px;font-size:14px}
+.pc .cpu{font-size:10px;background:rgba(0,0,0,.25);border-radius:5px;padding:1px 4px;margin-left:5px;vertical-align:2px}
+.pc .money{font-weight:900;font-size:18px;text-shadow:0 1px 2px rgba(0,0,0,.45);white-space:nowrap}
+.pc .money small{font-size:11px;margin-right:4px;opacity:.9}
+.pc .money.neg{color:#ffe0e0}
+.pc.cur{transform:scale(1.05) translateX(8px);box-shadow:0 0 0 3px #ffe14d,0 4px 14px rgba(0,0,0,.45)}
+.pc .badges{position:absolute;right:6px;top:3px;font-size:12px;font-weight:900;display:flex;gap:4px;align-items:center}
+.binb{background:#5b4a86;color:#fff;border-radius:6px;padding:0 5px;border:1.5px solid #fff}
+#dateBox{position:fixed;left:50%;top:12px;transform:translateX(-50%);background:#fff;border:4px solid var(--navy);border-radius:30px;padding:4px 18px;font-weight:900;font-size:18px;z-index:5;white-space:nowrap;box-shadow:0 3px 0 rgba(0,0,0,.2);pointer-events:none}
+#dateBox b{font-size:24px;color:var(--red)}
+#dateBox small{font-size:12px;color:#667;margin-left:6px}
+#destBox{position:fixed;right:12px;top:12px;background:linear-gradient(#24478f,#13285a);color:#fff;border:3px solid #fff;border-radius:16px;padding:8px 14px 10px;z-index:5;min-width:150px;box-shadow:0 3px 10px rgba(0,0,0,.35);pointer-events:none;text-align:left}
+#destBox .dl{font-size:12px;font-weight:800;opacity:.85}
+#destBox .dn{font-size:28px;font-weight:900;line-height:1.15;color:#ffe14d}
+#destBox .dr{font-size:14px;font-weight:800}
+#destBox .dr b{font-size:24px}
+#sideBtns{position:fixed;right:12px;top:140px;display:flex;flex-direction:column;gap:8px;z-index:5}
+#sideBtns button{width:52px;height:52px;border-radius:50%;background:#fff;border:3px solid var(--navy);font-size:11px;font-weight:900;color:var(--navy);box-shadow:0 3px 0 rgba(0,0,0,.2);line-height:1.1}
+#sideBtns button span{display:block;font-size:20px}
+#stepBubble{position:fixed;left:50%;top:70px;transform:translateX(-50%);background:var(--red);color:#fff;border:4px solid #fff;border-radius:40px;padding:4px 22px;font-weight:900;font-size:22px;z-index:6;box-shadow:0 4px 10px rgba(0,0,0,.3);pointer-events:none}
+#stepBubble b{font-size:34px}
+
+#bottom{position:fixed;left:12px;right:12px;bottom:12px;display:flex;align-items:flex-end;gap:10px;z-index:6;pointer-events:none;max-width:1180px;margin:0 auto}
+#narr{width:112px;height:112px;flex:none;filter:drop-shadow(0 3px 3px rgba(0,0,0,.3))}
+#narr svg{width:100%;height:100%}
+#msg{flex:1;min-height:100px;background:#fff;border:4px solid var(--navy);border-radius:22px;padding:16px 24px;font-size:22px;font-weight:800;line-height:1.55;pointer-events:auto;position:relative;box-shadow:0 4px 0 rgba(0,0,0,.2);white-space:pre-line;cursor:pointer}
+#msg::before{content:"";position:absolute;left:-17px;bottom:26px;border:12px solid transparent;border-right:14px solid var(--navy)}
+#msgText.pop{animation:msgin .25s}
+@keyframes msgin{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+#msgArrow{position:absolute;right:16px;bottom:8px;color:var(--navy);font-size:18px;animation:blink .8s infinite}
+@keyframes blink{50%{opacity:.2;transform:translateY(3px)}}
+#cmd{width:236px;flex:none;background:#fff;border:4px solid var(--navy);border-radius:20px;padding:8px;pointer-events:auto;display:flex;flex-direction:column;gap:5px;box-shadow:0 4px 0 rgba(0,0,0,.2)}
+#cmd button{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:12px;font-size:18px;font-weight:900;text-align:left;color:var(--navy2);background:#f2f6ff;position:relative}
+#cmd button .ic{width:28px;text-align:center;font-size:20px}
+#cmd button .note{margin-left:auto;font-size:13px;background:var(--navy);color:#fff;border-radius:10px;padding:0 7px}
+#cmd button.main{background:linear-gradient(#ff6d82,#e23452);color:#fff;box-shadow:0 3px 0 #a91d38}
+#cmd button:disabled{opacity:.38;cursor:default}
+#cmd button:not(:disabled):active{transform:translateY(2px)}
+
+/* ---------- Modal ---------- */
+.mw{position:fixed;inset:0;background:rgba(10,25,60,.45);display:flex;align-items:center;justify-content:center;z-index:40;padding:14px;animation:fade .2s}
+@keyframes fade{from{opacity:0}}
+.modal{position:relative;background:#fff;border:4px solid var(--navy);border-radius:22px;width:min(580px,100%);max-height:calc(100% - 10px);overflow:auto;padding:46px 18px 18px;box-shadow:0 10px 30px rgba(0,0,0,.35);animation:pop .28s cubic-bezier(.2,1.4,.5,1)}
+@keyframes pop{from{transform:scale(.8);opacity:0}}
+.ribbon{position:absolute;top:-1px;left:-1px;background:var(--navy);color:#fff;padding:7px 22px 8px 18px;border-radius:18px 0 18px 0;font-weight:900;font-size:18px}
+.bubble{background:#f2f6ff;border:3px solid var(--navy);border-radius:18px;padding:10px 16px;font-weight:800;font-size:17px;text-align:center;margin-bottom:12px}
+.big-btn{display:block;margin:14px auto 0;min-width:200px;padding:13px 26px;border-radius:40px;background:linear-gradient(#ff6d82,#e23452);color:#fff;font-size:21px;font-weight:900;box-shadow:0 4px 0 #a91d38}
+.big-btn.blue{background:linear-gradient(#5aa6ff,#2160cf);box-shadow:0 4px 0 #173f8c}
+.big-btn:active{transform:translateY(3px);box-shadow:0 1px 0 #a91d38}
+.big-btn:disabled{opacity:.4}
+.btn{padding:10px 20px;border-radius:14px;background:#eef2fb;color:var(--navy2);font-weight:900;font-size:16px;border:2px solid #c9d4ee}
+.btn.red{background:linear-gradient(#ff6d82,#e23452);color:#fff;border-color:#c22a45}
+.mfoot{display:flex;justify-content:center;gap:12px;margin-top:14px;flex-wrap:wrap}
+
+.dice{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin:10px 0}
+.die{width:86px;height:86px;background:#fff;border-radius:18px;border:3px solid #333;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:11px;gap:4px;box-shadow:inset -5px -6px 0 #dde3ec,0 4px 6px rgba(0,0,0,.2)}
+.die i{border-radius:50%}
+.die i.on{background:#222}
+.die i.red{background:#e2223b;transform:scale(1.25)}
+.die.spinning{animation:shake .14s infinite}
+@keyframes shake{0%{transform:rotate(-8deg) translateY(-3px)}50%{transform:rotate(8deg) translateY(2px)}100%{transform:rotate(-8deg)}}
+.die.land{animation:land .35s cubic-bezier(.2,1.6,.5,1)}
+@keyframes land{from{transform:scale(1.4) rotate(20deg)}}
+.dtotal{text-align:center;font-weight:900;font-size:22px;min-height:40px;color:var(--navy2)}
+.dtotal b{font-size:40px;color:var(--red)}
+
+.sign{display:flex;align-items:center;gap:14px;margin-bottom:10px}
+.sign .board{background:#fff;border:4px solid #1b1b1b;border-radius:10px;padding:4px 16px;font-size:28px;font-weight:900;box-shadow:0 4px 0 #1b1b1b}
+.sign .mon{margin-left:auto;text-align:right;font-weight:800;font-size:13px;color:#556}
+.sign .mon b{display:block;font-size:20px;color:var(--navy2)}
+.mono{background:#fff4c2;border:2px solid #e9b31b;border-radius:12px;padding:6px 10px;font-weight:900;font-size:14px;text-align:center;margin-bottom:8px}
+.plist2{display:flex;flex-direction:column;gap:7px}
+.pr{display:flex;align-items:center;gap:10px;border:2px solid #d8e0f0;border-radius:14px;padding:8px 10px;background:#fbfcff}
+.pr.mine{background:#fff8dd}
+.pr .pi{font-size:30px;width:40px;text-align:center;flex:none}
+.pr .pn{flex:1;font-weight:900;font-size:17px;line-height:1.3}
+.pr .pn small{display:block;font-weight:800;font-size:12.5px;color:#5a6378}
+.pr .pa{flex:none}
+.own{display:inline-block;color:#fff;border-radius:10px;padding:4px 10px;font-size:13px;font-weight:900}
+.buy{padding:8px 16px;border-radius:12px;background:linear-gradient(#ff6d82,#e23452);color:#fff;font-weight:900;font-size:16px;box-shadow:0 3px 0 #a91d38}
+.buy:disabled{background:#c9cfdb;box-shadow:0 3px 0 #9aa2b3}
+.pr.flash{animation:flash .6s}
+@keyframes flash{0%{background:#ffe14d}100%{background:#fff8dd}}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:10px}
+.cardt{border-radius:14px;padding:8px;color:#fff;font-weight:900;text-align:center;border:3px solid #fff;box-shadow:0 0 0 2px #1b1b1b,0 4px 0 rgba(0,0,0,.25);font-size:14px;line-height:1.25;min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.cardt .ci{font-size:42px;background:rgba(255,255,255,.85);border-radius:12px;width:70px;height:64px;display:flex;align-items:center;justify-content:center}
+.cardt.sel{outline:4px solid #ffe14d;transform:translateY(-3px)}
+.cardt:disabled{opacity:.4}
+.cdetail{display:flex;gap:14px;align-items:center;margin-top:14px;border:3px solid var(--navy);border-radius:16px;padding:12px}
+.cdetail .cardt{width:120px;flex:none}
+.cdetail .cd{flex:1;font-weight:800;font-size:15px}
+.cdetail .cd b{display:block;font-size:20px;margin-bottom:4px}
+.cuse{background:linear-gradient(135deg,#fff3a6,#ffcf3d);}
+.cuse .cdetail{background:#fff}
+
+.mg-top{display:flex;justify-content:space-between;align-items:center}
+.mg-time{background:var(--navy);color:#fff;border-radius:50%;width:64px;height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:900;font-size:11px;line-height:1}
+.mg-time b{font-size:26px}
+.mg-scene{position:relative;height:220px;border-radius:16px;overflow:hidden;background:linear-gradient(#9fd8ff 0 55%,#4aa8e6 55% 70%,#e9d7a8 70%);margin:10px 0}
+.mg-bin{position:absolute;left:50%;top:10px;width:130px;height:110px;transform:translateX(-50%)}
+.mg-bin.hit{animation:hit .5s}
+@keyframes hit{0%,100%{transform:translateX(-50%) rotate(0)}25%{transform:translateX(-46%) rotate(12deg)}75%{transform:translateX(-54%) rotate(-12deg)}}
+.mg-face{position:absolute;left:50%;bottom:6px;width:70px;height:70px;transform:translateX(-50%)}
+.mg-ball{position:absolute;left:50%;bottom:50px;width:26px;height:26px;margin-left:-13px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff,#ffd43b 45%,#e08a00);box-shadow:0 0 12px #fff6a8;transition:transform .45s cubic-bezier(.3,.7,.4,1),opacity .4s;opacity:0}
+.mg-tip{position:absolute;right:8px;bottom:12px;background:#fff;border:3px solid var(--navy);border-radius:14px;padding:6px 10px;font-weight:900;font-size:13px;max-width:46%}
+.mg-res{position:absolute;left:0;right:0;top:40%;text-align:center;font-size:40px;font-weight:900;color:#fff;-webkit-text-stroke:2px var(--navy);paint-order:stroke;text-shadow:0 4px 0 var(--navy)}
+.mg-bar{position:relative;height:34px;border-radius:20px;border:4px solid var(--navy);background:linear-gradient(90deg,#ff5a5a 0 32%,#ffd43b 32% 44%,#38d36b 44% 56%,#ffd43b 56% 68%,#ff5a5a 68% 100%)}
+.mg-cur{position:absolute;top:-12px;width:8px;height:50px;margin-left:-4px;background:#fff;border:3px solid var(--navy);border-radius:5px}
+
+.rk{display:flex;align-items:center;gap:10px;border-radius:14px;border:3px solid #fff;box-shadow:0 0 0 2px #1d3a78;color:#fff;padding:6px 12px 6px 6px;margin-bottom:8px;font-weight:900;text-shadow:0 1px 2px rgba(0,0,0,.4);position:relative}
+.rk .av{width:48px;height:48px;border-radius:50%;background:#e9f6ff;border:2px solid #fff;overflow:hidden;flex:none}
+.rk .av svg{width:100%;height:100%}
+.rk .rn{font-size:22px;width:30px;text-align:center}
+.rk .nm{flex:1;font-size:16px;line-height:1.2}
+.rk .nm small{display:block;font-size:12px;opacity:.9}
+.rk .mv{text-align:right;font-size:17px;line-height:1.25}
+.rk .mv small{display:block;font-size:14px}
+.up{color:#d6ffd9}.dn{color:#ffd9de}
+.crown{position:absolute;left:-6px;top:-14px;font-size:24px;text-shadow:none}
+.big-title{text-align:center;font-size:30px;font-weight:900;color:var(--red);margin:4px 0 10px;text-shadow:0 2px 0 #ffd6dc}
+.arrive-st{text-align:center;font-size:44px;font-weight:900;margin:6px 0}
+.roulette{font-size:46px;font-weight:900;text-align:center;padding:18px 0;border:4px dashed var(--navy);border-radius:18px;margin:6px 0;background:#f2f6ff}
+.roulette.done{background:#ffe14d;border-style:solid;animation:pop .3s}
+.as{border:2px solid #d8e0f0;border-radius:14px;margin-bottom:10px;overflow:hidden}
+.as-h{display:flex;justify-content:space-between;color:#fff;font-weight:900;padding:6px 12px;text-shadow:0 1px 2px rgba(0,0,0,.35);font-size:15px;gap:8px}
+.as-b{padding:8px 12px;font-size:13px;font-weight:800;line-height:1.6;color:#334}
+.olist{display:flex;flex-direction:column;gap:8px}
+.olist button{padding:13px;border-radius:14px;background:#f2f6ff;border:2px solid #c9d4ee;font-weight:900;font-size:17px;color:var(--navy2);text-align:left}
+
+/* ---------- Title ---------- */
+#title{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;padding:14px;background:linear-gradient(rgba(255,255,255,.15),rgba(29,58,120,.35));overflow:auto}
+.t-wrap{width:min(560px,100%);max-height:100%;}
+.logo{text-align:center;margin-bottom:12px;filter:drop-shadow(0 4px 0 rgba(0,0,0,.25))}
+.logo .l1{display:inline-block;background:var(--red);color:#fff;font-weight:900;font-size:20px;padding:2px 16px;border-radius:20px;border:3px solid #fff}
+.logo .l2{display:block;font-size:54px;font-weight:900;color:#fff;-webkit-text-stroke:3px var(--navy);paint-order:stroke;letter-spacing:2px;line-height:1.2;text-shadow:0 5px 0 var(--navy)}
+.logo .sub{display:inline-block;background:#fff;color:var(--navy);font-weight:900;font-size:15px;padding:4px 14px;border-radius:20px;border:3px solid var(--navy);margin-top:4px}
+.t-card{background:#fff;border:4px solid var(--navy);border-radius:22px;padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.t-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.t-row>b{font-size:15px;color:var(--navy2);min-width:90px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chips button{padding:7px 14px;border-radius:20px;background:#eef2fb;border:2px solid #c9d4ee;font-weight:900;font-size:15px;color:var(--navy2)}
+.chips button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.slot{display:flex;align-items:center;gap:8px;padding:6px;border-radius:14px;margin-bottom:7px;color:#fff}
+.slot .av{width:44px;height:44px;border-radius:50%;background:#e9f6ff;border:2px solid #fff;overflow:hidden;flex:none}
+.slot .av svg{width:100%;height:100%}
+.slot .no{font-weight:900;font-size:15px;width:26px;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.slot input{flex:1;min-width:0;font-size:16px;font-weight:800;padding:7px 10px;border-radius:10px;border:2px solid #fff;color:#222}
+.slot .seg{display:flex;background:rgba(0,0,0,.2);border-radius:12px;padding:3px;flex:none}
+.slot .seg button{padding:6px 9px;border-radius:9px;font-weight:900;font-size:13px;color:#fff}
+.slot .seg button.on{background:#fff;color:var(--navy2)}
+.slot.off{filter:grayscale(.9) brightness(1.1);opacity:.6}
+.t-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.t-btns .big-btn{margin:6px 0 0;min-width:180px}
+.howto{margin-top:12px;font-size:13.5px;font-weight:800;color:#334;line-height:1.7}
+.howto summary{cursor:pointer;color:var(--navy);font-weight:900;font-size:15px}
+.howto ul{padding-left:20px;margin-top:4px}
+.t-err{color:var(--red);font-weight:900;text-align:center;font-size:14px;min-height:20px}
+
+@media (max-width:760px){
+  #plist{left:6px;right:6px;top:6px;display:grid;grid-template-columns:1fr 1fr;gap:5px}
+  .pc{width:auto;height:46px;padding-left:46px;border-radius:12px;border-width:2px}
+  .pc .av{width:46px;height:46px;left:-3px;border-width:2px}
+  .pc .row1{font-size:12px}.pc .num{font-size:11px;padding:0 4px;margin-right:3px}
+  .pc .money{font-size:13.5px}.pc .money small{display:none}
+  .pc .cpu{display:none}
+  .pc.cur{transform:scale(1.03);}
+  .pc .badges{font-size:10px;right:4px;top:2px}
+  #dateBox{left:6px;top:110px;transform:none;font-size:13px;padding:2px 10px;border-width:3px}
+  #dateBox b{font-size:18px}
+  #destBox{right:6px;top:108px;padding:4px 10px 6px;min-width:0;border-radius:12px}
+  #destBox .dn{font-size:20px}#destBox .dr{font-size:12px}#destBox .dr b{font-size:18px}
+  #sideBtns{right:6px;top:190px}
+  #sideBtns button{width:44px;height:44px;font-size:9px}#sideBtns button span{font-size:17px}
+  #stepBubble{top:150px;font-size:16px}#stepBubble b{font-size:26px}
+  #bottom{left:6px;right:6px;bottom:6px;flex-wrap:wrap;gap:6px}
+  #narr{width:62px;height:62px}
+  #msg{font-size:15.5px;min-height:70px;padding:10px 14px;border-radius:16px;border-width:3px}
+  #msg::before{bottom:18px}
+  #cmd{order:-1;width:100%;flex-direction:row;flex-wrap:wrap;padding:6px;border-width:3px;border-radius:16px}
+  #cmd button{flex:1 1 40%;font-size:15px;padding:9px 8px;justify-content:center}
+  #cmd button .ic{width:auto;font-size:17px}
+  #cmd button .note{margin-left:4px}
+  .modal{padding:42px 12px 14px}
+  .die{width:66px;height:66px;padding:8px;border-radius:14px}
+  .pr .pn{font-size:15px}.pr .pi{font-size:24px;width:30px}
+  .logo .l2{font-size:40px}
+  .arrive-st{font-size:34px}.roulette{font-size:34px}
+}
+</style>
+</head>
+<body>
+<svg id="map" xmlns="http://www.w3.org/2000/svg"><g id="world"></g></svg>
+
+<div id="hud" hidden>
+  <div id="plist"></div>
+  <div id="dateBox"></div>
+  <div id="destBox"></div>
+  <div id="sideBtns">
+    <button id="bHere"><span>📍</span>現在地</button>
+    <button id="bAll"><span>🗾</span>全体</button>
+    <button id="bDest"><span>🚩</span>目的地</button>
+  </div>
+  <div id="stepBubble" hidden></div>
+  <div id="bottom">
+    <div id="narr"></div>
+    <div id="msg"><span id="msgText"></span><span id="msgArrow" hidden>▼</span></div>
+    <div id="cmd" hidden></div>
+  </div>
+</div>
+<div id="modals"></div>
+
+<div id="title">
+  <div class="t-wrap">
+    <div class="logo"><span class="l1">すごろく</span><span class="l2">にっぽん鉄道社長</span><span class="sub">日本中の物件を買って 日本一の社長をめざせ!</span></div>
+    <div class="t-card">
+      <div class="t-row"><b>プレイ年数</b><div class="chips" id="yearChips"></div></div>
+      <div id="slots"></div>
+      <div class="t-row" style="margin-top:6px"><b>CPUのはやさ</b><div class="chips" id="speedChips"></div></div>
+      <div class="t-err" id="tErr"></div>
+      <div class="t-btns"><button id="btnNew" class="big-btn">はじめから</button><button id="btnCont" class="big-btn blue" hidden>つづきから</button></div>
+      <details class="howto"><summary>あそびかた</summary><ul>
+        <li>サイコロをふって すすみ、光っているマスから 止まる場所を えらびます。</li>
+        <li><b style="color:#e8455a">駅</b>に止まると 物件が買えます。毎年3月の決算で 収益が入ります。1つの駅の物件を 全部買うと「独占」で 収益2倍!</li>
+        <li><b style="color:#2f7de1">青マス</b>はお金がふえる、<b style="color:#e23b4e">赤マス</b>はへる、<b style="color:#d6a600">黄マス</b>はカードがもらえます。</li>
+        <li>目的地に いちばんに着くと ボーナス! いちばん遠い社長には 貧乏神が とりつきます。</li>
+        <li>貧乏神は 毎ターン わるさをします。ミニゲームで おはらい玉を当てて 追いはらおう。ほかの社長と すれちがうと うつせます。</li>
+        <li>最後に 総資産(持ち金+物件)が いちばん多い社長が 優勝です。</li>
+        <li>マップはドラッグで移動、ホイール/ピンチで拡大縮小できます。</li>
+      </ul></details>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ================= utils ================= */
+const $=s=>document.querySelector(s);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const r10=v=>Math.round(v/10)*10;
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function fmt(m){m=Math.round(m);const neg=m<0;m=Math.abs(m);const o=Math.floor(m/10000),k=m%10000;let s='';if(o)s+=o+'億';if(k||!o)s+=k+'万';return(neg?'-':'')+s+'円'}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+const SVGNS='http://www.w3.org/2000/svg';
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+
+/* ================= sound ================= */
+let AC=null,muted=store.get('tetsu-mute')==='1';
+function tone(f,d,type,vol,when,f2){const t=AC.currentTime+(when||0);const o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(vol||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(AC.destination);o.start(t);o.stop(t+d+.03)}
+function sfx(k){if(muted)return;try{if(!AC)AC=new(window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();
+switch(k){case'tick':tone(900,.03,'square',.025);break;case'select':tone(1200,.06,'square',.035);break;
+case'dice':tone(520,.08,'square',.05);tone(820,.14,'square',.05,.08);break;case'step':tone(700,.05,'triangle',.07);break;
+case'coin':tone(988,.08,'square',.045);tone(1319,.28,'square',.045,.08);break;case'bad':tone(420,.4,'sawtooth',.045,0,110);break;
+case'buy':tone(660,.07,'square',.045);tone(990,.16,'square',.045,.07);break;
+case'fan':[523,659,784,1047].forEach((f,i)=>tone(f,.16,'square',.045,i*.11));tone(1047,.5,'triangle',.07,.48);break;}}catch(e){}}
+
+/* ================= characters ================= */
+const CHARS=[
+ {name:'さくら',color:'#e8455a',grad:'linear-gradient(135deg,#ff6b81,#c8183c)',face:{hair:'#5a3420',hat:'cap',hatColor:'#e23b3b'}},
+ {name:'たくみ',color:'#2f7de1',grad:'linear-gradient(135deg,#59a6ff,#1b56c0)',face:{hair:'#2a2a3a',hat:'cap',hatColor:'#2a6fdb'}},
+ {name:'ゆうき',color:'#2fa84f',grad:'linear-gradient(135deg,#5cd17a,#1d7f37)',face:{hair:'#f0c445',long:true,ribbon:'#ff6fa0'}},
+ {name:'あおい',color:'#e0a400',grad:'linear-gradient(135deg,#ffd54a,#cf8e00)',face:{hair:'#8a55d6',long:true,ribbon:'#fff'}},
+];
+function faceSVG(f){
+ const skin='#ffdfc4',hair=f.hair||'#4a2c1a',st='#3a2418';
+ let s='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">';
+ if(f.long)s+=`<path d="M16 52 Q10 96 30 98 L70 98 Q90 96 84 52 Z" fill="${hair}" stroke="${st}" stroke-width="2.5"/>`;
+ s+=`<ellipse cx="50" cy="60" rx="30" ry="29" fill="${skin}" stroke="${st}" stroke-width="2.5"/>`;
+ s+=`<path d="M19 60 Q14 24 50 22 Q86 24 81 60 Q77 43 65 42 Q58 34 50 41 Q41 33 35 43 Q23 45 19 60Z" fill="${hair}" stroke="${st}" stroke-width="2.5" stroke-linejoin="round"/>`;
+ s+=`<ellipse cx="39" cy="63" rx="4.6" ry="6.6" fill="#2b1d16"/><circle cx="40.7" cy="60.3" r="1.9" fill="#fff"/><ellipse cx="61" cy="63" rx="4.6" ry="6.6" fill="#2b1d16"/><circle cx="62.7" cy="60.3" r="1.9" fill="#fff"/>`;
+ s+=`<ellipse cx="29" cy="73" rx="5.5" ry="3.2" fill="#ff8fa0" opacity=".7"/><ellipse cx="71" cy="73" rx="5.5" ry="3.2" fill="#ff8fa0" opacity=".7"/>`;
+ s+=`<path d="M42 75 Q50 85 58 75 Z" fill="#d9434f" stroke="${st}" stroke-width="2" stroke-linejoin="round"/>`;
+ if(f.ribbon)s+=`<path d="M64 26 L80 18 L78 34 Z M64 26 L70 40 L82 34Z" fill="${f.ribbon}" stroke="${st}" stroke-width="2" stroke-linejoin="round"/><circle cx="68" cy="28" r="4" fill="${f.ribbon}" stroke="${st}" stroke-width="2"/>`;
+ if(f.hat==='cap')s+=`<path d="M20 46 Q17 12 50 11 Q83 12 80 46 Z" fill="${f.hatColor}" stroke="${st}" stroke-width="2.5"/><path d="M13 45 Q50 36 87 45 Q89 52 82 52 Q50 44 18 52 Q11 52 13 45Z" fill="#2b2b2b"/><circle cx="50" cy="28" r="7.5" fill="#fff" stroke="${st}" stroke-width="2"/><path d="M50 23 l2 4 4 .5-3 3 1 4-4-2-4 2 1-4-3-3 4-.5z" fill="${f.hatColor}"/>`;
+ if(f.hat==='conductor')s+=`<path d="M17 44 Q15 9 50 8 Q85 9 83 44 Z" fill="#fff" stroke="${st}" stroke-width="2.5"/><rect x="17.5" y="34" width="65" height="10" fill="#1d3a78"/><path d="M13 44 Q50 36 87 44 Q89 51 82 51 Q50 44 18 51 Q11 51 13 44Z" fill="#1b1b1b"/><circle cx="50" cy="24" r="7.5" fill="#f5c542" stroke="${st}" stroke-width="2"/><path d="M45 24h10M50 19v10" stroke="#b07a10" stroke-width="2"/>`;
+ return s+'</svg>';
+}
+function binInner(){return `<path d="M-20 12 Q-26 -22 0 -27 Q26 -22 20 12 Q15 24 9 15 Q3 25 -3 15 Q-9 25 -14 15 Q-19 22 -20 12Z" fill="#8f83b5" stroke="#2d2240" stroke-width="2.5" stroke-linejoin="round"/>
+<path d="M-2 -27 q2 -9 9 -8" fill="none" stroke="#2d2240" stroke-width="2.5" stroke-linecap="round"/>
+<ellipse cx="-8" cy="-7" rx="5" ry="5.5" fill="#fff" stroke="#2d2240" stroke-width="1.6"/><ellipse cx="8" cy="-7" rx="5" ry="5.5" fill="#fff" stroke="#2d2240" stroke-width="1.6"/>
+<circle cx="-7" cy="-5.5" r="2.4" fill="#2d2240"/><circle cx="9" cy="-5.5" r="2.4" fill="#2d2240"/>
+<path d="M-14 -14 l9 3 M14 -14 l-9 3" stroke="#2d2240" stroke-width="2.2" stroke-linecap="round"/>
+<path d="M-8 5 q4 -4 8 0 q4 4 8 0" fill="none" stroke="#2d2240" stroke-width="2.2" stroke-linecap="round"/>
+<ellipse cx="-14" cy="0" rx="3.5" ry="2" fill="#6d5f99"/><ellipse cx="14" cy="0" rx="3.5" ry="2" fill="#6d5f99"/>
+<path d="M18 -2 q12 2 14 -10" fill="none" stroke="#6b4a2a" stroke-width="3" stroke-linecap="round"/>`}
+const binSVG=()=>`<svg xmlns="http://www.w3.org/2000/svg" viewBox="-36 -36 72 72"><g class="bob">${binInner()}</g></svg>`;
+const FACES=CHARS.map(c=>faceSVG(c.face));
+const FACEURL=FACES.map(s=>'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s));
+const NARR=faceSVG({hair:'#3a2a20',hat:'conductor'});
+
+/* ================= map data ================= */
+const ST=[
+['稚内',45.40,141.70],['旭川',43.77,142.36],['網走',44.02,144.27],['富良野',43.34,142.38],['帯広',42.92,143.20],['釧路',42.98,144.38],['札幌',43.06,141.35],['小樽',43.19,141.00],['室蘭',42.32,140.97],['長万部',42.52,140.37],['函館',41.77,140.73],
+['青森',40.82,140.74],['秋田',39.72,140.10],['盛岡',39.70,141.15],['山形',38.24,140.34],['仙台',38.27,140.87],['福島',37.75,140.47],['会津若松',37.49,139.93],
+['新潟',37.90,139.04],['宇都宮',36.56,139.88],['水戸',36.37,140.47],['高崎',36.32,139.00],['大宮',35.95,139.62],['東京',35.68,139.77],['横浜',35.40,139.60],['千葉',35.58,140.18],['箱根',35.23,139.10],
+['甲府',35.66,138.57],['長野',36.65,138.18],['松本',36.23,137.97],['富山',36.70,137.21],['金沢',36.56,136.66],['福井',36.06,136.22],['静岡',34.98,138.38],['浜松',34.70,137.73],['名古屋',35.17,136.90],
+['伊勢',34.49,136.71],['京都',35.00,135.76],['奈良',34.68,135.95],['大阪',34.69,135.50],['神戸',34.69,135.19],['和歌山',34.23,135.17],['姫路',34.83,134.69],
+['岡山',34.66,133.92],['広島',34.40,132.46],['鳥取',35.50,134.24],['松江',35.47,133.05],['山口',34.18,131.47],
+['高松',34.34,134.05],['徳島',34.07,134.55],['高知',33.56,133.53],['松山',33.84,132.77],
+['小倉',33.88,130.88],['博多',33.59,130.42],['長崎',32.75,129.88],['熊本',32.80,130.71],['大分',33.24,131.61],['宮崎',31.91,131.42],['鹿児島',31.58,130.55]];
+const ED=`稚内-旭川,旭川-札幌,旭川-富良野,富良野-帯広,旭川-網走,網走-釧路,帯広-釧路,札幌-小樽,札幌-室蘭,室蘭-長万部,小樽-長万部,長万部-函館,函館-青森*,
+青森-秋田,青森-盛岡,盛岡-秋田,盛岡-仙台,秋田-山形,山形-仙台,仙台-福島,福島-会津若松,会津若松-新潟,秋田-新潟,
+福島-宇都宮,宇都宮-大宮,宇都宮-水戸,水戸-東京,大宮-東京,大宮-高崎,東京-千葉,東京-横浜,横浜-箱根,東京-甲府,
+高崎-長野,高崎-新潟,長野-松本,松本-甲府,松本-名古屋,長野-富山,新潟-富山,富山-金沢,金沢-福井,福井-京都,箱根-静岡,甲府-静岡,静岡-浜松,浜松-名古屋,名古屋-京都,名古屋-伊勢,
+伊勢-奈良,京都-大阪,京都-奈良,大阪-神戸,大阪-和歌山,神戸-姫路,姫路-岡山,姫路-鳥取,鳥取-松江,松江-岡山,岡山-広島,広島-山口,松江-山口,
+山口-小倉*,岡山-高松*,神戸-徳島*,広島-松山*,松山-大分*,高松-徳島,高松-松山,高松-高知,松山-高知,
+小倉-博多,小倉-大分,博多-長崎,博多-熊本,熊本-鹿児島,熊本-大分,大分-宮崎,宮崎-鹿児島`;
+const PD={
+'稚内':'ホタテ漁場,3000,6|最北端みやげ屋,200,50|こんぶ問屋,800,12',
+'旭川':'旭川ラーメン屋,300,60|家具工房,2000,10|動物園カフェ,1000,20|酒蔵,5000,5',
+'網走':'流氷観光船,4000,6|カニ料理屋,500,40|監獄みやげ屋,300,50',
+'富良野':'ラベンダー畑,2000,10|メロン農園,1000,15|チーズ工房,800,20',
+'帯広':'豚丼屋,200,70|ばんえい競馬場,8000,4|スイーツ店,1500,15|小麦畑,3000,6',
+'釧路':'炉ばた焼き屋,300,50|湿原ツアー,1500,12|サケ加工場,5000,5',
+'札幌':'味噌ラーメン横丁,500,50|ジンギスカン屋,400,60|スープカレー屋,300,70|時計台ホテル,15000,3|ビール工場,20000,3',
+'小樽':'ガラス工房,1000,20|寿司屋通り,2000,10|オルゴール堂,3000,8',
+'室蘭':'焼き鳥屋,200,60|白鳥大橋みやげ,500,30|製鉄所,30000,2',
+'長万部':'かにめし屋,300,60|牧場,1500,12|温泉宿,3000,8',
+'函館':'朝市どんぶり,300,60|塩ラーメン屋,200,70|イカ釣り船,1500,12|夜景ロープウェイ,8000,5',
+'青森':'りんご園,1500,15|ねぶた工房,1000,20|ホタテ養殖,3000,8',
+'秋田':'きりたんぽ屋,300,50|稲庭うどん屋,500,40|なまはげ館,1500,12|杉の木材所,4000,6',
+'盛岡':'わんこそば屋,300,60|冷麺屋,400,50|南部鉄器工房,2000,10',
+'山形':'芋煮屋,200,70|さくらんぼ園,1500,15|温泉旅館,6000,5',
+'仙台':'ずんだ餅屋,200,70|牛たん屋,500,50|笹かま工場,3000,8|七夕まつり会館,10000,4',
+'福島':'喜多方ラーメン屋,300,60|桃農園,1500,15|酒造,5000,5',
+'会津若松':'赤べこ工房,300,50|鶴ヶ城みやげ,800,25|会津塗店,2000,10',
+'新潟':'へぎそば屋,300,60|せんべい工場,2000,10|米どころ田んぼ,4000,6|日本酒蔵,8000,5',
+'宇都宮':'餃子屋,200,80|いちご農園,1500,15|餃子チェーン,3000,10',
+'水戸':'梅林茶屋,300,50|メロン農園,1500,15|納豆工場,2000,12',
+'高崎':'焼きまんじゅう屋,200,70|だるま工房,300,50|こんにゃくパーク,3000,8',
+'大宮':'ソース焼きそば屋,200,70|盆栽村,1500,12|鉄道博物館,20000,3',
+'東京':'もんじゃ焼き屋,500,50|下町すし屋,2000,15|電気街ビル,30000,4|テレビ局,50000,3|東京タワー,80000,2',
+'横浜':'中華街肉まん屋,300,70|シュウマイ工場,5000,8|観覧車,15000,4|ベイホテル,30000,3',
+'千葉':'落花生畑,1000,15|空港ホテル,20000,4|テーマパーク,60000,3',
+'箱根':'黒たまご屋,200,80|寄木細工店,500,30|海賊船,4000,8|温泉旅館,8000,5',
+'甲府':'ほうとう屋,300,60|ぶどう園,1500,15|宝石工房,3000,8|ワイナリー,5000,6',
+'長野':'おやき屋,200,70|そば屋,300,60|りんご園,1500,12|スキー場,10000,4',
+'松本':'山賊焼き屋,300,50|松本城みやげ,500,30|そば畑,1000,15',
+'富山':'ブラックラーメン屋,200,70|ます寿司屋,300,60|ホタルイカ漁,2000,10|製薬会社,20000,3',
+'金沢':'兼六園茶屋,500,40|近江町市場,1000,20|金箔工房,3000,8|加賀友禅,6000,5',
+'福井':'ソースカツ丼屋,200,70|越前ガニ屋,1000,20|メガネ工場,5000,6|恐竜博物館,10000,4',
+'静岡':'おでん屋,200,70|わさび田,1000,15|茶畑,3000,8|プラモデル工場,15000,4',
+'浜松':'餃子屋,200,70|うなぎ屋,800,30|楽器工場,20000,3',
+'名古屋':'手羽先屋,200,70|みそかつ屋,300,60|ひつまぶし屋,800,30|名古屋城ホテル,20000,4|自動車工場,80000,2',
+'伊勢':'赤福もち屋,500,40|伊勢えび料理,1500,15|真珠養殖,8000,5',
+'京都':'八つ橋屋,300,60|湯どうふ屋,500,40|お寺カフェ,1500,12|老舗旅館,10000,5|ゲーム会社,50000,3',
+'奈良':'鹿せんべい屋,100,90|柿の葉寿司,300,60|墨工房,2000,10',
+'大阪':'たこ焼き屋,200,80|お好み焼き屋,300,60|串カツ屋,400,50|通天閣,15000,4|テーマパーク,60000,3',
+'神戸':'洋菓子店,800,30|神戸牛ステーキ,2000,15|中華街,3000,10|港ホテル,20000,4',
+'和歌山':'ラーメン屋,200,70|みかん園,1000,15|梅干し工場,3000,8',
+'姫路':'おでん屋,200,70|白鷺城みやげ,500,30|革工房,3000,8',
+'岡山':'きびだんご屋,200,70|桃園,1500,15|デニム工場,5000,6',
+'鳥取':'砂丘らくだ屋,500,40|梨園,1500,12|カニ市場,3000,8',
+'松江':'出雲そば屋,300,60|和菓子屋,300,50|しじみ漁,1000,15|縁結び茶屋,2000,10',
+'広島':'もみじまんじゅう屋,200,70|お好み焼き屋,300,60|カキ養殖,3000,8|造船所,30000,2',
+'山口':'瓦そば屋,300,60|錦帯橋みやげ,800,25|ふぐ料理屋,2000,12',
+'高松':'さぬきうどん屋,100,90|オリーブ園,1500,12|うどんチェーン,3000,10',
+'徳島':'徳島ラーメン屋,200,70|すだち農園,800,20|阿波おどり会館,5000,6',
+'高知':'日曜市,300,60|カツオのたたき屋,500,50|ゆず園,1000,15|よさこい会館,4000,6',
+'松山':'鯛めし屋,500,40|みかんジュース工場,3000,8|道後温泉旅館,10000,4',
+'小倉':'焼うどん屋,200,70|門司港レトロ館,3000,8|製鉄所,30000,2',
+'博多':'とんこつラーメン屋,300,70|もつ鍋屋,500,50|屋台村,1000,20|明太子工場,5000,8|ドーム球場,50000,3',
+'長崎':'ちゃんぽん屋,300,60|カステラ屋,800,30|夜景ホテル,10000,4|造船所,30000,2',
+'熊本':'からし蓮根屋,300,50|馬刺し屋,800,30|お城ホテル,10000,4|半導体工場,40000,3',
+'大分':'とり天屋,200,70|関さば屋,1500,15|温泉地獄めぐり,5000,6',
+'宮崎':'チキン南蛮屋,300,60|マンゴー園,2000,12|リゾートホテル,15000,4',
+'鹿児島':'かるかん屋,300,50|黒豚しゃぶしゃぶ,1000,20|焼酎蔵,4000,8|桜島観光船,6000,5'};
+const ISLRAW=[
+ [[41.53,140.91],[41.45,141.45],[40.95,141.40],[40.50,141.60],[39.95,141.98],[39.30,141.95],[38.90,141.65],[38.40,141.50],[38.20,141.05],[37.80,141.00],[37.00,140.98],[36.60,140.70],[36.10,140.62],[35.75,140.88],[35.30,140.42],[34.90,139.90],[35.30,139.78],[35.60,140.05],[35.68,139.85],[35.45,139.68],[35.15,139.62],[35.28,139.15],[34.70,138.90],[35.05,138.80],[34.92,138.45],[34.60,138.20],[34.65,137.60],[34.58,137.02],[34.80,137.20],[35.00,136.85],[34.62,136.55],[34.30,136.90],[34.05,136.25],[33.45,135.75],[33.90,135.10],[34.25,135.10],[34.60,135.40],[34.66,135.10],[34.75,134.60],[34.55,133.90],[34.35,133.20],[34.30,132.45],[34.05,132.15],[33.95,131.75],[33.95,130.90],[34.35,130.95],[34.45,131.40],[34.70,131.85],[34.95,132.15],[35.40,132.65],[35.58,133.15],[35.55,134.20],[35.65,134.80],[35.52,135.40],[35.70,136.05],[36.15,136.10],[36.80,136.70],[37.50,137.30],[37.05,137.00],[36.78,137.20],[37.05,137.85],[37.20,138.25],[37.95,139.05],[38.30,139.45],[38.95,139.80],[39.75,140.02],[39.95,139.70],[40.25,140.00],[40.65,139.88],[41.20,140.30],[40.90,140.80],[41.20,141.20],[41.30,140.98]],
+ [[41.75,140.70],[41.42,140.08],[41.88,140.10],[42.55,139.85],[42.80,140.25],[43.32,140.45],[43.20,141.00],[43.25,141.40],[43.95,141.65],[44.60,141.75],[45.45,141.65],[45.52,141.95],[44.80,142.60],[44.35,143.35],[44.00,144.25],[44.35,145.30],[43.70,145.20],[43.35,145.80],[43.00,144.80],[42.95,144.40],[42.60,143.60],[41.95,143.25],[42.30,142.50],[42.60,141.60],[42.30,141.00],[42.55,140.45],[42.10,140.60],[41.80,141.15]],
+ [[34.35,134.05],[34.25,134.62],[34.05,134.62],[33.75,134.65],[33.25,134.18],[33.52,133.75],[33.45,133.30],[32.72,133.00],[33.00,132.55],[33.30,132.45],[33.42,132.00],[33.55,132.40],[33.88,132.70],[34.10,133.00],[34.15,133.65]],
+ [[33.95,130.95],[33.60,131.20],[33.65,131.70],[33.25,131.75],[32.95,131.95],[32.55,131.72],[31.90,131.50],[31.35,131.38],[31.45,131.10],[31.00,130.68],[31.55,130.58],[31.25,130.25],[31.85,130.18],[32.20,130.38],[32.55,130.55],[32.85,130.58],[33.05,130.40],[33.15,130.20],[32.95,129.95],[32.60,129.75],[32.95,129.62],[33.35,129.50],[33.48,129.95],[33.62,130.35],[33.88,130.55]],
+ [[34.62,135.02],[34.45,134.85],[34.20,134.70],[34.18,134.85],[34.40,135.00]],
+ [[38.32,138.50],[38.15,138.25],[37.82,138.25],[37.90,138.55],[38.10,138.45]]];
+
+const proj=(lat,lon)=>({x:(lon-129.5)*200+100,y:(45.7-lat)*240+100});
+const MAPW=3450,MAPH=3760;
+const N=[],ADJ=[],SIDX={},PROPS=[],RAILS=[];
+function addNode(o){o.id=N.length;N.push(o);ADJ.push([]);return o.id}
+function link(a,b){if(!ADJ[a].includes(b)){ADJ[a].push(b);ADJ[b].push(a)}}
+ST.forEach(([nm,la,lo])=>{const p=proj(la,lo);SIDX[nm]=addNode({x:p.x,y:p.y,type:'station',name:nm,props:[]})});
+ST.forEach(([nm])=>{const sid=SIDX[nm];PD[nm].split('|').forEach(s=>{const[n,pr,rt]=s.split(',');const id=PROPS.length;PROPS.push({id,sid,name:n,price:+pr,rate:+rt});N[sid].props.push(id)})});
+const STATIONS=ST.map(s=>SIDX[s[0]]);
+const TOKYO=SIDX['東京'];
+(function buildGraph(){
+ const R=mulberry32(20261003);
+ ED.split(',').map(s=>s.trim()).filter(Boolean).forEach(e=>{
+  const sea=e.endsWith('*');const[a,b]=e.replace('*','').split('-');
+  const A=N[SIDX[a]],B=N[SIDX[b]];
+  const dx=B.x-A.x,dy=B.y-A.y,d=Math.hypot(dx,dy);
+  const off=(R()-.5)*.22*d;
+  const c={x:(A.x+B.x)/2-dy/d*off,y:(A.y+B.y)/2+dx/d*off};
+  const segs=Math.max(1,Math.round(d/62));
+  let prev=A.id;const samples=[];
+  const q=t=>({x:(1-t)*(1-t)*A.x+2*(1-t)*t*c.x+t*t*B.x,y:(1-t)*(1-t)*A.y+2*(1-t)*t*c.y+t*t*B.y});
+  for(let i=1;i<segs;i++){const p=q(i/segs);const r=R();const type=r<.5?'blue':r<.76?'red':'yellow';const id=addNode({x:p.x,y:p.y,type});link(prev,id);prev=id}
+  link(prev,B.id);
+  for(let t=0;t<=1;t+=12/d)samples.push(q(t));
+  RAILS.push({d:`M${A.x.toFixed(1)},${A.y.toFixed(1)}Q${c.x.toFixed(1)},${c.y.toFixed(1)} ${B.x.toFixed(1)},${B.y.toFixed(1)}`,sea,samples});
+ });
+})();
+const DC=new Map();
+function distFrom(src){if(DC.has(src))return DC.get(src);const d=new Array(N.length).fill(1e9);d[src]=0;const q=[src];for(let i=0;i<q.length;i++){const u=q[i];for(const v of ADJ[u])if(d[v]>d[u]+1){d[v]=d[u]+1;q.push(v)}}DC.set(src,d);return d}
+const dist=(a,b)=>distFrom(b)[a];
+
+/* ================= cards ================= */
+const CARDS={
+ kyuko:{name:'急行カード',icon:'🚃',desc:'サイコロを 2個 ふれる!',w:30,bg:'linear-gradient(135deg,#4ea8ff,#1f5fc9)'},
+ tokkyu:{name:'特急カード',icon:'🚄',desc:'サイコロを 3個 ふれる!',w:18,bg:'linear-gradient(135deg,#ff7a59,#d93a2b)'},
+ shinkansen:{name:'新幹線カード',icon:'🚅',desc:'サイコロを 4個 ふれる!',w:7,bg:'linear-gradient(135deg,#b06bff,#6a2bd1)'},
+ buttobi:{name:'ぶっとびカード',icon:'🌀',desc:'日本の どこかの駅へ ワープする!',w:12,bg:'linear-gradient(135deg,#3bd1c4,#14897f)'},
+ gyuho:{name:'牛歩カード',icon:'🐄',desc:'ほかの社長は 次のターン 1マスしか すすめない',w:8,bg:'linear-gradient(135deg,#9aa86b,#5f6d33)'},
+ tokusei:{name:'徳政令カード',icon:'📜',desc:'全員の 借金を 帳消しにする',w:4,bg:'linear-gradient(135deg,#d8b06a,#9c6b1f)'},
+ nasuri:{name:'なすりつけカード',icon:'👉',desc:'貧乏神を いちばん近い社長に なすりつける',w:8,bg:'linear-gradient(135deg,#8f83b5,#4d3f7d)'},
+ bonus:{name:'ボーナスカード',icon:'💰',desc:'すぐに 1000万円×年数ボーナスが もらえる',w:13,bg:'linear-gradient(135deg,#ffd43b,#e09b00)'},
+};
+function drawCard(){const tot=Object.values(CARDS).reduce((a,c)=>a+c.w,0);let r=Math.random()*tot;for(const k in CARDS){r-=CARDS[k].w;if(r<0)return k}return'kyuko'}
+function cardTile(c,extra=''){const C=CARDS[c];return `<div class="cardt ${extra}" style="background:${C.bg}"><div class="ci">${C.icon}</div>${C.name}</div>`}
+
+function propIcon(n){const M=[['ラーメン','🍜'],['うどん','🍜'],['そば','🍜'],['寿司','🍣'],['すし','🍣'],['カニ','🦀'],['ガニ','🦀'],['かに','🦀'],['たこ','🐙'],['ホテル','🏨'],['旅館','🏨'],['宿','🏨'],['温泉','♨️'],['城','🏯'],['工場','🏭'],['製','🏭'],['所','🏭'],['ぶどう','🍇'],['りんご','🍎'],['さくらんぼ','🍒'],['桃','🍑'],['みかん','🍊'],['メロン','🍈'],['いちご','🍓'],['梨','🍐'],['マンゴー','🥭'],['ラベンダー','💜'],['漁','🐟'],['養殖','🐟'],['さば','🐟'],['船','🚢'],['酒','🍶'],['蔵','🍶'],['ワイン','🍷'],['ビール','🍺'],['餃子','🥟'],['肉まん','🥟'],['シュウマイ','🥟'],['牛','🥩'],['豚','🥩'],['ステーキ','🥩'],['馬刺','🥩'],['カレー','🍛'],['菓子','🍰'],['スイーツ','🍰'],['カステラ','🍰'],['もち','🍡'],['餅','🍡'],['だんご','🍡'],['まんじゅう','🍡'],['せんべい','🍘'],['タワー','🗼'],['観覧車','🎡'],['テーマ','🎢'],['球場','⚾'],['競馬','🐎'],['牧場','🐄'],['動物','🐘'],['博物館','🏛️'],['会館','🏛️'],['館','🏛️'],['テレビ','📺'],['ゲーム','🎮'],['スキー','⛷️'],['ロープウェイ','🚡'],['畑','🌾'],['田','🌾'],['園','🌳'],['工房','🛠️'],['焼き','🍢'],['おでん','🍢'],['市','🧺'],['屋','🏪']];for(const[k,v]of M)if(n.includes(k))return v;return'🏢'}
+
+/* ================= map render ================= */
+const svg=$('#map'),world=$('#world');
+function smoothClosed(pts){let d=`M${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)}`;const n=pts.length;for(let i=0;i<n;i++){const p0=pts[(i-1+n)%n],p1=pts[i],p2=pts[(i+1)%n],p3=pts[(i+2)%n];d+=`C${(p1.x+(p2.x-p0.x)/6).toFixed(1)},${(p1.y+(p2.y-p0.y)/6).toFixed(1)} ${(p2.x-(p3.x-p1.x)/6).toFixed(1)},${(p2.y-(p3.y-p1.y)/6).toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`}return d+'Z'}
+function pip(pt,poly){let c=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const a=poly[i],b=poly[j];if((a.y>pt.y)!==(b.y>pt.y)&&pt.x<(b.x-a.x)*(pt.y-a.y)/(b.y-a.y)+a.x)c=!c}return c}
+const ISL=ISLRAW.map(pl=>pl.map(([la,lo])=>proj(la,lo)));
+function buildMap(){
+ const R=mulberry32(77);
+ // rail proximity grid
+ const grid=new Map(),CS=40;const gk=(x,y)=>Math.floor(x/CS)+','+Math.floor(y/CS);
+ RAILS.forEach(r=>r.samples.forEach(p=>{const k=gk(p.x,p.y);(grid.get(k)||grid.set(k,[]).get(k)).push(p)}));
+ N.forEach(n=>{const k=gk(n.x,n.y);(grid.get(k)||grid.set(k,[]).get(k)).push({x:n.x,y:n.y,st:n.type==='station'})});
+ function nearRail(x,y,r){const cx=Math.floor(x/CS),cy=Math.floor(y/CS);for(let i=-2;i<=2;i++)for(let j=-2;j<=2;j++){const a=grid.get((cx+i)+','+(cy+j));if(a)for(const p of a){const lim=p.st?r+30:r;if((p.x-x)**2+(p.y-y)**2<lim*lim)return true}}return false}
+ const deco=[];
+ for(let t=0;t<9000&&deco.length<620;t++){
+  const x=R()*MAPW,y=R()*MAPH;if(!ISL.some(pl=>pip({x,y},pl)))continue;
+  if(nearRail(x,y,34))continue;
+  if(deco.some(d=>(d.x-x)**2+(d.y-y)**2<900))continue;
+  const lat=45.7-(y-100)/240,lon=(x-100)/200+129.5;let k;
+  const mtn=(lat>35.3&&lat<37.3&&lon>136.6&&lon<139.3)||(lat>42.7&&lat<44.2&&lon>142&&lon<143.5)||(lat>38.5&&lat<40.5&&lon>140.3&&lon<140.9);
+  if(mtn&&R()<.55)k='mt';else if(lat<37.5&&R()<.22)k='sakura';else if(R()<(lat>40?.55:.25))k='pine';else k='tree';
+  deco.push({x,y,k,s:.85+R()*.5});
+ }
+ ['東京','大阪','名古屋','札幌','博多','横浜','京都','仙台','広島','神戸','福岡'].forEach(nm=>{const n=N[SIDX[nm]];if(!n)return;let c=0;
+  for(let t=0;t<200&&c<7;t++){const a=R()*6.283,r=45+R()*70,x=n.x+Math.cos(a)*r,y=n.y+Math.sin(a)*r;if(nearRail(x,y,26))continue;if(deco.some(d=>(d.x-x)**2+(d.y-y)**2<500))continue;deco.push({x,y,k:R()<.5?'bld':'bld2',s:.9+R()*.4});c++}});
+ deco.sort((a,b)=>a.y-b.y);
+ const isl=ISL.map(smoothClosed),land=RAILS.filter(r=>!r.sea).map(r=>r.d);
+ const P=(arr,attr)=>arr.map(d=>`<path d="${d}"${attr||''}/>`).join('');
+ let s=`<defs>
+<pattern id="wave" width="170" height="120" patternUnits="userSpaceOnUse"><path d="M12 30q12-10 24 0t24 0" fill="none" stroke="#fff" stroke-opacity=".28" stroke-width="3.5" stroke-linecap="round"/><path d="M95 90q12-10 24 0t24 0" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width="3.5" stroke-linecap="round"/></pattern>
+<g id="d-tree"><ellipse cy="12" rx="11" ry="4" fill="#0002"/><rect x="-2.5" y="2" width="5" height="10" fill="#7a4a24"/><circle cy="-5" r="12" fill="#3f9a3a" stroke="#2a6b27" stroke-width="2"/><circle cx="-4" cy="-9" r="4.5" fill="#71c75e"/></g>
+<g id="d-pine"><ellipse cy="13" rx="10" ry="4" fill="#0002"/><rect x="-2" y="5" width="4" height="8" fill="#6b3f1e"/><path d="M0-18L13 8H-13Z" fill="#2f7d3c" stroke="#1e5a29" stroke-width="2" stroke-linejoin="round"/><path d="M0-18L5-8H-3Z" fill="#53a85f"/></g>
+<g id="d-sakura"><ellipse cy="12" rx="11" ry="4" fill="#0002"/><rect x="-2.5" y="2" width="5" height="10" fill="#7a4a24"/><circle cy="-5" r="12" fill="#ffb3cc" stroke="#e48aab" stroke-width="2"/><circle cx="-4" cy="-9" r="4.5" fill="#ffe3ee"/></g>
+<g id="d-mt"><path d="M-36 16L-5-30L7-15L16-24L40 16Z" fill="#69a464" stroke="#3f6e3c" stroke-width="2.5" stroke-linejoin="round"/><path d="M-5-30L-15-15L-8-13L-3-18L4-14Z" fill="#fff"/><path d="M16-24L10-16L15-15L20-18Z" fill="#fff"/></g>
+<g id="d-bld"><rect x="-9" y="-30" width="18" height="40" fill="#e3e9f1" stroke="#4d5866" stroke-width="2"/><path d="M-5-24h4M2-24h4M-5-16h4M2-16h4M-5-8h4M2-8h4M-5 0h4M2 0h4" stroke="#6fb4e6" stroke-width="4"/></g>
+<g id="d-bld2"><rect x="-11" y="-18" width="22" height="28" fill="#f6e3c7" stroke="#4d5866" stroke-width="2"/><path d="M-13-18L0-28L13-18Z" fill="#e25b4b" stroke="#4d5866" stroke-width="2" stroke-linejoin="round"/><rect x="-4" y="0" width="8" height="10" fill="#8b5a2b"/></g>
+</defs>`;
+ s+=`<rect x="-3000" y="-3000" width="${MAPW+6000}" height="${MAPH+6000}" fill="#3a9be2"/><rect x="-3000" y="-3000" width="${MAPW+6000}" height="${MAPH+6000}" fill="url(#wave)"/>`;
+ s+=`<g fill="#73c3f1" stroke="#73c3f1" stroke-width="90" stroke-linejoin="round">${P(isl)}</g><g fill="none" stroke="#73c3f1" stroke-width="150" stroke-linecap="round">${P(land)}</g>`;
+ s+=`<g fill="#f3e2ae" stroke="#f3e2ae" stroke-width="30" stroke-linejoin="round">${P(isl)}</g><g fill="none" stroke="#f3e2ae" stroke-width="100" stroke-linecap="round">${P(land)}</g>`;
+ s+=`<g fill="#8fd062">${P(isl)}</g><g fill="none" stroke="#8fd062" stroke-width="72" stroke-linecap="round">${P(land)}</g>`;
+ s+=deco.map(d=>`<use href="#d-${d.k}" transform="translate(${d.x.toFixed(0)},${d.y.toFixed(0)}) scale(${d.s.toFixed(2)})"/>`).join('');
+ s+=RAILS.filter(r=>r.sea).map(r=>`<path d="${r.d}" fill="none" stroke="#7a5a35" stroke-width="28" stroke-linecap="round"/><path d="${r.d}" fill="none" stroke="#ead6ac" stroke-width="19" stroke-linecap="round"/>`).join('');
+ s+=`<g fill="none" stroke-linecap="round"><g stroke="#2d2d2d" stroke-width="11">${P(RAILS.map(r=>r.d))}</g><g stroke="#fff" stroke-width="5" stroke-dasharray="12 10">${P(RAILS.map(r=>r.d))}</g></g>`;
+ const SQ={blue:['#2f7de1','+'],red:['#e23b4e','−'],yellow:['#f2b800','★']};
+ s+=N.map(n=>{if(n.type==='station')return `<g transform="translate(${n.x.toFixed(1)},${n.y.toFixed(1)})"><circle r="23" cy="3" fill="#0003"/><circle r="22" fill="#fff" stroke="#b81f35" stroke-width="4"/><circle r="15" fill="#e8455a"/><text class="stt" y="5.5">駅</text></g>`;
+  const[c,t]=SQ[n.type];return `<g transform="translate(${n.x.toFixed(1)},${n.y.toFixed(1)})"><rect x="-14" y="-11" width="28" height="28" rx="7" fill="#0003"/><rect x="-14" y="-14" width="28" height="28" rx="7" fill="${c}" stroke="#fff" stroke-width="3"/><text class="sq" y="6.5">${t}</text></g>`}).join('');
+ s+=STATIONS.map(id=>{const n=N[id],w=n.name.length*19+20;return `<g transform="translate(${n.x.toFixed(1)},${(n.y-42).toFixed(1)})"><rect id="lb${id}" class="lb" x="${-w/2}" y="-16" width="${w}" height="32" rx="9"/><text class="lbl" y="7">${n.name}</text><text id="cr${id}" x="${w/2+2}" y="-8" font-size="22" text-anchor="middle"></text></g><g id="own${id}" transform="translate(${n.x.toFixed(1)},${(n.y+33).toFixed(1)})"></g>`}).join('');
+ s+='<g id="destL"></g><g id="prevL"></g><g id="candL"></g><g id="trainL"></g><g id="binL"></g><g id="fxL"></g>';
+ world.innerHTML=s;
+}
+buildMap();
+const destL=$('#destL'),prevL=$('#prevL'),candL=$('#candL'),trainL=$('#trainL'),binL=$('#binL'),fxL=$('#fxL');
+
+/* ================= camera ================= */
+let VW=innerWidth,VH=innerHeight;
+const cam={x:N[TOKYO].x,y:N[TOKYO].y,s:.5,tx:N[TOKYO].x,ty:N[TOKYO].y,ts:.5,follow:-1,drift:true};
+const minS=()=>Math.min(VW/MAPW,VH/MAPH)*.95;
+const baseS=()=>clamp(Math.min(VW,VH)/640,.5,1.25);
+const mobile=()=>VW<=760;
+function vc(){return mobile()?{cx:VW/2,cy:VH*.5}:{cx:VW/2+90,cy:VH*.43}}
+addEventListener('resize',()=>{VW=innerWidth;VH=innerHeight});
+function fitNodes(ids,maxS){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;ids.forEach(i=>{const n=N[i];x0=Math.min(x0,n.x);y0=Math.min(y0,n.y);x1=Math.max(x1,n.x);y1=Math.max(y1,n.y)});
+ const aw=mobile()?VW*.9:VW*.62,ah=mobile()?VH*.42:VH*.5;cam.follow=-1;cam.tx=(x0+x1)/2;cam.ty=(y0+y1)/2;cam.ts=clamp(Math.min(aw/(x1-x0+160),ah/(y1-y0+160)),minS(),maxS||baseS()*1.1)}
+function fitAll(){cam.follow=-1;cam.tx=MAPW/2;cam.ty=MAPH/2;cam.ts=minS()}
+function followP(i){cam.follow=i;cam.ts=baseS()}
+const ptrs=new Map();let dragMoved=0,pinch0=null;
+const pd=()=>{const a=[...ptrs.values()];return Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)};
+svg.addEventListener('pointerdown',e=>{try{svg.setPointerCapture(e.pointerId)}catch(_){};ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});if(ptrs.size===1)dragMoved=0;if(ptrs.size===2)pinch0={d:pd(),s:cam.ts}});
+svg.addEventListener('pointermove',e=>{const p=ptrs.get(e.pointerId);if(!p)return;const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;
+ if(ptrs.size===1){dragMoved+=Math.abs(dx)+Math.abs(dy);if(dragMoved>7){cam.follow=-1;cam.drift=false;cam.tx-=dx/cam.s;cam.ty-=dy/cam.s;cam.x-=dx/cam.s;cam.y-=dy/cam.s}}
+ else if(ptrs.size===2&&pinch0){dragMoved=99;cam.ts=clamp(pinch0.s*pd()/pinch0.d,minS(),2.2)}});
+function ptrEnd(e){if(!ptrs.has(e.pointerId))return;ptrs.delete(e.pointerId);if(ptrs.size<2)pinch0=null;
+ if(e.type==='pointerup'&&ptrs.size===0&&dragMoved<=7&&onMapTap){let best=-1,bd=1e9;const{cx,cy}=vc();const wx=cam.x+(e.clientX-cx)/cam.s,wy=cam.y+(e.clientY-cy)/cam.s;
+  candL.querySelectorAll('[data-cand]').forEach(g=>{const n=N[+g.dataset.cand];const d=Math.hypot(n.x-wx,n.y-wy);if(d<bd){bd=d;best=+g.dataset.cand}});
+  if(best>=0&&bd*cam.s<44)onMapTap(best)}}
+svg.addEventListener('pointerup',ptrEnd);svg.addEventListener('pointercancel',ptrEnd);
+svg.addEventListener('wheel',e=>{e.preventDefault();cam.ts=clamp(cam.ts*Math.exp(-e.deltaY*.0015),minS(),2.2)},{passive:false});
+let onMapTap=null;
+
+/* ================= game state ================= */
+let G=null;const SAVE='tetsu-shacho-save';
+let disp=[],TR=[],movingIdx=-1,binG=null,trFlip=[];
+const yf=()=>1+(G.year-1)*.25;
+const spd=()=>G&&G.speed==='fast'?.5:1;
+const curHuman=()=>!!(G&&G.players[G.turn]&&G.players[G.turn].human);
+const anyHuman=()=>G.players.some(p=>p.human);
+function monoOwner(sid){const ps=N[sid].props;const o=G.owner[ps[0]];if(o<0)return -1;return ps.every(id=>G.owner[id]===o)?o:-1}
+function yearlyIncome(i){let t=0;STATIONS.forEach(sid=>{const m=monoOwner(sid)===i?2:1;N[sid].props.forEach(id=>{if(G.owner[id]===i)t+=PROPS[id].price*PROPS[id].rate/100*m})});return Math.round(t)}
+function propValue(i){return PROPS.reduce((a,p)=>a+(G.owner[p.id]===i?p.price:0),0)}
+const total=i=>G.players[i].money+propValue(i);
+function save(){if(G&&!G.over)store.set(SAVE,JSON.stringify(G))}
+
+function trainMarkup(i){const p=G.players[i],C=CHARS[p.char];
+ return `<g class="tb"><ellipse cy="17" rx="25" ry="5" fill="#0003"/><rect x="-25" y="-12" width="50" height="27" rx="9" fill="${C.color}" stroke="#1b1b1b" stroke-width="2.5"/>
+ <rect x="-19" y="-7" width="9" height="8" rx="2" fill="#cdeeff" stroke="#1b1b1b" stroke-width="1.5"/><rect x="-6" y="-7" width="9" height="8" rx="2" fill="#cdeeff" stroke="#1b1b1b" stroke-width="1.5"/><path d="M8-7h9a6 6 0 0 1 6 6v2H8Z" fill="#cdeeff" stroke="#1b1b1b" stroke-width="1.5"/>
+ <rect x="-25" y="5" width="50" height="4" fill="#fff" opacity=".85"/><circle cx="-14" cy="16" r="4.5" fill="#333"/><circle cx="14" cy="16" r="4.5" fill="#333"/></g>
+ <image href="${FACEURL[p.char]}" x="-19" y="-52" width="38" height="38"/>
+ <g transform="translate(22,-38)"><circle r="11" fill="${C.color}" stroke="#fff" stroke-width="2.5"/><text y="4.5" font-size="11" font-weight="900" fill="#fff" text-anchor="middle">${i+1}P</text></g>`}
+function buildTrains(){trainL.innerHTML='';TR=[];trFlip=[];disp=G.players.map(p=>({x:N[p.pos].x,y:N[p.pos].y}));
+ G.players.forEach((p,i)=>{const g=document.createElementNS(SVGNS,'g');g.innerHTML=trainMarkup(i);trainL.appendChild(g);TR.push(g);trFlip.push(1)});
+ binL.innerHTML=`<g id="binS" style="display:none"><g transform="scale(1.25)"><g class="bob">${binInner()}</g></g></g>`;binG=$('#binS')}
+function raiseTrain(i){if(TR[i])trainL.appendChild(TR[i])}
+function setFlip(i,dx){if(Math.abs(dx)<1)return;const f=dx<0?-1:1;if(trFlip[i]!==f){trFlip[i]=f;TR[i].querySelector('.tb').setAttribute('transform',f<0?'scale(-1,1)':'')}}
+function frame(){
+ if(G&&disp.length){
+  const groups={};G.players.forEach((p,i)=>{if(i!==movingIdx)(groups[p.pos]=groups[p.pos]||[]).push(i)});
+  G.players.forEach((p,i)=>{if(i!==movingIdx){const g=groups[p.pos],k=g.indexOf(i),n=g.length;const ox=n>1?Math.cos(k/n*6.283-1.2)*22:0,oy=n>1?Math.sin(k/n*6.283-1.2)*14:0;const tx=N[p.pos].x+ox,ty=N[p.pos].y+oy;disp[i].x+=(tx-disp[i].x)*.2;disp[i].y+=(ty-disp[i].y)*.2}
+   TR[i].setAttribute('transform',`translate(${disp[i].x.toFixed(1)},${disp[i].y.toFixed(1)})`)});
+  if(binG){if(G.bin>=0&&disp[G.bin]){binG.style.display='';binG.setAttribute('transform',`translate(${(disp[G.bin].x+34).toFixed(1)},${(disp[G.bin].y-48).toFixed(1)})`)}else binG.style.display='none'}
+  if(cam.follow>=0&&disp[cam.follow]){cam.tx=disp[cam.follow].x;cam.ty=disp[cam.follow].y}
+ }else if(cam.drift){const t=performance.now()/1000;cam.tx=N[TOKYO].x-500+Math.sin(t*.07)*900;cam.ty=N[TOKYO].y-500+Math.cos(t*.05)*700}
+ cam.x+=(cam.tx-cam.x)*.12;cam.y+=(cam.ty-cam.y)*.12;cam.s+=(cam.ts-cam.s)*.14;
+ const{cx,cy}=vc();world.setAttribute('transform',`translate(${(cx-cam.x*cam.s).toFixed(1)},${(cy-cam.y*cam.s).toFixed(1)}) scale(${cam.s.toFixed(4)})`);
+ requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+
+function refreshStation(sid){const g=$('#own'+sid);const ps=N[sid].props,w=ps.length*13;
+ g.innerHTML=`<rect x="${-w/2-4}" y="-8" width="${w+8}" height="16" rx="8" fill="#fff" stroke="#1b1b1b" stroke-width="2"/>`+ps.map((id,k)=>{const o=G?G.owner[id]:-1;return `<circle cx="${-w/2+6.5+k*13}" r="4.6" fill="${o>=0?CHARS[G.players[o].char].color:'#d5dbe5'}" stroke="#1b1b1b" stroke-width="1"/>`}).join('');
+ const m=G?monoOwner(sid):-1;$('#cr'+sid).textContent=m>=0?'👑':'';$('#lb'+sid).style.stroke=m>=0?CHARS[G.players[m].char].color:'';$('#lb'+sid).style.strokeWidth=m>=0?'5':''}
+function refreshAllStations(){STATIONS.forEach(refreshStation)}
+refreshAllStations();
+function drawDest(){STATIONS.forEach(s=>$('#lb'+s).classList.toggle('dest',G&&s===G.dest));destL.innerHTML='';if(!G||G.dest<0)return;const n=N[G.dest];
+ destL.innerHTML=`<g transform="translate(${n.x},${n.y})"><circle class="pulse" r="30" fill="none" stroke="#ffe14d" stroke-width="7"/><g transform="translate(${n.name.length*9.5+18},-58)"><line y1="0" y2="-44" stroke="#444" stroke-width="4" stroke-linecap="round"/><path class="flag" d="M0-44L34-34L0-24Z" fill="#ff3b3b" stroke="#1b1b1b" stroke-width="2" stroke-linejoin="round"/></g></g>`}
+function floatText(node,text,color){const n=N[node];const t=document.createElementNS(SVGNS,'text');t.setAttribute('x',n.x);t.setAttribute('y',n.y-30);t.setAttribute('class','floater');t.setAttribute('fill',color);t.textContent=text;fxL.appendChild(t);setTimeout(()=>t.remove(),1700)}
+
+/* ================= UI helpers ================= */
+let advance=null;
+function setNarr(face){$('#narr').innerHTML=face==='bin'?binSVG():NARR}
+function setMsg(t,face){const el=$('#msgText');el.textContent=t;el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');$('#msgArrow').hidden=true;setNarr(face)}
+function waitAdvance(ms){return new Promise(r=>{let done=false;const f=()=>{if(done)return;done=true;if(advance===f)advance=null;r()};advance=f;if(ms)setTimeout(f,ms)})}
+async function say(t,o={}){setMsg(t,o.face);const w=o.wait!==undefined?o.wait:curHuman();
+ if(w){$('#msgArrow').hidden=false;await waitAdvance(0);$('#msgArrow').hidden=true}else await waitAdvance(o.ms||Math.round((750+t.length*28)*spd()))}
+$('#msg').addEventListener('pointerdown',()=>{if(advance)advance()});
+function buttons(items){const c=$('#cmd');c.innerHTML='';items.forEach(it=>{const b=document.createElement('button');if(it.main)b.className='main';b.innerHTML=`<span class="ic">${it.icon||'▶'}</span><span>${it.label}</span>${it.note!=null?`<span class="note">${it.note}</span>`:''}`;b.disabled=!!it.disabled;b.onclick=()=>{sfx('select');it.fn()};c.appendChild(b)});c.hidden=false}
+function hideCmd(){$('#cmd').hidden=true;$('#cmd').innerHTML=''}
+function menu(items){return new Promise(res=>buttons(items.map(it=>({...it,fn:()=>{hideCmd();res(it.key)}}))))}
+function openModal(html,cls){const w=document.createElement('div');w.className='mw';w.innerHTML=`<div class="modal ${cls||''}">${html}</div>`;$('#modals').appendChild(w);return w}
+const closeModal=w=>w&&w.remove();
+function waitBtn(el){return new Promise(r=>el.addEventListener('click',()=>{sfx('select');r()},{once:true}))}
+async function modalWait(btn,human,ms){if(human)await waitBtn(btn);else await Promise.race([sleep(ms*spd()),waitBtn(btn)])}
+function confirmBox(t){return new Promise(res=>{const w=openModal(`<div class="ribbon">かくにん</div><div class="bubble" style="white-space:pre-line">${esc(t)}</div><div class="mfoot"><button class="btn red" data-primary>はい</button><button class="btn">いいえ</button></div>`);const[b1,b2]=w.querySelectorAll('button');b1.onclick=()=>{sfx('select');closeModal(w);res(true)};b2.onclick=()=>{sfx('select');closeModal(w);res(false)}})}
+addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const ae=document.activeElement;if(ae&&(ae.tagName==='INPUT'||ae.tagName==='BUTTON'&&e.key===' '))return;if(!$('#title').hidden)return;e.preventDefault();
+ const ms=document.querySelectorAll('.mw');if(ms.length){const pr=ms[ms.length-1].querySelector('[data-primary]');if(pr&&!pr.disabled&&!pr.hidden)pr.click();return}
+ if(advance){advance();return}
+ if(!$('#cmd').hidden){const b=$('#cmd button.main:not(:disabled)');if(b)b.click()}});
+
+function updateHUD(){if(!G)return;
+ $('#plist').innerHTML=G.players.map((p,i)=>{const C=CHARS[p.char];return `<div class="pc ${i===G.turn?'cur':''}" style="background:${C.grad}"><div class="av">${FACES[p.char]}</div><div><div class="row1"><span class="num">${i+1}P</span>${esc(p.name)}${p.human?'':'<span class="cpu">CPU</span>'}</div><div class="money ${p.money<0?'neg':''}"><small>持ち金</small>${fmt(p.money)}</div></div><div class="badges">${G.bin===i?'<span class="binb">貧乏神</span>':''}${p.cards.length?`<span>🃏${p.cards.length}</span>`:''}</div></div>`}).join('');
+ $('#dateBox').innerHTML=`<b>${G.year}</b>年目 <b>${G.month}</b>月<small>全${G.maxYears}年</small>`;
+ const cp=G.players[G.turn];$('#destBox').innerHTML=G.dest>=0?`<div class="dl">目的地</div><div class="dn">${N[G.dest].name}</div><div class="dr">のこり <b>${dist(cp.pos,G.dest)}</b> マス</div>`:'<div class="dl">目的地</div><div class="dn">？？？</div>'}
+$('#bHere').onclick=()=>{if(G){sfx('select');followP(movingIdx>=0?movingIdx:G.turn)}};
+$('#bAll').onclick=()=>{sfx('select');fitAll()};
+$('#bDest').onclick=()=>{if(G&&G.dest>=0){sfx('select');cam.follow=-1;cam.tx=N[G.dest].x;cam.ty=N[G.dest].y;cam.ts=baseS()}};
+
+/* ================= movement ================= */
+function reachable(start,steps){const res=new Map(),seen=new Set();
+ (function dfs(node,prev,rem,path){const key=node*4096+(prev+1)*32+rem;if(seen.has(key))return;seen.add(key);
+  if(rem===0||(node===G.dest&&path.length>1)){if(!res.has(node))res.set(node,path.slice());return}
+  let nx=ADJ[node].filter(n=>n!==prev);if(!nx.length)nx=ADJ[node];
+  for(const n of nx){path.push(n);dfs(n,node,rem-1,path);path.pop()}})(start,-1,steps,[start]);
+ return res}
+function cpuChoose(pi,res){const dd=distFrom(G.dest);let best=null,bs=-1e9;
+ for(const[n,path]of res){let s=-dd[n]*10;if(n===G.dest)s+=10000;const t=N[n].type;s+=t==='station'?4:t==='blue'?5:t==='yellow'?6:-9;
+  if(G.bin===pi&&path.slice(1).some(q=>G.players.some((o,j)=>j!==pi&&o.pos===q)))s+=60;
+  s+=Math.random()*3;if(s>bs){bs=s;best=n}}return best}
+function drawPreview(path,color){prevL.innerHTML=`<polyline points="${path.map(i=>N[i].x.toFixed(1)+','+N[i].y.toFixed(1)).join(' ')}" fill="none" stroke="#fff" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/><polyline points="${path.map(i=>N[i].x.toFixed(1)+','+N[i].y.toFixed(1)).join(' ')}" fill="none" stroke="${color}" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2 14"/>`}
+const TYPE_NAME={blue:'青マス',red:'赤マス',yellow:'黄マス(カード)'};
+const nodeName=n=>N[n].type==='station'?N[n].name+'駅':TYPE_NAME[N[n].type];
+function chooseLanding(pi,res,steps){return new Promise(resolve=>{
+ const p=G.players[pi],col=CHARS[p.char].color,rec=cpuChoose(pi,res);
+ candL.innerHTML=[...res.keys()].map(n=>`<g class="cand" data-cand="${n}" transform="translate(${N[n].x.toFixed(1)},${N[n].y.toFixed(1)})"><circle r="44" fill="#fff" opacity=".01"/><circle class="ring" r="27" fill="#ffffff55" stroke="#fff" stroke-width="5"/><circle class="spin" r="27" fill="none" stroke="${col}" stroke-width="4" stroke-dasharray="7 6"/>${n===rec?'<text y="-34" font-size="24" text-anchor="middle">⭐</text>':''}</g>`).join('');
+ fitNodes([...res.keys(),p.pos]);
+ let sel=null;
+ const finish=n=>{onMapTap=null;candL.innerHTML='';prevL.innerHTML='';hideCmd();resolve(n)};
+ const intro=()=>{sel=null;prevL.innerHTML='';candL.querySelectorAll('.cand').forEach(g=>g.style.opacity='');setMsg(`${steps}マス すすめる!\n光っているマスから 止まる場所を タップしてね`);
+  buttons([{label:'おすすめにする',icon:'⭐',main:true,fn:()=>select(rec)},{label:'全部を見る',icon:'🔍',fn:()=>fitNodes([...res.keys(),p.pos])}])};
+ const select=n=>{if(sel===n){finish(n);return}sel=n;sfx('select');drawPreview(res.get(n),col);
+  candL.querySelectorAll('.cand').forEach(g=>g.style.opacity=+g.dataset.cand===n?'1':'.45');
+  const d=dist(n,G.dest);setMsg(`${nodeName(n)}に 止まりますか?\n${n===G.dest?'🎉 目的地に 到着できる!':`目的地まで あと ${d}マス`}`);
+  buttons([{label:'ここに決定!',icon:'✔',main:true,fn:()=>finish(n)},{label:'えらびなおす',icon:'↩',fn:intro}])};
+ onMapTap=select;intro()})}
+async function moveAlong(pi,path){const p=G.players[pi];movingIdx=pi;raiseTrain(pi);followP(pi);
+ const sb=$('#stepBubble');sb.hidden=false;let transfer=-1;
+ for(let i=1;i<path.length;i++){sb.innerHTML=`あと <b>${path.length-i}</b> マス`;
+  const a=N[path[i-1]],b=N[path[i]],dur=(p.human?240:200)*spd(),t0=performance.now(),sx=disp[pi].x,sy=disp[pi].y;setFlip(pi,b.x-a.x);
+  await new Promise(r=>{const step=now=>{const t=Math.min(1,(now-t0)/dur),e=t<.5?2*t*t:1-(-2*t+2)**2/2;disp[pi].x=sx+(b.x-sx)*e;disp[pi].y=sy+(b.y-sy)*e-Math.sin(t*Math.PI)*8;if(t<1)requestAnimationFrame(step);else r()};requestAnimationFrame(step)});
+  p.prev=path[i-1];p.pos=path[i];sfx('step');
+  if(G.bin===pi&&transfer<0){const j=G.players.findIndex((o,k)=>k!==pi&&o.pos===p.pos);if(j>=0){transfer=j;G.bin=j;updateHUD()}}}
+ sb.hidden=true;movingIdx=-1;updateHUD();
+ if(transfer>=0){sfx('bad');await say(`すれちがいざまに 貧乏神が ${G.players[transfer].name}社長に うつった!`,{face:'bin'})}}
+async function warpTo(pi,node){const g=TR[pi];g.style.transition='opacity .35s';g.style.opacity='0';sfx('bad');await sleep(400);
+ const p=G.players[pi];p.pos=node;p.prev=-1;disp[pi]={x:N[node].x,y:N[node].y};cam.x=N[node].x;cam.y=N[node].y;followP(pi);await sleep(300);g.style.opacity='1';sfx('coin');await sleep(350);g.style.transition='';updateHUD()}
+
+/* ================= screens ================= */
+const PIPS={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+const dieHTML=v=>{let s='';for(let i=0;i<9;i++)s+=`<i class="${PIPS[v].includes(i)?(v===1?'on red':'on'):''}"></i>`;return s};
+async function rollDice(n,human){
+ const w=openModal(`<div class="ribbon">サイコロをふる${n>1?` ×${n}`:''}</div><div class="bubble">${human?'ボタンを押して サイコロを とめよう!':'サイコロを ふっています…'}</div><div class="dice">${'<div class="die spinning"></div>'.repeat(n)}</div><div class="dtotal">&nbsp;</div><button class="big-btn" data-primary>とめる!</button>`);
+ const ds=[...w.querySelectorAll('.die')];let k=0;const iv=setInterval(()=>{ds.forEach(d=>d.innerHTML=dieHTML(rnd(1,6)));if(k++%2===0)sfx('tick')},70);
+ const btn=w.querySelector('button');await modalWait(btn,human,900);clearInterval(iv);btn.hidden=true;
+ const vals=ds.map(()=>rnd(1,6));ds.forEach((d,i)=>{d.classList.remove('spinning');d.classList.add('land');d.innerHTML=dieHTML(vals[i])});
+ const tot=vals.reduce((a,b)=>a+b,0);sfx('dice');w.querySelector('.dtotal').innerHTML=`<b>${tot}</b> マス すすめる!`;
+ await sleep((human?1000:850)*spd());closeModal(w);return tot}
+
+async function propertyScreen(pi,sid){
+ const p=G.players[pi],st=N[sid],human=p.human;
+ const w=openModal(`<div class="ribbon">物件駅</div><div class="sign"><div class="board">${st.name}</div><div class="mon">${esc(p.name)}社長の 持ち金<b class="pm"></b></div></div><div class="mono" hidden></div><div class="plist2"></div><div class="mfoot"><button class="big-btn blue" data-primary style="margin-top:4px">おわる</button></div>`);
+ const list=w.querySelector('.plist2'),btn=w.querySelector('[data-primary]');
+ function render(flashId){
+  w.querySelector('.pm').textContent=fmt(p.money);const mo=monoOwner(sid),mb=w.querySelector('.mono');mb.hidden=mo<0;if(mo>=0)mb.textContent=`👑 ${G.players[mo].name}社長が 独占中! (収益2倍)`;
+  list.innerHTML=st.props.map(id=>{const pr=PROPS[id],o=G.owner[id];let act;
+   if(o>=0)act=`<span class="own" style="background:${CHARS[G.players[o].char].color}">${esc(G.players[o].name)}</span>`;
+   else act=human?`<button class="buy" data-buy="${id}" ${p.money<pr.price?'disabled':''}>買う</button>`:'<span class="own" style="background:#aab">売り物</span>';
+   return `<div class="pr ${o===pi?'mine':''} ${flashId===id?'flash':''}"><div class="pi">${propIcon(pr.name)}</div><div class="pn">${pr.name}<small>価格 ${fmt(pr.price)}・収益率 ${pr.rate}%(年 ${fmt(pr.price*pr.rate/100)})</small></div><div class="pa">${act}</div></div>`}).join('')}
+ function buy(id){const pr=PROPS[id];if(G.owner[id]>=0||p.money<pr.price)return false;p.money-=pr.price;G.owner[id]=pi;sfx('buy');refreshStation(sid);updateHUD();render(id);return true}
+ render();
+ list.addEventListener('click',e=>{const b=e.target.closest('[data-buy]');if(b&&!b.disabled){const before=monoOwner(sid);buy(+b.dataset.buy);if(before<0&&monoOwner(sid)===pi)sfx('fan')}});
+ if(human){setMsg(`${st.name}駅に とまりました!\n物件を 買いますか?`);await waitBtn(btn)}
+ else{await sleep(600*spd());const reserve=r10(800*yf());
+  const c=st.props.filter(id=>G.owner[id]<0).sort((a,b)=>PROPS[b].rate-PROPS[a].rate);let bought=0;
+  for(const id of c){if(p.money-PROPS[id].price>=reserve){buy(id);bought++;await sleep(550*spd())}}
+  if(!bought){w.querySelector('.mono').hidden=false;w.querySelector('.mono').textContent='今回は 何も買わなかった';}
+  await Promise.race([sleep(900*spd()),waitBtn(btn)])}
+ closeModal(w);
+}
+
+function cardScreen(pi){return new Promise(res=>{const p=G.players[pi];
+ const w=openModal(`<div class="ribbon">カード</div><div class="cards"></div><div class="cdx"></div><div class="mfoot"><button class="btn" data-primary>とじる</button></div>`);
+ const box=w.querySelector('.cards'),dx=w.querySelector('.cdx');
+ const ok=c=>!(c==='nasuri'&&G.bin!==pi);
+ box.innerHTML=p.cards.map((c,i)=>`<button data-i="${i}" style="padding:0" ${ok(c)?'':'disabled'}>${cardTile(c)}</button>`).join('');
+ box.addEventListener('click',e=>{const b=e.target.closest('[data-i]');if(!b||b.disabled)return;sfx('select');const i=+b.dataset.i,c=p.cards[i];
+  box.querySelectorAll('.cardt').forEach((t,k)=>t.classList.toggle('sel',k===i));
+  dx.innerHTML=`<div class="cdetail">${cardTile(c)}<div class="cd"><b>${CARDS[c].name}</b>${CARDS[c].desc}<div class="mfoot" style="justify-content:flex-start"><button class="btn red">使う</button><button class="btn">やめる</button></div></div></div>`;
+  const[u,n]=dx.querySelectorAll('.cd button');u.onclick=()=>{sfx('select');closeModal(w);res(i)};n.onclick=()=>{sfx('select');dx.innerHTML='';box.querySelectorAll('.cardt').forEach(t=>t.classList.remove('sel'))}});
+ w.querySelector('[data-primary]').onclick=()=>{sfx('select');closeModal(w);res(null)}})}
+async function cardBanner(pi,c){const p=G.players[pi];const w=openModal(`<div class="ribbon">カード使用</div><div class="cdetail" style="margin-top:0">${cardTile(c)}<div class="cd"><b>${CARDS[c].name}</b>${CARDS[c].desc}<div style="margin-top:8px;color:#e23452">${esc(p.name)}社長が 使った!</div></div></div><div class="mfoot"><button class="big-btn" data-primary>OK</button></div>`,'cuse');
+ sfx('coin');await modalWait(w.querySelector('button'),p.human,1500);closeModal(w)}
+async function giveCard(pi,c){const p=G.players[pi];p.cards.push(c);updateHUD();if(p.cards.length>8){const lost=p.cards.shift();updateHUD();await say(`カードが いっぱいなので「${CARDS[lost].name}」を すてた…`)}}
+async function useCard(pi,ci){const p=G.players[pi],c=p.cards[ci];p.cards.splice(ci,1);updateHUD();await cardBanner(pi,c);
+ switch(c){
+  case'kyuko':return{dice:2};case'tokkyu':return{dice:3};case'shinkansen':return{dice:4};
+  case'buttobi':{let s;do{s=pick(STATIONS)}while(s===p.pos);await warpTo(pi,s);await say(`${N[s].name}駅に ぶっとんだ!`);await landEvent(pi,s);return{warped:true}}
+  case'gyuho':G.players.forEach((q,j)=>{if(j!==pi)q.slow=1});await say('モ〜。ほかの社長たちは 次のターン 1マスしか すすめない!');return{};
+  case'tokusei':{const l=G.players.filter(q=>q.money<0);l.forEach(q=>q.money=0);updateHUD();await say(l.length?`${l.map(q=>q.name).join('・')}社長の 借金が 帳消しになった!`:'借金のある社長は いなかった…');return{}}
+  case'nasuri':{const ds=distFrom(p.pos);let j=-1,bd=1e9;G.players.forEach((q,k)=>{if(k!==pi&&ds[q.pos]<bd){bd=ds[q.pos];j=k}});if(j>=0){G.bin=j;updateHUD();sfx('bad');await say(`えいっ! 貧乏神を ${G.players[j].name}社長に なすりつけた!`,{face:'bin'})}return{}}
+  case'bonus':{const a=r10(1000*G.year);p.money+=a;sfx('coin');floatText(p.pos,'+'+fmt(a),'#1f6fd6');updateHUD();await say(`ボーナスで ${fmt(a)} もらった!`);return{}}}
+ return{}}
+function cpuPickCard(pi){const p=G.players[pi],has=c=>p.cards.indexOf(c);
+ if(G.bin===pi&&has('nasuri')>=0)return has('nasuri');
+ if(has('bonus')>=0)return has('bonus');
+ if(p.money<-3000&&has('tokusei')>=0)return has('tokusei');
+ const d=dist(p.pos,G.dest);
+ if(has('gyuho')>=0&&G.players.some((q,j)=>j!==pi&&dist(q.pos,G.dest)<=6)&&Math.random()<.7)return has('gyuho');
+ if(d>=28&&has('buttobi')>=0&&Math.random()<.4)return has('buttobi');
+ if(d>=14&&has('shinkansen')>=0)return has('shinkansen');
+ if(d>=9&&has('tokkyu')>=0)return has('tokkyu');
+ if(d>=6&&has('kyuko')>=0)return has('kyuko');
+ return -1}
+
+function miniGame(pi){return new Promise(res=>{const p=G.players[pi];
+ const w=openModal(`<div class="ribbon">ミニゲーム(おはらい玉なげ)</div><div class="mg-top"><div class="bubble" style="margin:0;flex:1;margin-right:10px;font-size:14px">貧乏神に おはらい玉を 当てて 追いはらえ!<br>緑で ストップすれば 大成功!</div><div class="mg-time">TIME<b>10</b></div></div>
+ <div class="mg-scene"><svg class="mg-bin" viewBox="-40 -38 80 70"><g class="bob">${binInner()}</g></svg><div class="mg-ball"></div><div class="mg-face">${FACES[p.char]}</div><div class="mg-res"></div></div>
+ <div class="mg-bar"><div class="mg-cur"></div></div><button class="big-btn" data-primary>🔴 なげる!</button>`);
+ const cur=w.querySelector('.mg-cur'),tm=w.querySelector('.mg-time b'),ball=w.querySelector('.mg-ball'),bin=w.querySelector('.mg-bin'),rs=w.querySelector('.mg-res'),btn=w.querySelector('button');
+ const t0=performance.now(),speed=1.15+Math.random()*.35;let done=false,pos=0;
+ const loop=now=>{if(done)return;const t=(now-t0)/1000,ph=(t*speed)%2;pos=ph<1?ph:2-ph;cur.style.left=(pos*100)+'%';tm.textContent=Math.max(0,10-Math.floor(t));if(t>=10){finish(true);return}requestAnimationFrame(loop)};
+ function finish(timeout){if(done)return;done=true;btn.disabled=true;const off=Math.abs(pos-.5),g=timeout?'miss':off<=.06?'perfect':off<=.18?'good':'miss';
+  ball.style.opacity='1';ball.style.transform=g==='miss'?`translate(${pos<.5?-170:170}px,-150px) scale(.6)`:'translate(0,-120px) scale(.7)';sfx('select');
+  setTimeout(()=>{if(g!=='miss'){bin.classList.add('hit');sfx(g==='perfect'?'fan':'coin')}else sfx('bad');ball.style.opacity='0';rs.textContent=g==='perfect'?'大成功!':g==='good'?'かすった!':'はずれ…'},450);
+  setTimeout(()=>{closeModal(w);res(g)},1700)}
+ btn.onclick=()=>finish(false);requestAnimationFrame(loop)})}
+
+async function binAction(pi){const p=G.players[pi],y=yf();
+ await say(`${p.name}社長に とりついた 貧乏神が なにか たくらんでいる…`,{face:'bin'});
+ let g;if(p.human)g=await miniGame(pi);else{const r=Math.random();g=r<.25?'perfect':r<.6?'good':'miss';await say(`${p.name}社長の おはらい玉… ${g==='perfect'?'命中!':g==='good'?'かすった!':'はずれ…'}`,{face:'bin',wait:false})}
+ if(g==='perfect'){sfx('coin');await say('おはらい玉が 命中! 貧乏神は 目を回して 何もできなかった!',{face:'bin'});return}
+ const mult=g==='good'?.5:1,r=Math.random(),own=PROPS.filter(x=>G.owner[x.id]===pi);
+ if(r<.12){const a=r10(rnd(200,800)*y);p.money+=a;sfx('coin');floatText(p.pos,'+'+fmt(a),'#1f6fd6');updateHUD();await say(`貧乏神「きょうは 気分がいいから おこづかいを あげよう」\n${fmt(a)} もらった!`,{face:'bin'});return}
+ sfx('bad');
+ if(r<.32&&p.cards.length){const n=mult<1?1:Math.ceil(p.cards.length/2),lost=[];for(let k=0;k<n;k++)lost.push(p.cards.splice(rnd(0,p.cards.length-1),1)[0]);updateHUD();await say(`貧乏神が カードを すててしまった!\n(${lost.map(c=>CARDS[c].name).join('、')})`,{face:'bin'});return}
+ if(r<.5&&own.length){const tg=mult<1?own.reduce((a,b)=>a.price<b.price?a:b):pick(own);G.owner[tg.id]=-1;refreshStation(tg.sid);updateHUD();await say(`貧乏神が ${N[tg.sid].name}の「${tg.name}」を 勝手に 売りとばした!`,{face:'bin'});return}
+ if(r<.7){const a=r10(rnd(1000,3000)*y*mult);p.money-=a;floatText(p.pos,'-'+fmt(a),'#e23b4e');updateHUD();await say(`貧乏神が ${pick(['高級ツボ','金ピカの像','巨大なぬいぐるみ','ナゾの絵画','純金のおはし'])}を 買ってしまった!\n${fmt(a)} 支払った…`,{face:'bin'});return}
+ const a=p.money>0?Math.max(100,r10(p.money*rnd(10,30)/100*mult)):r10(rnd(500,1500)*y*mult);p.money-=a;floatText(p.pos,'-'+fmt(a),'#e23b4e');updateHUD();
+ await say(`貧乏神が お金を ${pick(['宝くじに つかって','どこかに 寄付して','おさいせんに 投げて','落として'])} しまった!\n${fmt(a)} 失った…`,{face:'bin'})}
+
+async function landEvent(pi,node){const p=G.players[pi],n=N[node],y=yf();
+ if(node===G.dest){await arrive(pi);return}
+ if(n.type==='station'){await propertyScreen(pi,node);return}
+ if(n.type==='blue'){const a=r10(rnd(300,1200)*y);p.money+=a;sfx('coin');floatText(node,'+'+fmt(a),'#1f6fd6');updateHUD();
+  await say(`青マス! ${pick(['株が 値上がりして','臨時ボーナスで','観光客が ふえて','落とし物の お礼で','宝くじが 当たって','新商品が ヒットして'])}\n${fmt(a)} もらった!`);return}
+ if(n.type==='red'){const a=r10(rnd(200,1000)*y);p.money-=a;sfx('bad');floatText(node,'-'+fmt(a),'#e23b4e');updateHUD();
+  await say(`赤マス… ${pick(['線路の 修理代で','電車の 点検代で','雪かき代で','社員旅行で','台風の 被害で','駅の そうじ代で'])}\n${fmt(a)} はらった…`);return}
+ const c=drawCard();sfx('coin');await say(`黄マス! 「${CARDS[c].name}」を 手に入れた!`);await giveCard(pi,c)}
+
+async function arrive(pi){const p=G.players[pi],old=G.dest,bonus=r10((2000+G.destDist*150)*yf());
+ p.money+=bonus;updateHUD();sfx('fan');
+ const w=openModal(`<div class="ribbon">目的地 到着!</div><div class="big-title">🎉 いちばん乗り! 🎉</div><div class="arrive-st">${N[old].name}</div><div class="bubble">${esc(p.name)}社長、おめでとうございます!<br>到着ボーナス <b style="color:#e23452;font-size:22px">${fmt(bonus)}</b></div><button class="big-btn" data-primary>やったー!</button>`);
+ await modalWait(w.querySelector('button'),p.human,2200);closeModal(w);
+ await propertyScreen(pi,old);
+ const ds=distFrom(old);let far=-1,fd=-1;G.players.forEach((q,j)=>{if(j===pi)return;const d=ds[q.pos]+Math.random()*.5;if(d>fd){fd=d;far=j}});
+ if(far>=0){const prevBin=G.bin;G.bin=far;updateHUD();sfx('bad');
+  await say(prevBin===far?`貧乏神は ひきつづき ${G.players[far].name}社長に とりついている…`:`いちばん遠くにいた ${G.players[far].name}社長に 貧乏神が とりついた!`,{face:'bin'})}
+ await newDestination(old)}
+async function newDestination(from){const ds=distFrom(from);
+ const ok=s=>s!==G.dest&&!G.players.some(p=>p.pos===s);
+ let c=STATIONS.filter(s=>ok(s)&&ds[s]>=14&&ds[s]<=34);if(!c.length)c=STATIONS.filter(s=>ok(s)&&ds[s]>=10);if(!c.length)c=STATIONS.filter(s=>s!==G.dest);
+ const dst=pick(c);
+ const w=openModal(`<div class="ribbon">次の目的地</div><div class="bubble">次の目的地は…</div><div class="roulette">？？？</div><button class="big-btn" data-primary hidden>OK</button>`);
+ const rl=w.querySelector('.roulette');let d=50;for(let t=0;t<22;t++){rl.textContent=N[pick(STATIONS)].name;sfx('tick');await sleep(d);d*=1.1}
+ rl.textContent=N[dst].name;rl.classList.add('done');sfx('fan');
+ G.destDist=ds[dst];G.dest=dst;drawDest();updateHUD();
+ const b=w.querySelector('button');b.hidden=false;await modalWait(b,curHuman(),1500);closeModal(w);
+ const f=cam.follow;cam.follow=-1;cam.tx=N[dst].x;cam.ty=N[dst].y;cam.ts=baseS()*.8;
+ await say(`次の目的地は ${N[dst].name}です! みなさん がんばってください!`,{wait:false,ms:1900*spd()});if(f>=0)followP(f)}
+
+function rankRows(rows){return rows.map((r,k)=>{const p=G.players[r.i],C=CHARS[p.char];return `<div class="rk" style="background:${C.grad}">${k===0?'<span class="crown">👑</span>':''}<span class="rn">${k+1}</span><div class="av">${FACES[p.char]}</div><div class="nm">${r.i+1}P ${esc(p.name)}<small>${r.sub||''}</small></div><div class="mv">${r.main}${r.delta!=null?`<small class="${r.delta>=0?'up':'dn'}">${r.delta>=0?'+':''}${fmt(r.delta)} ${r.delta>0?'⬆':r.delta<0?'⬇':''}</small>`:''}</div></div>`}).join('')}
+async function monthSummary(){const rows=G.players.map((p,i)=>({i,main:fmt(p.money),delta:p.money-(G.monthStart[i]??p.money),sub:`総資産 ${fmt(total(i))}`,t:total(i)})).sort((a,b)=>b.t-a.t);
+ const w=openModal(`<div class="ribbon">${G.year}年目 ${G.month}月の 結果</div>${rankRows(rows)}<div class="bubble" style="margin:10px 0 0">トップは ${esc(G.players[rows[0].i].name)}社長! ${G.month===3?'このあと 決算です!':''}</div><button class="big-btn" data-primary>つぎへ</button>`);
+ await modalWait(w.querySelector('button'),anyHuman(),2400);closeModal(w)}
+async function settlement(){const inc=G.players.map((p,i)=>yearlyIncome(i));
+ const rows=G.players.map((p,i)=>({i,main:fmt(p.money+inc[i]),delta:inc[i],sub:`物件 ${PROPS.filter(x=>G.owner[x.id]===i).length}件・独占 ${STATIONS.filter(s=>monoOwner(s)===i).length}駅`,t:inc[i]})).sort((a,b)=>b.t-a.t);
+ G.players.forEach((p,i)=>p.money+=inc[i]);updateHUD();sfx('fan');
+ const w=openModal(`<div class="ribbon">${G.year}年目 決算</div><div class="big-title">💴 物件の 収益が 入ります!</div>${rankRows(rows)}<div class="bubble" style="margin:10px 0 0">独占している駅は 収益が 2倍です。</div><button class="big-btn" data-primary>つぎへ</button>`);
+ await modalWait(w.querySelector('button'),anyHuman(),3200);closeModal(w)}
+async function finalResults(){G.over=true;store.del(SAVE);
+ const rows=G.players.map((p,i)=>({i,main:fmt(total(i)),sub:`持ち金 ${fmt(p.money)}・物件 ${fmt(propValue(i))}`,t:total(i)})).sort((a,b)=>b.t-a.t);sfx('fan');
+ const w=openModal(`<div class="ribbon">最終結果</div><div class="big-title">🏆 ${esc(G.players[rows[0].i].name)}社長 優勝! 🏆</div><div style="text-align:center;margin-bottom:10px"><div style="width:110px;height:110px;margin:0 auto;border-radius:50%;background:#e9f6ff;border:4px solid #ffd43b;overflow:hidden">${FACES[G.players[rows[0].i].char]}</div></div>${rankRows(rows)}<div class="bubble" style="margin:10px 0 0">${G.maxYears}年間 おつかれさまでした!<br>総資産 = 持ち金 + 物件の価格</div><div class="mfoot"><button class="big-btn" data-primary>タイトルへ</button></div>`);
+ await waitBtn(w.querySelector('button'));closeModal(w);toTitle()}
+function assetsModal(){return new Promise(res=>{const w=openModal(`<div class="ribbon">社長たちの 資産</div>${G.players.map((p,i)=>{const own=PROPS.filter(x=>G.owner[x.id]===i);const by={};own.forEach(x=>(by[x.sid]=by[x.sid]||[]).push(x.name));
+ return `<div class="as"><div class="as-h" style="background:${CHARS[p.char].grad}"><span>${i+1}P ${esc(p.name)}</span><span>総資産 ${fmt(total(i))}</span></div><div class="as-b">持ち金 ${fmt(p.money)} / 物件 ${own.length}件(${fmt(propValue(i))})/ 年収益みこみ ${fmt(yearlyIncome(i))}<br>🃏 ${p.cards.map(c=>CARDS[c].name).join('、')||'なし'}<br>${Object.keys(by).map(s=>`<b>${monoOwner(+s)===i?'👑':''}${N[s].name}</b>:${by[s].join('・')}`).join('<br>')||'物件なし'}</div></div>`}).join('')}<div class="mfoot"><button class="btn" data-primary>とじる</button></div>`);
+ w.querySelector('[data-primary]').onclick=()=>{sfx('select');closeModal(w);res()}})}
+async function otherMenu(pi){
+ const w=openModal(`<div class="ribbon">その他</div><div class="olist"><button data-k="all">🗾 日本全体のマップを見る</button><button data-k="assets">🏢 社長たちの 資産・物件を見る</button><button data-k="dest">🚩 目的地を見る</button><button data-k="snd">${muted?'🔇 音:OFF → ONにする':'🔊 音:ON → OFFにする'}</button><button data-k="close" data-primary>↩ もどる</button></div>`);
+ const k=await new Promise(r=>w.querySelector('.olist').addEventListener('click',e=>{const b=e.target.closest('[data-k]');if(b)r(b.dataset.k)}));sfx('select');closeModal(w);
+ if(k==='all'||k==='dest'){if(k==='all')fitAll();else{cam.follow=-1;cam.tx=N[G.dest].x;cam.ty=N[G.dest].y;cam.ts=baseS()*.8}setMsg('マップは ドラッグで うごかせます。');await menu([{key:'b',label:'もどる',icon:'↩',main:true}]);followP(pi)}
+ if(k==='assets')await assetsModal();
+ if(k==='snd'){muted=!muted;store.set('tetsu-mute',muted?'1':'0');sfx('select')}}
+
+/* ================= turn flow ================= */
+async function playTurn(){const id=G.id,pi=G.turn,p=G.players[pi];
+ raiseTrain(pi);followP(pi);updateHUD();save();
+ if(!p.human)await say(`${p.name}社長の 順番です!`,{ms:900*spd()});
+ let dice=1,steps=null,warped=false,cardUsed=false;
+ if(p.slow){p.slow=0;if(p.human)await say(`${p.name}社長の 順番です!`);await say('牛歩カードの 効果で 今回は 1マスしか すすめない… モ〜');steps=1}
+ else while(true){let key;
+  if(p.human){setMsg(`${p.name}社長の 順番です!\nサイコロを ふってください!`);
+   key=await menu([{key:'dice',label:'サイコロをふる',icon:'🎲',main:true},{key:'card',label:'カード',icon:'🃏',disabled:cardUsed||!p.cards.length,note:p.cards.length||null},{key:'other',label:'その他',icon:'📋'},{key:'quit',label:'やめる',icon:'⏏'}])}
+  else{const c=cardUsed?-1:cpuPickCard(pi);key=c>=0?'c'+c:'dice'}
+  if(!G||G.id!==id)return'quit';
+  if(key==='dice')break;
+  if(key==='other'){await otherMenu(pi);continue}
+  if(key==='quit'){if(await confirmBox('タイトルに もどりますか?\n(つづきから で このターンの はじめから 遊べます)')){toTitle();return'quit'}continue}
+  const ci=key==='card'?await cardScreen(pi):+key.slice(1);if(ci==null)continue;
+  cardUsed=true;const r=await useCard(pi,ci);if(r.dice){dice=r.dice;break}if(r.warped){warped=true;break}}
+ if(!warped){
+  if(steps==null)steps=await rollDice(dice,p.human);
+  const res=reachable(p.pos,steps);let target;
+  if(p.human)target=res.size===1?[...res.keys()][0]:await chooseLanding(pi,res,steps);
+  else{target=cpuChoose(pi,res);drawPreview(res.get(target),CHARS[p.char].color);await sleep(500*spd());prevL.innerHTML=''}
+  await moveAlong(pi,res.get(target));
+  await landEvent(pi,target)}
+ if(!G||G.id!==id)return'quit';
+ if(G.bin===pi)await binAction(pi);
+ updateHUD()}
+async function endRound(){await monthSummary();
+ if(G.month===3){await settlement();G.year++}
+ G.month=G.month===12?1:G.month+1;G.monthStart=G.players.map(p=>p.money);
+ if(G.year>G.maxYears){await finalResults();return true}
+ updateHUD();if(G.month===4)await say(`${G.year}年目の 春が やってきました! のこり ${G.maxYears-G.year+1}年です。`,{wait:false,ms:1800});return false}
+async function gameLoop(){const id=G.id;
+ while(G&&G.id===id&&!G.over){const r=await playTurn();if(r==='quit'||!G||G.id!==id)return;
+  G.turn++;if(G.turn>=G.players.length){G.turn=0;if(await endRound())return}save()}}
+
+function startHUD(){$('#title').hidden=true;$('#hud').hidden=false;cam.drift=false;buildTrains();refreshAllStations();drawDest();updateHUD();setNarr();followP(G.turn)}
+async function newGame(cfg){
+ G={id:Date.now(),players:[],owner:Array(PROPS.length).fill(-1),month:4,year:1,maxYears:cfg.years,turn:0,dest:-1,destDist:16,bin:-1,monthStart:[],speed:cfg.speed,over:false};
+ cfg.slots.forEach((s,i)=>{if(s.type!=='none')G.players.push({name:(s.name||CHARS[i].name).slice(0,6),human:s.type==='human',char:i,money:10000,cards:['kyuko'],pos:TOKYO,prev:-1,slow:0})});
+ G.monthStart=G.players.map(p=>p.money);startHUD();
+ await say('ようこそ! みなさんは 鉄道会社の 社長です。\n日本中の 物件を買って 日本一の社長を めざしましょう!',{wait:anyHuman()});
+ await say(`持ち金 1億円で スタート! ${G.maxYears}年間の 勝負です。`,{wait:anyHuman()});
+ await newDestination(TOKYO);save();gameLoop()}
+function continueGame(){let d;try{d=JSON.parse(store.get(SAVE))}catch(e){d=null}if(!d)return;G=d;G.id=Date.now();startHUD();gameLoop()}
+function toTitle(){G=null;onMapTap=null;advance=null;$('#modals').innerHTML='';hideCmd();candL.innerHTML='';prevL.innerHTML='';trainL.innerHTML='';binL.innerHTML='';binG=null;disp=[];TR=[];movingIdx=-1;$('#stepBubble').hidden=true;
+ refreshAllStations();drawDest();$('#hud').hidden=true;cam.drift=true;cam.ts=.5;showTitle()}
+
+/* ================= title ================= */
+let cfg;try{cfg=JSON.parse(store.get('tetsu-cfg'))}catch(e){}
+if(!cfg||!cfg.slots)cfg={years:3,speed:'normal',slots:CHARS.map((c,i)=>({name:c.name,type:i===0?'human':'cpu'}))};
+function saveCfg(){store.set('tetsu-cfg',JSON.stringify(cfg))}
+function showTitle(){$('#title').hidden=false;$('#btnCont').hidden=!store.get(SAVE);$('#tErr').textContent='';
+ $('#yearChips').innerHTML=[1,3,5,10].map(y=>`<button class="${cfg.years===y?'on':''}" data-y="${y}">${y}年</button>`).join('');
+ $('#speedChips').innerHTML=[['normal','ふつう'],['fast','はやい']].map(([k,l])=>`<button class="${cfg.speed===k?'on':''}" data-s="${k}">${l}</button>`).join('');
+ $('#slots').innerHTML=cfg.slots.map((s,i)=>`<div class="slot ${s.type==='none'?'off':''}" style="background:${CHARS[i].grad}"><span class="no">${i+1}P</span><div class="av">${FACES[i]}</div><input maxlength="6" value="${esc(s.name)}" data-n="${i}"><div class="seg">${[['human','人間'],['cpu','CPU'],['none','なし']].map(([k,l])=>`<button class="${s.type===k?'on':''}" data-i="${i}" data-t="${k}">${l}</button>`).join('')}</div></div>`).join('')}
+$('#yearChips').addEventListener('click',e=>{const b=e.target.closest('[data-y]');if(b){cfg.years=+b.dataset.y;saveCfg();sfx('select');showTitle()}});
+$('#speedChips').addEventListener('click',e=>{const b=e.target.closest('[data-s]');if(b){cfg.speed=b.dataset.s;saveCfg();sfx('select');showTitle()}});
+$('#slots').addEventListener('click',e=>{const b=e.target.closest('[data-t]');if(b){cfg.slots[+b.dataset.i].type=b.dataset.t;saveCfg();sfx('select');showTitle()}});
+$('#slots').addEventListener('input',e=>{const t=e.target.closest('[data-n]');if(t){cfg.slots[+t.dataset.n].name=t.value;saveCfg()}});
+$('#btnNew').onclick=async()=>{sfx('select');if(cfg.slots.filter(s=>s.type!=='none').length<2){$('#tErr').textContent='2人以上 えらんでね';return}
+ if(store.get(SAVE)&&!(await confirmBox('セーブデータが 消えますが よろしいですか?')))return;store.del(SAVE);newGame(cfg)};
+$('#btnCont').onclick=()=>{sfx('select');continueGame()};
+setNarr();showTitle();
+</script>
+<script src="../../playtime.js" defer></script>
+</body>
+</html>
