@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#1d3a78">
-<title>にっぽん鉄道社長</title>
+<meta name="theme-color" content="#1f7a3a">
+<title>道の駅すごろく社長</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;800;900&display=swap" rel="stylesheet">
@@ -18,7 +18,7 @@ input{font-family:inherit}
 #map{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
 #map text{font-family:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Meiryo",sans-serif}
 .lbl{font-weight:900;font-size:19px;text-anchor:middle;fill:#1b1b1b}
-.stt{font-weight:900;font-size:15px;text-anchor:middle;fill:#fff}
+.stt{font-weight:900;font-size:18px;text-anchor:middle;fill:#fff}
 .sq{font-weight:900;font-size:19px;text-anchor:middle;fill:#fff}
 .lb{fill:#fff;stroke:#1b1b1b;stroke-width:3}
 .lb.dest{fill:#ffe14d}
@@ -210,6 +210,7 @@ input{font-family:inherit}
   .pc .cpu{display:none}
   .pc.cur{transform:scale(1.03);}
   .pc .badges{font-size:10px;right:4px;top:2px}
+  .pc .badges span:not(.binb){display:none}
   #dateBox{left:6px;top:110px;transform:none;font-size:13px;padding:2px 10px;border-width:3px}
   #dateBox b{font-size:18px}
   #destBox{right:6px;top:108px;padding:4px 10px 6px;min-width:0;border-radius:12px}
@@ -256,7 +257,7 @@ input{font-family:inherit}
 
 <div id="title">
   <div class="t-wrap">
-    <div class="logo"><span class="l1">すごろく</span><span class="l2">にっぽん鉄道社長</span><span class="sub">日本中の物件を買って 日本一の社長をめざせ!</span></div>
+    <div class="logo"><span class="l1">日本一周ドライブ</span><span class="l2">道の駅<br>すごろく社長</span><span class="sub">道の駅のお店を買って スタンプも集めよう!</span></div>
     <div class="t-card">
       <div class="t-row"><b>プレイ年数</b><div class="chips" id="yearChips"></div></div>
       <div id="slots"></div>
@@ -265,11 +266,11 @@ input{font-family:inherit}
       <div class="t-btns"><button id="btnNew" class="big-btn">はじめから</button><button id="btnCont" class="big-btn blue" hidden>つづきから</button></div>
       <details class="howto"><summary>あそびかた</summary><ul>
         <li>サイコロをふって すすみ、光っているマスから 止まる場所を えらびます。</li>
-        <li><b style="color:#e8455a">駅</b>に止まると 物件が買えます。毎年3月の決算で 収益が入ります。1つの駅の物件を 全部買うと「独占」で 収益2倍!</li>
+        <li><b style="color:#2fa84f">道の駅</b>に止まると お店が買えます。毎年3月の決算で 収益が入ります。1つの道の駅のお店を 全部買うと「独占」で 収益2倍!</li><li>はじめて立ち寄った道の駅では スタンプと 記念のお金が もらえます。</li>
         <li><b style="color:#2f7de1">青マス</b>はお金がふえる、<b style="color:#e23b4e">赤マス</b>はへる、<b style="color:#d6a600">黄マス</b>はカードがもらえます。</li>
         <li>目的地に いちばんに着くと ボーナス! いちばん遠い社長には 貧乏神が とりつきます。</li>
         <li>貧乏神は 毎ターン わるさをします。ミニゲームで おはらい玉を当てて 追いはらおう。ほかの社長と すれちがうと うつせます。</li>
-        <li>最後に 総資産(持ち金+物件)が いちばん多い社長が 優勝です。</li>
+        <li>最後に 総資産(持ち金+お店)が いちばん多い社長が 優勝です。</li>
         <li>マップはドラッグで移動、ホイール/ピンチで拡大縮小できます。</li>
       </ul></details>
     </div>
@@ -292,7 +293,7 @@ const SVGNS='http://www.w3.org/2000/svg';
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 
 /* ================= sound ================= */
-let AC=null,muted=store.get('tetsu-mute')==='1';
+let AC=null,muted=store.get('michi-mute')==='1';
 function tone(f,d,type,vol,when,f2){const t=AC.currentTime+(when||0);const o=AC.createOscillator(),g=AC.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(vol||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(AC.destination);o.start(t);o.stop(t+d+.03)}
 function sfx(k){if(muted)return;try{if(!AC)AC=new(window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();
 switch(k){case'tick':tone(900,.03,'square',.025);break;case'select':tone(1200,.06,'square',.035);break;
@@ -333,7 +334,7 @@ function binInner(){return `<path d="M-20 12 Q-26 -22 0 -27 Q26 -22 20 12 Q15 24
 const binSVG=()=>`<svg xmlns="http://www.w3.org/2000/svg" viewBox="-36 -36 72 72"><g class="bob">${binInner()}</g></svg>`;
 const FACES=CHARS.map(c=>faceSVG(c.face));
 const FACEURL=FACES.map(s=>'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s));
-const NARR=faceSVG({hair:'#3a2a20',hat:'conductor'});
+const NARR=faceSVG({hair:'#3a2a20',hat:'cap',hatColor:'#2fa84f'});
 
 /* ================= map data ================= */
 const ST=[
@@ -353,65 +354,65 @@ const ED=`稚内-旭川,旭川-札幌,旭川-富良野,富良野-帯広,旭川-�
 山口-小倉*,岡山-高松*,神戸-徳島*,広島-松山*,松山-大分*,高松-徳島,高松-松山,高松-高知,松山-高知,
 小倉-博多,小倉-大分,博多-長崎,博多-熊本,熊本-鹿児島,熊本-大分,大分-宮崎,宮崎-鹿児島`;
 const PD={
-'稚内':'ホタテ漁場,3000,6|最北端みやげ屋,200,50|こんぶ問屋,800,12',
-'旭川':'旭川ラーメン屋,300,60|家具工房,2000,10|動物園カフェ,1000,20|酒蔵,5000,5',
-'網走':'流氷観光船,4000,6|カニ料理屋,500,40|監獄みやげ屋,300,50',
-'富良野':'ラベンダー畑,2000,10|メロン農園,1000,15|チーズ工房,800,20',
-'帯広':'豚丼屋,200,70|ばんえい競馬場,8000,4|スイーツ店,1500,15|小麦畑,3000,6',
-'釧路':'炉ばた焼き屋,300,50|湿原ツアー,1500,12|サケ加工場,5000,5',
-'札幌':'味噌ラーメン横丁,500,50|ジンギスカン屋,400,60|スープカレー屋,300,70|時計台ホテル,15000,3|ビール工場,20000,3',
-'小樽':'ガラス工房,1000,20|寿司屋通り,2000,10|オルゴール堂,3000,8',
-'室蘭':'焼き鳥屋,200,60|白鳥大橋みやげ,500,30|製鉄所,30000,2',
-'長万部':'かにめし屋,300,60|牧場,1500,12|温泉宿,3000,8',
-'函館':'朝市どんぶり,300,60|塩ラーメン屋,200,70|イカ釣り船,1500,12|夜景ロープウェイ,8000,5',
-'青森':'りんご園,1500,15|ねぶた工房,1000,20|ホタテ養殖,3000,8',
-'秋田':'きりたんぽ屋,300,50|稲庭うどん屋,500,40|なまはげ館,1500,12|杉の木材所,4000,6',
-'盛岡':'わんこそば屋,300,60|冷麺屋,400,50|南部鉄器工房,2000,10',
-'山形':'芋煮屋,200,70|さくらんぼ園,1500,15|温泉旅館,6000,5',
-'仙台':'ずんだ餅屋,200,70|牛たん屋,500,50|笹かま工場,3000,8|七夕まつり会館,10000,4',
-'福島':'喜多方ラーメン屋,300,60|桃農園,1500,15|酒造,5000,5',
-'会津若松':'赤べこ工房,300,50|鶴ヶ城みやげ,800,25|会津塗店,2000,10',
-'新潟':'へぎそば屋,300,60|せんべい工場,2000,10|米どころ田んぼ,4000,6|日本酒蔵,8000,5',
-'宇都宮':'餃子屋,200,80|いちご農園,1500,15|餃子チェーン,3000,10',
-'水戸':'梅林茶屋,300,50|メロン農園,1500,15|納豆工場,2000,12',
-'高崎':'焼きまんじゅう屋,200,70|だるま工房,300,50|こんにゃくパーク,3000,8',
-'大宮':'ソース焼きそば屋,200,70|盆栽村,1500,12|鉄道博物館,20000,3',
-'東京':'もんじゃ焼き屋,500,50|下町すし屋,2000,15|電気街ビル,30000,4|テレビ局,50000,3|東京タワー,80000,2',
-'横浜':'中華街肉まん屋,300,70|シュウマイ工場,5000,8|観覧車,15000,4|ベイホテル,30000,3',
-'千葉':'落花生畑,1000,15|空港ホテル,20000,4|テーマパーク,60000,3',
-'箱根':'黒たまご屋,200,80|寄木細工店,500,30|海賊船,4000,8|温泉旅館,8000,5',
-'甲府':'ほうとう屋,300,60|ぶどう園,1500,15|宝石工房,3000,8|ワイナリー,5000,6',
-'長野':'おやき屋,200,70|そば屋,300,60|りんご園,1500,12|スキー場,10000,4',
-'松本':'山賊焼き屋,300,50|松本城みやげ,500,30|そば畑,1000,15',
-'富山':'ブラックラーメン屋,200,70|ます寿司屋,300,60|ホタルイカ漁,2000,10|製薬会社,20000,3',
-'金沢':'兼六園茶屋,500,40|近江町市場,1000,20|金箔工房,3000,8|加賀友禅,6000,5',
-'福井':'ソースカツ丼屋,200,70|越前ガニ屋,1000,20|メガネ工場,5000,6|恐竜博物館,10000,4',
-'静岡':'おでん屋,200,70|わさび田,1000,15|茶畑,3000,8|プラモデル工場,15000,4',
-'浜松':'餃子屋,200,70|うなぎ屋,800,30|楽器工場,20000,3',
-'名古屋':'手羽先屋,200,70|みそかつ屋,300,60|ひつまぶし屋,800,30|名古屋城ホテル,20000,4|自動車工場,80000,2',
-'伊勢':'赤福もち屋,500,40|伊勢えび料理,1500,15|真珠養殖,8000,5',
-'京都':'八つ橋屋,300,60|湯どうふ屋,500,40|お寺カフェ,1500,12|老舗旅館,10000,5|ゲーム会社,50000,3',
-'奈良':'鹿せんべい屋,100,90|柿の葉寿司,300,60|墨工房,2000,10',
-'大阪':'たこ焼き屋,200,80|お好み焼き屋,300,60|串カツ屋,400,50|通天閣,15000,4|テーマパーク,60000,3',
-'神戸':'洋菓子店,800,30|神戸牛ステーキ,2000,15|中華街,3000,10|港ホテル,20000,4',
-'和歌山':'ラーメン屋,200,70|みかん園,1000,15|梅干し工場,3000,8',
-'姫路':'おでん屋,200,70|白鷺城みやげ,500,30|革工房,3000,8',
-'岡山':'きびだんご屋,200,70|桃園,1500,15|デニム工場,5000,6',
-'鳥取':'砂丘らくだ屋,500,40|梨園,1500,12|カニ市場,3000,8',
-'松江':'出雲そば屋,300,60|和菓子屋,300,50|しじみ漁,1000,15|縁結び茶屋,2000,10',
-'広島':'もみじまんじゅう屋,200,70|お好み焼き屋,300,60|カキ養殖,3000,8|造船所,30000,2',
-'山口':'瓦そば屋,300,60|錦帯橋みやげ,800,25|ふぐ料理屋,2000,12',
-'高松':'さぬきうどん屋,100,90|オリーブ園,1500,12|うどんチェーン,3000,10',
-'徳島':'徳島ラーメン屋,200,70|すだち農園,800,20|阿波おどり会館,5000,6',
-'高知':'日曜市,300,60|カツオのたたき屋,500,50|ゆず園,1000,15|よさこい会館,4000,6',
-'松山':'鯛めし屋,500,40|みかんジュース工場,3000,8|道後温泉旅館,10000,4',
-'小倉':'焼うどん屋,200,70|門司港レトロ館,3000,8|製鉄所,30000,2',
-'博多':'とんこつラーメン屋,300,70|もつ鍋屋,500,50|屋台村,1000,20|明太子工場,5000,8|ドーム球場,50000,3',
-'長崎':'ちゃんぽん屋,300,60|カステラ屋,800,30|夜景ホテル,10000,4|造船所,30000,2',
-'熊本':'からし蓮根屋,300,50|馬刺し屋,800,30|お城ホテル,10000,4|半導体工場,40000,3',
-'大分':'とり天屋,200,70|関さば屋,1500,15|温泉地獄めぐり,5000,6',
-'宮崎':'チキン南蛮屋,300,60|マンゴー園,2000,12|リゾートホテル,15000,4',
-'鹿児島':'かるかん屋,300,50|黒豚しゃぶしゃぶ,1000,20|焼酎蔵,4000,8|桜島観光船,6000,5'};
+'稚内':'ホタテ浜焼き屋,300,50|最北端ソフト屋,200,70|海鮮直売所,800,20|オホーツク展望台,3000,8',
+'旭川':'旭川ラーメン屋,300,60|野菜直売所,800,20|木工クラフト館,2000,10',
+'網走':'流氷アイス屋,200,70|オホーツク海鮮丼,500,40|流氷展望台,4000,6',
+'富良野':'メロン直売所,500,40|ラベンダーソフト屋,200,70|チーズ工房,1500,12|花畑展望テラス,5000,5',
+'帯広':'豚丼屋,300,60|小豆直売所,800,20|十勝スイーツ館,1500,15',
+'釧路':'炉ばた焼き屋,300,50|サンマ直売所,800,20|湿原カヌー受付,1500,12',
+'札幌':'ジンギスカン屋,400,60|とうもろこし直売所,300,50|スープカレー屋,300,70|足湯カフェ,2000,10|地ビール工房,6000,5',
+'小樽':'運河カフェ,800,25|ガラス雑貨ショップ,1000,20|洋菓子工房,3000,8',
+'室蘭':'カレーラーメン屋,200,70|焼き鳥弁当屋,300,50|白鳥大橋展望台,3000,8',
+'長万部':'かにめし屋,300,60|牧場ソフト屋,200,70|温泉宿,3000,8',
+'函館':'イカめし屋,200,70|朝市どんぶり,500,40|夜景展望台,5000,6',
+'青森':'アップルパイ屋,300,50|りんご直売所,500,40|ねぶたミュージアム,4000,6',
+'秋田':'きりたんぽ屋,300,50|いぶりがっこ直売所,500,40|なまはげ体験館,3000,8',
+'盛岡':'じゃじゃ麺屋,200,70|わんこそば屋,300,60|南部鉄器ショップ,2000,10',
+'山形':'芋煮屋,200,70|さくらんぼ直売所,800,25|日帰り温泉,5000,6',
+'仙台':'ずんだシェイク屋,200,70|牛たん定食屋,500,50|笹かま手焼き体験,1500,12|海鮮市場,6000,5',
+'福島':'喜多方ラーメン屋,300,60|桃直売所,800,25|フルーツパーラー,2000,10',
+'会津若松':'ソースカツ丼屋,200,70|赤べこ絵付け体験,300,50|会津塗ショップ,2000,10',
+'新潟':'おにぎり屋,200,80|へぎそば屋,300,60|笹団子屋,500,40|地酒ギャラリー,5000,6',
+'宇都宮':'餃子屋,200,80|いちご直売所,800,25|いちごスイーツ館,3000,8',
+'水戸':'納豆ショップ,300,50|メロン直売所,800,25|干しいも工房,1500,12',
+'高崎':'焼きまんじゅう屋,200,70|こんにゃく直売所,500,40|だるま絵付け体験,1500,12',
+'大宮':'焼きそば屋,200,70|野菜直売所,1000,20|盆栽ギャラリー,2000,10',
+'東京':'もんじゃ焼き屋,500,50|下町スイーツ屋,800,30|大型フードコート,10000,5|展望タワー,30000,3',
+'横浜':'肉まん屋,300,70|シュウマイ弁当屋,800,30|港の観覧車,15000,4',
+'千葉':'落花生直売所,500,40|房総海鮮屋,1500,15|いちご狩り農園,3000,8|オートキャンプ場,8000,5',
+'箱根':'黒たまご屋,200,80|寄木細工ショップ,500,30|足湯テラス,2000,10|温泉旅館,8000,5',
+'甲府':'ほうとう屋,300,60|ぶどう直売所,800,25|桃狩り農園,2000,10|ワイナリー,5000,6',
+'長野':'おやき屋,200,70|りんご直売所,800,25|そば打ち体験,1500,12|高原キャンプ場,6000,5',
+'松本':'わさびソフト屋,200,70|山賊焼き屋,300,50|アルプス展望台,3000,8',
+'富山':'ます寿司屋,300,60|白えび天丼屋,500,40|ホタルイカ直売所,1500,12',
+'金沢':'金箔ソフト屋,300,60|海鮮丼屋,800,30|伝統工芸館,4000,6',
+'福井':'ソースカツ丼屋,200,70|越前ガニ直売所,2000,10|恐竜ミュージアム,8000,5',
+'静岡':'桜えびかき揚げ屋,300,60|お茶直売所,500,40|わさび漬け工房,1500,12|富士山展望台,6000,5',
+'浜松':'餃子屋,200,70|うなぎ屋,800,30|みかん直売所,1000,15',
+'名古屋':'手羽先屋,200,70|みそかつ屋,300,60|ひつまぶし屋,1000,25|大型ドライブイン,15000,4',
+'伊勢':'あんこ餅屋,300,60|伊勢えび浜焼き屋,1500,15|真珠ショップ,5000,6',
+'京都':'抹茶ソフト屋,200,70|京漬物直売所,800,25|湯どうふ屋,1500,12|町家カフェ,5000,6',
+'奈良':'鹿せんべい屋,100,90|柿の葉寿司屋,300,60|柿直売所,1000,15',
+'大阪':'たこ焼き屋,200,80|お好み焼き屋,300,60|串カツ屋,400,50|巨大フードホール,20000,4',
+'神戸':'牛肉コロッケ屋,300,60|洋菓子店,800,30|港の展望テラス,6000,5',
+'和歌山':'ラーメン屋,200,70|みかん直売所,500,40|梅干し専門店,1500,15',
+'姫路':'おでん屋,200,70|穴子めし屋,500,40|革小物工房,2000,10',
+'岡山':'きびだんご屋,200,70|白桃パフェ屋,800,30|マスカット直売所,2000,10',
+'広島':'もみじまんじゅう屋,200,70|お好み焼き屋,300,60|カキ小屋,1500,15|サイクリング基地,5000,6',
+'鳥取':'砂丘らくだ乗り場,500,40|梨直売所,800,25|カニ汁屋,1500,12',
+'松江':'出雲そば屋,300,60|しじみ汁屋,300,50|縁結びカフェ,2000,10',
+'山口':'瓦そば屋,300,60|ふぐ天屋,800,30|夏みかんスイーツ館,2000,10',
+'高松':'さぬきうどん屋,100,90|骨付鳥屋,500,40|オリーブ直売所,800,25',
+'徳島':'すだち直売所,500,40|鳴門金時スイーツ屋,800,30|渦潮観光船,5000,6',
+'高知':'日曜市テント,300,60|カツオのたたき屋,500,50|ゆず直売所,800,25|太平洋展望台,4000,6',
+'松山':'じゃこ天屋,200,70|みかんジュース工房,1500,15|温泉施設,8000,5',
+'小倉':'焼うどん屋,200,70|地魚直売所,1000,15|関門海峡展望台,4000,6',
+'博多':'とんこつラーメン屋,300,70|もつ鍋屋,800,30|明太子直売所,1500,15|大型フードコート,10000,5',
+'長崎':'ちゃんぽん屋,300,60|カステラ屋,800,30|夜景展望台,6000,5',
+'熊本':'からし蓮根屋,300,50|スイカ直売所,800,25|馬刺し屋,1500,12|阿蘇牧場,6000,5',
+'大分':'とり天屋,200,70|かぼす直売所,500,40|温泉蒸し料理館,3000,8|地獄めぐり受付,6000,5',
+'宮崎':'チキン南蛮屋,300,60|マンゴー直売所,2000,12|ビーチカフェ,4000,6',
+'鹿児島':'かるかん屋,300,50|黒豚とんかつ屋,800,30|溶岩足湯,2000,10|焼酎ギャラリー,5000,6'};
 const ISLRAW=[
  [[41.53,140.91],[41.45,141.45],[40.95,141.40],[40.50,141.60],[39.95,141.98],[39.30,141.95],[38.90,141.65],[38.40,141.50],[38.20,141.05],[37.80,141.00],[37.00,140.98],[36.60,140.70],[36.10,140.62],[35.75,140.88],[35.30,140.42],[34.90,139.90],[35.30,139.78],[35.60,140.05],[35.68,139.85],[35.45,139.68],[35.15,139.62],[35.28,139.15],[34.70,138.90],[35.05,138.80],[34.92,138.45],[34.60,138.20],[34.65,137.60],[34.58,137.02],[34.80,137.20],[35.00,136.85],[34.62,136.55],[34.30,136.90],[34.05,136.25],[33.45,135.75],[33.90,135.10],[34.25,135.10],[34.60,135.40],[34.66,135.10],[34.75,134.60],[34.55,133.90],[34.35,133.20],[34.30,132.45],[34.05,132.15],[33.95,131.75],[33.95,130.90],[34.35,130.95],[34.45,131.40],[34.70,131.85],[34.95,132.15],[35.40,132.65],[35.58,133.15],[35.55,134.20],[35.65,134.80],[35.52,135.40],[35.70,136.05],[36.15,136.10],[36.80,136.70],[37.50,137.30],[37.05,137.00],[36.78,137.20],[37.05,137.85],[37.20,138.25],[37.95,139.05],[38.30,139.45],[38.95,139.80],[39.75,140.02],[39.95,139.70],[40.25,140.00],[40.65,139.88],[41.20,140.30],[40.90,140.80],[41.20,141.20],[41.30,140.98]],
  [[41.75,140.70],[41.42,140.08],[41.88,140.10],[42.55,139.85],[42.80,140.25],[43.32,140.45],[43.20,141.00],[43.25,141.40],[43.95,141.65],[44.60,141.75],[45.45,141.65],[45.52,141.95],[44.80,142.60],[44.35,143.35],[44.00,144.25],[44.35,145.30],[43.70,145.20],[43.35,145.80],[43.00,144.80],[42.95,144.40],[42.60,143.60],[41.95,143.25],[42.30,142.50],[42.60,141.60],[42.30,141.00],[42.55,140.45],[42.10,140.60],[41.80,141.15]],
@@ -452,19 +453,19 @@ const dist=(a,b)=>distFrom(b)[a];
 
 /* ================= cards ================= */
 const CARDS={
- kyuko:{name:'急行カード',icon:'🚃',desc:'サイコロを 2個 ふれる!',w:30,bg:'linear-gradient(135deg,#4ea8ff,#1f5fc9)'},
- tokkyu:{name:'特急カード',icon:'🚄',desc:'サイコロを 3個 ふれる!',w:18,bg:'linear-gradient(135deg,#ff7a59,#d93a2b)'},
- shinkansen:{name:'新幹線カード',icon:'🚅',desc:'サイコロを 4個 ふれる!',w:7,bg:'linear-gradient(135deg,#b06bff,#6a2bd1)'},
- buttobi:{name:'ぶっとびカード',icon:'🌀',desc:'日本の どこかの駅へ ワープする!',w:12,bg:'linear-gradient(135deg,#3bd1c4,#14897f)'},
- gyuho:{name:'牛歩カード',icon:'🐄',desc:'ほかの社長は 次のターン 1マスしか すすめない',w:8,bg:'linear-gradient(135deg,#9aa86b,#5f6d33)'},
+ kyuko:{name:'近道カード',icon:'🚗',desc:'サイコロを 2個 ふれる!',w:30,bg:'linear-gradient(135deg,#4ea8ff,#1f5fc9)'},
+ tokkyu:{name:'バイパスカード',icon:'🛣️',desc:'サイコロを 3個 ふれる!',w:18,bg:'linear-gradient(135deg,#ff7a59,#d93a2b)'},
+ shinkansen:{name:'高速道路カード',icon:'🏎️',desc:'サイコロを 4個 ふれる!',w:7,bg:'linear-gradient(135deg,#b06bff,#6a2bd1)'},
+ buttobi:{name:'ヘリコプターカード',icon:'🚁',desc:'日本の どこかの道の駅へ ひとっ飛び!',w:12,bg:'linear-gradient(135deg,#3bd1c4,#14897f)'},
+ gyuho:{name:'渋滞カード',icon:'🚥',desc:'ほかの社長は 次のターン 1マスしか すすめない',w:8,bg:'linear-gradient(135deg,#9aa86b,#5f6d33)'},
  tokusei:{name:'徳政令カード',icon:'📜',desc:'全員の 借金を 帳消しにする',w:4,bg:'linear-gradient(135deg,#d8b06a,#9c6b1f)'},
  nasuri:{name:'なすりつけカード',icon:'👉',desc:'貧乏神を いちばん近い社長に なすりつける',w:8,bg:'linear-gradient(135deg,#8f83b5,#4d3f7d)'},
- bonus:{name:'ボーナスカード',icon:'💰',desc:'すぐに 1000万円×年数ボーナスが もらえる',w:13,bg:'linear-gradient(135deg,#ffd43b,#e09b00)'},
+ bonus:{name:'スタンプラリー賞カード',icon:'💰',desc:'すぐに 1000万円×年数ボーナスが もらえる',w:13,bg:'linear-gradient(135deg,#ffd43b,#e09b00)'},
 };
 function drawCard(){const tot=Object.values(CARDS).reduce((a,c)=>a+c.w,0);let r=Math.random()*tot;for(const k in CARDS){r-=CARDS[k].w;if(r<0)return k}return'kyuko'}
 function cardTile(c,extra=''){const C=CARDS[c];return `<div class="cardt ${extra}" style="background:${C.bg}"><div class="ci">${C.icon}</div>${C.name}</div>`}
 
-function propIcon(n){const M=[['ラーメン','🍜'],['うどん','🍜'],['そば','🍜'],['寿司','🍣'],['すし','🍣'],['カニ','🦀'],['ガニ','🦀'],['かに','🦀'],['たこ','🐙'],['ホテル','🏨'],['旅館','🏨'],['宿','🏨'],['温泉','♨️'],['城','🏯'],['工場','🏭'],['製','🏭'],['所','🏭'],['ぶどう','🍇'],['りんご','🍎'],['さくらんぼ','🍒'],['桃','🍑'],['みかん','🍊'],['メロン','🍈'],['いちご','🍓'],['梨','🍐'],['マンゴー','🥭'],['ラベンダー','💜'],['漁','🐟'],['養殖','🐟'],['さば','🐟'],['船','🚢'],['酒','🍶'],['蔵','🍶'],['ワイン','🍷'],['ビール','🍺'],['餃子','🥟'],['肉まん','🥟'],['シュウマイ','🥟'],['牛','🥩'],['豚','🥩'],['ステーキ','🥩'],['馬刺','🥩'],['カレー','🍛'],['菓子','🍰'],['スイーツ','🍰'],['カステラ','🍰'],['もち','🍡'],['餅','🍡'],['だんご','🍡'],['まんじゅう','🍡'],['せんべい','🍘'],['タワー','🗼'],['観覧車','🎡'],['テーマ','🎢'],['球場','⚾'],['競馬','🐎'],['牧場','🐄'],['動物','🐘'],['博物館','🏛️'],['会館','🏛️'],['館','🏛️'],['テレビ','📺'],['ゲーム','🎮'],['スキー','⛷️'],['ロープウェイ','🚡'],['畑','🌾'],['田','🌾'],['園','🌳'],['工房','🛠️'],['焼き','🍢'],['おでん','🍢'],['市','🧺'],['屋','🏪']];for(const[k,v]of M)if(n.includes(k))return v;return'🏢'}
+function propIcon(n){const M=[['ソフト','🍦'],['展望','🔭'],['キャンプ','⛺'],['足湯','♨️'],['カフェ','☕'],['フード','🍱'],['ドライブイン','🍱'],['パフェ','🍨'],['シェイク','🍨'],['体験','🎨'],['小屋','🦪'],['サイクリング','🚲'],['らくだ','🐫'],['カヌー','🛶'],['ミュージアム','🏛️'],['ギャラリー','🖼️'],['テント','⛺'],['ラーメン','🍜'],['うどん','🍜'],['そば','🍜'],['寿司','🍣'],['すし','🍣'],['カニ','🦀'],['ガニ','🦀'],['かに','🦀'],['たこ','🐙'],['ホテル','🏨'],['旅館','🏨'],['宿','🏨'],['温泉','♨️'],['城','🏯'],['工場','🏭'],['製','🏭'],['所','🏭'],['ぶどう','🍇'],['りんご','🍎'],['さくらんぼ','🍒'],['桃','🍑'],['みかん','🍊'],['メロン','🍈'],['いちご','🍓'],['梨','🍐'],['マンゴー','🥭'],['ラベンダー','💜'],['漁','🐟'],['養殖','🐟'],['さば','🐟'],['船','🚢'],['酒','🍶'],['蔵','🍶'],['ワイン','🍷'],['ビール','🍺'],['餃子','🥟'],['肉まん','🥟'],['シュウマイ','🥟'],['牛','🥩'],['豚','🥩'],['ステーキ','🥩'],['馬刺','🥩'],['カレー','🍛'],['菓子','🍰'],['スイーツ','🍰'],['カステラ','🍰'],['もち','🍡'],['餅','🍡'],['だんご','🍡'],['まんじゅう','🍡'],['せんべい','🍘'],['タワー','🗼'],['観覧車','🎡'],['テーマ','🎢'],['球場','⚾'],['競馬','🐎'],['牧場','🐄'],['動物','🐘'],['博物館','🏛️'],['会館','🏛️'],['館','🏛️'],['テレビ','📺'],['ゲーム','🎮'],['スキー','⛷️'],['ロープウェイ','🚡'],['畑','🌾'],['田','🌾'],['園','🌳'],['工房','🛠️'],['焼き','🍢'],['おでん','🍢'],['市','🧺'],['直売所','🥬'],['ショップ','🛍️'],['専門店','🛍️'],['店','🛍️'],['屋','🏪']];for(const[k,v]of M)if(n.includes(k))return v;return'🏢'}
 
 /* ================= map render ================= */
 const svg=$('#map'),world=$('#world');
@@ -508,9 +509,9 @@ function buildMap(){
  s+=`<g fill="#8fd062">${P(isl)}</g><g fill="none" stroke="#8fd062" stroke-width="72" stroke-linecap="round">${P(land)}</g>`;
  s+=deco.map(d=>`<use href="#d-${d.k}" transform="translate(${d.x.toFixed(0)},${d.y.toFixed(0)}) scale(${d.s.toFixed(2)})"/>`).join('');
  s+=RAILS.filter(r=>r.sea).map(r=>`<path d="${r.d}" fill="none" stroke="#7a5a35" stroke-width="28" stroke-linecap="round"/><path d="${r.d}" fill="none" stroke="#ead6ac" stroke-width="19" stroke-linecap="round"/>`).join('');
- s+=`<g fill="none" stroke-linecap="round"><g stroke="#2d2d2d" stroke-width="11">${P(RAILS.map(r=>r.d))}</g><g stroke="#fff" stroke-width="5" stroke-dasharray="12 10">${P(RAILS.map(r=>r.d))}</g></g>`;
+ s+=`<g fill="none" stroke-linecap="round"><g stroke="#3a3f48" stroke-width="20">${P(RAILS.map(r=>r.d))}</g><g stroke="#6e7685" stroke-width="15">${P(RAILS.map(r=>r.d))}</g><g stroke="#ffe14d" stroke-width="2.6" stroke-dasharray="11 9">${P(RAILS.map(r=>r.d))}</g></g>`;
  const SQ={blue:['#2f7de1','+'],red:['#e23b4e','−'],yellow:['#f2b800','★']};
- s+=N.map(n=>{if(n.type==='station')return `<g transform="translate(${n.x.toFixed(1)},${n.y.toFixed(1)})"><circle r="23" cy="3" fill="#0003"/><circle r="22" fill="#fff" stroke="#b81f35" stroke-width="4"/><circle r="15" fill="#e8455a"/><text class="stt" y="5.5">駅</text></g>`;
+ s+=N.map(n=>{if(n.type==='station')return `<g transform="translate(${n.x.toFixed(1)},${n.y.toFixed(1)})"><circle r="23" cy="3" fill="#0003"/><rect x="-23" y="-23" width="46" height="46" rx="12" fill="#fff" stroke="#1f7a3a" stroke-width="4"/><rect x="-16" y="-16" width="32" height="32" rx="8" fill="#2fa84f"/><text class="stt" y="6">道</text></g>`;
   const[c,t]=SQ[n.type];return `<g transform="translate(${n.x.toFixed(1)},${n.y.toFixed(1)})"><rect x="-14" y="-11" width="28" height="28" rx="7" fill="#0003"/><rect x="-14" y="-14" width="28" height="28" rx="7" fill="${c}" stroke="#fff" stroke-width="3"/><text class="sq" y="6.5">${t}</text></g>`}).join('');
  s+=STATIONS.map(id=>{const n=N[id],w=n.name.length*19+20;return `<g transform="translate(${n.x.toFixed(1)},${(n.y-42).toFixed(1)})"><rect id="lb${id}" class="lb" x="${-w/2}" y="-16" width="${w}" height="32" rx="9"/><text class="lbl" y="7">${n.name}</text><text id="cr${id}" x="${w/2+2}" y="-8" font-size="22" text-anchor="middle"></text></g><g id="own${id}" transform="translate(${n.x.toFixed(1)},${(n.y+33).toFixed(1)})"></g>`}).join('');
  s+='<g id="destL"></g><g id="prevL"></g><g id="candL"></g><g id="trainL"></g><g id="binL"></g><g id="fxL"></g>';
@@ -546,7 +547,7 @@ svg.addEventListener('wheel',e=>{e.preventDefault();cam.ts=clamp(cam.ts*Math.exp
 let onMapTap=null;
 
 /* ================= game state ================= */
-let G=null;const SAVE='tetsu-shacho-save';
+let G=null;const SAVE='michi-shacho-save';
 let disp=[],TR=[],movingIdx=-1,binG=null,trFlip=[];
 const yf=()=>1+(G.year-1)*.25;
 const spd=()=>G&&G.speed==='fast'?.5:1;
@@ -559,10 +560,12 @@ const total=i=>G.players[i].money+propValue(i);
 function save(){if(G&&!G.over)store.set(SAVE,JSON.stringify(G))}
 
 function trainMarkup(i){const p=G.players[i],C=CHARS[p.char];
- return `<g class="tb"><ellipse cy="17" rx="25" ry="5" fill="#0003"/><rect x="-25" y="-12" width="50" height="27" rx="9" fill="${C.color}" stroke="#1b1b1b" stroke-width="2.5"/>
- <rect x="-19" y="-7" width="9" height="8" rx="2" fill="#cdeeff" stroke="#1b1b1b" stroke-width="1.5"/><rect x="-6" y="-7" width="9" height="8" rx="2" fill="#cdeeff" stroke="#1b1b1b" stroke-width="1.5"/><path d="M8-7h9a6 6 0 0 1 6 6v2H8Z" fill="#cdeeff" stroke="#1b1b1b" stroke-width="1.5"/>
- <rect x="-25" y="5" width="50" height="4" fill="#fff" opacity=".85"/><circle cx="-14" cy="16" r="4.5" fill="#333"/><circle cx="14" cy="16" r="4.5" fill="#333"/></g>
- <image href="${FACEURL[p.char]}" x="-19" y="-52" width="38" height="38"/>
+ return `<g class="tb"><ellipse cy="17" rx="27" ry="5" fill="#0003"/>
+ <path d="M-26 12V2Q-26-3-20-4L-12-5L-5-15Q-2-18 3-18H11Q16-18 19-13L24-4Q28-3 28 2V12Z" fill="${C.color}" stroke="#1b1b1b" stroke-width="2.5" stroke-linejoin="round"/>
+ <path d="M-9-5L-3-13Q-1-15 2-15H5V-5Z" fill="#cdeeff" stroke="#1b1b1b" stroke-width="1.5"/><path d="M8-15H11Q14-15 16-11L19-5H8Z" fill="#cdeeff" stroke="#1b1b1b" stroke-width="1.5"/>
+ <rect x="23" y="0" width="5" height="4" rx="1" fill="#ffe680" stroke="#1b1b1b" stroke-width="1"/><rect x="-26" y="1" width="4" height="4" rx="1" fill="#ff6b6b"/>
+ <circle cx="-14" cy="13" r="6" fill="#333" stroke="#1b1b1b" stroke-width="1.5"/><circle cx="-14" cy="13" r="2.5" fill="#ccc"/><circle cx="15" cy="13" r="6" fill="#333" stroke="#1b1b1b" stroke-width="1.5"/><circle cx="15" cy="13" r="2.5" fill="#ccc"/></g>
+ <image href="${FACEURL[p.char]}" x="-19" y="-58" width="38" height="38"/>
  <g transform="translate(22,-38)"><circle r="11" fill="${C.color}" stroke="#fff" stroke-width="2.5"/><text y="4.5" font-size="11" font-weight="900" fill="#fff" text-anchor="middle">${i+1}P</text></g>`}
 function buildTrains(){trainL.innerHTML='';TR=[];trFlip=[];disp=G.players.map(p=>({x:N[p.pos].x,y:N[p.pos].y}));
  G.players.forEach((p,i)=>{const g=document.createElementNS(SVGNS,'g');g.innerHTML=trainMarkup(i);trainL.appendChild(g);TR.push(g);trFlip.push(1)});
@@ -613,7 +616,7 @@ addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const ae=d
  if(!$('#cmd').hidden){const b=$('#cmd button.main:not(:disabled)');if(b)b.click()}});
 
 function updateHUD(){if(!G)return;
- $('#plist').innerHTML=G.players.map((p,i)=>{const C=CHARS[p.char];return `<div class="pc ${i===G.turn?'cur':''}" style="background:${C.grad}"><div class="av">${FACES[p.char]}</div><div><div class="row1"><span class="num">${i+1}P</span>${esc(p.name)}${p.human?'':'<span class="cpu">CPU</span>'}</div><div class="money ${p.money<0?'neg':''}"><small>持ち金</small>${fmt(p.money)}</div></div><div class="badges">${G.bin===i?'<span class="binb">貧乏神</span>':''}${p.cards.length?`<span>🃏${p.cards.length}</span>`:''}</div></div>`}).join('');
+ $('#plist').innerHTML=G.players.map((p,i)=>{const C=CHARS[p.char];return `<div class="pc ${i===G.turn?'cur':''}" style="background:${C.grad}"><div class="av">${FACES[p.char]}</div><div><div class="row1"><span class="num">${i+1}P</span>${esc(p.name)}${p.human?'':'<span class="cpu">CPU</span>'}</div><div class="money ${p.money<0?'neg':''}"><small>持ち金</small>${fmt(p.money)}</div></div><div class="badges">${G.bin===i?'<span class="binb">貧乏神</span>':''}${p.cards.length?`<span>🃏${p.cards.length}</span>`:''}${(p.stamps||[]).length?`<span>📮${p.stamps.length}</span>`:''}</div></div>`}).join('');
  $('#dateBox').innerHTML=`<b>${G.year}</b>年目 <b>${G.month}</b>月<small>全${G.maxYears}年</small>`;
  const cp=G.players[G.turn];$('#destBox').innerHTML=G.dest>=0?`<div class="dl">目的地</div><div class="dn">${N[G.dest].name}</div><div class="dr">のこり <b>${dist(cp.pos,G.dest)}</b> マス</div>`:'<div class="dl">目的地</div><div class="dn">？？？</div>'}
 $('#bHere').onclick=()=>{if(G){sfx('select');followP(movingIdx>=0?movingIdx:G.turn)}};
@@ -633,7 +636,7 @@ function cpuChoose(pi,res){const dd=distFrom(G.dest);let best=null,bs=-1e9;
   s+=Math.random()*3;if(s>bs){bs=s;best=n}}return best}
 function drawPreview(path,color){prevL.innerHTML=`<polyline points="${path.map(i=>N[i].x.toFixed(1)+','+N[i].y.toFixed(1)).join(' ')}" fill="none" stroke="#fff" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/><polyline points="${path.map(i=>N[i].x.toFixed(1)+','+N[i].y.toFixed(1)).join(' ')}" fill="none" stroke="${color}" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2 14"/>`}
 const TYPE_NAME={blue:'青マス',red:'赤マス',yellow:'黄マス(カード)'};
-const nodeName=n=>N[n].type==='station'?N[n].name+'駅':TYPE_NAME[N[n].type];
+const nodeName=n=>N[n].type==='station'?'道の駅 '+N[n].name:TYPE_NAME[N[n].type];
 function chooseLanding(pi,res,steps){return new Promise(resolve=>{
  const p=G.players[pi],col=CHARS[p.char].color,rec=cpuChoose(pi,res);
  candL.innerHTML=[...res.keys()].map(n=>`<g class="cand" data-cand="${n}" transform="translate(${N[n].x.toFixed(1)},${N[n].y.toFixed(1)})"><circle r="44" fill="#fff" opacity=".01"/><circle class="ring" r="27" fill="#ffffff55" stroke="#fff" stroke-width="5"/><circle class="spin" r="27" fill="none" stroke="${col}" stroke-width="4" stroke-dasharray="7 6"/>${n===rec?'<text y="-34" font-size="24" text-anchor="middle">⭐</text>':''}</g>`).join('');
@@ -672,7 +675,7 @@ async function rollDice(n,human){
 
 async function propertyScreen(pi,sid){
  const p=G.players[pi],st=N[sid],human=p.human;
- const w=openModal(`<div class="ribbon">物件駅</div><div class="sign"><div class="board">${st.name}</div><div class="mon">${esc(p.name)}社長の 持ち金<b class="pm"></b></div></div><div class="mono" hidden></div><div class="plist2"></div><div class="mfoot"><button class="big-btn blue" data-primary style="margin-top:4px">おわる</button></div>`);
+ const w=openModal(`<div class="ribbon">道の駅</div><div class="sign"><div class="board"><small style="font-size:13px;color:#2fa84f;display:block;line-height:1.1">道の駅</small>${st.name}</div><div class="mon">${esc(p.name)}社長の 持ち金<b class="pm"></b></div></div><div class="mono" hidden></div><div class="plist2"></div><div class="mfoot"><button class="big-btn blue" data-primary style="margin-top:4px">おわる</button></div>`);
  const list=w.querySelector('.plist2'),btn=w.querySelector('[data-primary]');
  function render(flashId){
   w.querySelector('.pm').textContent=fmt(p.money);const mo=monoOwner(sid),mb=w.querySelector('.mono');mb.hidden=mo<0;if(mo>=0)mb.textContent=`👑 ${G.players[mo].name}社長が 独占中! (収益2倍)`;
@@ -683,7 +686,7 @@ async function propertyScreen(pi,sid){
  function buy(id){const pr=PROPS[id];if(G.owner[id]>=0||p.money<pr.price)return false;p.money-=pr.price;G.owner[id]=pi;sfx('buy');refreshStation(sid);updateHUD();render(id);return true}
  render();
  list.addEventListener('click',e=>{const b=e.target.closest('[data-buy]');if(b&&!b.disabled){const before=monoOwner(sid);buy(+b.dataset.buy);if(before<0&&monoOwner(sid)===pi)sfx('fan')}});
- if(human){setMsg(`${st.name}駅に とまりました!\n物件を 買いますか?`);await waitBtn(btn)}
+ if(human){setMsg(`道の駅 ${st.name}に 立ち寄りました!\nお店を 買いますか?`);await waitBtn(btn)}
  else{await sleep(600*spd());const reserve=r10(800*yf());
   const c=st.props.filter(id=>G.owner[id]<0).sort((a,b)=>PROPS[b].rate-PROPS[a].rate);let bought=0;
   for(const id of c){if(p.money-PROPS[id].price>=reserve){buy(id);bought++;await sleep(550*spd())}}
@@ -708,8 +711,8 @@ async function giveCard(pi,c){const p=G.players[pi];p.cards.push(c);updateHUD();
 async function useCard(pi,ci){const p=G.players[pi],c=p.cards[ci];p.cards.splice(ci,1);updateHUD();await cardBanner(pi,c);
  switch(c){
   case'kyuko':return{dice:2};case'tokkyu':return{dice:3};case'shinkansen':return{dice:4};
-  case'buttobi':{let s;do{s=pick(STATIONS)}while(s===p.pos);await warpTo(pi,s);await say(`${N[s].name}駅に ぶっとんだ!`);await landEvent(pi,s);return{warped:true}}
-  case'gyuho':G.players.forEach((q,j)=>{if(j!==pi)q.slow=1});await say('モ〜。ほかの社長たちは 次のターン 1マスしか すすめない!');return{};
+  case'buttobi':{let s;do{s=pick(STATIONS)}while(s===p.pos);await warpTo(pi,s);await say(`バラバラバラ… 道の駅 ${N[s].name}に 着陸した!`);await landEvent(pi,s);return{warped:true}}
+  case'gyuho':G.players.forEach((q,j)=>{if(j!==pi)q.slow=1});await say('大渋滞が 発生! ほかの社長たちは 次のターン 1マスしか すすめない!');return{};
   case'tokusei':{const l=G.players.filter(q=>q.money<0);l.forEach(q=>q.money=0);updateHUD();await say(l.length?`${l.map(q=>q.name).join('・')}社長の 借金が 帳消しになった!`:'借金のある社長は いなかった…');return{}}
   case'nasuri':{const ds=distFrom(p.pos);let j=-1,bd=1e9;G.players.forEach((q,k)=>{if(k!==pi&&ds[q.pos]<bd){bd=ds[q.pos];j=k}});if(j>=0){G.bin=j;updateHUD();sfx('bad');await say(`えいっ! 貧乏神を ${G.players[j].name}社長に なすりつけた!`,{face:'bin'})}return{}}
   case'bonus':{const a=r10(1000*G.year);p.money+=a;sfx('coin');floatText(p.pos,'+'+fmt(a),'#1f6fd6');updateHUD();await say(`ボーナスで ${fmt(a)} もらった!`);return{}}}
@@ -754,18 +757,20 @@ async function binAction(pi){const p=G.players[pi],y=yf();
 
 async function landEvent(pi,node){const p=G.players[pi],n=N[node],y=yf();
  if(node===G.dest){await arrive(pi);return}
- if(n.type==='station'){await propertyScreen(pi,node);return}
+ if(n.type==='station'){await stamp(pi,node);await propertyScreen(pi,node);return}
  if(n.type==='blue'){const a=r10(rnd(300,1200)*y);p.money+=a;sfx('coin');floatText(node,'+'+fmt(a),'#1f6fd6');updateHUD();
-  await say(`青マス! ${pick(['株が 値上がりして','臨時ボーナスで','観光客が ふえて','落とし物の お礼で','宝くじが 当たって','新商品が ヒットして'])}\n${fmt(a)} もらった!`);return}
+  await say(`青マス! ${pick(['直売所の 野菜が 売れて','観光客が ふえて','ご当地ソフトが ヒットして','落とし物の お礼で','宝くじが 当たって','テレビで 紹介されて'])}\n${fmt(a)} もらった!`);return}
  if(n.type==='red'){const a=r10(rnd(200,1000)*y);p.money-=a;sfx('bad');floatText(node,'-'+fmt(a),'#e23b4e');updateHUD();
-  await say(`赤マス… ${pick(['線路の 修理代で','電車の 点検代で','雪かき代で','社員旅行で','台風の 被害で','駅の そうじ代で'])}\n${fmt(a)} はらった…`);return}
+  await say(`赤マス… ${pick(['ガソリン代で','タイヤの パンク修理で','洗車代で','駐車場代で','台風の 被害で','車の 点検代で'])}\n${fmt(a)} はらった…`);return}
  const c=drawCard();sfx('coin');await say(`黄マス! 「${CARDS[c].name}」を 手に入れた!`);await giveCard(pi,c)}
 
+async function stamp(pi,node){const p=G.players[pi];p.stamps=p.stamps||[];if(p.stamps.includes(node))return;p.stamps.push(node);const a=r10(200*yf());p.money+=a;sfx('coin');floatText(node,'スタンプ!','#1f7a3a');updateHUD();
+ await say(`道の駅 ${N[node].name}の スタンプ ゲット!(${p.stamps.length}/${STATIONS.length}個)\n記念に ${fmt(a)} もらった!`)}
 async function arrive(pi){const p=G.players[pi],old=G.dest,bonus=r10((2000+G.destDist*150)*yf());
  p.money+=bonus;updateHUD();sfx('fan');
  const w=openModal(`<div class="ribbon">目的地 到着!</div><div class="big-title">🎉 いちばん乗り! 🎉</div><div class="arrive-st">${N[old].name}</div><div class="bubble">${esc(p.name)}社長、おめでとうございます!<br>到着ボーナス <b style="color:#e23452;font-size:22px">${fmt(bonus)}</b></div><button class="big-btn" data-primary>やったー!</button>`);
  await modalWait(w.querySelector('button'),p.human,2200);closeModal(w);
- await propertyScreen(pi,old);
+ await stamp(pi,old);await propertyScreen(pi,old);
  const ds=distFrom(old);let far=-1,fd=-1;G.players.forEach((q,j)=>{if(j===pi)return;const d=ds[q.pos]+Math.random()*.5;if(d>fd){fd=d;far=j}});
  if(far>=0){const prevBin=G.bin;G.bin=far;updateHUD();sfx('bad');
   await say(prevBin===far?`貧乏神は ひきつづき ${G.players[far].name}社長に とりついている…`:`いちばん遠くにいた ${G.players[far].name}社長に 貧乏神が とりついた!`,{face:'bin'})}
@@ -787,30 +792,30 @@ async function monthSummary(){const rows=G.players.map((p,i)=>({i,main:fmt(p.mon
  const w=openModal(`<div class="ribbon">${G.year}年目 ${G.month}月の 結果</div>${rankRows(rows)}<div class="bubble" style="margin:10px 0 0">トップは ${esc(G.players[rows[0].i].name)}社長! ${G.month===3?'このあと 決算です!':''}</div><button class="big-btn" data-primary>つぎへ</button>`);
  await modalWait(w.querySelector('button'),anyHuman(),2400);closeModal(w)}
 async function settlement(){const inc=G.players.map((p,i)=>yearlyIncome(i));
- const rows=G.players.map((p,i)=>({i,main:fmt(p.money+inc[i]),delta:inc[i],sub:`物件 ${PROPS.filter(x=>G.owner[x.id]===i).length}件・独占 ${STATIONS.filter(s=>monoOwner(s)===i).length}駅`,t:inc[i]})).sort((a,b)=>b.t-a.t);
+ const rows=G.players.map((p,i)=>({i,main:fmt(p.money+inc[i]),delta:inc[i],sub:`お店 ${PROPS.filter(x=>G.owner[x.id]===i).length}件・独占 ${STATIONS.filter(s=>monoOwner(s)===i).length}か所`,t:inc[i]})).sort((a,b)=>b.t-a.t);
  G.players.forEach((p,i)=>p.money+=inc[i]);updateHUD();sfx('fan');
- const w=openModal(`<div class="ribbon">${G.year}年目 決算</div><div class="big-title">💴 物件の 収益が 入ります!</div>${rankRows(rows)}<div class="bubble" style="margin:10px 0 0">独占している駅は 収益が 2倍です。</div><button class="big-btn" data-primary>つぎへ</button>`);
+ const w=openModal(`<div class="ribbon">${G.year}年目 決算</div><div class="big-title">💴 お店の 収益が 入ります!</div>${rankRows(rows)}<div class="bubble" style="margin:10px 0 0">独占している道の駅は 収益が 2倍です。</div><button class="big-btn" data-primary>つぎへ</button>`);
  await modalWait(w.querySelector('button'),anyHuman(),3200);closeModal(w)}
 async function finalResults(){G.over=true;store.del(SAVE);
- const rows=G.players.map((p,i)=>({i,main:fmt(total(i)),sub:`持ち金 ${fmt(p.money)}・物件 ${fmt(propValue(i))}`,t:total(i)})).sort((a,b)=>b.t-a.t);sfx('fan');
- const w=openModal(`<div class="ribbon">最終結果</div><div class="big-title">🏆 ${esc(G.players[rows[0].i].name)}社長 優勝! 🏆</div><div style="text-align:center;margin-bottom:10px"><div style="width:110px;height:110px;margin:0 auto;border-radius:50%;background:#e9f6ff;border:4px solid #ffd43b;overflow:hidden">${FACES[G.players[rows[0].i].char]}</div></div>${rankRows(rows)}<div class="bubble" style="margin:10px 0 0">${G.maxYears}年間 おつかれさまでした!<br>総資産 = 持ち金 + 物件の価格</div><div class="mfoot"><button class="big-btn" data-primary>タイトルへ</button></div>`);
+ const rows=G.players.map((p,i)=>({i,main:fmt(total(i)),sub:`持ち金 ${fmt(p.money)}・お店 ${fmt(propValue(i))}・スタンプ ${(p.stamps||[]).length}個`,t:total(i)})).sort((a,b)=>b.t-a.t);sfx('fan');
+ const w=openModal(`<div class="ribbon">最終結果</div><div class="big-title">🏆 ${esc(G.players[rows[0].i].name)}社長 優勝! 🏆</div><div style="text-align:center;margin-bottom:10px"><div style="width:110px;height:110px;margin:0 auto;border-radius:50%;background:#e9f6ff;border:4px solid #ffd43b;overflow:hidden">${FACES[G.players[rows[0].i].char]}</div></div>${rankRows(rows)}<div class="bubble" style="margin:10px 0 0">${G.maxYears}年間 おつかれさまでした!<br>総資産 = 持ち金 + お店の価格</div><div class="mfoot"><button class="big-btn" data-primary>タイトルへ</button></div>`);
  await waitBtn(w.querySelector('button'));closeModal(w);toTitle()}
 function assetsModal(){return new Promise(res=>{const w=openModal(`<div class="ribbon">社長たちの 資産</div>${G.players.map((p,i)=>{const own=PROPS.filter(x=>G.owner[x.id]===i);const by={};own.forEach(x=>(by[x.sid]=by[x.sid]||[]).push(x.name));
- return `<div class="as"><div class="as-h" style="background:${CHARS[p.char].grad}"><span>${i+1}P ${esc(p.name)}</span><span>総資産 ${fmt(total(i))}</span></div><div class="as-b">持ち金 ${fmt(p.money)} / 物件 ${own.length}件(${fmt(propValue(i))})/ 年収益みこみ ${fmt(yearlyIncome(i))}<br>🃏 ${p.cards.map(c=>CARDS[c].name).join('、')||'なし'}<br>${Object.keys(by).map(s=>`<b>${monoOwner(+s)===i?'👑':''}${N[s].name}</b>:${by[s].join('・')}`).join('<br>')||'物件なし'}</div></div>`}).join('')}<div class="mfoot"><button class="btn" data-primary>とじる</button></div>`);
+ return `<div class="as"><div class="as-h" style="background:${CHARS[p.char].grad}"><span>${i+1}P ${esc(p.name)}</span><span>総資産 ${fmt(total(i))}</span></div><div class="as-b">持ち金 ${fmt(p.money)} / お店 ${own.length}件(${fmt(propValue(i))})/ 年収益みこみ ${fmt(yearlyIncome(i))}<br>📮 スタンプ ${(p.stamps||[]).length}/${STATIONS.length}個<br>🃏 ${p.cards.map(c=>CARDS[c].name).join('、')||'なし'}<br>${Object.keys(by).map(s=>`<b>${monoOwner(+s)===i?'👑':''}${N[s].name}</b>:${by[s].join('・')}`).join('<br>')||'お店なし'}</div></div>`}).join('')}<div class="mfoot"><button class="btn" data-primary>とじる</button></div>`);
  w.querySelector('[data-primary]').onclick=()=>{sfx('select');closeModal(w);res()}})}
 async function otherMenu(pi){
- const w=openModal(`<div class="ribbon">その他</div><div class="olist"><button data-k="all">🗾 日本全体のマップを見る</button><button data-k="assets">🏢 社長たちの 資産・物件を見る</button><button data-k="dest">🚩 目的地を見る</button><button data-k="snd">${muted?'🔇 音:OFF → ONにする':'🔊 音:ON → OFFにする'}</button><button data-k="close" data-primary>↩ もどる</button></div>`);
+ const w=openModal(`<div class="ribbon">その他</div><div class="olist"><button data-k="all">🗾 日本全体のマップを見る</button><button data-k="assets">🏢 社長たちの 資産・お店・スタンプを見る</button><button data-k="dest">🚩 目的地を見る</button><button data-k="snd">${muted?'🔇 音:OFF → ONにする':'🔊 音:ON → OFFにする'}</button><button data-k="close" data-primary>↩ もどる</button></div>`);
  const k=await new Promise(r=>w.querySelector('.olist').addEventListener('click',e=>{const b=e.target.closest('[data-k]');if(b)r(b.dataset.k)}));sfx('select');closeModal(w);
  if(k==='all'||k==='dest'){if(k==='all')fitAll();else{cam.follow=-1;cam.tx=N[G.dest].x;cam.ty=N[G.dest].y;cam.ts=baseS()*.8}setMsg('マップは ドラッグで うごかせます。');await menu([{key:'b',label:'もどる',icon:'↩',main:true}]);followP(pi)}
  if(k==='assets')await assetsModal();
- if(k==='snd'){muted=!muted;store.set('tetsu-mute',muted?'1':'0');sfx('select')}}
+ if(k==='snd'){muted=!muted;store.set('michi-mute',muted?'1':'0');sfx('select')}}
 
 /* ================= turn flow ================= */
 async function playTurn(){const id=G.id,pi=G.turn,p=G.players[pi];
  raiseTrain(pi);followP(pi);updateHUD();save();
  if(!p.human)await say(`${p.name}社長の 順番です!`,{ms:900*spd()});
  let dice=1,steps=null,warped=false,cardUsed=false;
- if(p.slow){p.slow=0;if(p.human)await say(`${p.name}社長の 順番です!`);await say('牛歩カードの 効果で 今回は 1マスしか すすめない… モ〜');steps=1}
+ if(p.slow){p.slow=0;if(p.human)await say(`${p.name}社長の 順番です!`);await say('渋滞に はまって 今回は 1マスしか すすめない… ブーブー');steps=1}
  else while(true){let key;
   if(p.human){setMsg(`${p.name}社長の 順番です!\nサイコロを ふってください!`);
    key=await menu([{key:'dice',label:'サイコロをふる',icon:'🎲',main:true},{key:'card',label:'カード',icon:'🃏',disabled:cardUsed||!p.cards.length,note:p.cards.length||null},{key:'other',label:'その他',icon:'📋'},{key:'quit',label:'やめる',icon:'⏏'}])}
@@ -845,7 +850,7 @@ async function newGame(cfg){
  G={id:Date.now(),players:[],owner:Array(PROPS.length).fill(-1),month:4,year:1,maxYears:cfg.years,turn:0,dest:-1,destDist:16,bin:-1,monthStart:[],speed:cfg.speed,over:false};
  cfg.slots.forEach((s,i)=>{if(s.type!=='none')G.players.push({name:(s.name||CHARS[i].name).slice(0,6),human:s.type==='human',char:i,money:10000,cards:['kyuko'],pos:TOKYO,prev:-1,slow:0})});
  G.monthStart=G.players.map(p=>p.money);startHUD();
- await say('ようこそ! みなさんは 鉄道会社の 社長です。\n日本中の 物件を買って 日本一の社長を めざしましょう!',{wait:anyHuman()});
+ await say('ようこそ! みなさんは 観光会社の 社長です。\n車で 日本中の 道の駅を めぐって 日本一の社長を めざしましょう!',{wait:anyHuman()});
  await say(`持ち金 1億円で スタート! ${G.maxYears}年間の 勝負です。`,{wait:anyHuman()});
  await newDestination(TOKYO);save();gameLoop()}
 function continueGame(){let d;try{d=JSON.parse(store.get(SAVE))}catch(e){d=null}if(!d)return;G=d;G.id=Date.now();startHUD();gameLoop()}
@@ -853,9 +858,9 @@ function toTitle(){G=null;onMapTap=null;advance=null;$('#modals').innerHTML='';h
  refreshAllStations();drawDest();$('#hud').hidden=true;cam.drift=true;cam.ts=.5;showTitle()}
 
 /* ================= title ================= */
-let cfg;try{cfg=JSON.parse(store.get('tetsu-cfg'))}catch(e){}
+let cfg;try{cfg=JSON.parse(store.get('michi-cfg'))}catch(e){}
 if(!cfg||!cfg.slots)cfg={years:3,speed:'normal',slots:CHARS.map((c,i)=>({name:c.name,type:i===0?'human':'cpu'}))};
-function saveCfg(){store.set('tetsu-cfg',JSON.stringify(cfg))}
+function saveCfg(){store.set('michi-cfg',JSON.stringify(cfg))}
 function showTitle(){$('#title').hidden=false;$('#btnCont').hidden=!store.get(SAVE);$('#tErr').textContent='';
  $('#yearChips').innerHTML=[1,3,5,10].map(y=>`<button class="${cfg.years===y?'on':''}" data-y="${y}">${y}年</button>`).join('');
  $('#speedChips').innerHTML=[['normal','ふつう'],['fast','はやい']].map(([k,l])=>`<button class="${cfg.speed===k?'on':''}" data-s="${k}">${l}</button>`).join('');
