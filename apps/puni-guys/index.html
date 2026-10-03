@@ -184,10 +184,11 @@ input[type=range]{width:160px;accent-color:#ff4f9f}
   .showcard{max-width:calc(100vw - 210px);padding-right:10px}.showcard .sthumb{width:56px;height:46px}.showcard b{font-size:15px}.showcard em{display:none}
   .playbtn{padding:10px 18px 10px 12px;gap:10px}.playbtn b{font-size:26px}.playbtn .key{width:34px;height:34px;font-size:16px}
   .shows{grid-template-columns:repeat(2,1fr)}
+  .timer{left:auto;right:calc(10px + var(--sr));top:calc(74px + var(--st));transform:none;font-size:24px}
   .shopgrid{grid-template-columns:repeat(2,1fr)}
 }
 @media (orientation:portrait){
-  .cpanel{left:calc(10px + var(--sl));right:calc(10px + var(--sr));width:auto;top:44%;bottom:calc(64px + var(--sb))}
+  .cpanel{left:calc(10px + var(--sl));right:calc(10px + var(--sr));width:auto;top:44%;bottom:calc(80px + var(--sb))}
   .cinfo{bottom:calc(10px + var(--sb));padding:6px 12px;min-width:0}
   .back{bottom:calc(12px + var(--sb))}
   .tabs button{font-size:12px}
@@ -738,6 +739,7 @@ addEventListener('blur',()=>{for(const k in keys)keys[k]=false;});
 const touchEl=$('#touch'),joyEl=$('#joy'),knob=$('#joy i');
 touchEl.addEventListener('pointerdown',e=>{
  audioInit();if(e.pointerType==='touch'&&!touchMode){touchMode=true;setTouchUI();}
+ if(!$('#emoteP').hidden)$('#emoteP').hidden=true;
  touchEl.setPointerCapture(e.pointerId);
  if(e.pointerType==='touch'&&e.clientX<innerWidth*0.45&&inp.joy.id===null){inp.joy.id=e.pointerId;inp.joy.ox=e.clientX;inp.joy.oy=e.clientY;joyEl.style.left=e.clientX+'px';joyEl.style.top=e.clientY+'px';joyEl.hidden=false;knob.style.transform='';}
  else if(inp.camId===null){inp.camId=e.pointerId;inp.lx=e.clientX;inp.ly=e.clientY;}
@@ -773,8 +775,8 @@ function buildRace(isFinal,n){
  R.killY=-12;R.goalZ=104;
  R.quota=isFinal?1:Math.max(2,Math.round(n*0.6));
  R.cps=[{z:-1e9,sz:-3,y:0},{z:32,sz:33.5,y:0},{z:56,sz:58,y:0},{z:76.5,sz:78,y:0},{z:92.5,sz:94,y:4}];
- platform(-9,9,-8,32,0,{c1:0xffd9ec,c2:0xff9fcd,side:0xff5fa8,h:3});
- rail(-9.8,-9,-8,56);rail(9,9.8,-8,56);rail(-9.8,9.8,-8.8,-8);
+ platform(-9,9,-16,32,0,{c1:0xffd9ec,c2:0xff9fcd,side:0xff5fa8,h:3});
+ rail(-9.8,-9,-16,56);rail(9,9.8,-16,56);rail(-9.8,9.8,-16.8,-16);
  const st=textSprite('START','#1d86ff');st.scale.set(7,2.2,1);st.position.set(0,6.3,-7);world.add(st);arch(0,0,-7.6,18,5.4,0x58b8ff,0xffffff);
  // doors
  R.doorRows=[];
@@ -886,7 +888,7 @@ function buildSurvival(isFinal,n){
  R.solids.push({kind:'cyl',x:0,z:0,r:1.4,top:2.7,bot:-1});
  const mk=(y,c1,ang,w0,inc,y0,y1,kb)=>{const g=new THREE.Group();world.add(g);const bar=new THREE.Mesh(geo('sv'+c1,()=>scaleUV(new THREE.BoxGeometry(25.6,0.6,0.6),12,1)),texMat(c1,0xffffff,'stripe'));bar.position.y=y;bar.castShadow=true;g.add(bar);
   const h={kind:'bar',cx:0,cz:0,L:12.8,th:0.3,y0,y1,ang,w:w0,w0,inc,kb,up:5,mesh:g};R.hazards.push(h);R.bars.push(h);return h;};
- R.low=mk(0.55,0xff4d5a,0,1.0,0.026,0.25,0.85,0.5);R.top=mk(2.1,0x9b6bff,Math.PI/2,0.78,0.018,1.8,2.4,0.6);R.low.up=8.5;R.top.up=1;
+ R.low=mk(0.55,0xff4d5a,0,1.0,0.034,0.25,0.85,0.5);R.top=mk(2.1,0x9b6bff,Math.PI/2,0.78,0.018,1.8,2.4,0.6);R.low.up=8.5;R.top.up=1;
  decorSky(0,0,32,-8,16);rainbow(0,-6,-40);
  R.spawns=[];const k=Math.max(n,8);for(let i=0;i<k;i++){const a=(i+0.5)/k*TAU+0.13;const r=i%2?6.5:9;R.spawns.push(new V3(Math.cos(a)*r,0,Math.sin(a)*r));}
  R.introOrbit={r:28,h:16,y:0};
@@ -915,7 +917,7 @@ function buildHex(isFinal,n){
   const im=new THREE.InstancedMesh(tileG,mat,list.length);im.castShadow=true;im.receiveShadow=true;world.add(im);
   const layer={y,im,tiles:[]};const dm=new THREE.Object3D();
   list.forEach((t,i)=>{dm.position.set(t.x,y-0.25,t.z);dm.updateMatrix();im.setMatrixAt(i,dm.matrix);const base=new THREE.Color(LC[li][(i*7)%3===0?1:0]);im.setColorAt(i,base);
-   const tile={kind:'tile',x:t.x,z:t.z,r:1.02,top:y,layer,idx:i,state:0,t:0,base,fy:0};layer.tiles.push(tile);R.tiles.push(tile);R.solids.push(tile);});
+   const tile={kind:'tile',x:t.x,z:t.z,r:1.2,top:y,layer,idx:i,state:0,t:0,base,fy:0};layer.tiles.push(tile);R.tiles.push(tile);R.solids.push(tile);});
   im.instanceMatrix.needsUpdate=true;if(im.instanceColor)im.instanceColor.needsUpdate=true;R.layers.push(layer);
   const ring=new THREE.TorusGeometry(14.3,0.35,8,64);ring.rotateX(Math.PI/2);addMesh(ring,phong(LC[li][0]),0,y-0.4,0);});
  decorSky(0,0,30,-30,14);
@@ -932,7 +934,7 @@ function updateHex(dt){
    if(t.t>1.1){t.state=3;_o.scale.setScalar(0.0001);_o.updateMatrix();im.setMatrixAt(t.idx,_o.matrix);}}}
 }
 function hexLayerOf(y){let best=null;for(const L of R.layers)if(L.y<=y+0.5&&(!best||L.y>best.y))best=L;return best;}
-function tileAt(L,x,z){for(const t of L.tiles)if(t.state<2&&(t.x-x)**2+(t.z-z)**2<1.1)return t;return null;}
+function tileAt(L,x,z){for(const t of L.tiles)if(t.state<2&&(t.x-x)**2+(t.z-z)**2<1.3)return t;return null;}
 function hexAI(b,dt){
  const a=b.ai,p=b.pos;if(a.rt===undefined){a.rt=0;a.tgt=null;a.noise=rand(0,1);}
  const L=hexLayerOf(p.y);if(!L)return NOINP;
@@ -948,7 +950,7 @@ function hexAI(b,dt){
  let mx=a.tgt.x-p.x,mz=a.tgt.z-p.z;const l=Math.hypot(mx,mz)||1;mx/=l;mz/=l;
  let jump=false;if(b.grounded&&a.jcd<=0){const ah=tileAt(L,p.x+mx*1.4,p.z+mz*1.4);if(!ah){a.jcd=0.5;if(Math.random()<0.55+0.45*b.skill)jump=true;}}a.jcd=(a.jcd||0)-dt;
  if(!jump&&b.grounded&&Math.random()<dt*(0.4+1.4*b.skill))jump=true;
- b.speedMul=lerp(0.5,0.72,b.skill);return{mx,mz,jump,dive:false};
+ b.speedMul=lerp(0.45,0.66,b.skill);return{mx,mz,jump,dive:false};
 }
 
 // ---------- ROUND FLOW ----------
