@@ -328,17 +328,19 @@
     $('refill').style.display = !spinning && save.coins < totalBet() ? 'inline-block' : 'none';
     $('soundBtn').textContent = save.sound ? '🔊 音 ON' : '🔇 音 OFF';
   }
+  // 前のアニメを止めてから、常に最新のコイン数へ向かう（2本のループが引っぱり合って音が鳴り続けるのを防ぐ）
+  let coinRAF = 0, lastCoinSfx = 0;
   function animateCoins() {
-    const target = save.coins;
-    const step = () => {
-      if (shownCoins === target) return;
-      const d = target - shownCoins;
+    cancelAnimationFrame(coinRAF);
+    const step = now => {
+      const d = save.coins - shownCoins;
+      if (d === 0) return;
       shownCoins += Math.sign(d) * Math.max(1, Math.floor(Math.abs(d) / 12));
       $('coins').textContent = shownCoins.toLocaleString();
-      if (d > 0 && Math.random() < .3) sfx.coin();
-      requestAnimationFrame(step);
+      if (d > 0 && now - lastCoinSfx > 70) { sfx.coin(); lastCoinSfx = now; }
+      coinRAF = requestAnimationFrame(step);
     };
-    step();
+    coinRAF = requestAnimationFrame(step);
   }
   $('coins').textContent = shownCoins.toLocaleString();
   const totalBet = () => BETS[save.betIdx] * LINES.length;
