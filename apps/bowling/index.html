@@ -627,9 +627,20 @@ const aimGroup=new THREE.Group();
 {
   const sh=new THREE.Shape();sh.moveTo(0,0.12);sh.lineTo(0.13,-0.04);sh.lineTo(0.08,-0.08);sh.lineTo(0,0.02);sh.lineTo(-0.08,-0.08);sh.lineTo(-0.13,-0.04);sh.closePath();
   const geo=new THREE.ShapeGeometry(sh);geo.rotateX(-Math.PI/2);
+  const edgeMat=new THREE.MeshBasicMaterial({color:0x2a0614,transparent:true,opacity:0.9,depthWrite:false,fog:false});
   for(let i=0;i<6;i++){
-    const m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:0xffc94a,transparent:true,opacity:0.9,depthWrite:false}));
-    m.position.set(0,0.006,-0.45-i*0.55);aimGroup.add(m);
+    const z=-0.5-i*0.6;
+    const edge=new THREE.Mesh(geo,edgeMat);edge.scale.set(2.3,1,2.3);edge.position.set(0,0.006,z+0.02);edge.renderOrder=5;aimGroup.add(edge);
+    const m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:0xff1f5a,transparent:true,opacity:1,depthWrite:false,fog:false}));
+    m.scale.set(1.8,1,1.8);m.position.set(0,0.012,z);m.renderOrder=6;m.userData.pulse=i;aimGroup.add(m);
+  }
+  // dotted guide line toward the pins
+  const dotGeo=new THREE.CircleGeometry(0.05,14);dotGeo.rotateX(-Math.PI/2);
+  const dotEdgeGeo=new THREE.CircleGeometry(0.08,14);dotEdgeGeo.rotateX(-Math.PI/2);
+  const dotMat=new THREE.MeshBasicMaterial({color:0xff1f5a,depthWrite:false,transparent:true,fog:false});
+  for(let z=-4.2;z>-17.5;z-=0.45){
+    const e=new THREE.Mesh(dotEdgeGeo,edgeMat);e.position.set(0,0.006,z);e.renderOrder=5;aimGroup.add(e);
+    const d=new THREE.Mesh(dotGeo,dotMat);d.position.set(0,0.012,z);d.renderOrder=6;aimGroup.add(d);
   }
 }
 aimGroup.visible=false;scene.add(aimGroup);
@@ -975,7 +986,8 @@ function frame(now){
     else if(!drag)aimGroup.visible=false;
     ball.y=L.R;
   }
-  aimGroup.children.forEach((m,i)=>{m.material.opacity=0.35+0.6*Math.max(0,Math.sin(now/180-i*0.9));});
+  if(state==='ready')$('hint').hidden=!!(sub||drag);
+  aimGroup.children.forEach(m=>{const i=m.userData.pulse;if(i!=null)m.material.opacity=0.55+0.45*Math.max(0,Math.sin(now/180-i*0.9));});
   updateCamera(dt);sync(dt);
   renderer.render(scene,camera);
 }
