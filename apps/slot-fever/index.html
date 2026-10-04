@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>スロットフィーバー</title>
+<style>
+  :root {
+    --cell: min(27vw, 118px);
+    --gold: #ffd54a;
+    --gold2: #ff9f1c;
+    --pink: #ff3d8b;
+    --bg1: #1a0633;
+    --bg2: #05010d;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: radial-gradient(ellipse at top, #3a0d6b 0%, var(--bg1) 45%, var(--bg2) 100%);
+    color: #fff;
+    font-family: "Hiragino Maru Gothic ProN", "M PLUS Rounded 1c", "Yu Gothic", "Meiryo", sans-serif;
+    display: flex; flex-direction: column; align-items: center;
+    overflow-x: hidden; user-select: none;
+    padding: 12px 16px 24px;
+  }
+  h1 {
+    margin: 4px 0 10px; font-size: clamp(26px, 8vw, 40px); letter-spacing: 2px;
+    background: linear-gradient(180deg, #fff6c2, var(--gold) 45%, var(--gold2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 0 10px rgba(255, 180, 40, .6));
+    font-weight: 900;
+  }
+  .hud {
+    display: flex; gap: 10px; width: min(100%, 440px); margin-bottom: 12px;
+  }
+  .hud .box {
+    flex: 1; background: rgba(0,0,0,.45); border: 2px solid rgba(255,213,74,.5);
+    border-radius: 12px; padding: 6px 10px; text-align: center;
+  }
+  .hud .label { font-size: 11px; opacity: .75; }
+  .hud .val { font-size: 22px; font-weight: 900; color: var(--gold); font-variant-numeric: tabular-nums; }
+  .hud .val.win { color: #7dff9a; }
+
+  .machine {
+    position: relative; padding: 16px 30px; border-radius: 24px;
+    background: linear-gradient(180deg, #d4202f, #7a0b18);
+    box-shadow: 0 0 0 4px var(--gold), 0 0 30px rgba(255, 61, 139, .55), inset 0 4px 10px rgba(255,255,255,.3);
+  }
+  .lights { position: absolute; inset: 0; pointer-events: none; }
+  .lights span {
+    position: absolute; width: 9px; height: 9px; border-radius: 50%;
+    background: #ffe9a0; box-shadow: 0 0 8px #ffd54a;
+    animation: blink 1s infinite;
+  }
+  .machine.fever .lights span { animation-duration: .25s; }
+  @keyframes blink { 50% { background: #6b3d00; box-shadow: none; } }
+
+  .window {
+    position: relative; display: flex; gap: 6px; padding: 6px;
+    background: #111; border-radius: 12px;
+    box-shadow: inset 0 0 0 3px #000, inset 0 0 20px rgba(0,0,0,.9);
+  }
+  .reel {
+    width: var(--cell); height: calc(var(--cell) * 3); overflow: hidden; position: relative;
+    background: linear-gradient(180deg, #bdbdbd 0%, #fff 18%, #fff 82%, #bdbdbd 100%);
+    border-radius: 6px;
+  }
+  .reel.reach { box-shadow: 0 0 0 3px var(--pink), 0 0 22px var(--pink); animation: reachPulse .3s infinite alternate; }
+  @keyframes reachPulse { to { box-shadow: 0 0 0 3px #fff, 0 0 30px var(--pink); } }
+  .strip { position: absolute; left: 0; right: 0; top: 0; will-change: transform; }
+  .cell {
+    height: var(--cell); display: flex; align-items: center; justify-content: center;
+    font-size: calc(var(--cell) * .58); line-height: 1;
+  }
+  .cell.win { animation: winPop .5s infinite alternate; }
+  @keyframes winPop { from { transform: scale(1); } to { transform: scale(1.18); filter: drop-shadow(0 0 10px gold); } }
+  .seven {
+    font-family: "Arial Black", Impact, sans-serif; font-weight: 900; font-size: calc(var(--cell) * .72);
+    color: #e3001b; -webkit-text-stroke: 3px #7a0010;
+    text-shadow: 0 3px 0 #ffcc00;
+  }
+  .reel::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(180deg, rgba(0,0,0,.35), transparent 22%, transparent 78%, rgba(0,0,0,.35));
+  }
+  svg.lines { position: absolute; inset: 6px; width: calc(100% - 12px); height: calc(100% - 12px); pointer-events: none; }
+  svg.lines polyline { fill: none; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; opacity: 0; filter: drop-shadow(0 0 4px #fff); }
+  svg.lines polyline.on { opacity: .9; animation: dash .6s infinite alternate; }
+  @keyframes dash { to { opacity: .45; } }
+
+  .linetags { position: absolute; top: 22px; bottom: 22px; display: flex; flex-direction: column; justify-content: space-around; }
+  .linetags.left { left: 6px; } .linetags.right { right: 6px; }
+  .linetags b {
+    width: 18px; height: 18px; border-radius: 50%; font-size: 11px; display: flex; align-items: center; justify-content: center;
+    background: #000; border: 2px solid currentColor;
+  }
+
+  .msg {
+    height: 40px; margin: 12px 0 6px; font-size: clamp(16px, 5vw, 22px); font-weight: 900;
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    text-shadow: 0 0 10px rgba(255,213,74,.8);
+  }
+  .controls { display: flex; align-items: center; gap: 12px; width: min(100%, 440px); justify-content: center; flex-wrap: wrap; }
+  .bet { display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,.45); border-radius: 30px; padding: 4px; border: 2px solid rgba(255,255,255,.2); }
+  .bet span { min-width: 64px; text-align: center; font-weight: 900; font-size: 15px; }
+  .bet small { display: block; font-size: 10px; opacity: .7; font-weight: normal; }
+  button {
+    font-family: inherit; font-weight: 900; border: 0; cursor: pointer; color: #fff;
+    transition: transform .08s, filter .2s;
+  }
+  button:active:not(:disabled) { transform: scale(.94); }
+  button:disabled { filter: grayscale(1) brightness(.6); cursor: default; }
+  .round { width: 40px; height: 40px; border-radius: 50%; font-size: 22px; background: #5b2a9e; box-shadow: 0 3px 0 #2b0f55; }
+  #spin {
+    width: 130px; height: 130px; border-radius: 50%; font-size: 28px; letter-spacing: 1px;
+    background: radial-gradient(circle at 35% 30%, #ff8db8, var(--pink) 45%, #a3004a);
+    box-shadow: 0 7px 0 #5e002a, 0 0 25px rgba(255, 61, 139, .7);
+  }
+  #spin:active:not(:disabled) { transform: translateY(5px); box-shadow: 0 2px 0 #5e002a, 0 0 25px rgba(255, 61, 139, .7); }
+  .side { display: flex; flex-direction: column; gap: 8px; }
+  .pill { padding: 9px 14px; border-radius: 20px; font-size: 14px; background: #2d6cdf; box-shadow: 0 3px 0 #143b85; }
+  .pill.on { background: #19b35a; box-shadow: 0 3px 0 #0a6b33, 0 0 12px #19b35a; }
+  .pill.gold { background: linear-gradient(180deg, var(--gold), var(--gold2)); color: #4a2a00; box-shadow: 0 3px 0 #9a5a00; }
+  .foot { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .foot .pill { background: rgba(255,255,255,.12); box-shadow: none; font-size: 13px; }
+  #refill { display: none; margin-top: 12px; }
+
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.75); display: none; align-items: center; justify-content: center; z-index: 20; padding: 16px; }
+  .modal.show { display: flex; }
+  .card {
+    background: linear-gradient(180deg, #2a0c50, #12052a); border: 3px solid var(--gold);
+    border-radius: 18px; padding: 18px; width: min(100%, 380px); max-height: 90vh; overflow: auto;
+  }
+  .card h2 { margin: 0 0 10px; text-align: center; color: var(--gold); }
+  .card table { width: 100%; border-collapse: collapse; }
+  .card td { padding: 5px 4px; border-bottom: 1px solid rgba(255,255,255,.1); font-size: 15px; }
+  .card td:first-child { font-size: 24px; white-space: nowrap; }
+  .card td:last-child { text-align: right; color: var(--gold); font-weight: 900; }
+  .card .seven { font-size: 24px; -webkit-text-stroke: 1px #7a0010; text-shadow: none; }
+  .card p { font-size: 13px; opacity: .85; line-height: 1.6; }
+  .card button { width: 100%; margin-top: 10px; }
+
+  .big {
+    position: fixed; inset: 0; display: none; align-items: center; justify-content: center; flex-direction: column;
+    z-index: 15; pointer-events: none; background: radial-gradient(circle, rgba(255,200,0,.25), transparent 70%);
+  }
+  .big.show { display: flex; }
+  .big .t {
+    font-size: clamp(48px, 16vw, 96px); font-weight: 900; font-style: italic;
+    background: linear-gradient(180deg, #fff, var(--gold) 50%, var(--gold2)); -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 0 16px #ff9f1c) drop-shadow(0 4px 0 #7a3a00);
+    animation: zoom .6s cubic-bezier(.2, 1.6, .4, 1);
+  }
+  .big .n { font-size: clamp(28px, 9vw, 48px); font-weight: 900; color: #fff; text-shadow: 0 0 12px gold; }
+  @keyframes zoom { from { transform: scale(0) rotate(-10deg); } }
+  .coin { position: fixed; top: -50px; font-size: 32px; z-index: 16; pointer-events: none; animation: fall linear forwards; }
+  @keyframes fall { to { transform: translateY(115vh) rotate(720deg); } }
+  .shake { animation: shake .4s; }
+  @keyframes shake { 20%,60% { transform: translateX(-6px); } 40%,80% { transform: translateX(6px); } }
+</style>
+</head>
+<body>
+  <h1>🎰 スロットフィーバー</h1>
+
+  <div class="hud">
+    <div class="box"><div class="label">コイン</div><div class="val" id="coins">0</div></div>
+    <div class="box"><div class="label">今回の当たり</div><div class="val win" id="lastWin">0</div></div>
+  </div>
+
+  <div class="machine" id="machine">
+    <div class="lights" id="lights"></div>
+    <div class="linetags left">
+      <b style="color:#4fc3ff">2</b><b style="color:#ff5252">1</b><b style="color:#7dff9a">3</b>
+    </div>
+    <div class="linetags right">
+      <b style="color:#ffb74d">4</b><b style="color:#ff5252">1</b><b style="color:#e57bff">5</b>
+    </div>
+    <div class="window" id="window">
+      <div class="reel"><div class="strip"></div></div>
+      <div class="reel"><div class="strip"></div></div>
+      <div class="reel"><div class="strip"></div></div>
+      <svg class="lines" viewBox="0 0 300 300" preserveAspectRatio="none">
+        <polyline points="10,150 290,150" stroke="#ff5252"/>
+        <polyline points="10,50 290,50" stroke="#4fc3ff"/>
+        <polyline points="10,250 290,250" stroke="#7dff9a"/>
+        <polyline points="10,40 150,150 290,260" stroke="#ffb74d"/>
+        <polyline points="10,260 150,150 290,40" stroke="#e57bff"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="msg" id="msg">SPIN を押してスタート！</div>
+
+  <div class="controls">
+    <div class="side">
+      <div class="bet">
+        <button class="round" id="betDown">−</button>
+        <span><small>BET (×5ライン)</small><b id="bet">1</b></span>
+        <button class="round" id="betUp">＋</button>
+      </div>
+    </div>
+    <button id="spin">SPIN</button>
+    <div class="side">
+      <button class="pill" id="auto">オート OFF</button>
+      <button class="pill gold" id="max">MAX BET</button>
+    </div>
+  </div>
+
+  <button class="pill gold" id="refill">コイン補充 +500</button>
+
+  <div class="foot">
+    <button class="pill" id="payBtn">📜 配当表</button>
+    <button class="pill" id="soundBtn">🔊 音 ON</button>
+    <button class="pill" id="statBtn">📊 記録</button>
+  </div>
+
+  <div class="modal" id="payModal">
+    <div class="card">
+      <h2>配当表</h2>
+      <table id="payTable"></table>
+      <p>
+        ・配当は「1ラインあたりのBET × 倍率」<br>
+        ・5本のライン（横3本＋ななめ2本）すべてで判定<br>
+        ・🍒は左リールから並べば1個でも当たり<br>
+        ・スペース / Enter キーでもスピンできます
+      </p>
+      <button class="pill gold" data-close>とじる</button>
+    </div>
+  </div>
+
+  <div class="modal" id="statModal">
+    <div class="card">
+      <h2>記録</h2>
+      <table id="statTable"></table>
+      <button class="pill" id="resetBtn" style="background:#8a1a2a;box-shadow:0 3px 0 #4a0a14">データをリセット</button>
+      <button class="pill gold" data-close>とじる</button>
+    </div>
+  </div>
+
+  <div class="big" id="big"><div class="t" id="bigT">BIG WIN!</div><div class="n" id="bigN">+0</div></div>
+
+<script>
+(() => {
+  const SEVEN = '<span class="seven">7</span>';
+  const SYMS = [
+    { id: 'cherry',  html: '🍒', w: 6,   pay: 10 },
+    { id: 'lemon',   html: '🍋', w: 6,   pay: 20 },
+    { id: 'orange',  html: '🍊', w: 5,   pay: 25 },
+    { id: 'grape',   html: '🍇', w: 4,   pay: 40 },
+    { id: 'bell',    html: '🔔', w: 3,   pay: 80 },
+    { id: 'star',    html: '⭐', w: 2,   pay: 150 },
+    { id: 'diamond', html: '💎', w: 1.5, pay: 300 },
+    { id: 'seven',   html: SEVEN, w: 1,  pay: 777 },
+  ];
+  const CHERRY2 = 3, CHERRY1 = 1;
+  const LINES = [[1,1,1],[0,0,0],[2,2,2],[0,1,2],[2,1,0]];
+  const BETS = [1, 2, 3, 5, 10, 20];
+  const totalW = SYMS.reduce((a, s) => a + s.w, 0);
+
+  const $ = id => document.getElementById(id);
+  const reels = [...document.querySelectorAll('.reel')];
+  const strips = reels.map(r => r.querySelector('.strip'));
+  const polys = [...document.querySelectorAll('svg.lines polyline')];
+
+  // ---------- 保存 ----------
+  const KEY = 'slot-fever-v1';
+  let save = { coins: 1000, betIdx: 0, spins: 0, best: 0, totalWin: 0, totalBet: 0, sevens: 0, sound: true };
+  try { Object.assign(save, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
+  const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) {} };
+
+  // ---------- サウンド ----------
+  let ac = null;
+  function tone(freq, dur, type = 'square', vol = .08, when = 0) {
+    if (!save.sound) return;
+    try {
+      ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+      const t = ac.currentTime + when;
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = type; o.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+      o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dur);
+    } catch (e) {}
+  }
+  const sfx = {
+    spin() { tone(300, .08, 'square', .05); tone(450, .08, 'square', .05, .06); },
+    stop() { tone(140, .09, 'triangle', .2); tone(90, .06, 'square', .05); },
+    reach() { for (let i = 0; i < 6; i++) tone(600 + i * 80, .1, 'sawtooth', .04, i * .12); },
+    win() { [523, 659, 784, 1047].forEach((f, i) => tone(f, .18, 'square', .06, i * .09)); },
+    big() { [523, 659, 784, 1047, 784, 1047, 1319, 1568].forEach((f, i) => tone(f, .22, 'square', .07, i * .11)); },
+    coin() { tone(1400, .05, 'square', .03); tone(2000, .05, 'square', .02, .03); },
+    lose() { tone(200, .15, 'triangle', .05); },
+  };
+
+  // ---------- 盤面 ----------
+  function randSym() {
+    let r = Math.random() * totalW;
+    for (const s of SYMS) { if ((r -= s.w) < 0) return s; }
+    return SYMS[0];
+  }
+  const cellHTML = s => `<div class="cell">${s.html}</div>`;
+  let grid = [0,1,2].map(() => [randSym(), randSym(), randSym()]); // grid[reel][row]
+  function renderReel(i, syms) {
+    strips[i].innerHTML = syms.map(cellHTML).join('');
+    strips[i].style.transform = 'translateY(0)';
+  }
+  grid.forEach((col, i) => renderReel(i, col));
+
+  // ライト
+  const lights = $('lights');
+  for (let i = 0; i < 22; i++) {
+    const s = document.createElement('span');
+    const t = i / 22, p = t * 4, side = Math.floor(p), f = p - side;
+    const pos = [[f, 0], [1, f], [1 - f, 1], [0, 1 - f]][side];
+    s.style.left = `calc(${pos[0] * 100}% - 4px + ${pos[0] === 0 ? 6 : pos[0] === 1 ? -6 : 0}px)`;
+    s.style.top = `calc(${pos[1] * 100}% - 4px + ${pos[1] === 0 ? 6 : pos[1] === 1 ? -6 : 0}px)`;
+    s.style.animationDelay = (i % 2) * .5 + 's';
+    lights.appendChild(s);
+  }
+
+  // ---------- 表示 ----------
+  let shownCoins = save.coins;
+  function updateHUD() {
+    $('bet').textContent = BETS[save.betIdx];
+    $('betDown').disabled = spinning || save.betIdx === 0;
+    $('betUp').disabled = spinning || save.betIdx === BETS.length - 1;
+    $('max').disabled = spinning;
+    $('spin').disabled = spinning || save.coins < totalBet();
+    $('refill').style.display = !spinning && save.coins < totalBet() ? 'inline-block' : 'none';
+    $('soundBtn').textContent = save.sound ? '🔊 音 ON' : '🔇 音 OFF';
+  }
+  function animateCoins() {
+    const target = save.coins;
+    const step = () => {
+      if (shownCoins === target) return;
+      const d = target - shownCoins;
+      shownCoins += Math.sign(d) * Math.max(1, Math.floor(Math.abs(d) / 12));
+      $('coins').textContent = shownCoins.toLocaleString();
+      if (d > 0 && Math.random() < .3) sfx.coin();
+      requestAnimationFrame(step);
+    };
+    step();
+  }
+  $('coins').textContent = shownCoins.toLocaleString();
+  const totalBet = () => BETS[save.betIdx] * LINES.length;
+  const msg = (t, color = '#fff') => { $('msg').textContent = t; $('msg').style.color = color; };
+
+  function clearWin() {
+    document.querySelectorAll('.cell.win').forEach(c => c.classList.remove('win'));
+    polys.forEach(p => p.classList.remove('on'));
+    $('machine').classList.remove('fever');
+  }
+
+  // ---------- 判定 ----------
+  function evaluate(g) {
+    const bet = BETS[save.betIdx];
+    const wins = [];
+    LINES.forEach((ln, li) => {
+      const [a, b, c] = ln.map((row, r) => g[r][row]);
+      let mult = 0, count = 0;
+      if (a === b && b === c) { mult = a.pay; count = 3; }
+      else if (a.id === 'cherry' && b.id === 'cherry') { mult = CHERRY2; count = 2; }
+      else if (a.id === 'cherry') { mult = CHERRY1; count = 1; }
+      if (mult) wins.push({ li, mult, count, sym: a, amount: mult * bet });
+    });
+    return wins;
+  }
+  // リーチ判定：左2つが同じ（チェリー以外）のラインがあるか
+  function isReach(g) {
+    return LINES.some(ln => {
+      const a = g[0][ln[0]], b = g[1][ln[1]];
+      return a === b && a.id !== 'cherry';
+    });
+  }
+
+  // ---------- スピン ----------
+  let spinning = false, auto = false;
+  const easeOutBack = t => { const c = 1.2, c3 = c + 1; return 1 + c3 * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
+
+  function spinReel(i, finals, duration) {
+    return new Promise(res => {
+      const H = reels[i].clientHeight / 3;
+      const fillers = Math.max(8, Math.floor(duration / 45));
+      const syms = [randSym(), ...finals];
+      for (let k = 0; k < fillers; k++) syms.push(randSym());
+      syms.push(...grid[i]);
+      strips[i].innerHTML = syms.map(cellHTML).join('');
+      const from = -(syms.length - 3) * H, to = -H;
+      strips[i].style.transform = `translateY(${from}px)`;
+      const t0 = performance.now();
+      const frame = now => {
+        const t = Math.min(1, (now - t0) / duration);
+        const y = from + (to - from) * easeOutBack(t);
+        strips[i].style.transform = `translateY(${y}px)`;
+        if (t < 1) requestAnimationFrame(frame);
+        else { renderReel(i, finals); sfx.stop(); res(); }
+      };
+      requestAnimationFrame(frame);
+    });
+  }
+
+  async function spin() {
+    if (spinning) return;
+    const cost = totalBet();
+    if (save.coins < cost) { msg('コインが足りません…', '#ff8a8a'); auto = false; syncAuto(); return; }
+    spinning = true;
+    clearWin();
+    save.coins -= cost; save.spins++; save.totalBet += cost;
+    animateCoins(); $('lastWin').textContent = '0';
+    updateHUD();
+    msg('回転中…', '#ccc');
+    sfx.spin();
+
+    const result = [0,1,2].map(() => [randSym(), randSym(), randSym()]);
+    const reach = isReach(result);
+    const base = auto ? 650 : 900;
+    const p0 = spinReel(0, result[0], base);
+    const p1 = spinReel(1, result[1], base + 300);
+    const p2 = spinReel(2, result[2], base + 600 + (reach ? 1600 : 0));
+    await p0; await p1;
+    if (reach) { reels[2].classList.add('reach'); msg('⚡ リーチ！ ⚡', '#ff7ab0'); sfx.reach(); }
+    await p2;
+    reels[2].classList.remove('reach');
+    grid = result;
+
+    const wins = evaluate(grid);
+    const total = wins.reduce((a, w) => a + w.amount, 0);
+    if (total > 0) {
+      wins.forEach(w => {
+        polys[w.li].classList.add('on');
+        for (let r = 0; r < w.count; r++) strips[r].children[LINES[w.li][r]].classList.add('win');
+      });
+      save.coins += total; save.totalWin += total; save.best = Math.max(save.best, total);
+      if (wins.some(w => w.sym.id === 'seven' && w.count === 3)) save.sevens++;
+      $('lastWin').textContent = total.toLocaleString();
+      animateCoins();
+      const ratio = total / cost;
+      if (ratio >= 20) {
+        bigWin(ratio >= 100 ? 'MEGA WIN!!' : 'BIG WIN!', total);
+      } else {
+        sfx.win();
+      }
+      msg(`${wins.length}ライン当たり！ +${total.toLocaleString()}`, '#ffd54a');
+      if (ratio >= 5) $('machine').classList.add('fever');
+    } else {
+      msg(['ざんねん！', 'もう一回！', 'おしい…？', '次こそ！'][Math.floor(Math.random() * 4)], '#aaa');
+      sfx.lose();
+    }
+    persist();
+    spinning = false;
+    updateHUD();
+
+    if (auto) {
+      if (save.coins >= totalBet()) setTimeout(() => auto && spin(), total > 0 ? (total / cost >= 20 ? 2600 : 900) : 350);
+      else { auto = false; syncAuto(); }
+    }
+  }
+
+  function bigWin(title, amount) {
+    sfx.big();
+    $('bigT').textContent = title;
+    $('bigN').textContent = '+' + amount.toLocaleString();
+    $('big').classList.add('show');
+    document.body.classList.remove('shake'); void document.body.offsetWidth; document.body.classList.add('shake');
+    const n = title.startsWith('MEGA') ? 60 : 30;
+    for (let i = 0; i < n; i++) {
+      const c = document.createElement('div');
+      c.className = 'coin';
+      c.textContent = ['🪙', '💰', '✨'][i % 3];
+      c.style.left = Math.random() * 100 + 'vw';
+      c.style.animationDuration = 1.5 + Math.random() * 1.5 + 's';
+      c.style.animationDelay = Math.random() * .8 + 's';
+      document.body.appendChild(c);
+      setTimeout(() => c.remove(), 4000);
+    }
+    setTimeout(() => $('big').classList.remove('show'), 2300);
+  }
+
+  // ---------- 操作 ----------
+  function syncAuto() {
+    $('auto').textContent = auto ? 'オート ON' : 'オート OFF';
+    $('auto').classList.toggle('on', auto);
+  }
+  $('spin').onclick = spin;
+  $('auto').onclick = () => { auto = !auto; syncAuto(); if (auto && !spinning) spin(); };
+  $('betDown').onclick = () => { if (save.betIdx > 0) { save.betIdx--; tone(500, .05); persist(); updateHUD(); } };
+  $('betUp').onclick = () => { if (save.betIdx < BETS.length - 1) { save.betIdx++; tone(700, .05); persist(); updateHUD(); } };
+  $('max').onclick = () => {
+    let i = BETS.length - 1;
+    while (i > 0 && BETS[i] * LINES.length > save.coins) i--;
+    save.betIdx = i; tone(900, .08); persist(); updateHUD();
+  };
+  $('refill').onclick = () => { save.coins += 500; persist(); animateCoins(); msg('コインを補充しました！', '#7dff9a'); updateHUD(); };
+  $('soundBtn').onclick = () => { save.sound = !save.sound; persist(); updateHUD(); };
+
+  // 配当表
+  $('payTable').innerHTML = [...SYMS].reverse().map(s =>
+    `<tr><td>${s.html}${s.html}${s.html}</td><td></td><td>×${s.pay}</td></tr>`).join('') +
+    `<tr><td>🍒🍒</td><td style="font-size:12px;opacity:.7">左から2つ</td><td>×${CHERRY2}</td></tr>` +
+    `<tr><td>🍒</td><td style="font-size:12px;opacity:.7">左に1つ</td><td>×${CHERRY1}</td></tr>`;
+  $('payBtn').onclick = () => $('payModal').classList.add('show');
+  $('statBtn').onclick = () => {
+    const rtp = save.totalBet ? (save.totalWin / save.totalBet * 100).toFixed(1) + '%' : '-';
+    $('statTable').innerHTML = [
+      ['🎰 スピン回数', save.spins.toLocaleString()],
+      ['🏆 最大当たり', save.best.toLocaleString()],
+      ['7️⃣ 777揃い', save.sevens + ' 回'],
+      ['💸 合計BET', save.totalBet.toLocaleString()],
+      ['💰 合計当たり', save.totalWin.toLocaleString()],
+      ['📈 還元率', rtp],
+    ].map(([a, b]) => `<tr><td style="font-size:15px">${a}</td><td></td><td>${b}</td></tr>`).join('');
+    $('statModal').classList.add('show');
+  };
+  $('resetBtn').onclick = () => {
+    if (!confirm('コインと記録をリセットしますか？')) return;
+    Object.assign(save, { coins: 1000, betIdx: 0, spins: 0, best: 0, totalWin: 0, totalBet: 0, sevens: 0 });
+    persist(); shownCoins = save.coins; $('coins').textContent = shownCoins.toLocaleString();
+    $('statModal').classList.remove('show'); updateHUD();
+  };
+  document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => {
+    if (e.target === m || e.target.hasAttribute('data-close')) m.classList.remove('show');
+  }));
+  document.addEventListener('keydown', e => {
+    if ((e.code === 'Space' || e.code === 'Enter') && !document.querySelector('.modal.show')) {
+      e.preventDefault(); spin();
+    }
+  });
+
+  updateHUD();
+})();
+</script>
+<script src="../../playtime.js" defer></script>
+</body>
+</html>
