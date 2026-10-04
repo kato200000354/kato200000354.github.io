@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#16337a">
+<title>みんなの競馬ライフ</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+:root{
+  --navy:#16337a;--blue:#2457c9;--blue2:#3a7be8;--sky:#e9f2ff;--line:#c7d6f0;
+  --yellow:#ffd23a;--orange:#ff9a1f;--red:#e8433a;--green:#3cc46a;
+  --ink:#1b2a4a;--sub:#5a6a8a;--white:#fff;--panel:rgba(255,255,255,.96);
+  --turf:#5cbf4a;--turf2:#46a83a;
+}
+html,body{background:#0e2457;color:var(--ink);font-family:"Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;font-weight:700}
+body{min-height:100vh;background:linear-gradient(180deg,#8fd0ff 0%,#cfeaff 40%,#e9f6ff 100%) fixed;overflow-x:hidden}
+button{font:inherit;color:inherit;border:none;background:none;cursor:pointer;-webkit-user-select:none;user-select:none}
+button:disabled{cursor:not-allowed;opacity:.5}
+.press{transition:transform .1s,filter .15s}
+.press:active:not(:disabled){transform:scale(.95)}
+.app{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative}
+
+/* ===== header ===== */
+.hd{display:flex;align-items:center;gap:8px;padding:8px 10px;background:linear-gradient(180deg,#2f6be0,#16337a);color:#fff;
+  border-bottom:3px solid #ffd23a;position:sticky;top:0;z-index:20;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.hd .home{width:34px;height:34px;border-radius:10px;background:#fff;color:var(--navy);display:grid;place-items:center;font-size:18px;flex:none}
+.hd .ttl{font-size:18px;letter-spacing:.06em;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 2px 0 rgba(0,0,0,.25)}
+.hd .chip{background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:3px 9px;font-size:11px;white-space:nowrap}
+.hd .chip b{color:#ffe36a}
+
+.main{flex:1;padding:12px 12px 20px;display:flex;flex-direction:column;gap:10px}
+.panel{background:var(--panel);border:2px solid #fff;border-radius:14px;box-shadow:0 3px 0 #9fbbe6,0 6px 14px rgba(22,51,122,.18);overflow:hidden}
+.ph{background:linear-gradient(180deg,#3a7be8,#2457c9);color:#fff;font-size:13px;padding:5px 10px;letter-spacing:.05em;display:flex;justify-content:space-between;align-items:center}
+.pb{padding:10px}
+
+/* ===== title ===== */
+#scr-title{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px;
+  background:linear-gradient(180deg,#5db7ff 0%,#a8dcff 45%,#7ccf5f 66%,#4fa83c 100%)}
+.logo{text-align:center;margin-bottom:6px}
+.logo .s{font-size:18px;color:#16337a;background:#fff;display:inline-block;padding:2px 14px;border-radius:999px;border:2px solid #16337a}
+.logo .m{font-size:clamp(42px,13vw,64px);font-weight:900;line-height:1.1;margin-top:6px;
+  background:linear-gradient(180deg,#fff7b0 0%,#ffd23a 45%,#ff7a1a 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  -webkit-text-stroke:2px #8a2a00;filter:drop-shadow(0 4px 0 #16337a)}
+.logo .sub{color:#fff;font-size:14px;text-shadow:0 2px 0 #16337a;margin-top:4px}
+.title-art{font-size:84px;margin:14px 0 10px;filter:drop-shadow(0 6px 0 rgba(0,0,0,.18));animation:bob 1.2s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-6px)}}
+.tmenu{width:min(320px,100%);display:flex;flex-direction:column;gap:10px}
+.tbtn{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:12px;background:linear-gradient(180deg,#2f6be0,#16337a);color:#fff;
+  font-size:17px;border:2px solid #fff;box-shadow:0 4px 0 #0b1d4a}
+.tbtn.main-b{background:linear-gradient(180deg,#ffe36a,#ffb21a);color:#5a2a00;box-shadow:0 4px 0 #b06a00}
+.tbtn i{font-style:normal;font-size:22px;width:28px;text-align:center}
+.tnote{margin-top:14px;font-size:12px;color:#fff;background:rgba(10,30,80,.55);padding:6px 12px;border-radius:8px}
+
+/* ===== horse card ===== */
+.hcard{display:flex;gap:10px;align-items:stretch}
+.portrait{width:96px;flex:none;border-radius:12px;background:linear-gradient(180deg,#bfe6ff,#e8f7ff 60%,#9ad67e 60%,#7cc35f);
+  display:grid;place-items:center;font-size:58px;border:2px solid var(--line);position:relative}
+.portrait .cls{position:absolute;bottom:4px;left:4px;right:4px;font-size:10px;text-align:center;background:var(--navy);color:#fff;border-radius:6px;padding:1px 0}
+.hinfo{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.hname{font-size:19px;color:var(--navy);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.hname .age{font-size:11px;background:var(--sky);color:var(--blue);border-radius:999px;padding:1px 8px}
+.kv{display:grid;grid-template-columns:auto 1fr;font-size:12px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.kv dt{background:var(--sky);color:var(--sub);padding:2px 8px;border-bottom:1px solid var(--line)}
+.kv dd{padding:2px 8px;border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kv dt:nth-last-child(2),.kv dd:last-child{border-bottom:none}
+
+.cond{display:flex;gap:8px}
+.cond>div{flex:1;background:#fff;border:2px solid var(--line);border-radius:10px;padding:5px 8px;font-size:11px;color:var(--sub)}
+.cond .face{font-size:20px;vertical-align:middle;margin-right:4px}
+.cond .val{font-size:15px;color:var(--ink)}
+.hp{height:12px;border-radius:999px;background:#e3e9f5;overflow:hidden;margin-top:4px;border:1px solid #c9d4ea}
+.hp>i{display:block;height:100%;background:linear-gradient(90deg,#3cc46a,#9be35a);transition:width .5s}
+.hp.low>i{background:linear-gradient(90deg,#e8433a,#ff9a1f)}
+
+/* ===== stats ===== */
+.stats{display:flex;flex-direction:column;gap:6px}
+.st{display:grid;grid-template-columns:62px 28px 1fr 34px;align-items:center;gap:6px;font-size:13px}
+.st .nm{color:var(--navy)}
+.rank{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;font-size:17px;font-weight:900;color:#fff;-webkit-text-stroke:.5px rgba(0,0,0,.3);
+  text-shadow:0 1px 0 rgba(0,0,0,.3)}
+.rk-S{background:linear-gradient(180deg,#ffe36a,#ff9a1f)}.rk-A{background:linear-gradient(180deg,#ff8a8a,#e8433a)}
+.rk-B{background:linear-gradient(180deg,#ff9ac4,#e0458a)}.rk-C{background:linear-gradient(180deg,#ffd76a,#e8a21a)}
+.rk-D{background:linear-gradient(180deg,#9be35a,#3cc46a)}.rk-E{background:linear-gradient(180deg,#8ac8ff,#3a7be8)}
+.rk-F{background:linear-gradient(180deg,#b9c2d6,#7a87a6)}.rk-G{background:linear-gradient(180deg,#c9c9c9,#8d8d8d)}
+.bar{height:14px;border-radius:999px;background:#e3e9f5;overflow:hidden;border:1px solid #c9d4ea;position:relative}
+.bar>i{display:block;height:100%;background:linear-gradient(90deg,#3cc46a,#ffd23a,#ff9a1f);transition:width .6s}
+.bar>em{position:absolute;top:0;height:100%;background:rgba(255,80,80,.55);transition:all .6s}
+.st .n{text-align:right;font-size:15px;color:var(--ink)}
+.st .up{color:#e8433a;font-size:11px;margin-left:2px}
+
+/* ===== goal banner ===== */
+.goal{display:flex;align-items:center;gap:8px;background:linear-gradient(90deg,#16337a,#2457c9);color:#fff;border-radius:12px;padding:8px 10px;font-size:13px;border:2px solid #fff;box-shadow:0 3px 0 #9fbbe6}
+.goal .tag{background:var(--yellow);color:#5a2a00;border-radius:6px;padding:1px 6px;font-size:11px;flex:none}
+.goal .wk{margin-left:auto;font-size:11px;background:rgba(255,255,255,.18);padding:2px 8px;border-radius:999px;white-space:nowrap}
+.goal .wk b{color:#ffe36a;font-size:15px}
+
+/* ===== command buttons ===== */
+.cmds{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.cmd{background:linear-gradient(180deg,#3a7be8,#16337a);color:#fff;border:2px solid #fff;border-radius:12px;padding:10px 4px 8px;
+  display:flex;flex-direction:column;align-items:center;gap:2px;font-size:13px;box-shadow:0 4px 0 #0b1d4a}
+.cmd i{font-style:normal;font-size:26px;line-height:1.1}
+.cmd small{font-size:10px;opacity:.8}
+.cmd.hot{background:linear-gradient(180deg,#ffe36a,#ffb21a);color:#5a2a00;box-shadow:0 4px 0 #b06a00}
+.cmd.race{background:linear-gradient(180deg,#ff7a6a,#d02a2a);box-shadow:0 4px 0 #7a1010}
+
+/* ===== scene / dialog ===== */
+.scene{height:190px;border-radius:14px;position:relative;overflow:hidden;border:2px solid #fff;box-shadow:0 3px 0 #9fbbe6;
+  background:linear-gradient(180deg,#8fd0ff 0%,#d8f0ff 50%,#7cc35f 50%,#5cad48 100%)}
+.scene .fence{position:absolute;left:0;right:0;top:46%;height:16px;background:repeating-linear-gradient(90deg,#fff 0 6px,transparent 6px 40px);border-top:3px solid #fff;border-bottom:3px solid #fff}
+.scene .who{position:absolute;bottom:14px;font-size:72px;filter:drop-shadow(0 4px 0 rgba(0,0,0,.18))}
+.scene .bubble{position:absolute;top:10px;right:10px;left:110px;background:#fff;border-radius:14px;padding:8px 12px;font-size:13px;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+.dialog{background:#fff;border:3px solid var(--navy);border-radius:14px;padding:22px 14px 14px;position:relative;font-size:15px;line-height:1.7;min-height:96px}
+.dialog .spk{position:absolute;top:-12px;left:12px;background:var(--navy);color:#fff;font-size:12px;padding:2px 12px;border-radius:999px}
+.choices{display:flex;flex-direction:column;gap:8px}
+.choice{background:linear-gradient(180deg,#fff,#e9f2ff);border:2px solid var(--blue);color:var(--navy);border-radius:12px;padding:10px 12px;text-align:left;font-size:14px;box-shadow:0 3px 0 #9fbbe6}
+.choice small{display:block;font-size:11px;color:var(--sub);margin-top:2px}
+
+/* ===== training ===== */
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.tcard{background:#fff;border:3px solid var(--line);border-radius:12px;padding:8px;text-align:center;box-shadow:0 3px 0 #9fbbe6;position:relative}
+.tcard.sel{border-color:var(--yellow);background:#fffbe6;box-shadow:0 3px 0 #e8a21a}
+.tcard .tic{font-size:34px;height:56px;border-radius:8px;display:grid;place-items:center;margin-bottom:4px}
+.tcard .tn{font-size:15px;color:var(--navy)}
+.tcard .tlv{position:absolute;top:6px;left:6px;font-size:10px;background:var(--navy);color:#fff;border-radius:6px;padding:0 5px}
+.tcard .gain{font-size:11px;color:var(--sub);margin-top:4px;display:flex;flex-wrap:wrap;justify-content:center;gap:2px 6px}
+.tcard .gain b{color:#e8433a}
+.tcard .fail{font-size:11px;margin-top:4px;padding:1px 0;border-radius:6px;background:#eef3fb;color:var(--sub)}
+.tcard .fail.warn{background:#ffe3e0;color:#d02a2a}
+.partner{position:absolute;top:6px;right:6px;font-size:16px}
+.btnrow{display:flex;gap:8px}
+.bbtn{flex:1;padding:12px;border-radius:12px;font-size:16px;color:#fff;background:linear-gradient(180deg,#3a7be8,#16337a);border:2px solid #fff;box-shadow:0 4px 0 #0b1d4a}
+.bbtn.go{background:linear-gradient(180deg,#ffe36a,#ffb21a);color:#5a2a00;box-shadow:0 4px 0 #b06a00}
+.bbtn.back{flex:none;width:90px;background:linear-gradient(180deg,#8a9bbd,#55627f);box-shadow:0 4px 0 #2a3350}
+
+/* ===== race ===== */
+.rhead{display:flex;align-items:center;gap:10px}
+.grade{font-size:20px;font-weight:900;color:#fff;border-radius:8px;padding:2px 8px;background:linear-gradient(180deg,#ff6ab0,#c02a7a);flex:none}
+.grade.g2{background:linear-gradient(180deg,#ff8a6a,#d04a2a)}.grade.g3{background:linear-gradient(180deg,#6ad0ff,#2a7ad0)}
+.grade.op{background:linear-gradient(180deg,#9be35a,#3c9c3a)}
+.rname{font-size:18px;color:var(--navy)}
+.rmeta{font-size:12px;color:var(--sub)}
+.odds{width:100%;border-collapse:collapse;font-size:13px}
+.odds td{padding:5px 6px;border-bottom:1px solid var(--line)}
+.odds tr.me{background:#fff7cc}
+.gate{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:5px;color:#fff;font-size:12px}
+.odds .o{text-align:right;color:#d02a2a}
+.odds .pop{font-size:10px;color:var(--sub)}
+.tactics{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.tac{background:#fff;border:2px solid var(--line);border-radius:10px;padding:6px 2px;font-size:13px;color:var(--navy)}
+.tac small{display:block;font-size:10px;color:var(--sub)}
+.tac.sel{border-color:#ff9a1f;background:#fff3dc}
+
+.track{position:relative;height:260px;border-radius:14px;overflow:hidden;border:2px solid #fff;
+  background:repeating-linear-gradient(90deg,var(--turf) 0 40px,var(--turf2) 40px 80px);box-shadow:0 3px 0 #9fbbe6}
+.track .rail{position:absolute;left:0;right:0;height:4px;background:#fff}
+.track .goalline{position:absolute;top:0;bottom:0;left:22px;width:6px;background:repeating-linear-gradient(180deg,#fff 0 8px,#d02a2a 8px 16px)}
+.lane{position:absolute;left:0;right:0;height:28px}
+.runner{position:absolute;right:0;font-size:26px;transition:right .12s linear;display:flex;align-items:center}
+.runner .no{font-size:10px;color:#fff;border-radius:4px;padding:0 4px;margin-left:2px}
+.runner.me .no{outline:2px solid var(--yellow)}
+.rinfo{display:flex;justify-content:space-between;font-size:12px;color:var(--sub)}
+.commentary{background:#0b1d4a;color:#fff;border-radius:10px;padding:8px 12px;font-size:14px;min-height:40px;border:2px solid var(--yellow)}
+.dist{height:8px;background:#e3e9f5;border-radius:999px;overflow:hidden}
+.dist>i{display:block;height:100%;background:var(--blue2);width:0}
+
+/* ===== result ===== */
+.place-big{text-align:center;padding:14px 0 6px;background:radial-gradient(circle,#fff7b0 0%,#ffd23a 45%,transparent 70%)}
+.place-big .p{font-size:64px;font-weight:900;color:#fff;-webkit-text-stroke:3px #b06a00;text-shadow:0 5px 0 #8a4a00;line-height:1}
+.place-big .p small{font-size:28px}
+.res{width:100%;border-collapse:collapse;font-size:13px}
+.res th{background:var(--navy);color:#fff;font-size:11px;padding:4px}
+.res td{padding:5px 6px;border-bottom:1px solid var(--line)}
+.res tr.me{background:#fff7cc}
+.res .pl{width:30px;text-align:center;font-size:15px;color:var(--navy)}
+.prize{display:flex;justify-content:space-between;align-items:center;background:#fffbe6;border:2px solid var(--yellow);border-radius:10px;padding:8px 12px;font-size:14px}
+.prize b{color:#d02a2a;font-size:18px}
+
+/* ===== data ===== */
+.rgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.rbox{border:2px solid var(--line);border-radius:10px;overflow:hidden;text-align:center;background:#fff}
+.rbox .h{background:var(--navy);color:#fff;font-size:11px;padding:2px 0}
+.rbox .rank{margin:6px auto 0;width:34px;height:34px;font-size:22px}
+.rbox .n{font-size:15px;padding:2px 0 4px}
+.skills{display:flex;flex-wrap:wrap;gap:6px}
+.skill{font-size:12px;border-radius:999px;padding:3px 10px;background:linear-gradient(180deg,#fff7b0,#ffd23a);color:#5a2a00;border:1px solid #e8a21a}
+.skill.blue{background:linear-gradient(180deg,#d6e8ff,#9cc3ff);color:var(--navy);border-color:#6a9be8}
+.skill.none{background:#eef3fb;color:#9aa6bf;border-color:var(--line)}
+.history{font-size:12px;display:flex;flex-direction:column;gap:4px}
+.history div{display:flex;justify-content:space-between;border-bottom:1px dashed var(--line);padding:2px 0}
+.chart{width:100%;height:160px}
+
+/* ===== popup / toast ===== */
+.modal{position:fixed;inset:0;background:rgba(5,15,45,.6);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+.mbox{width:min(400px,100%);background:#fff;border-radius:16px;border:3px solid var(--yellow);overflow:hidden;animation:pop .25s ease-out}
+@keyframes pop{from{transform:scale(.8);opacity:0}}
+.mbox .mh{background:linear-gradient(180deg,#ffe36a,#ffb21a);color:#5a2a00;text-align:center;padding:8px;font-size:18px}
+.mbox .mb{padding:14px;text-align:center;font-size:14px;line-height:1.7}
+.mbox .big{font-size:56px;margin:4px 0}
+.gains{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:8px 0}
+.gains span{background:var(--sky);border-radius:8px;padding:3px 8px;font-size:13px;color:var(--navy)}
+.gains span b{color:#e8433a}
+.gains span.minus b{color:var(--blue)}
+.mbox .bbtn{margin:0 14px 14px;width:calc(100% - 28px)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--navy);color:#fff;padding:8px 16px;border-radius:999px;font-size:13px;z-index:60;border:2px solid var(--yellow);animation:pop .2s}
+.footnote{font-size:12px;color:var(--sub);background:#fff;border-radius:10px;padding:6px 10px;border:1px solid var(--line)}
+/* ===== game additions ===== */
+.foals{display:flex;flex-direction:column;gap:10px}
+.foal{background:#fff;border:3px solid var(--line);border-radius:14px;padding:10px;text-align:left;box-shadow:0 3px 0 #9fbbe6;display:flex;gap:10px;align-items:center}
+.foal.sel{border-color:var(--yellow);background:#fffbe6}
+.foal .portrait{width:72px;height:72px;font-size:44px}
+.foal .fi{flex:1;min-width:0;font-size:12px;color:var(--sub);line-height:1.6}
+.foal .fi b{color:var(--navy);font-size:15px}
+.mini{display:flex;gap:3px;flex-wrap:wrap;margin-top:2px}
+.mini span{font-size:10px;background:var(--sky);border-radius:5px;padding:0 5px;color:var(--navy)}
+.nameinp{width:100%;font:inherit;font-size:16px;padding:10px 12px;border-radius:10px;border:2px solid var(--blue);color:var(--navy)}
+.apt{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.apt div{text-align:center;font-size:11px;color:var(--sub);background:#fff;border:1px solid var(--line);border-radius:8px;padding:3px}
+.apt .rank{width:22px;height:22px;font-size:14px;margin:2px auto 0}
+.shop{display:flex;flex-direction:column;gap:8px}
+.item{display:flex;align-items:center;gap:10px;background:#fff;border:2px solid var(--line);border-radius:12px;padding:8px 10px;text-align:left}
+.item .ii{font-size:30px}
+.item .in{flex:1;font-size:14px;color:var(--navy)}
+.item .in small{display:block;font-size:11px;color:var(--sub)}
+.item .ip{font-size:13px;color:#d02a2a;white-space:nowrap}
+.spurt{width:100%;padding:16px;font-size:20px;border-radius:14px;color:#fff;background:linear-gradient(180deg,#ff7a6a,#d02a2a);border:3px solid #fff;box-shadow:0 5px 0 #7a1010}
+.spurt.ready{animation:pulse .5s ease-in-out infinite alternate}
+@keyframes pulse{to{transform:scale(1.04);filter:brightness(1.15)}}
+.skillpop{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);background:linear-gradient(180deg,#fff7b0,#ffd23a);color:#5a2a00;padding:6px 14px;border-radius:999px;border:2px solid #b06a00;font-size:15px;z-index:3;animation:pop .2s;white-space:nowrap}
+.calendar{display:flex;flex-direction:column;gap:4px;font-size:12px}
+.calendar div{display:flex;gap:6px;align-items:center;border-bottom:1px dashed var(--line);padding:3px 0}
+.calendar .grade{font-size:10px;padding:0 5px;border-radius:5px}
+.calendar .gl{margin-left:auto;font-size:10px;background:#ffe3e0;color:#d02a2a;border-radius:6px;padding:0 6px;white-space:nowrap}
+.calendar .done{opacity:.5}
+.summer{background:linear-gradient(90deg,#ff9a1f,#ffd23a);color:#5a2a00;border-radius:10px;padding:5px 10px;font-size:12px;text-align:center}
+.hof{font-size:12px;display:flex;flex-direction:column;gap:4px;width:min(320px,100%);margin-top:12px;background:rgba(255,255,255,.9);border-radius:10px;padding:8px 10px}
+.hof div{display:flex;justify-content:space-between;gap:6px}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+
+<script>
+// ===================== 定数 =====================
+const STATS = [
+  {k:'spd', n:'スピード'}, {k:'sta', n:'スタミナ'}, {k:'pow', n:'瞬発力'}, {k:'gut', n:'根性'}, {k:'tmp', n:'気性'},
+];
+const STAT_MAX = 300;
+const TRAININGS = [
+  {id:'hill', n:'坂路',        ic:'⛰️', bg:'#d9f0c8', g:{spd:5, gut:2},        hp:-18, skill:'坂巧者'},
+  {id:'wood', n:'ウッドチップ', ic:'🌲', bg:'#f0e0c8', g:{sta:5, pow:2},        hp:-18, skill:'コーナー巧者'},
+  {id:'pool', n:'プール',      ic:'🏊', bg:'#c8e8ff', g:{sta:4, tmp:3},        hp:-8,  skill:'長距離の鬼'},
+  {id:'gate', n:'ゲート練習',  ic:'🚪', bg:'#e0e0f5', g:{pow:5, tmp:2},        hp:-14, skill:'好スタート'},
+  {id:'awase',n:'併せ馬',      ic:'🐎', bg:'#ffe0d8', g:{spd:3, pow:2, gut:3}, hp:-22, skill:'負けん気'},
+];
+const SKILLS = {
+  '好スタート':   '序盤の加速アップ',
+  '逃げ足':       '逃げ作戦の序盤アップ',
+  '鋭い末脚':     '終盤の伸びアップ',
+  '負けん気':     '終盤に競り合うと伸びる',
+  'コーナー巧者': '中盤の速度アップ',
+  '坂巧者':       '中山・阪神で終盤アップ',
+  '長距離の鬼':   '2500m以上でスタミナ切れしにくい',
+  '大舞台':       'GIで能力アップ',
+};
+// [ターン, レース名, 格, 距離, 競馬場, 目標着順(0=任意)]
+const RACE_LIST = [
+  [10,'2歳新馬','新馬',1600,'東京',18],
+  [22,'アスター賞','1勝',1600,'中山',0],
+  [26,'サウジアラビアRC','G3',1600,'東京',0],
+  [30,'東京スポーツ杯2歳S','G2',1800,'東京',0],
+  [34,'朝日杯フューチュリティS','GI',1600,'阪神',5],
+  [42,'共同通信杯','G3',1800,'東京',0],
+  [46,'弥生賞','G2',2000,'中山',0],
+  [50,'皐月賞','GI',2000,'中山',5],
+  [55,'東京優駿（日本ダービー）','GI',2400,'東京',3],
+  [70,'神戸新聞杯','G2',2400,'阪神',0],
+  [75,'菊花賞','GI',3000,'京都',0],
+  [79,'ジャパンカップ','GI',2400,'東京',0],
+  [83,'有馬記念','GI',2500,'中山',5],
+  [92,'金鯱賞','G2',2000,'中京',0],
+  [99,'天皇賞（春）','GI',3200,'京都',0],
+  [107,'宝塚記念','GI',2200,'阪神',0],
+  [118,'オールカマー','G2',2200,'中山',0],
+  [123,'天皇賞（秋）','GI',2000,'東京',3],
+  [127,'ジャパンカップ','GI',2400,'東京',0],
+  [131,'有馬記念','GI',2500,'中山',1],
+];
+const PRIZE = {'新馬':700,'1勝':1000,'G3':4000,'G2':6500,'GI':15000};
+const BIG_PRIZE = {'東京優駿（日本ダービー）':30000,'ジャパンカップ':50000,'有馬記念':50000};
+const DIFF = {'新馬':.74,'1勝':.82,'G3':.88,'G2':.93,'GI':.98};
+const GCLS = {'GI':'','G2':'g2','G3':'g3','1勝':'op','新馬':'op'};
+const RACES = {};
+RACE_LIST.forEach(([t,n,g,d,p,goal])=>RACES[t]={t,n,g,dist:d,place:p,goal,cls:GCLS[g],prize:BIG_PRIZE[n]||PRIZE[g]});
+const END_TURN = 132;
+const RIVALS = ['シルバーホーク','ブルーウィング','スカイエンペラー','ゴールドラッシュ','ミラクルステップ','ハヤテマル','ノーザンライト','クリムゾンソウル','ヒカリノツバサ','ダイチノチカラ','サンダーボルト','ムーンダンサー','アオゾラカナタ','キセキノホシ'];
+const TOP_RIVAL = 'レッドレイヴン';
+const GATE_COLORS = ['#ffffff','#222222','#e8433a','#2457c9','#f2c200','#3cc46a','#ff9a1f','#ff6ab0','#8a5ae8','#20b0b0'];
+const MOODS = [
+  {n:'絶不調', f:'😫', m:.88}, {n:'不調', f:'😞', m:.94}, {n:'普通', f:'😐', m:1}, {n:'好調', f:'😊', m:1.05}, {n:'絶好調', f:'🤩', m:1.1},
+];
+const GROWTH = {'早熟':[1.2,1.0,.8], '普通':[1,1.05,.95], '晩成':[.85,1.0,1.25]};
+const DIST_CAT = ['短距離','マイル','中距離','長距離'];
+const APT_M = {S:1.04,A:1,B:.95,C:.89,D:.82,E:.74};
+const SIRES = ['キングカメハメハ','ディープストライク','サンデーブレイヴ','オルフェーヴ','ステイゴールデン','ロードカナロン','ハーツクライム'];
+const DAMS = ['サクラローレル','ダイワスカーレ','ウインドインハー','エアグルーヴィ','ビワハイジン','シーザリオン'];
+const NAMES = ['サクラグローリー','ハヤテノキミ','アカツキブレイブ','ミライノカケハシ','コハクノヒカリ','ソラヘノチカイ','ホシフルヨル'];
+const STABLES = ['美浦・栗田厩舎','栗東・松本厩舎','美浦・高橋厩舎','栗東・中村厩舎'];
+const COATS = ['鹿毛','栗毛','黒鹿毛','芦毛','青鹿毛'];
+const SHOP = [
+  {id:'carrot', ic:'🥕', n:'極上にんじん',   d:'調子が1段階アップ',        p:300},
+  {id:'supp',   ic:'💊', n:'特製サプリ',     d:'体力を30回復',             p:800},
+  {id:'feed',   ic:'🌾', n:'高級飼い葉',     d:'全能力 +4',                p:3000},
+  {id:'shoe',   ic:'🧲', n:'勝負蹄鉄',       d:'レースでの能力 +2%（最大3個）', p:6000},
+];
+const RANDOM_EVENTS = [
+  {spk:'調教師・栗田', who:'🧑‍🌾', text:'最近の調子はどうだ？ 今週は少し攻めた調教をしてみるか。',
+   ch:[{t:'ガンガン行きましょう！', s:'スピード↑ 体力↓', f:{spd:6, hp:-15}}, {t:'無理はさせたくないです', s:'体力↑ 気性↑', f:{hp:20, tmp:3}}]},
+  {spk:'厩務員・ミナミ', who:'👩', text:'この子、ニンジンが大好きみたいなんです！ ご褒美にあげてもいいですか？',
+   ch:[{t:'たくさんあげよう', s:'調子↑ 体力↑', f:{mood:1, hp:10}}, {t:'ほどほどにね', s:'根性↑', f:{gut:5}}]},
+  {spk:'騎手・ソウタ', who:'🏇', text:'乗ってみて分かりました。こいつ、最後の直線でグンと伸びますよ！',
+   ch:[{t:'末脚を磨こう', s:'瞬発力↑ 特性', f:{pow:5}, skill:'鋭い末脚'}, {t:'粘り強さも欲しい', s:'スタミナ↑ 根性↑', f:{sta:4, gut:4}}]},
+  {spk:'ライバル馬主', who:'🤵', text:'ほう、なかなか良い馬じゃないか。だが大一番で勝つのはウチのレッドレイヴンだ。',
+   ch:[{t:'負けません！', s:'根性↑↑ 特性', f:{gut:8, hp:-5}, skill:'負けん気'}, {t:'お手柔らかに…', s:'気性↑', f:{tmp:5}}]},
+  {spk:'獣医・タナカ', who:'🧑‍⚕️', text:'脚元は問題なし。ただ少し疲れが見えますね。',
+   ch:[{t:'しっかり休ませる', s:'体力↑↑', f:{hp:35}}, {t:'マッサージで対応', s:'体力↑ スタミナ↑', f:{hp:15, sta:3}}]},
+  {spk:'厩務員・ミナミ', who:'👩', text:'夜中に馬房で暴れてたみたいです…何か気になることがあるのかも。',
+   ch:[{t:'一晩付き添う', s:'気性↑↑ 体力↓', f:{tmp:8, hp:-10}}, {t:'様子を見よう', s:'調子↓', f:{mood:-1}}]},
+  {spk:'スポーツ記者', who:'🧑‍💼', text:'今注目の若駒として取材させてください！ 写真も撮りたいんですが。',
+   ch:[{t:'ぜひどうぞ！', s:'調子↑ 資金↑', f:{mood:1, money:300}}, {t:'調教に集中したい', s:'スピード↑', f:{spd:4}}]},
+  {spk:'調教師・栗田', who:'🧑‍🌾', text:'大レースの映像を見せてみたら、じっと見入っていたぞ。不思議な馬だ。',
+   ch:[{t:'大舞台向きかも', s:'特性', f:{}, skill:'大舞台'}, {t:'集中力を鍛えよう', s:'気性↑ 瞬発力↑', f:{tmp:4, pow:3}}]},
+];
+
+// ===================== 状態 =====================
+let S = null;
+const SAVE_KEY = 'keiba-life-save-v2', HOF_KEY = 'keiba-life-hof-v1';
+function save(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){} }
+function load(){ try{ const d = localStorage.getItem(SAVE_KEY); return d ? JSON.parse(d) : null; }catch(e){ return null; } }
+function clearSave(){ try{ localStorage.removeItem(SAVE_KEY); }catch(e){} }
+function loadHof(){ try{ return JSON.parse(localStorage.getItem(HOF_KEY)) || []; }catch(e){ return []; } }
+function saveHof(h){ try{ localStorage.setItem(HOF_KEY, JSON.stringify(h)); }catch(e){} }
+
+// ===================== ユーティリティ =====================
+const $app = document.getElementById('app');
+const rnd = (a,b)=>a+Math.random()*(b-a);
+const ri = (a,b)=>Math.floor(rnd(a,b+1));
+const pick = a=>a[ri(0,a.length-1)];
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const shuffle = a=>{ a=[...a]; for(let i=a.length-1;i>0;i--){ const j=ri(0,i); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+function rankOf(v){ return v>=260?'SS':v>=220?'S':v>=190?'A':v>=160?'B':v>=130?'C':v>=100?'D':v>=80?'E':v>=60?'F':'G'; }
+function rankEl(v){ const r = rankOf(v); return `<span class="rank rk-${r==='SS'?'S':r}" ${r==='SS'?'style="font-size:12px"':''}>${r}</span>`; }
+function aptEl(a){ const c = {S:'S',A:'A',B:'B',C:'C',D:'D',E:'E'}[a]; return `<span class="rank rk-${c}">${a}</span>`; }
+function yearOf(t){ return Math.floor(t/48); }
+function dateOf(t){ const w = t%48, m = ((3 + Math.floor(w/4)) % 12) + 1; return `${yearOf(t)+1}年目 ${m}月${w%4+1}週`; }
+function isSummer(t){ const w = t%48; return w>=12 && w<20; }
+function yen(v){ v = Math.round(v); return v>=10000 ? `${Math.floor(v/10000)}億${v%10000 ? (v%10000)+'万' : ''}円` : `${v}万円`; }
+function total(st=S.st){ return Object.values(st).reduce((a,b)=>a+b,0); }
+function distCat(d){ return d<=1400?0:d<=1800?1:d<=2400?2:3; }
+const EXP_CURVE = [[0,48],[34,92],[55,132],[83,192],[123,246],[132,256]];
+function expected(t){ // ライバルの基準能力（区間ごとに線形補間）
+  for(let i=1;i<EXP_CURVE.length;i++){ const [t0,v0]=EXP_CURVE[i-1],[t1,v1]=EXP_CURVE[i]; if(t<=t1) return v0+(v1-v0)*(t-t0)/(t1-t0); }
+  return EXP_CURVE[EXP_CURVE.length-1][1];
+}
+function nextGoal(){ return RACE_LIST.map(r=>RACES[r[0]]).find(r=>r.goal && r.t>=S.turn); }
+function toast(msg){ const d = document.createElement('div'); d.className='toast'; d.textContent=msg; document.body.appendChild(d); setTimeout(()=>d.remove(),1700); }
+function header(title, home=true){
+  return `<div class="hd">
+    ${home ? `<button class="home press" onclick="go('home')" aria-label="ホーム">🏠</button>` : ''}
+    <div class="ttl">${title}</div>
+    <div class="chip">${dateOf(S.turn)}</div>
+    <div class="chip">💰 <b>${yen(S.money)}</b></div>
+  </div>`;
+}
+function statRows(prev){
+  return STATS.map(s=>{
+    const v = S.st[s.k], d = prev ? v - prev[s.k] : 0;
+    return `<div class="st"><span class="nm">${s.n}</span>${rankEl(v)}
+      <div class="bar"><i style="width:${clamp(v/STAT_MAX*100,2,100)}%"></i></div>
+      <span class="n">${v}${d>0?`<span class="up">+${d}</span>`:''}</span></div>`;
+  }).join('');
+}
+function modal(html, onOk){
+  const m = document.createElement('div'); m.className='modal';
+  m.innerHTML = `<div class="mbox">${html}<button class="bbtn go press">OK</button></div>`;
+  document.body.appendChild(m);
+  m.querySelector('.bbtn').onclick = ()=>{ m.remove(); onOk && onOk(); };
+}
+function applyFx(f){
+  const gains = [];
+  for(const s of STATS){ if(f[s.k]){ const b = S.st[s.k]; S.st[s.k] = clamp(b+f[s.k], 1, STAT_MAX); if(S.st[s.k]!==b) gains.push([s.n, S.st[s.k]-b]); } }
+  if(f.hp){ const b=S.hp; S.hp = clamp(S.hp+f.hp, 0, 100); if(S.hp!==b) gains.push(['体力', S.hp-b]); }
+  if(f.mood){ const b=S.mood; S.mood = clamp(S.mood+f.mood, 0, 4); if(S.mood!==b) gains.push(['調子', S.mood-b]); }
+  if(f.money){ S.money += f.money; gains.push(['資金', f.money]); }
+  return gains;
+}
+function gainsHtml(g){ return g.length ? `<div class="gains">${g.map(([n,v])=>`<span class="${v<0?'minus':''}">${n} <b>${v>0?'+':''}${v}</b></span>`).join('')}</div>` : ''; }
+function learn(sk){ if(!S.skills.includes(sk)){ S.skills.push(sk); return `<div style="margin-top:6px">特性 <span class="skill">${sk}</span> を習得！</div>`; } return ''; }
+
+// ===================== 仔馬生成 =====================
+function makeFoal(){
+  const type = pick(['早熟','普通','普通','晩成']);
+  const best = ri(0,3);
+  const apt = DIST_CAT.map((_,i)=>{ const d=Math.abs(i-best); return d===0?pick(['A','A','S']):d===1?pick(['B','C']):pick(['D','E']); });
+  const st = {}; STATS.forEach(s=>st[s.k]=ri(38,58));
+  if(best>=2) st.sta += 8; else st.spd += 8;
+  const startSkill = pick(['逃げ足','好スタート','鋭い末脚','コーナー巧者']);
+  return { name:pick(NAMES), sire:pick(SIRES), dam:pick(DAMS), stable:pick(STABLES), coat:pick(COATS), sex:pick(['牡','牡','牝']),
+           type, apt, st, skills:[startSkill] };
+}
+function newGame(f){
+  return {
+    ...f, turn:0, money:1000, hp:100, mood:2, injured:0,
+    tlv:{hill:1,wood:1,pool:1,gate:1,awase:1}, tcount:{hill:0,wood:0,pool:0,gate:0,awase:0},
+    earned:0, history:[], log:[{t:0, st:{...f.st}}], shoes:0, tactic:1, trainSel:null, star:pick(TRAININGS).id,
+    pendingEvent:null, seenStory:{}, field:null,
+  };
+}
+
+// ===================== 画面ルーター =====================
+function go(scr, arg){ window.scrollTo(0,0); SCREENS[scr](arg); }
+
+let foalChoices = [], foalSel = 0;
+const SCREENS = {
+// ---------- タイトル ----------
+title(){
+  const has = !!load();
+  const hof = loadHof();
+  $app.innerHTML = `<div id="scr-title">
+    <div class="logo"><div class="s">みんなの</div><div class="m">競馬ライフ</div><div class="sub">〜育てて、走らせて、夢をつかめ！〜</div></div>
+    <div class="title-art">🏇</div>
+    <div class="tmenu">
+      <button class="tbtn main-b press" onclick="foalChoices=[makeFoal(),makeFoal(),makeFoal()];foalSel=0;go('select')"><i>🐴</i>育成開始</button>
+      <button class="tbtn press" onclick="cont()" ${has?'':'disabled'}><i>📂</i>つづきから</button>
+      <button class="tbtn press" onclick="go('howto')"><i>📖</i>あそびかた</button>
+    </div>
+    ${hof.length ? `<div class="hof"><b style="color:var(--navy)">🏆 殿堂入り</b>${hof.slice(0,5).map(h=>`<div><span>${h.name}「${h.title}」</span><span>${h.wins}勝 / ${yen(h.earned)}</span></div>`).join('')}</div>`
+      : `<div class="tnote">仔馬を選んで3年間育成。目標レースを達成しよう！</div>`}
+  </div>`;
+},
+
+howto(){
+  S = S || {turn:0, money:0};
+  $app.innerHTML = `<div class="hd"><button class="home press" onclick="go('title')">🏠</button><div class="ttl">あそびかた</div></div><div class="main">
+    <div class="panel"><div class="pb" style="font-size:14px;line-height:1.8">
+      🐴 仔馬を1頭選び、2歳〜4歳の<b>3年間</b>育成します。<br>
+      🏋️ 毎週ひとつ行動を選択。<b>トレーニング</b>で能力アップ、体力が減ると失敗率・ケガのリスクが上昇。<br>
+      ⭐ マークの付いたトレーニングは騎手が一緒で効果1.4倍！ 同じ練習を続けるとLvアップ。<br>
+      ☀️ 7〜8月は<b>夏合宿</b>で効果1.3倍。<br>
+      🎯 <b>目標レース</b>で規定の着順に入れないと引退（ゲームオーバー）。<br>
+      🏁 レース中は作戦を選び、最後の直線で<b>「ムチ！」ボタン</b>をタイミングよく押そう（残り約30〜20%が最適）。<br>
+      💰 賞金でショップのアイテムが買えます。<br>
+      📏 距離適性（短距離〜長距離）も勝敗を左右します。
+    </div></div>
+    <button class="bbtn go press" onclick="S=null;go('title')">タイトルへ</button></div>`;
+},
+
+// ---------- 仔馬選択 ----------
+select(){
+  const f = foalChoices[foalSel];
+  $app.innerHTML = `<div class="hd"><button class="home press" onclick="go('title')">🏠</button><div class="ttl">仔馬を選ぶ</div></div><div class="main">
+    <div class="foals">${foalChoices.map((c,i)=>`<button class="foal press ${i===foalSel?'sel':''}" onclick="foalSel=${i};go('select')">
+      <div class="portrait">🐴</div>
+      <div class="fi"><b>${c.name}</b>（${c.sex}・${c.coat}）<br>父 ${c.sire} ／ 母 ${c.dam}<br>
+        成長：<span style="color:var(--navy)">${c.type}</span>　得意：<span style="color:var(--navy)">${DIST_CAT[c.apt.indexOf(c.apt.find(a=>a==='S')||'A')]}</span>
+        <div class="mini">${STATS.map(s=>`<span>${s.n} ${c.st[s.k]}</span>`).join('')}</div></div>
+    </button>`).join('')}</div>
+    <div class="panel"><div class="ph"><span>名前をつける</span><span>特性：${f.skills[0]}</span></div><div class="pb">
+      <input class="nameinp" id="nm" maxlength="9" value="${f.name}">
+      <div class="apt" style="margin-top:8px">${DIST_CAT.map((c,i)=>`<div>${c}${aptEl(f.apt[i])}</div>`).join('')}</div>
+    </div></div>
+    <div class="btnrow"><button class="bbtn back press" onclick="foalChoices=[makeFoal(),makeFoal(),makeFoal()];foalSel=0;go('select')">🔄 再抽選</button>
+      <button class="bbtn go press" onclick="startNew()">この馬で始める！</button></div>
+  </div>`;
+},
+
+// ---------- 育成メニュー（ホーム） ----------
+home(){
+  if(S.turn >= END_TURN) return go('ending', 'complete');
+  // ストーリーイベント
+  const story = storyFor(S.turn);
+  if(story && !S.seenStory[S.turn]){ S.seenStory[S.turn] = 1; save(); return go('event', story); }
+  if(S.pendingEvent){ const e = S.pendingEvent; S.pendingEvent = null; return go('event', RANDOM_EVENTS[e]); }
+
+  const goal = nextGoal(), race = RACES[S.turn], mood = MOODS[S.mood];
+  const left = goal ? goal.t - S.turn : 0;
+  const mustRace = race && race.goal;
+  $app.innerHTML = header('育成メニュー') + `<div class="main">
+    ${goal ? `<div class="goal"><span class="tag">目標</span><span>${goal.n} ${goal.goal>=18?'出走':goal.goal+'着以内'}</span>
+      <span class="wk">${left===0 ? '<b>今週！</b>' : `あと <b>${left}</b> 週`}</span></div>` : ''}
+    ${isSummer(S.turn) ? '<div class="summer">☀️ 夏合宿中！ トレーニング効果1.3倍</div>' : ''}
+
+    <div class="panel"><div class="pb hcard">
+      <div class="portrait">🐴<span class="cls">${className()}</span></div>
+      <div class="hinfo">
+        <div class="hname">${S.name}<span class="age">${S.sex} ${yearOf(S.turn)+2}歳</span></div>
+        <div class="cond">
+          <div>調子<br><span class="face">${mood.f}</span><span class="val">${mood.n}</span></div>
+          <div>体力 <span class="val">${S.hp}</span>/100<div class="hp ${S.hp<35?'low':''}"><i style="width:${S.hp}%"></i></div></div>
+        </div>
+        ${S.injured ? `<div class="footnote" style="color:#d02a2a">🩹 ケガで療養中（あと${S.injured}週）</div>` : ''}
+      </div>
+    </div></div>
+
+    <div class="panel"><div class="ph"><span>能力</span><span>総合 ${total()}</span></div>
+      <div class="pb stats">${statRows()}</div></div>
+
+    ${race && (mustRace || !S.injured) ? `<button class="cmd race press" style="padding:12px" onclick="go('race')"><i>🏁</i>${race.n}（${race.g}）に出走<small>${race.place} 芝${race.dist}m ／ 1着 ${yen(race.prize)}${mustRace?' ／ 目標レース':''}</small></button>` : ''}
+    ${mustRace ? '' : S.injured ? `
+      <div class="cmds"><button class="cmd hot press" style="grid-column:span 3" onclick="rest(true)"><i>🩹</i>療養する<small>ケガが治るまで休養</small></button></div>` : `
+    <div class="cmds">
+      <button class="cmd hot press" onclick="go('train')"><i>🏋️</i>トレーニング<small>能力アップ</small></button>
+      <button class="cmd press" onclick="rest()"><i>🛏️</i>休養<small>体力回復</small></button>
+      <button class="cmd press" onclick="graze()"><i>🌳</i>放牧<small>調子・体力</small></button>
+      <button class="cmd press" onclick="go('shop')"><i>🛒</i>ショップ<small>アイテム</small></button>
+      <button class="cmd press" onclick="go('calendar')"><i>📅</i>カレンダー<small>レース予定</small></button>
+      <button class="cmd press" onclick="go('data')"><i>📋</i>馬データ<small>能力・戦績</small></button>
+    </div>`}
+    <div class="footnote">💡 体力50未満で失敗率アップ、20未満で失敗するとケガの危険。調子と距離適性はレース結果を大きく左右します。</div>
+  </div>`;
+},
+
+// ---------- トレーニング ----------
+train(){
+  const sm = isSummer(S.turn);
+  $app.innerHTML = header('トレーニング選択') + `<div class="main">
+    <div class="scene" style="height:110px"><div class="fence"></div>
+      <div class="who" style="left:12px;font-size:56px">🏇</div>
+      <div class="bubble">どのトレーニングを行いますか？<br><small style="color:var(--sub)">⭐は騎手ソウタが一緒（効果1.4倍・体力消費減）</small></div></div>
+    ${sm ? '<div class="summer">☀️ 夏合宿ボーナス 1.3倍</div>' : ''}
+    <div class="panel"><div class="ph"><span>メニュー</span><span>体力 ${S.hp}/100</span></div><div class="pb">
+      <div class="tgrid">${TRAININGS.map(t=>{
+        const fr = failRate(t), pv = previewGain(t);
+        return `<button class="tcard press ${S.trainSel===t.id?'sel':''}" onclick="S.trainSel='${t.id}';go('train')">
+          <span class="tlv">Lv${S.tlv[t.id]}</span>${S.star===t.id?'<span class="partner">⭐</span>':''}
+          <div class="tic" style="background:${t.bg}">${t.ic}</div>
+          <div class="tn">${t.n}</div>
+          <div class="gain">${Object.entries(pv).map(([k,v])=>`<span>${STATS.find(s=>s.k===k).n}<b>+${v}</b></span>`).join('')}</div>
+          <div class="fail ${fr>=25?'warn':''}">失敗率 ${fr}%　体力${trainHp(t)}</div>
+        </button>`;}).join('')}</div>
+    </div></div>
+    <div class="btnrow">
+      <button class="bbtn back press" onclick="S.trainSel=null;go('home')">← 戻る</button>
+      <button class="bbtn go press" ${S.trainSel?'':'disabled'} onclick="doTrain()">決定！</button>
+    </div>
+  </div>`;
+},
+
+// ---------- イベント ----------
+event(ev){
+  $app.innerHTML = header('イベント', false) + `<div class="main">
+    <div class="scene"><div class="fence"></div>
+      <div class="who" style="left:8%">🐴</div>
+      <div class="who" style="right:8%">${ev.who}</div></div>
+    <div class="dialog"><span class="spk">${ev.spk}</span>${ev.text.replace(/\{name\}/g, S.name)}</div>
+    <div class="choices">${ev.ch.map((c,i)=>`<button class="choice press" data-i="${i}">${c.t}<small>${c.s}</small></button>`).join('')}</div>
+  </div>`;
+  $app.querySelectorAll('.choice').forEach(b=>b.onclick=()=>{
+    const c = ev.ch[b.dataset.i], g = applyFx(c.f);
+    const extra = c.skill ? learn(c.skill) : '';
+    save();
+    if(!g.length && !extra) return go('home');
+    modal(`<div class="mh">イベント結果</div><div class="mb">${gainsHtml(g)}${extra}</div>`, ()=>go('home'));
+  });
+},
+
+// ---------- ショップ ----------
+shop(){
+  $app.innerHTML = header('ショップ') + `<div class="main">
+    <div class="scene" style="height:110px"><div class="fence"></div>
+      <div class="who" style="left:12px;font-size:56px">🧑‍🍳</div>
+      <div class="bubble">いらっしゃい！ 賞金で愛馬にいいものを買ってあげな！<br><small style="color:var(--sub)">購入しても週は進みません</small></div></div>
+    <div class="shop">${SHOP.map(it=>{
+      const dis = S.money < it.p || (it.id==='shoe' && S.shoes>=3);
+      return `<button class="item press" ${dis?'disabled':''} onclick="buy('${it.id}')"><span class="ii">${it.ic}</span>
+        <span class="in">${it.n}${it.id==='shoe'?`（所持 ${S.shoes}/3）`:''}<small>${it.d}</small></span><span class="ip">${yen(it.p)}</span></button>`;
+    }).join('')}</div>
+    <button class="bbtn back press" style="width:100%" onclick="go('home')">← 戻る</button>
+  </div>`;
+},
+
+// ---------- カレンダー ----------
+calendar(){
+  $app.innerHTML = header('レースカレンダー') + `<div class="main">
+    ${[0,1,2].map(y=>`<div class="panel"><div class="ph"><span>${y+1}年目（${y+2}歳）</span></div><div class="pb calendar">
+      ${RACE_LIST.filter(r=>yearOf(r[0])===y).map(r=>{ const R = RACES[r[0]], h = S.history.find(x=>x.t===R.t);
+        return `<div class="${R.t<S.turn?'done':''}"><span style="width:62px;color:var(--sub)">${dateOf(R.t).split(' ')[1]}</span>
+          <span class="grade ${R.cls}">${R.g}</span><span>${R.n}</span><span style="color:var(--sub)">${R.dist}m</span>
+          ${h ? `<b class="gl" style="background:#fff7cc;color:#5a2a00">${h.p}着</b>` : R.goal ? `<span class="gl">目標 ${R.goal>=18?'出走':R.goal+'着内'}</span>` : ''}</div>`; }).join('')}
+    </div></div>`).join('')}
+    <button class="bbtn back press" style="width:100%" onclick="go('home')">← 戻る</button>
+  </div>`;
+},
+
+// ---------- レース（出走前） ----------
+race(){
+  const r = RACES[S.turn];
+  if(!S.field || S.field.turn !== S.turn){
+    const n = r.g==='GI' ? 9 : 7;
+    const base = expected(S.turn) * DIFF[r.g];
+    const field = shuffle(RIVALS).slice(0, n).map(name=>({n:name, lv: base*rnd(.86,1.05), style:ri(0,3)}));
+    if(r.g==='GI' || r.g==='G2') field[0] = {n:TOP_RIVAL, lv: base*rnd(1.0,1.07), style:2, top:true};
+    field.forEach(h=>h.p = horsePower(null, h.lv, r));
+    field.push({n:S.name, me:true});
+    const list = shuffle(field);
+    list.forEach((h,i)=>h.gate=i+1);
+    const me = list.find(h=>h.me); me.p = horsePower(S, 0, r);
+    const sorted = [...list].sort((a,b)=>b.p-a.p);
+    sorted.forEach((h,i)=>{ h.pop=i+1; h.odds=(1.5 + i*i*1.1 + rnd(0,1)).toFixed(1); });
+    S.field = {turn:S.turn, list}; save();
+  }
+  const ac = S.apt[distCat(r.dist)];
+  const tacs = [['逃げ','先頭で粘る'],['先行','好位から'],['差し','中団から'],['追込','最後方から']];
+  $app.innerHTML = header('レース') + `<div class="main">
+    <div class="panel"><div class="pb rhead">
+      <span class="grade ${r.cls}">${r.g}</span>
+      <div><div class="rname">${r.n}</div><div class="rmeta">${r.place}　芝 ${r.dist}m（${DIST_CAT[distCat(r.dist)]}）　1着 ${yen(r.prize)}</div></div>
+    </div></div>
+    ${r.goal ? `<div class="goal"><span class="tag">目標</span><span>${r.goal>=18?'出走するだけでOK':r.goal+'着以内に入らないと引退…'}</span></div>` : ''}
+    <div class="panel"><div class="ph"><span>出走表</span><span>単勝オッズ</span></div><div class="pb" style="padding:4px 8px">
+      <table class="odds">${S.field.list.map(h=>`<tr class="${h.me?'me':''}">
+        <td style="width:30px"><span class="gate" style="background:${GATE_COLORS[h.gate-1]};${h.gate===1?'color:#222;border:1px solid #999':''}">${h.gate}</span></td>
+        <td>${h.me?'⭐ ':h.top?'🔥 ':''}${h.n}</td><td class="pop">${h.pop}番人気</td><td class="o">${h.odds}</td></tr>`).join('')}</table>
+    </div></div>
+    <div class="panel"><div class="ph"><span>作戦</span><span>調子 ${MOODS[S.mood].f}${MOODS[S.mood].n}　距離適性 ${ac}</span></div><div class="pb tactics">
+      ${tacs.map((t,i)=>`<button class="tac press ${S.tactic===i?'sel':''}" onclick="S.tactic=${i};go('race')">${t[0]}<small>${t[1]}</small></button>`).join('')}
+    </div></div>
+    <div class="btnrow">
+      ${r.goal ? '' : `<button class="bbtn back press" onclick="go('home')">← 戻る</button>`}
+      <button class="bbtn go press" onclick="go('run')">🏁 ゲートイン！</button>
+    </div>
+  </div>`;
+},
+
+// ---------- レース実況 ----------
+run(){
+  const r = RACES[S.turn], list = S.field.list;
+  $app.innerHTML = header(r.n, false) + `<div class="main">
+    <div class="track" id="track"><div class="goalline"></div></div>
+    <div class="rinfo"><span>${r.place} 芝${r.dist}m</span><span id="remain">残り ${r.dist}m</span></div>
+    <div class="dist"><i id="distbar"></i></div>
+    <div class="commentary" id="com">各馬ゲートに収まりました……</div>
+    <button class="spurt" id="spurt" disabled>🏇 ムチ！ラストスパート</button>
+  </div>`;
+  const track = document.getElementById('track');
+  const laneH = 256/list.length;
+  list.forEach((h,i)=>{
+    const lane = document.createElement('div'); lane.className='lane'; lane.style.top = (i*laneH + 2)+'px';
+    lane.innerHTML = `<div class="runner ${h.me?'me':''}" style="right:4px"><span>🏇</span><span class="no" style="background:${GATE_COLORS[h.gate-1]};${h.gate===1?'color:#222':''}">${h.gate}</span></div>`;
+    track.appendChild(lane); h.el = lane.firstChild; h.pos = 0;
+    h.luck = rnd(.96,1.04);
+    if(h.me){ h.style = S.tactic; }
+    // スタミナ切れ判定（必要スタミナ = 距離×0.065）
+    const sta = h.me ? S.st.sta * (S.skills.includes('長距離の鬼') && r.dist>=2500 ? 1.2 : 1) : h.lv*rnd(.9,1.1);
+    h.fade = clamp(.86 + .14*sta/(r.dist*.065), .86, 1);
+    h.kakari = h.me ? (Math.random() < clamp((90 - S.st.tmp)/250, .03, .3)) : Math.random()<.08;
+  });
+  const me = list.find(h=>h.me), has = k=>S.skills.includes(k);
+  const W = track.clientWidth - 70, N = 70;
+  let step = 0, spurtAt = null, shown = {};
+  const btn = document.getElementById('spurt'), com = document.getElementById('com');
+  const pop = txt=>{ const d=document.createElement('div'); d.className='skillpop'; d.textContent=txt; track.appendChild(d); setTimeout(()=>d.remove(),1100); };
+  const say = (k, txt)=>{ if(!shown[k]){ shown[k]=1; pop(txt); } };
+  btn.onclick = ()=>{
+    if(spurtAt!==null) return;
+    spurtAt = step/N; btn.disabled = true; btn.classList.remove('ready');
+    btn.textContent = spurtAt>=.68 && spurtAt<=.82 ? '✨ ナイスタイミング！' : spurtAt<.68 ? '💦 ちょっと早いか！？' : '⏱ 少し遅れた！';
+  };
+  const lines = ['スタートしました！','各馬きれいなスタート','向こう正面、隊列が落ち着きます','3コーナーから4コーナーへ！','最後の直線！','残り200！'];
+  const timer = setInterval(()=>{
+    step++;
+    const ph = step/N;
+    const order0 = [...list].sort((a,b)=>b.pos-a.pos);
+    list.forEach(h=>{
+      let f;
+      if(ph < .35) f = [1.12,1.05,.96,.9][h.style];
+      else if(ph < .65) f = 1;
+      else f = [.9,.98,1.06,1.12][h.style] * h.fade;
+      if(h.kakari && ph < .4) f *= 1.06;           // 掛かると序盤速く…
+      if(h.kakari && ph >= .65) f *= .94;          // …終盤バテる
+      if(h.me){
+        if(ph<.35 && has('好スタート')){ f*=1.04; say('s1','好スタート！'); }
+        if(ph<.35 && has('逃げ足') && S.tactic===0){ f*=1.05; say('s2','逃げ足！'); }
+        if(ph>=.35 && ph<.65 && has('コーナー巧者')){ f*=1.03; say('s3','コーナー巧者！'); }
+        if(ph>=.7 && has('鋭い末脚')){ f*=1.04; say('s4','鋭い末脚！'); }
+        if(ph>=.7 && has('坂巧者') && (r.place==='中山'||r.place==='阪神')){ f*=1.03; say('s5','坂巧者！'); }
+        if(ph>=.75 && has('負けん気') && order0[0]!==h){ f*=1.04; say('s6','負けん気！'); }
+        if(h.kakari && ph<.4) say('kk','掛かっている！');
+        if(spurtAt!==null && ph>=spurtAt){
+          const good = spurtAt>=.68 && spurtAt<=.82, early = spurtAt<.68;
+          let b = good ? 1.09 : early ? (ph < spurtAt+.12 ? 1.08 : .95) : 1.04;
+          b += (S.st.gut/STAT_MAX)*.04;
+          f *= b;
+        }
+      }else if(ph>=.8) f *= 1.03; // 他馬は自動で追い出し
+      h.pos += h.p * f * h.luck * rnd(.94,1.06);
+    });
+    const lead = Math.max(...list.map(h=>h.pos));
+    list.forEach(h=>{ h.el.style.right = (4 + W * (h.pos/lead) * ph) + 'px'; });
+    document.getElementById('distbar').style.width = (ph*100)+'%';
+    document.getElementById('remain').textContent = `残り ${Math.max(0, Math.round(r.dist*(1-ph)/10)*10)}m`;
+    if(ph >= .5 && spurtAt===null){ btn.disabled = false; btn.classList.toggle('ready', ph>=.68 && ph<=.82); }
+    const li = Math.min(lines.length-1, Math.floor(ph*lines.length));
+    const order = [...list].sort((a,b)=>b.pos-a.pos), myPos = order.indexOf(me)+1;
+    com.textContent = `${lines[li]}　${S.name}は現在 ${myPos}番手！`;
+    if(step>=N){
+      clearInterval(timer); btn.disabled = true; btn.classList.remove('ready');
+      com.textContent = `ゴール！！ ${order[0].n}が1着でゴールイン！`;
+      setTimeout(()=>go('result', order), 1200);
+    }
+  }, 100);
+},
+
+// ---------- レース結果 ----------
+result(order){
+  const r = RACES[S.turn], me = order.findIndex(h=>h.me)+1;
+  const base = r.dist/16.6 + rnd(-1,1);
+  const times = order.map((h,i)=>base + i*rnd(.1,.4));
+  for(let i=1;i<times.length;i++) times[i] = Math.max(times[i], times[i-1]+.1);
+  const fmt = t=>`${Math.floor(t/60)}:${(t%60).toFixed(1).padStart(4,'0')}`;
+  const prize = me===1 ? r.prize : me===2 ? r.prize*.4 : me===3 ? r.prize*.25 : me<=5 ? r.prize*.1 : 0;
+  const prev = {...S.st};
+  const k = r.g==='GI'?2:r.g==='G2'||r.g==='G3'?1.5:1;
+  const fx = me===1 ? {spd:4*k,pow:4*k,gut:4*k,sta:2*k,hp:-25,mood:1} : me<=3 ? {spd:2*k,gut:3*k,sta:1*k,hp:-25} : {gut:2,hp:-30,mood:-1};
+  Object.keys(fx).forEach(x=>fx[x]=Math.round(fx[x]));
+  const g = applyFx(fx);
+  S.money += Math.round(prize); S.earned += Math.round(prize);
+  S.history.push({t:S.turn, n:r.n, g:r.g, p:me});
+  let extra = '';
+  if(me===1 && r.g==='GI') extra = learn('大舞台');
+  const failed = r.goal && me > r.goal && S.turn !== END_TURN-1;
+  S.field = null;
+  endWeek(false);
+  $app.innerHTML = header('レース結果', false) + `<div class="main">
+    <div class="panel"><div class="place-big"><div class="p">${me}<small>着</small></div>
+      <div style="font-size:15px;color:var(--navy);margin-top:6px">${S.name}　<span class="grade ${r.cls}" style="font-size:12px">${r.g}</span></div></div>
+      <div class="pb"><table class="res"><tr><th>着順</th><th>馬名</th><th>タイム</th></tr>
+        ${order.map((h,i)=>`<tr class="${h.me?'me':''}"><td class="pl">${i+1}</td><td>${h.top?'🔥 ':''}${h.n}</td><td>${fmt(times[i])}</td></tr>`).join('')}
+      </table></div></div>
+    <div class="prize"><span>獲得賞金</span><b>${yen(prize)}</b></div>
+    <div class="commentary">${me===1 ? `${S.name}が見事、${r.n}を制しました！` : me<=3 ? `${S.name}、${me}着！ 次こそは！` : `${S.name}は${me}着。巻き返しに期待です。`}</div>
+    ${r.goal ? `<div class="goal"><span class="tag">目標</span><span>${r.goal>=18?'出走':r.goal+'着以内'}</span><span class="wk"><b>${failed?'未達成…':'達成！'}</b></span></div>` : ''}
+    <div class="panel"><div class="ph"><span>能力成長</span></div><div class="pb">${gainsHtml(g)}${extra}<div class="stats">${statRows(prev)}</div></div></div>
+    <button class="bbtn go press" onclick="${failed?"go('ending','fail')":"go('home')"}">次へ</button>
+  </div>`;
+},
+
+// ---------- 馬データ ----------
+data(){
+  const mood = MOODS[S.mood];
+  const pts = S.log;
+  const colors = ['#3a7be8','#e8433a','#ff9a1f','#3cc46a','#9a5ae8'];
+  let chart = '<div class="footnote">週が進むと成長グラフが表示されます。</div>';
+  if(pts.length>=2){
+    const w=320,h=150,mx=Math.max(...pts.map(l=>Math.max(...Object.values(l.st))),100);
+    const px=t=>26+(w-34)*t/Math.max(1,S.turn),py=v=>h-14-(h-24)*v/mx;
+    const step = Math.max(1, Math.floor(pts.length/40));
+    const sp = pts.filter((_,i)=>i%step===0 || i===pts.length-1);
+    chart = `<svg class="chart" viewBox="0 0 ${w} ${h}">
+      ${[0,.5,1].map(f=>Math.round(mx*f)).map(v=>`<line x1="26" x2="${w-6}" y1="${py(v)}" y2="${py(v)}" stroke="#dde6f5"/><text x="0" y="${py(v)+4}" font-size="9" fill="#5a6a8a">${v}</text>`).join('')}
+      ${STATS.map((s,i)=>`<polyline fill="none" stroke="${colors[i]}" stroke-width="2" points="${sp.map(l=>`${px(l.t)},${py(l.st[s.k])}`).join(' ')}"/>`).join('')}
+    </svg><div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11px;justify-content:center">${STATS.map((s,i)=>`<span style="color:${colors[i]}">● ${s.n}</span>`).join('')}</div>`;
+  }
+  $app.innerHTML = header('馬データ') + `<div class="main">
+    <div class="panel"><div class="pb hcard">
+      <div class="portrait">🐴</div>
+      <div class="hinfo">
+        <div class="hname">${S.name}<span class="age">${S.sex} ${yearOf(S.turn)+2}歳</span></div>
+        <dl class="kv"><dt>所属</dt><dd>${S.stable}</dd><dt>父</dt><dd>${S.sire}</dd><dt>母</dt><dd>${S.dam}</dd>
+          <dt>毛色</dt><dd>${S.coat}　調子 ${mood.f}${mood.n}</dd><dt>総賞金</dt><dd>${yen(S.earned)}</dd></dl>
+      </div>
+    </div></div>
+    <div class="rgrid">${STATS.map(s=>`<div class="rbox"><div class="h">${s.n}</div>${rankEl(S.st[s.k])}<div class="n">${S.st[s.k]}</div></div>`).join('')}</div>
+    <div class="panel"><div class="ph"><span>距離適性</span><span>成長タイプ：${S.type}</span></div><div class="pb apt">${DIST_CAT.map((c,i)=>`<div>${c}${aptEl(S.apt[i])}</div>`).join('')}</div></div>
+    <div class="panel"><div class="ph"><span>特性</span><span>${S.skills.length}個</span></div><div class="pb skills">
+      ${S.skills.map((k,i)=>`<span class="skill ${i%2?'blue':''}" title="${SKILLS[k]}">${k}</span>`).join('')}
+      ${Object.keys(SKILLS).filter(k=>!S.skills.includes(k)).map(()=>`<span class="skill none">？？？</span>`).join('')}
+      <div class="footnote" style="width:100%">${S.skills.map(k=>`${k}：${SKILLS[k]}`).join('<br>')}</div>
+    </div></div>
+    <div class="panel"><div class="ph"><span>成長グラフ</span></div><div class="pb">${chart}</div></div>
+    <div class="panel"><div class="ph"><span>戦績</span><span>${S.history.length}戦${S.history.filter(h=>h.p===1).length}勝</span></div><div class="pb history">
+      ${S.history.length ? S.history.map(h=>`<div><span>${dateOf(h.t)}　${h.n}（${h.g}）</span><b>${h.p}着</b></div>`).join('') : '<span style="color:var(--sub)">まだレースに出走していません</span>'}
+    </div></div>
+    <button class="bbtn back press" style="width:100%" onclick="go('home')">← 戻る</button>
+  </div>`;
+},
+
+// ---------- エンディング ----------
+ending(kind){
+  const wins = S.history.filter(h=>h.p===1), gi = wins.filter(h=>h.g==='GI');
+  const giNames = gi.map(h=>h.n);
+  let title;
+  if(kind==='fail') title = '志半ばの引退馬';
+  else if(giNames.includes('東京優駿（日本ダービー）') && giNames.filter(n=>n==='有馬記念').length && gi.length>=4) title = '伝説の最強馬';
+  else if(gi.length>=3) title = '歴史に残る名馬';
+  else if(giNames.includes('東京優駿（日本ダービー）')) title = 'ダービー馬';
+  else if(gi.length>=1) title = 'GI馬';
+  else if(wins.length>=3) title = '重賞戦線の常連';
+  else title = '愛すべき個性派';
+  const score = total() + wins.length*60 + gi.length*200 + Math.floor(S.earned/1000);
+  const ev = score>=2200?'SS':score>=1700?'S':score>=1300?'A':score>=1000?'B':score>=750?'C':'D';
+  const hof = loadHof(); hof.push({name:S.name, title, wins:wins.length, earned:S.earned, score}); hof.sort((a,b)=>b.score-a.score); saveHof(hof.slice(0,10));
+  clearSave();
+  $app.innerHTML = header(kind==='fail'?'引退':'育成完了', false) + `<div class="main">
+    <div class="panel"><div class="place-big"><div style="font-size:72px">${kind==='fail'?'🌅':'🏆'}</div>
+      ${kind==='fail' ? `<div style="font-size:13px;color:var(--sub);padding:0 12px">目標を達成できず、${S.name}は引退することになりました…</div>` : ''}
+      <div style="font-size:14px;color:var(--sub)">${S.name} の称号</div>
+      <div style="font-size:28px;color:var(--navy)">「${title}」</div>
+      <div style="margin-top:6px;font-size:14px;color:var(--sub)">育成評価 <span class="rank rk-${ev==='SS'?'S':ev}" style="display:inline-grid;width:auto;padding:0 8px">${ev}</span>　スコア ${score}</div></div>
+      <div class="pb"><div class="rgrid">${STATS.map(s=>`<div class="rbox"><div class="h">${s.n}</div>${rankEl(S.st[s.k])}<div class="n">${S.st[s.k]}</div></div>`).join('')}</div></div></div>
+    <div class="prize"><span>総獲得賞金</span><b>${yen(S.earned)}</b></div>
+    <div class="panel"><div class="ph"><span>戦績</span><span>${S.history.length}戦${wins.length}勝（GI ${gi.length}勝）</span></div><div class="pb history">
+      ${S.history.map(h=>`<div><span>${dateOf(h.t)} ${h.n}（${h.g}）</span><b>${h.p}着</b></div>`).join('')}</div></div>
+    <button class="bbtn go press" onclick="S=null;go('title')">タイトルへ</button>
+  </div>`;
+}
+};
+
+// ===================== ストーリー =====================
+function storyFor(t){
+  const ok = {t:'よろしくお願いします！', s:'', f:{}};
+  if(t===0) return {spk:'調教師・栗田', who:'🧑‍🌾', text:'今日からこの{name}を預かる栗田だ。目標は朝日杯、そしてダービー！ 3年間よろしく頼むぞ。', ch:[{t:'よろしくお願いします！', s:'調子↑', f:{mood:1}}, {t:'まずは基礎から！', s:'全能力+2', f:{spd:2,sta:2,pow:2,gut:2,tmp:2}}]};
+  if(t===12||t===60||t===108) return {spk:'調教師・栗田', who:'🧑‍🌾', text:'夏合宿の始まりだ！ 2か月間、涼しい北の大地でみっちり鍛えるぞ。', ch:[{t:'望むところです！', s:'体力↑', f:{hp:20}}]};
+  if(t===36) return {spk:'ライバル馬主', who:'🤵', text:'年が明けたな。クラシックはウチのレッドレイヴンがいただく。せいぜい頑張りたまえ。', ch:[{t:'ダービーは渡しません！', s:'根性↑', f:{gut:6}}, ok]};
+  if(t===48) return {spk:'騎手・ソウタ', who:'🏇', text:'いよいよクラシックですね！ {name}となら、どこまでも行ける気がします。', ch:[{t:'一緒に頂点を目指そう', s:'調子↑ 特性', f:{mood:1}, skill:'鋭い末脚'}, {t:'まずは皐月賞！', s:'スピード↑', f:{spd:6}}]};
+  if(t===96) return {spk:'調教師・栗田', who:'🧑‍🌾', text:'{name}も4歳、古馬の仲間入りだ。最後の目標は秋の天皇賞と有馬記念。悔いのないように行こう。', ch:[{t:'最高の締めくくりを！', s:'全能力+3', f:{spd:3,sta:3,pow:3,gut:3,tmp:3}}]};
+  return null;
+}
+
+// ===================== アクション =====================
+function className(){ const w = S.history.filter(h=>h.p===1), g = w.filter(h=>/G/.test(h.g)).length; return g ? 'オープン' : w.length ? '1勝クラス' : S.history.length ? '未勝利' : '新馬'; }
+function growthM(){ return GROWTH[S.type][Math.min(2, yearOf(S.turn))]; }
+function trainHp(t){ return S.star===t.id ? Math.round(t.hp*.7) : t.hp; }
+function failRate(t){ return clamp(Math.round((50 - S.hp) * 1.6) + (t.hp<-18?5:0), 0, 85); }
+function previewGain(t, great=false){
+  const lv = S.tlv[t.id], m = MOODS[S.mood].m * growthM() * (isSummer(S.turn)?1.3:1) * (S.star===t.id?1.4:1) * (great?1.5:1);
+  const out = {}; for(const [k,v] of Object.entries(t.g)) out[k] = Math.max(1, Math.round((v + (lv-1)*.6) * m));
+  return out;
+}
+function horsePower(s, lv, r){
+  // s=プレイヤー状態 / lv=ライバル平均能力
+  const st = s ? s.st : {spd:lv,sta:lv,pow:lv,gut:lv,tmp:lv};
+  let p = st.spd*1.0 + st.sta*(0.3 + r.dist/3000*.7) + st.pow*.9 + st.gut*.6 + st.tmp*.5;
+  if(s){
+    p *= APT_M[s.apt[distCat(r.dist)]] * MOODS[s.mood].m * (1 + s.shoes*.02);
+    if(r.g==='GI' && s.skills.includes('大舞台')) p *= 1.03;
+  }
+  return p / 100;
+}
+function startNew(){
+  const f = foalChoices[foalSel];
+  const nm = (document.getElementById('nm').value || '').trim();
+  if(nm) f.name = nm;
+  S = newGame(f); save(); go('home');
+}
+function cont(){ S = load(); if(S) go('home'); }
+function endWeek(rollEvent=true){
+  S.turn++;
+  S.log.push({t:S.turn, st:{...S.st}});
+  if(S.injured) S.injured--;
+  if(Math.random()<.15) S.mood = clamp(S.mood + (Math.random()<.5?-1:1), 0, 4);
+  S.star = pick(TRAININGS).id;
+  if(rollEvent && !RACES[S.turn] && Math.random()<.22) S.pendingEvent = ri(0, RANDOM_EVENTS.length-1);
+  save();
+}
+function doTrain(){
+  const t = TRAININGS.find(x=>x.id===S.trainSel);
+  const fr = failRate(t);
+  let html;
+  if(Math.random()*100 < fr){
+    if(S.hp < 20 && Math.random() < .5){
+      S.injured = ri(2,4);
+      const g = applyFx({hp:-10, mood:-2, spd:-4, pow:-4});
+      html = `<div class="mh" style="background:linear-gradient(180deg,#ffb0a8,#e8433a);color:#fff">ケガをしてしまった…</div>
+        <div class="mb"><div class="big">🩹</div>${S.name}が脚を痛めてしまった。${S.injured}週の療養が必要だ…${gainsHtml(g)}</div>`;
+    }else{
+      const g = applyFx({hp:-10, mood:-1, [Object.keys(t.g)[0]]:-3});
+      html = `<div class="mh" style="background:linear-gradient(180deg,#bcd0f0,#8aa6d8);color:#16337a">トレーニング失敗…</div>
+        <div class="mb"><div class="big">💦</div>無理をさせてしまったようだ…${gainsHtml(g)}</div>`;
+    }
+  }else{
+    const great = Math.random() < .12 + S.mood*.04;
+    const fx = {...previewGain(t, great), hp:trainHp(t)};
+    const g = applyFx(fx);
+    S.tcount[t.id]++;
+    let lvup = '';
+    if(S.tcount[t.id] % 4 === 0 && S.tlv[t.id] < 5){
+      S.tlv[t.id]++;
+      lvup = `<div style="color:#e8433a">${t.n}が Lv${S.tlv[t.id]} にアップ！</div>`;
+      if(S.tlv[t.id]===3) lvup += learn(t.skill);
+    }
+    html = `<div class="mh">${great?'🎉 大成功！':'トレーニング成功！'}</div>
+      <div class="mb"><div class="big">${t.ic}</div>${S.star===t.id?'騎手ソウタと一緒に':''}${t.n}で汗を流した！${gainsHtml(g)}${lvup}</div>`;
+  }
+  S.trainSel = null;
+  endWeek();
+  modal(html, ()=>go('home'));
+}
+function rest(injured){
+  const g = applyFx({hp: ri(40,60)});
+  endWeek();
+  modal(`<div class="mh">${injured?'療養':'休養'}</div><div class="mb"><div class="big">😴</div>ゆっくり休んで疲れが取れた。${gainsHtml(g)}</div>`, ()=>go('home'));
+}
+function graze(){
+  const g = applyFx({hp:18, mood:1, tmp:2});
+  endWeek();
+  modal(`<div class="mh">放牧</div><div class="mb"><div class="big">🌳</div>広い牧場でのびのび過ごした！${gainsHtml(g)}</div>`, ()=>go('home'));
+}
+function buy(id){
+  const it = SHOP.find(x=>x.id===id);
+  if(S.money < it.p) return;
+  S.money -= it.p;
+  let g = [];
+  if(id==='carrot') g = applyFx({mood:1});
+  if(id==='supp') g = applyFx({hp:30});
+  if(id==='feed') g = applyFx({spd:4,sta:4,pow:4,gut:4,tmp:4});
+  if(id==='shoe'){ S.shoes++; g = [['勝負蹄鉄', 1]]; }
+  save();
+  modal(`<div class="mh">${it.n}を購入！</div><div class="mb"><div class="big">${it.ic}</div>${gainsHtml(g)}</div>`, ()=>go('shop'));
+}
+
+go('title');
+</script>
+<script src="../../playtime.js" defer></script>
+</body>
+</html>
