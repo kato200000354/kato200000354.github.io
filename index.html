@@ -55,8 +55,16 @@ h1 span{color:var(--accent)}
 .tab{appearance:none;border:1.5px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-weight:700;font-size:14px;padding:8px 16px;border-radius:999px;cursor:pointer}
 .tab[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .tab .n{opacity:.6;margin-left:4px;font-size:12px}
-.bar{display:flex;gap:8px 12px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.bar{display:flex;flex-direction:column;gap:10px}
 .filters{display:flex;gap:8px;flex-wrap:wrap}
+.tab{white-space:nowrap;flex:none}
+.sort{align-self:flex-end}
+@media (max-width:720px){
+  /* スマホではジャンルを横スクロールで選ぶ */
+  .filters{flex-wrap:nowrap;overflow-x:auto;margin:0 -16px;padding:2px 16px 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .filters::-webkit-scrollbar{display:none}
+  .tab{font-size:13px;padding:7px 13px}
+}
 .sort{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--muted)}
 .sort select{font:inherit;font-weight:700;font-size:14px;color:var(--ink);background-color:var(--card);border:1.5px solid var(--line);border-radius:999px;padding:7px 30px 7px 14px;appearance:none;cursor:pointer;
   background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 16px) 52%,calc(100% - 11px) 52%;background-size:5px 5px;background-repeat:no-repeat}
@@ -98,11 +106,7 @@ footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--muted);f
   </header>
 
   <nav class="tabs bar" aria-label="絞り込みと並べ替え">
-    <div class="filters">
-      <button class="tab" data-f="all" aria-pressed="true">すべて<span class="n" id="n-all"></span></button>
-      <button class="tab" data-f="game" aria-pressed="false">ゲーム<span class="n" id="n-game"></span></button>
-      <button class="tab" data-f="app" aria-pressed="false">アプリ<span class="n" id="n-app"></span></button>
-    </div>
+    <div class="filters" id="filters" role="group" aria-label="ジャンル"></div>
     <label class="sort">並べ替え
       <select id="sort">
         <option value="new">新しい順</option>
@@ -131,6 +135,14 @@ const NEW_DAYS = 2;
 const grid = document.getElementById('grid');
 const sortSel = document.getElementById('sort');
 let filter = 'all';
+// ジャンル（works.json の genre）。並びはタブの順番
+const GENRES = {
+  action: '⚔️ アクション', sports: '⚽ スポーツ', race: '🏎️ レース', puzzle: '🧩 パズル・クイズ',
+  rpg: '🗡️ RPG・冒険', sim: '🌱 育成・シミュレーション', party: '🎉 パーティー', music: '🎵 リズム・音楽',
+  story: '📖 ストーリー', app: '📱 アプリ',
+};
+const genreOf = w => GENRES[w.genre] ? w.genre : (w.kind === 'app' ? 'app' : 'action');
+const genreName = g => GENRES[g].replace(/^\S+\s/, '');
 
 const fmtDate = d => `${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()}`;
 const isNew = d => Date.now() - d < NEW_DAYS * 864e5;
@@ -139,7 +151,7 @@ grid.innerHTML = WORKS.map(w => `
   <a class="card" href="${w.href}" data-id="${w.id}" data-kind="${w.kind}">
     <div class="thumb"><img src="thumbs/${w.id}.jpg" alt="" loading="lazy" width="420" height="560">${isNew(w.made) ? '<span class="new">NEW</span>' : ''}</div>
     <div class="body">
-      <span class="kind">${w.kind === 'game' ? 'GAME' : 'APP'}</span>
+      <span class="kind">${genreName(genreOf(w))}</span>
       <h2 class="name">${w.name}</h2>
       <p class="desc">${w.desc}</p>
       <div class="meta"><time datetime="${w.made.toISOString()}">${fmtDate(w.made)}</time><span class="r"><span class="plays" hidden></span><span class="secs" hidden></span></span></div>
@@ -157,18 +169,30 @@ const SORTS = {
 function render(){
   [...WORKS].sort(SORTS[sortSel.value]).forEach(w => {
     const c = cardOf(w.id);
-    c.hidden = filter !== 'all' && w.kind !== filter;
+    c.hidden = filter !== 'all' && genreOf(w) !== filter;
     grid.appendChild(c);
   });
 }
 
 const count = k => WORKS.filter(w => k === 'all' || w.kind === k).length;
-['all','game','app'].forEach(k => document.getElementById('n-'+k).textContent = document.getElementById('s-'+k).textContent = count(k));
-document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => {
+['all','game','app'].forEach(k => document.getElementById('s-'+k).textContent = count(k));
+
+// ジャンルのタブ（作品があるジャンルだけ）
+const filters = document.getElementById('filters');
+const tabs = [['all', 'すべて', WORKS.length], ...Object.entries(GENRES).map(([g, label]) => [g, label, WORKS.filter(w => genreOf(w) === g).length]).filter(t => t[2])];
+filters.innerHTML = tabs.map(([g, label, n]) => `<button class="tab" data-f="${g}" aria-pressed="${g === 'all'}">${label}<span class="n">${n}</span></button>`).join('');
+try { const saved = localStorage.getItem('works-genre'); if (tabs.some(t => t[0] === saved)) filter = saved; } catch {}
+const markTabs = () => filters.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-pressed', b.dataset.f === filter));
+markTabs();
+filters.addEventListener('click', e => {
+  const btn = e.target.closest('.tab');
+  if (!btn) return;
   filter = btn.dataset.f;
-  document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-pressed', b === btn));
+  try { localStorage.setItem('works-genre', filter); } catch {}
+  markTabs();
+  btn.scrollIntoView({block: 'nearest', inline: 'nearest', behavior: 'smooth'});
   render();
-}));
+});
 try { const saved = localStorage.getItem('works-sort'); if (saved in SORTS) sortSel.value = saved; } catch {}
 sortSel.addEventListener('change', () => {
   try { localStorage.setItem('works-sort', sortSel.value); } catch {}
