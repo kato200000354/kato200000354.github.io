@@ -493,7 +493,9 @@ function autoRetire(h){
 /* ================= レース実行 ================= */
 function runRace(race,ents){return new Promise(res=>{
  const field=buildField(race,ents);const sim=simulate(field,race);
- showRaceIntro(race,field,()=>playRace(race,field,sim,()=>{const out=applyResult(race,field,sim);showResults(race,field,sim,out,res);}));
+ const bail=e=>{console.error(e);const rv=$('#rv');if(rv)rv.remove();toast('レース表示でエラーが発生したため結果のみ反映しました');res();};
+ let applied=false;
+ showRaceIntro(race,field,()=>{try{playRace(race,field,sim,()=>{try{const out=applyResult(race,field,sim);applied=true;showResults(race,field,sim,out,res);}catch(e){if(!applied)try{applyResult(race,field,sim);}catch(_){}bail(e);}});}catch(e){try{applyResult(race,field,sim);}catch(_){}bail(e);}});
 });}
 function npcAge(code){return code==='2'?2:code==='3'?3:code==='2-3'?(S.month<6?3:ri(2,3)):code==='4上'?ri(4,7):ri(3,6);}
 function npcRunner(race){
@@ -550,7 +552,7 @@ function simulate(field,race){
  const order=field.map((r,i)=>i).sort((a,b)=>field[a].fin-field[b].fin);
  return{frames,T:(frames.length-1)*.25,order,fin:field.map(r=>r.fin),D};
 }
-function posAt(sim,i,pt){const f=pt/.25,a=Math.min(Math.floor(f),sim.frames.length-1),b=Math.min(a+1,sim.frames.length-1);const A=sim.frames[a][i],B=sim.frames[b][i];return A+(B-A)*Math.min(1,f-a);}
+function posAt(sim,i,pt){const f=Math.max(0,pt)/.25,a=Math.min(Math.floor(f),sim.frames.length-1),b=Math.min(a+1,sim.frames.length-1);const A=sim.frames[a][i],B=sim.frames[b][i];return A+(B-A)*Math.min(1,f-a);}
 function fmtTime(t){const d=Math.round(t*10),m=Math.floor(d/600);return m+':'+((d%600)/10).toFixed(1).padStart(4,'0');}
 function marginStr(m){const L=m/2.4;if(L<.04)return'ハナ';if(L<.15)return'アタマ';if(L<.3)return'クビ';if(L<.6)return'1/2';if(L<.85)return'3/4';if(L<1.15)return'1';if(L<1.4)return'1 1/4';if(L<1.65)return'1 1/2';if(L<1.9)return'1 3/4';if(L<2.5)return'2';if(L<10)return Math.round(L)+'';return'大差';}
 function applyResult(race,field,sim){
@@ -597,7 +599,7 @@ function showRaceIntro(race,field,go){
  ${field.map(r=>`<tr class="${r.player?'me':''}"><td>${r.no}</td><td style="color:#c33;font-weight:900">${r.mark}</td><td>${esc(r.name)}${r.player?' <span class="tag y">あなた</span>':r.rival?' <span class="tag r">強敵</span>':''}</td><td>${r.sa}</td><td>${r.jockey}</td><td>${r.style}</td><td class="num">${r.pop}</td></tr>`).join('')}
  </table></div><button class="btn gold big" id="rvgo">🏇 スタート！</button></div></div>`;
  if(race.grade==='GI')fanfare();
- $('#rvgo').onclick=()=>{tone(880,.5,0,'sine',.08);go();};
+ $('#rvgo').onclick=e=>{e.currentTarget.disabled=true;tone(880,.5,0,'sine',.08);go();};
 }
 function playRace(race,field,sim,done){
  const rv=$('#rv');
@@ -612,17 +614,25 @@ function playRace(race,field,sim,done){
  $('#rvsk').onclick=()=>{skip=true;};
  const comms=buildComments(race,field,sim);let ci=0;
  const pIdx=Math.max(0,field.findIndex(r=>r.player));
- let cam=0,pt=0,last=performance.now(),bt=0,goalSnd=false;
+ let cam=0,pt=0,last=null,bt=0,goalSnd=false,ended=false;
+ const finish=()=>{if(ended)return;ended=true;window.removeEventListener('resize',resize);setTimeout(done,skip?60:900);};
  function frame(now){
-  const dt=Math.min(.1,(now-last)/1000);last=now;
-  pt+=dt*rate*mul;if(skip)pt=sim.T;if(pt>sim.T)pt=sim.T;
+  try{step(now);}catch(e){console.error(e);skip=true;finish();}
+ }
+ function step(now){
+  if(ended)return;
+  // スマホでは最初のフレーム時刻が直前の計測より前になることがあるため、経過時間は0未満にしない
+  if(last===null)last=now;
+  const dt=clamp((now-last)/1000,0,.1);last=now;
+  if(H<20)resize();
+  pt+=dt*rate*mul;if(skip)pt=sim.T;pt=clamp(pt,0,sim.T);
   const pos=field.map((r,i)=>posAt(sim,i,pt));
   cam+=(pos[pIdx]-cam)*Math.min(1,dt*5);if(pt<.3||skip)cam=pos[pIdx];
   drawRace(ctx,W,H,race,field,pos,cam,pt);
   while(ci<comms.length&&comms[ci].t<=pt){$('#rvt').innerHTML=comms[ci].s;ci++;}
   bt-=dt;if(bt<=0){bt=.2;updateBoard(field,pos,sim,pt,race);}
   if(!goalSnd&&pt>=sim.fin[sim.order[0]]){goalSnd=true;if(!skip)tone(660,.3,0,'triangle',.06);}
-  if(pt>=sim.T){window.removeEventListener('resize',resize);updateBoard(field,pos,sim,pt,race);setTimeout(done,skip?60:900);return;}
+  if(pt>=sim.T){updateBoard(field,pos,sim,pt,race);finish();return;}
   requestAnimationFrame(frame);
  }
  requestAnimationFrame(frame);
