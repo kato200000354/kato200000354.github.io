@@ -1,0 +1,1381 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>トモダチ島ぐらし</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap">
+<style>
+:root{--blue:#2f6fae;--blue2:#4f95d6;--navy:#1f4e7f;--yel:#ffd54a;--yel2:#f5b400;--panel:#fbfaf5;--line:#dfe5ee;--text:#3a3d4a;--sub:#7b8194;--pink:#ff6f9f;color-scheme:light}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#7ec8ee;font-family:'M PLUS Rounded 1c','Hiragino Maru Gothic ProN','Meiryo',system-ui,sans-serif;color:var(--text);user-select:none;-webkit-user-select:none}
+button{font-family:inherit;cursor:pointer}
+input,select{font-family:inherit}
+#app{position:fixed;inset:0;overflow:hidden}
+.screen{position:absolute;inset:0;display:none;overflow:hidden}
+.screen.on{display:block}
+.bg{position:absolute;inset:0;width:100%;height:100%;display:block}
+
+/* HUD */
+#hud{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;padding:max(10px,env(safe-area-inset-top)) 12px 0;z-index:40;pointer-events:none}
+.clock{background:rgba(24,62,104,.85);color:#fff;border-radius:16px;padding:6px 14px 7px;font-weight:800;line-height:1.25;box-shadow:0 3px 8px rgba(0,0,0,.2);border:2px solid rgba(255,255,255,.65)}
+.clock .d{font-size:15px}.clock .t{font-size:13px;opacity:.92}
+.coin{background:rgba(24,62,104,.85);color:#fff;border-radius:999px;padding:5px 16px 5px 6px;font-weight:800;font-size:17px;display:flex;align-items:center;gap:8px;border:2px solid rgba(255,255,255,.65);box-shadow:0 3px 8px rgba(0,0,0,.2)}
+.coin i{width:24px;height:24px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff3a0,#f5b400 60%,#c98600);display:block;border:2px solid #fff6c0}
+
+/* nav */
+#nav{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;align-items:flex-end;padding:0 10px max(10px,env(safe-area-inset-bottom));z-index:40;pointer-events:none;gap:8px}
+#nav .grp{display:flex;gap:7px;pointer-events:auto}
+.nbtn{background:linear-gradient(#3d82c6,#1f4e7f);color:#fff;border:3px solid #fff;border-radius:14px;padding:7px 13px;font-weight:800;font-size:15px;box-shadow:0 4px 0 rgba(0,0,0,.18);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.nbtn:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.18)}
+.nbtn .e{font-size:18px}
+.nbtn.sm{font-size:13px;padding:6px 11px}
+@media (max-width:560px){.nbtn{padding:7px 9px;font-size:12px}.nbtn .lb{display:none}.nbtn .e{font-size:21px}}
+
+/* modal */
+#modal{position:absolute;inset:0;background:rgba(20,30,50,.42);display:none;align-items:center;justify-content:center;z-index:80;padding:12px}
+#modal.on{display:flex}
+.panel{background:var(--panel);border:4px solid var(--blue);border-radius:18px;width:min(560px,100%);max-height:100%;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.3);animation:pop .18s ease-out}
+@keyframes pop{from{transform:scale(.92);opacity:0}}
+.ph{background:linear-gradient(#4f95d6,#2f6fae);color:#fff;padding:9px 14px;font-weight:800;font-size:18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.ph .x{background:none;border:none;color:#fff;font-size:22px;opacity:.85;padding:0 4px}
+.pb{padding:12px;overflow:auto;flex:1;-webkit-overflow-scrolling:touch}
+.pf{padding:10px 12px;border-top:2px solid var(--line);display:flex;gap:8px;justify-content:center;flex-wrap:wrap;align-items:center;flex-shrink:0}
+.tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.tab{flex:1;min-width:58px;background:#e9eef5;border:none;border-radius:10px;padding:8px 6px;font-weight:800;color:#556;font-size:14px}
+.tab.on{background:var(--yel);color:#4a3a00;box-shadow:inset 0 -3px 0 var(--yel2)}
+.row{display:flex;align-items:center;gap:10px;background:#fff;border:2px solid var(--line);border-radius:12px;padding:8px 12px;margin-bottom:6px;font-weight:700;width:100%;text-align:left;font-size:15px;color:var(--text)}
+.row:hover{background:#fff6d0;border-color:var(--yel2)}
+.row .ic{font-size:22px;width:30px;text-align:center;flex-shrink:0}
+.row .n{flex:1}
+.row .c{color:var(--sub);font-weight:800}
+.row .ic svg{width:100%;height:100%;display:block}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.card{background:#fff;border:2px solid var(--line);border-radius:14px;padding:6px 4px;text-align:center;font-weight:700;font-size:12px;color:var(--text);position:relative;line-height:1.3}
+.card:hover{border-color:#b9cbe2}
+.card.sel{border-color:var(--yel2);background:#fff8dc;box-shadow:0 0 0 2px var(--yel)}
+.card svg{width:100%;height:64px;display:block}
+.card .cnt{position:absolute;top:4px;right:5px;background:var(--blue);color:#fff;border-radius:999px;padding:0 6px;font-size:11px}
+.card .em{font-size:38px;height:64px;display:flex;align-items:center;justify-content:center}
+.card .pr{color:#b07a00;font-weight:800}
+.sec{font-weight:800;color:var(--sub);font-size:13px;margin:10px 2px 6px}
+.desc{margin-top:10px;background:#fff;border:2px solid var(--line);border-radius:12px;padding:10px;min-height:54px;font-size:14px}
+.desc b{display:block;margin-bottom:2px;font-size:15px}
+.b{background:linear-gradient(#ffe57a,#ffc928);border:2px solid #e8a900;color:#4a3800;border-radius:12px;padding:9px 18px;font-weight:800;font-size:15px;box-shadow:0 3px 0 #c98f00}
+.b.blue{background:linear-gradient(#5aa0e0,#2f6fae);border-color:#1f4e7f;color:#fff;box-shadow:0 3px 0 #1a426b}
+.b.gray{background:#eef1f5;border-color:#cbd3de;color:#556;box-shadow:0 3px 0 #b8c1cd}
+.b.red{background:linear-gradient(#ff8a80,#e2483e);border-color:#b0302a;color:#fff;box-shadow:0 3px 0 #8f2620}
+.b:active{transform:translateY(2px);box-shadow:none}
+.b:disabled{opacity:.5}
+.chip{display:inline-block;background:#fff;border:2px solid var(--line);border-radius:999px;padding:3px 12px;margin:2px;font-weight:700;font-size:13px}
+.bar{height:11px;border-radius:99px;background:#e6eaf0;overflow:hidden;margin-top:3px}
+.bar i{display:block;height:100%;border-radius:99px}
+
+/* scene */
+.mii{position:absolute;bottom:calc(3% + 44px);transform:translateX(-50%);height:min(52vh,440px,88vw);aspect-ratio:100/150;animation:bob 2.6s ease-in-out infinite;cursor:pointer;z-index:2}
+.mii svg{width:100%;height:100%;display:block;overflow:visible}
+.mii.m{height:min(42vh,350px,60vw)}
+.mii.s{height:min(34vh,290px,42vw)}
+@keyframes bob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-5px)}}
+.mii.sel svg{filter:drop-shadow(0 0 5px #fff) drop-shadow(0 0 9px #ffd54a)}
+.mii.jump{animation:jump .55s ease-in-out infinite}
+@keyframes jump{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-18px)}}
+.bub{position:absolute;top:max(13%,78px);transform:translateX(-50%);background:#fff;border-radius:22px;padding:10px 18px;font-weight:800;font-size:clamp(14px,2.3vw,20px);box-shadow:0 4px 12px rgba(0,0,0,.18);max-width:min(78vw,460px);text-align:center;z-index:6;animation:pop .2s;line-height:1.5}
+.bub:after{content:'';position:absolute;left:50%;bottom:-12px;margin-left:-10px;border-width:13px 10px 0;border-style:solid;border-color:#fff transparent transparent}
+.bub.trb{background:#fffbe6;border:3px solid #ffb02e;cursor:pointer}
+.bub.trb:after{border-top-color:#ffb02e}
+.bub .go{margin-top:6px;display:inline-block;background:linear-gradient(#ffb056,#f0731c);color:#fff;border-radius:999px;padding:4px 14px;font-size:14px}
+.bub .tic{font-size:1.3em;margin-right:4px}
+.narr{position:absolute;left:50%;top:max(14%,80px);transform:translateX(-50%);background:rgba(24,62,104,.9);color:#fff;border-radius:14px;padding:12px 20px;font-weight:800;font-size:clamp(14px,2.2vw,19px);z-index:6;max-width:88vw;text-align:center;animation:pop .2s}
+.tap{position:absolute;right:16px;bottom:16px;background:rgba(255,255,255,.9);border-radius:999px;padding:6px 14px;font-weight:800;color:var(--blue);z-index:7;animation:blink 1.2s infinite}
+@keyframes blink{50%{opacity:.4}}
+.prop{position:absolute;bottom:calc(3% + 44px);font-size:min(11vh,84px);transform:translateX(-50%);z-index:3;filter:drop-shadow(0 3px 2px rgba(0,0,0,.2))}
+.fx{position:absolute;z-index:4;font-size:min(6vh,40px);animation:floaty 2.2s ease-out infinite;pointer-events:none}
+@keyframes floaty{0%{transform:translateY(0) scale(.6);opacity:0}20%{opacity:1}100%{transform:translateY(-90px) scale(1.1);opacity:0}}
+.icol{position:absolute;left:12px;top:max(86px,14%);display:flex;flex-direction:column;gap:9px;z-index:10}
+.ib{width:62px;height:62px;border-radius:14px;background:linear-gradient(#ffb056,#f0731c);border:3px solid #fff;box-shadow:0 4px 0 rgba(0,0,0,.18);color:#fff;font-weight:800;font-size:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:0}
+.ib .e{font-size:24px;line-height:1}
+.ib:active{transform:translateY(2px)}
+@media (max-height:560px){.ib{width:50px;height:50px;font-size:9px}.ib .e{font-size:19px}.icol{display:grid;grid-template-columns:repeat(2,50px);gap:6px;top:78px}.mb{padding:6px 10px;margin-bottom:4px;font-size:14px}.side h3{margin-bottom:4px}}
+.tr{position:absolute;right:12px;top:max(64px,calc(env(safe-area-inset-top) + 58px));display:flex;flex-direction:column;gap:8px;z-index:10;align-items:flex-end}
+.side{position:absolute;right:14px;top:50%;transform:translateY(-50%);width:min(270px,44vw);background:rgba(255,255,255,.94);border-radius:18px;padding:10px;box-shadow:0 6px 18px rgba(0,0,0,.22);z-index:10;border:3px solid #cfdcec}
+.side h3{margin:2px 4px 8px;font-size:15px;color:var(--sub)}
+.mb{display:flex;align-items:center;gap:10px;width:100%;background:#fff;border:2.5px solid #cfdcec;border-radius:12px;padding:9px 12px;margin-bottom:7px;font-weight:800;font-size:15px;color:#2b4c74;text-align:left}
+.mb:last-child{margin-bottom:0}
+.mb:hover{background:#fff4c4;border-color:var(--yel2)}
+.mb .e{font-size:20px;width:24px;text-align:center}
+.ptag{position:absolute;left:0;top:max(76px,13%);background:linear-gradient(#4f95d6,#2f6fae);color:#fff;font-weight:800;font-size:20px;padding:6px 24px 6px 16px;border-radius:0 999px 999px 0;z-index:9;border:3px solid #fff;border-left:none;box-shadow:0 3px 8px rgba(0,0,0,.2)}
+.empty{position:absolute;left:50%;top:45%;transform:translate(-50%,-50%);background:rgba(255,255,255,.92);border-radius:16px;padding:16px 22px;font-weight:800;text-align:center;z-index:5;line-height:1.8;max-width:86vw}
+@media (max-width:640px),(max-aspect-ratio:1/1){
+ .side{top:auto;bottom:66px;transform:none;left:10px;right:10px;width:auto;display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px}
+ .side h3{grid-column:1/-1;margin:0 4px}
+ .mb{margin:0;padding:8px 10px;font-size:14px}
+ #scr-place .mii{bottom:calc(66px + 180px)}
+ #scr-place .mii.m,#scr-place .mii.s{height:min(30vh,230px,40vw)}
+ #scr-place .bub{top:max(18%,120px)}
+}
+
+/* map */
+#scr-map{background:#3fa6dc}
+#scr-map>svg{position:absolute;inset:0;width:100%;height:100%}
+.lbl{cursor:pointer}
+.lbl:hover rect{fill:#fff6c4}
+
+/* apartment */
+.bld{position:absolute;left:50%;transform:translateX(-50%);top:max(76px,12%);bottom:72px;width:min(760px,94vw);display:flex;flex-direction:column;filter:drop-shadow(0 6px 10px rgba(0,0,0,.2))}
+.roof{height:42px;background:linear-gradient(#f08a4b,#d8662c);border-radius:12px 12px 0 0;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin:0 -10px}
+.roof span{background:#fff;border-radius:8px;padding:2px 14px;font-weight:800;color:#a24d1d;border:2px solid #f3c7a5}
+.facade{flex:1;background:#f6ead0;border:4px solid #dcc69c;border-top:none;padding:16px 16px 26px;display:grid;grid-template-columns:repeat(3,1fr);gap:24px 16px;overflow:auto;align-content:start;-webkit-overflow-scrolling:touch}
+@media (min-width:700px){.facade{grid-template-columns:repeat(4,1fr)}}
+.win{position:relative;background:linear-gradient(#dff1ff,#bfe0fb);border:5px solid #fff;border-radius:8px;aspect-ratio:4/3;box-shadow:inset 0 0 0 2px #b7c7d6,0 4px 0 #d3bb8c;cursor:pointer}
+.win:hover{transform:translateY(-2px)}
+.win .face{position:absolute;inset:4% 8% 0;overflow:hidden}
+.win .face svg{width:100%;height:100%;display:block}
+.win.sleep{background:linear-gradient(#1d2a55,#33457e)}
+.win.out{background:repeating-linear-gradient(90deg,#9ed69a 0 10px,#8bc987 10px 20px)}
+.win.add{background:#efe4cc;border-style:dashed;border-color:#c9b48a;display:flex;align-items:center;justify-content:center;font-weight:800;color:#a08350;text-align:center;font-size:26px;line-height:1}
+.win.add small{font-size:12px}
+.win .np{position:absolute;left:50%;bottom:-16px;transform:translateX(-50%);background:#fff;border:2px solid #d9c49a;border-radius:8px;padding:1px 8px;font-size:12px;font-weight:800;white-space:nowrap;z-index:2}
+.win .tb{position:absolute;right:-12px;top:-14px;background:#fff;border:3px solid #ff8c2b;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:19px;animation:bnc 1s infinite;z-index:3}
+@keyframes bnc{50%{transform:translateY(-5px)}}
+.win .st{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;color:#2c5a2a;font-weight:800;text-align:center;padding:4px;line-height:1.4}
+.win .zz{position:absolute;right:6px;top:4px;color:#fff;font-weight:800;font-size:13px}
+
+/* profile */
+.pgrid{display:grid;grid-template-columns:1.3fr 1fr;gap:12px}
+@media (max-width:520px){.pgrid{grid-template-columns:1fr}}
+.pbox{background:#fff;border:2px solid var(--line);border-radius:14px;padding:10px}
+.ptop{display:flex;gap:10px;align-items:center}
+.ava{width:84px;height:84px;border-radius:14px;background:#e8f2fb;flex-shrink:0;overflow:hidden;border:2px solid #d5e3f2}
+.ava svg{width:100%;height:100%}
+.pname{font-size:21px;font-weight:800}
+.lab{font-size:12px;color:var(--sub);font-weight:800;margin-top:8px}
+.frs{display:flex;gap:8px;margin-top:4px;flex-wrap:wrap}
+.fr{text-align:center;font-size:11px;font-weight:800;width:56px}
+.fr .ava{width:52px;height:52px;margin:0 auto 2px}
+.stat{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:13px;font-weight:800}
+.stat .si{font-size:20px;width:26px;text-align:center}
+.stat .sv{flex:1}
+.relrow{display:flex;align-items:center;gap:10px;padding:6px;border-bottom:1px solid var(--line)}
+.relrow .ava{width:44px;height:44px}
+.relrow .n{flex:1;font-weight:800}
+.tagl{font-size:12px;font-weight:800;border-radius:999px;padding:2px 10px;color:#fff}
+
+/* album */
+.agrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.photo{background:#fff;padding:5px 5px 3px;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,.15);cursor:pointer;border:1px solid #e5e5e5}
+.photo svg{width:100%;aspect-ratio:4/3;display:block;border-radius:3px}
+.photo .cap{font-size:11px;font-weight:700;color:var(--sub);padding:3px 2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bigphoto svg{width:100%;aspect-ratio:16/10;display:block;border-radius:8px}
+
+/* creator */
+.crw{display:grid;grid-template-columns:180px 1fr;gap:14px}
+@media (max-width:560px){.crw{grid-template-columns:1fr}.crprev{height:180px}}
+.crprev{background:linear-gradient(#dff1ff,#fdf7e6);border-radius:14px;border:2px solid var(--line);display:flex;align-items:flex-end;justify-content:center;padding:8px}
+.crprev{align-self:start;height:300px;position:sticky;top:0}
+.crprev svg{height:100%;width:auto;display:block}
+.fl{font-weight:800;font-size:13px;color:var(--sub);margin:8px 0 4px}
+.sw{width:32px;height:32px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 2px #cfd8e3;margin:2px;padding:0}
+.sw.on{box-shadow:0 0 0 3px var(--yel2)}
+.opt{background:#fff;border:2px solid var(--line);border-radius:10px;padding:5px 10px;font-weight:800;font-size:13px;margin:2px;color:var(--text)}
+.opt.on{background:var(--yel);border-color:var(--yel2)}
+.inp{width:100%;font-size:17px;padding:8px 10px;border-radius:10px;border:2px solid var(--line);font-weight:800}
+.sel{font-size:14px;padding:6px;border-radius:10px;border:2px solid var(--line);font-weight:700;background:#fff}
+
+/* bowling */
+#scr-bowl{background:radial-gradient(circle at 50% 0,#4a3a80,#1e1838)}
+.bw{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;padding:max(8px,env(safe-area-inset-top)) 8px max(8px,env(safe-area-inset-bottom))}
+.sb{border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;font-size:13px;font-weight:800;box-shadow:0 4px 10px rgba(0,0,0,.3);flex-shrink:0}
+.sb th{background:var(--blue);color:#fff;padding:3px 8px}
+.sb td{border:1px solid #e3e7ee;padding:2px 8px;text-align:center;min-width:42px}
+.sb td.nm{text-align:left;white-space:nowrap}
+.sb tr.cur td{background:#fff6cf}
+.sb .tot{color:var(--blue);font-size:15px}
+#lane{flex:1;min-height:0;width:100%;max-width:520px;margin:6px 0}
+.bwb{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.95);border-radius:18px;padding:8px 14px;width:min(560px,100%);flex-shrink:0}
+.bwb .who{width:54px;height:54px;flex-shrink:0;border-radius:12px;background:#e8f2fb;overflow:hidden}
+.bwb .who svg{width:100%;height:100%}
+.bwb .mid{flex:1;min-width:0}
+.bwb .msg{font-weight:800;font-size:15px}
+.pw{height:12px;background:#e6eaf0;border-radius:99px;overflow:hidden;margin-top:5px}
+.pw i{display:block;height:100%;width:0;background:linear-gradient(90deg,#5cbf5c,#ffd54a,#ff5a3c)}
+.b.big{font-size:18px;padding:12px 22px}
+
+/* misc */
+#toasts{position:absolute;top:max(72px,11%);left:50%;transform:translateX(-50%);z-index:90;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;width:max-content;max-width:92vw}
+.toast{background:rgba(255,255,255,.97);border:3px solid var(--blue);border-radius:999px;padding:6px 16px;font-weight:800;font-size:14px;box-shadow:0 4px 10px rgba(0,0,0,.2);animation:tin .25s,tout .4s 2.8s forwards;text-align:center}
+@keyframes tin{from{transform:translateY(-10px);opacity:0}}
+@keyframes tout{to{opacity:0;transform:translateY(-8px)}}
+.flash{position:absolute;inset:0;background:#fff;z-index:95;pointer-events:none;animation:fl .6s forwards}
+@keyframes fl{from{opacity:1}to{opacity:0}}
+.qface{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+.qface .ava{width:70px;height:70px}
+.qface .q{background:#fff;border:2px solid var(--line);border-radius:14px;padding:10px 14px;font-weight:800;flex:1;line-height:1.5}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="scr-map" class="screen"></div>
+  <div id="scr-apart" class="screen"></div>
+  <div id="scr-room" class="screen"></div>
+  <div id="scr-place" class="screen"></div>
+  <div id="scr-event" class="screen"></div>
+  <div id="scr-bowl" class="screen"></div>
+  <div id="hud">
+    <div class="clock"><div class="d" id="hd"></div><div class="t" id="ht"></div></div>
+    <div class="coin"><i></i><span id="hm"></span></div>
+  </div>
+  <div id="nav">
+    <div class="grp">
+      <button class="nbtn" onclick="navApart()"><span class="e">👥</span><span class="lb">住人を見る</span></button>
+      <button class="nbtn" onclick="navMap()"><span class="e">🗺️</span><span class="lb">マップ</span></button>
+    </div>
+    <div class="grp">
+      <button class="nbtn" onclick="openInv()"><span class="e">🎒</span><span class="lb">持ち物</span></button>
+      <button class="nbtn" onclick="openAlbum()"><span class="e">📷</span><span class="lb">アルバム</span></button>
+      <button class="nbtn" onclick="openMenu()"><span class="e">⚙️</span><span class="lb">メニュー</span></button>
+    </div>
+  </div>
+  <div id="modal"></div>
+  <div id="toasts"></div>
+</div>
+<script>
+'use strict';
+// ================= utils =================
+const $=s=>document.querySelector(s);
+const rnd=n=>Math.floor(Math.random()*n);
+const pick=a=>a[rnd(a.length)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function shade(hex,amt){let c=hex.replace('#','');if(c.length===3)c=c.split('').map(x=>x+x).join('');const n=parseInt(c,16);const f=v=>clamp(Math.round(amt<0?v*(1+amt):v+(255-v)*amt),0,255);return '#'+[f(n>>16),f(n>>8&255),f(n&255)].map(v=>v.toString(16).padStart(2,'0')).join('')}
+const CB={};let cbn=0;
+function cb(fn){const k='c'+(cbn++);CB[k]=fn;return `CB.${k}(event)`}
+
+// ================= data =================
+const FOODS=[
+ ['curry','カレーライス','🍛',300],['burger','ハンバーガー','🍔',250],['cake','ケーキ','🍰',280],['takoyaki','たこ焼き','🐙',220],
+ ['gummy','グミ','🍬',100],['fruit','フルーツ','🍇',150],['ramen','ラーメン','🍜',350],['sushi','おすし','🍣',500],
+ ['omurice','オムライス','🍳',320],['onigiri','おにぎり','🍙',120],['pizza','ピザ','🍕',400],['icecream','アイス','🍦',180],
+ ['pudding','プリン','🍮',160],['natto','納豆','🫘',90],['salad','サラダ','🥗',200],['steak','ステーキ','🥩',650],
+].map(([id,name,icon,price])=>({id,name,icon,price}));
+const FD=Object.fromEntries(FOODS.map(f=>[f.id,f]));
+const F=(id,type,style,color,name,price,desc)=>({id,type,style,color,name,price,desc});
+const FASHION=[
+ F('hoodie_gray','clothes','hoodie','#c3c8d1','グレーパーカー',800,'カジュアルで着やすい定番のパーカー。'),
+ F('hoodie_white','clothes','hoodie','#f6f6f6','白パーカー',800,'さわやかな白のパーカー。'),
+ F('hoodie_red','clothes','hoodie','#e2483e','赤パーカー',900,'目立ちたい日にぴったり。'),
+ F('jacket_blue','clothes','jacket','#2f5fb3','デニムジャケット',1200,'ちょっと大人っぽく決まる。'),
+ F('border','clothes','border','#25407a','ボーダーシャツ',900,'マリンな気分になれるボーダー。'),
+ F('tshirt_yellow','clothes','tshirt','#ffd23f','黄色Tシャツ',600,'元気が出る明るい色。'),
+ F('tshirt_green','clothes','tshirt','#5cbf6a','緑Tシャツ',600,'自然が好きな人に。'),
+ F('aloha','clothes','aloha','#ff8a3d','アロハシャツ',1100,'南の島の定番!'),
+ F('dress_pink','clothes','dress','#ff9cc4','ピンクワンピース',1400,'ふんわりかわいいワンピース。'),
+ F('dress_blue','clothes','dress','#4c8fd0','青ワンピース',1400,'夏にぴったりのさわやかワンピ。'),
+ F('suit','clothes','suit','#2b2f3a','スーツ',2500,'ビシッと決めたい日に。'),
+ F('tuxedo','clothes','suit','#141414','タキシード',4000,'特別な日のための一着。'),
+ F('wedding','clothes','dress','#ffffff','ウェディングドレス',5000,'あこがれの純白ドレス。'),
+ F('cap_blue','hat','cap','#2f6fae','青キャップ',500,'スポーティーなキャップ。'),
+ F('cap_red','hat','cap','#e2483e','赤キャップ',500,'元気に見える赤いキャップ。'),
+ F('knit_navy','hat','knit','#2b3d6b','ニット帽',600,'あったかいニット帽。'),
+ F('straw','hat','straw','#e8c06a','麦わら帽子',700,'夏の日差しから守ってくれる。'),
+ F('ribbon','hat','ribbon','#ff5c8a','リボン',400,'ちょこんとかわいいリボン。'),
+ F('crown','hat','crown','#ffcc33','王冠',3000,'気分は王様!'),
+ F('glasses','acc','glasses','#333344','メガネ',700,'知的な印象になるメガネ。'),
+ F('roundglasses','acc','round','#a0652f','まるメガネ',800,'やさしい雰囲気のまるメガネ。'),
+ F('sunglasses','acc','sun','#1d1d24','サングラス',900,'ちょっとワルな雰囲気。'),
+ F('headphones','acc','phones','#ff5c8a','ヘッドホン',1200,'音楽好きの必需品。'),
+];
+const FASH=Object.fromEntries(FASHION.map(f=>[f.id,f]));
+const GIFTS=[
+ ['bear','ぬいぐるみ','🧸',600,'昼寝'],['flower','花束','💐',400,'おしゃれ'],['gamepad','ゲーム機','🎮',1500,'ゲーム'],
+ ['book','小説','📕',500,'読書'],['ball','サッカーボール','⚽',450,'スポーツ'],['cd','CD','💿',500,'音楽'],
+ ['pan','フライパン','🍳',700,'料理'],['rod','釣りざお','🎣',800,'釣り'],['ticket','映画チケット','🎟️',600,'映画'],
+ ['paint','絵の具セット','🎨',500,'絵'],['mic','マイク','🎤',700,'カラオケ'],['shoes','ダンスシューズ','👟',800,'ダンス'],
+ ['letter','ラブレター','💌',200,null],
+].map(([id,name,icon,price,tag])=>({id,name,icon,price,tag}));
+const GF=Object.fromEntries(GIFTS.map(g=>[g.id,g]));
+const SKINS=['#ffe3cc','#f7d0ab','#eab68c','#c98e63','#8e5b3d'];
+const HAIRC=['#3a2a20','#6b4226','#a5692f','#1d1d22','#e0b04a','#c0504d','#7a5cc0','#e8e8e8'];
+const HSTY=['ショート','ボブ','ツンツン','ロング','おだんご'];
+const WALLS=['#f3e2c4','#fde3ea','#dfe9f3','#fff1c9','#e3f2dc','#e8e2f6','#f6d9c4','#d8f0f0'];
+const HOBBIES=['ゲーム','スポーツ','読書','音楽','料理','おしゃれ','昼寝','カラオケ','釣り','映画','ダンス','絵'];
+const PERS={
+ genki:{name:'元気',icon:'☀️',color:'#ff9d3c',desc:'いつも元気いっぱいで、体を動かすのが大好き。まっすぐな言葉にグッとくるタイプ。',pref:'straight'},
+ cool:{name:'クール',icon:'❄️',color:'#4f95d6',desc:'落ち着いていて、ちょっぴりカッコつけ。手紙のような控えめな気持ちの伝え方に弱い。',pref:'letter'},
+ yasashii:{name:'やさしい',icon:'🌸',color:'#ff6f9f',desc:'気配り上手でみんなに優しい。ロマンチックな雰囲気が大好き。',pref:'romantic'},
+ mypace:{name:'マイペース',icon:'☁️',color:'#8b6ee6',desc:'のんびり屋で自分のペースを大事にする。何を考えているかちょっと読めない。',pref:null},
+};
+const LINES={
+ genki:{greet:['いい天気だね!','今日も元気いっぱい!','なにして遊ぼっか?','走り回りたい気分!','おっ、来てくれたんだ!'],happy:['サイコーの気分!','ワクワクが止まらない!','今日はなんでもできそう!'],sad:['うう…なんか元気でない…','はぁ…'],hungry:['おなかペコペコだよ〜!'],tired:['ちょっと動きすぎたかも…'],night:['もうこんな時間か〜','夜ふかししちゃおっかな!']},
+ cool:{greet:['…やあ。','悪くない一日だな。','ふっ、来たのか。','静かな時間も、いいもんだ。'],happy:['…まあ、悪くない。','今日はなかなかいい日だ。'],sad:['…ほっといてくれ。','少し、考えごとをしてる。'],hungry:['…腹が減ったな。'],tired:['少し休みたい。'],night:['夜は落ち着くな。']},
+ yasashii:{greet:['こんにちは〜!','来てくれてうれしいな。','今日はなにする?','お茶でもいれようか?'],happy:['しあわせだな〜。','みんな仲良しでうれしい!'],sad:['ちょっとさみしいな…','元気出さなきゃね…'],hungry:['なにか食べたいな〜'],tired:['ちょっと疲れちゃった…'],night:['今日もおつかれさま。']},
+ mypace:{greet:['ん〜…いい天気〜','雲がおいしそう…','のんびりしよ〜','あ、いたの?'],happy:['るんる〜ん♪','ふふふ〜'],sad:['…むぅ。','なんか、だる〜い'],hungry:['おなか…すいた…'],tired:['ねむねむ…'],night:['よるだね〜']},
+};
+const QUESTIONS=[
+ {q:'ねえ、犬と猫どっちが好き?',a:['犬!','猫!']},
+ {q:'朝ごはんはパン派?ごはん派?',a:['パン派','ごはん派']},
+ {q:'海と山、行くならどっち?',a:['海!','山!']},
+ {q:'今日の服、似合ってるかな?',a:['バッチリ!','うーん…'],bad:1},
+ {q:'もし魔法が使えたら何したい?',a:['空を飛ぶ','時間を止める']},
+ {q:'わたしって、どんな人に見える?',a:['やさしそう','おもしろい']},
+ {q:'夏と冬、どっちが好き?',a:['夏','冬']},
+ {q:'最近、がんばってると思う?',a:['えらいよ!','もう少し!'],bad:1},
+];
+const PLACES=[
+ {id:'apart',name:'アパート',icon:'🏠',x:100,y:62},
+ {id:'park',name:'公園',icon:'🌳',x:222,y:52},
+ {id:'cafe',name:'カフェ',icon:'☕',x:120,y:132},
+ {id:'mall',name:'ショッピングモール',icon:'🛍️',x:212,y:162},
+ {id:'beach',name:'海',icon:'🌴',x:322,y:168},
+ {id:'game',name:'ゲームセンター',icon:'🎳',x:306,y:78},
+];
+const PLC=Object.fromEntries(PLACES.map(p=>[p.id,p]));
+PLC.room={id:'room',name:'部屋',icon:'🏠'};
+const AMB={
+ park:['公園って気持ちいいね!','あ、ハトがいる!','ベンチでひと休み〜','噴水がキラキラしてる!'],
+ cafe:['ここのコーヒー、おいしいんだよ','ケーキも頼んじゃおうかな','このお店、落ち着くね〜'],
+ mall:['新しい服、見に行こうかな','あれもこれもほしい〜!','セールやってるかな?'],
+ beach:['海、きれいだね〜!','波の音、落ち着く…','泳ぎたくなってきた!'],
+ game:['ストライク出すぞ〜!','今日は調子いいかも!','負けないからね!'],
+};
+const POS={0:[],1:[50],2:[34,66],3:[22,50,78],4:[15,38,62,85]};
+
+// ================= state =================
+const KEY='tomodachi-shima-v1';
+const START_T=9*1440+10*60+15;
+let S=null;
+function mkRes(o){
+ return Object.assign({id:'r'+Math.random().toString(36).slice(2,9),name:'なまえ',gender:'m',skin:0,hairStyle:0,hairColor:0,pers:'genki',fav:'curry',likes:['burger','ramen'],dislike:'natto',hobbies:['ゲーム','スポーツ'],outfit:'hoodie_gray',hat:null,acc:null,wardrobe:[],sat:55,hunger:30,tired:20,level:1,trouble:null,loc:'room',wall:'#f3e2c4',lastTalk:-1,lvPending:0},o);
+}
+function defState(){
+ const res=[
+  mkRes({name:'まさひろ',gender:'m',skin:0,hairStyle:0,hairColor:1,pers:'genki',fav:'curry',likes:['burger','ramen'],dislike:'natto',hobbies:['ゲーム','スポーツ'],outfit:'hoodie_gray',wall:'#f3e2c4',sat:72}),
+  mkRes({name:'ゆい',gender:'f',skin:0,hairStyle:1,hairColor:1,pers:'yasashii',fav:'cake',likes:['pudding','fruit'],dislike:'steak',hobbies:['料理','おしゃれ'],outfit:'dress_pink',wall:'#fde3ea'}),
+  mkRes({name:'たくみ',gender:'m',skin:1,hairStyle:2,hairColor:3,pers:'cool',fav:'ramen',likes:['sushi','takoyaki'],dislike:'cake',hobbies:['読書','映画'],outfit:'jacket_blue',acc:'glasses',wall:'#dfe9f3'}),
+  mkRes({name:'あやか',gender:'f',skin:1,hairStyle:3,hairColor:0,pers:'mypace',fav:'sushi',likes:['icecream','onigiri'],dislike:'natto',hobbies:['音楽','昼寝'],outfit:'tshirt_yellow',wall:'#fff1c9'}),
+  mkRes({name:'けんた',gender:'m',skin:2,hairStyle:0,hairColor:3,pers:'genki',fav:'steak',likes:['burger','pizza'],dislike:'salad',hobbies:['スポーツ','釣り'],outfit:'tshirt_green',hat:'cap_blue',wall:'#e3f2dc'}),
+  mkRes({name:'みさき',gender:'f',skin:0,hairStyle:4,hairColor:4,pers:'cool',fav:'pudding',likes:['cake','omurice'],dislike:'ramen',hobbies:['絵','ダンス'],outfit:'border',wall:'#e8e2f6'}),
+ ];
+ res.forEach(r=>{r.wardrobe=[r.outfit,r.hat,r.acc].filter(Boolean)});
+ res[2].loc='park';res[3].loc='cafe';res[4].loc='beach';res[5].loc='park';
+ const st={v:1,t:START_T,speed:1,money:2350,weather:'晴れ',res,rel:{},couple:{},
+  inv:{food:{curry:1,burger:2,cake:3,takoyaki:1,gummy:5,fruit:4},fash:{hoodie_white:1,hoodie_red:1,cap_red:1,knit_navy:1,roundglasses:1,crown:1,straw:1},gift:{bear:1,flower:2,letter:1}},
+  album:[],news:[]};
+ const ids=res.map(r=>r.id);
+ [[0,1,55],[0,2,34],[0,3,40],[0,4,62],[1,3,48],[1,5,35],[2,5,40],[3,4,22],[1,2,15],[4,5,8]].forEach(([a,b,v])=>st.rel[RK(ids[a],ids[b])]=v);
+ res[0].trouble={type:'hungry',age:0};
+ return st;
+}
+function load(){try{const j=localStorage.getItem(KEY);if(j){const s=JSON.parse(j);if(s&&s.res){S=s;return true}}}catch(e){}return false}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+const R=id=>S.res.find(r=>r.id===id);
+const nm=id=>{const r=R(id);return r?r.name:'だれか'};
+const RK=(a,b)=>a<b?a+'|'+b:b+'|'+a;
+const idOf=x=>typeof x==='object'?x.id:x;
+function rel(a,b){return S.rel[RK(idOf(a),idOf(b))]||0}
+function coupleOf(a,b){return S.couple[RK(idOf(a),idOf(b))]}
+function relLabel(a,b){const c=coupleOf(a,b);if(c==='married')return ['夫婦','#e2483e'];if(c==='lover')return ['恋人','#ff6f9f'];const v=rel(a,b);return v>=80?['親友','#f5a300']:v>=50?['仲良し','#5cbf5c']:v>=20?['友だち','#4f95d6']:v>0?['知り合い','#9aa3b2']:['まだ話したことない','#c3c8d1']}
+function relAdd(a,b,d){a=idOf(a);b=idOf(b);if(a===b)return;const k=RK(a,b),o=S.rel[k]||0,n=clamp(o+d,0,100);S.rel[k]=n;const A=R(a),B=R(b);if(!A||!B)return;[[20,'友だち'],[50,'仲良し'],[80,'親友']].forEach(([th,l])=>{if(o<th&&n>=th&&!S.couple[k])news(`${A.name}と${B.name}が${l}になった!`)})}
+function partnerOf(r){for(const k in S.couple){const [a,b]=k.split('|');if(a===r.id)return R(b);if(b===r.id)return R(a)}return null}
+function bestFriend(r){let best=null,bv=0;S.res.forEach(x=>{if(x.id!==r.id&&rel(r,x)>bv){bv=rel(r,x);best=x}});return best}
+function news(text){S.news.unshift({d:Math.floor(S.t/1440),text});if(S.news.length>40)S.news.length=40;toast(text)}
+
+// ================= time =================
+const hourAbs=()=>Math.floor(S.t/60);
+const hour=()=>hourAbs()%24;
+const sleepHour=h=>h>=23||h<7;
+const isNight=h=>h>=19||h<5;
+const asleep=r=>sleepHour(hour())&&r.loc==='room';
+function dateStr(d){const dt=new Date(2026,3,1+(d??Math.floor(S.t/1440)));return `${dt.getMonth()+1}月${dt.getDate()}日 (${'日月火水木金土'[dt.getDay()]})`}
+function timeStr(){const m=S.t%1440,h=Math.floor(m/60),mi=m%60;return `${h<12?'AM':'PM'} ${(h%12)||12}:${String(mi).padStart(2,'0')}`}
+function wIcon(){const h=hour();if(S.weather==='雨')return '☔';if(S.weather==='くもり')return '⛅';return isNight(h)?'🌙':'☀️'}
+function updHud(){$('#hd').textContent=dateStr()+' '+wIcon();$('#ht').textContent=timeStr();$('#hm').textContent=S.money.toLocaleString()}
+
+function tick(){
+ if(document.hidden)return;
+ const oh=hourAbs();S.t+=S.speed;const nh=hourAbs();
+ for(let h=oh+1;h<=nh;h++)hourly(h%24);
+ updHud();
+}
+function hourly(h){
+ if(h===7)daily();
+ S.res.forEach(r=>{
+  const sl=sleepHour(h);
+  if(sl){r.tired=clamp(r.tired-14,0,100);r.hunger=clamp(r.hunger+1,0,100)}
+  else{r.tired=clamp(r.tired+3,0,100);r.hunger=clamp(r.hunger+5,0,100)}
+  if(r.hunger>75)r.sat=clamp(r.sat-2,0,99);
+  if(r.trouble){r.trouble.age=(r.trouble.age||0)+1;if(r.trouble.age>12){news(`${r.name}の悩みは、いつの間にか消えたみたい…`);r.trouble=null;r.sat=clamp(r.sat-5,0,99)}}
+  else if(!sl&&Math.random()<0.15)genTrouble(r);
+  if(sl||r.trouble)r.loc='room';
+  else{
+   let p=pick(['room','room','park','cafe','mall','beach','game']);
+   if(S.weather==='雨'&&(p==='beach'||p==='park')&&Math.random()<.7)p='room';
+   if(h>=20&&p!=='room'&&Math.random()<.5)p='room';
+   r.loc=p;
+  }
+ });
+ PLACES.forEach(p=>{const here=S.res.filter(r=>r.loc===p.id);for(let i=0;i<here.length;i++)for(let j=i+1;j<here.length;j++){relAdd(here[i],here[j],1+rnd(3))}});
+ save();
+ refresh();
+}
+function daily(){
+ S.weather=pick(['晴れ','晴れ','晴れ','くもり','雨']);
+ const rent=100*S.res.length;S.money+=rent;
+ news(`${dateStr()} 朝になった!住人たちから家賃 ${rent}円`);
+}
+function refresh(){
+ updHud();
+ if(modalOn())return;
+ if(cur==='map')renderMap();else if(cur==='apart')renderApart();else if(cur==='room')renderRoom();else if(cur==='place')renderPlace();
+}
+
+// ================= troubles =================
+const TRB={
+ hungry:{icon:'🍙',text:()=>'おなかすいたな〜。なにか食べたい!'},
+ wantFood:{icon:'🍽️',text:(r,t)=>`${FD[t.food].name}が食べたいな〜!`},
+ wantFashion:{icon:'👕',text:(r,t)=>({clothes:'新しい服がほしいな…',hat:'新しい帽子がほしいな…',acc:'なにか小物がほしいな…'})[t.ftype]},
+ gift:{icon:'🎁',text:()=>'なにかプレゼントがほしいな〜'},
+ sing:{icon:'🎵',text:()=>'歌を歌いたい気分!聞いてくれる?'},
+ play:{icon:'🎳',text:()=>'みんなでボウリングしたい!'},
+ wantFriend:{icon:'🤝',text:(r,t)=>`${nm(t.target)}と友だちになりたいな…`},
+ confess:{icon:'💗',text:(r,t)=>`実は…${nm(t.target)}のことが好きなんだ。告白しようかな?`},
+ propose:{icon:'💍',text:(r,t)=>`${nm(t.target)}にプロポーズしたい!`},
+ fight:{icon:'💢',text:(r,t)=>`${nm(t.target)}とケンカしちゃった…`},
+};
+function genTrouble(r){
+ const o=[],others=S.res.filter(x=>x.id!==r.id);
+ const add=(w,t)=>{for(let i=0;i<w;i++)o.push(t)};
+ if(r.hunger>55)add(5,{type:'hungry'});
+ add(2,{type:'wantFood',food:Math.random()<.6?pick([r.fav,...r.likes]):pick(FOODS).id});
+ add(2,{type:'wantFashion',ftype:pick(['clothes','clothes','hat','acc'])});
+ add(1,{type:'gift'});add(2,{type:'sing'});
+ if(others.length)add(1,{type:'play'});
+ const strangers=others.filter(x=>rel(r,x)<20);if(strangers.length)add(2,{type:'wantFriend',target:pick(strangers).id});
+ const p=partnerOf(r);
+ if(!p){const c=others.filter(x=>!partnerOf(x)&&rel(r,x)>=60);if(c.length)add(3,{type:'confess',target:pick(c).id})}
+ else if(coupleOf(r,p)==='lover'&&rel(r,p)>=85)add(3,{type:'propose',target:p.id});
+ const fr=others.filter(x=>rel(r,x)>=25&&!coupleOf(r,x));if(fr.length&&Math.random()<.5)add(1,{type:'fight',target:pick(fr).id});
+ const t=Object.assign({age:0},pick(o));
+ if(t.type==='fight')relAdd(r,t.target,-10);
+ r.trouble=t;r.loc='room';
+}
+function resolveTrouble(r,sat,money){
+ r.trouble=null;addSat(r,sat);S.money+=money;
+ toast(`✨ ${r.name}の悩みを解決! お礼に ${money}円もらった`);
+}
+function addSat(r,d){r.sat+=d;while(r.sat>=100){r.sat-=80;r.level++;r.lvPending=(r.lvPending||0)+1}r.sat=clamp(r.sat,0,99)}
+function checkLevel(){
+ if(modalOn()||cur==='event'||cur==='bowl')return;
+ const r=S.res.find(x=>x.lvPending>0);if(!r)return;
+ r.lvPending--;save();
+ const money=500+r.level*100;
+ const give=(fn)=>()=>{fn();save();updHud();closeModal();setTimeout(checkLevel,300)};
+ const opts=[
+  ['💰',`お金 ${money}円`,give(()=>{S.money+=money;toast(`${money}円もらった!`)})],
+  ['👕','服やアクセサリー',give(()=>{const f=pick(FASHION.filter(x=>x.price<3500));S.inv.fash[f.id]=(S.inv.fash[f.id]||0)+1;toast(`${f.name}をもらった!`)})],
+  ['🍱','食べ物セット',give(()=>{const got=[];for(let i=0;i<4;i++){const f=pick(FOODS);S.inv.food[f.id]=(S.inv.food[f.id]||0)+1;got.push(f.icon)}toast(`食べ物 ${got.join('')} をもらった!`)})],
+  ['🎁','プレゼント',give(()=>{const g=pick(GIFTS.filter(x=>x.tag));S.inv.gift[g.id]=(S.inv.gift[g.id]||0)+1;toast(`${g.name}をもらった!`)})],
+ ];
+ modal('🎉 レベルアップ!',`<div class="qface"><div class="ava">${faceSVG(r,'happy')}</div><div class="q">${esc(r.name)}がレベル${r.level}になった!<br>お礼になにかあげたいって。どれにする?</div></div>`+opts.map(([i,l,f])=>`<button class="mb" onclick="${cb(f)}"><span class="e">${i}</span>${l}</button>`).join(''),'',{noX:true,w:420});
+}
+
+// ================= drawing: characters =================
+function hairG(r){
+ const c=HAIRC[r.hairColor]||HAIRC[0],d=shade(c,-.25);
+ switch(r.hairStyle){
+  case 1:return [`<path d="M17,52 C15,20 85,20 83,52 L85,90 Q76,95 69,86 L31,86 Q24,95 15,90Z" fill="${c}"/>`,`<path d="M19,57 C15,24 34,15 50,15 C66,15 85,24 81,57 C79,45 73,37 64,35 Q50,46 33,35 C27,39 21,46 19,57Z" fill="${c}"/>`];
+  case 2:return ['',`<path d="M19,57 L13,38 L25,35 L22,19 L37,25 L43,9 L53,22 L63,9 L68,25 L81,19 L78,35 L88,40 L81,57 C77,44 68,39 59,40 Q46,45 36,39 C28,43 22,49 19,57Z" fill="${c}"/>`];
+  case 3:return [`<path d="M16,50 C14,18 86,18 84,50 L88,112 Q70,120 60,112 L40,112 Q30,120 12,112Z" fill="${c}"/>`,`<path d="M19,60 C15,24 34,15 50,15 C66,15 85,24 81,60 C79,42 68,32 53,30 Q51,40 48,30 C33,32 22,42 19,60Z" fill="${c}"/>`];
+  case 4:return [`<circle cx="50" cy="19" r="12" fill="${c}"/><path d="M41,15 Q50,10 59,15" stroke="${d}" stroke-width="1.5" fill="none"/>`,`<path d="M19,57 C15,24 34,16 50,16 C66,16 85,24 81,57 C79,45 73,38 66,36 Q52,44 38,36 C29,39 22,46 19,57Z" fill="${c}"/>`];
+  default:return ['',`<path d="M19,58 C15,24 34,17 50,17 C67,17 86,23 81,58 C79,46 75,40 70,38 C62,44 47,44 40,38 C32,40 24,46 19,58Z" fill="${c}"/>`];
+ }
+}
+function faceG(expr){
+ const ink='#2b2b35';
+ const blush=o=>`<ellipse cx="31" cy="67" rx="5.5" ry="3.2" fill="#ff7f9a" opacity="${o}"/><ellipse cx="69" cy="67" rx="5.5" ry="3.2" fill="#ff7f9a" opacity="${o}"/>`;
+ const dots=`<ellipse cx="40" cy="58" rx="3.3" ry="4.6" fill="${ink}"/><ellipse cx="60" cy="58" rx="3.3" ry="4.6" fill="${ink}"/><circle cx="41.2" cy="56.3" r="1.3" fill="#fff"/><circle cx="61.2" cy="56.3" r="1.3" fill="#fff"/>`;
+ const st=`stroke="${ink}" stroke-width="2.6" fill="none" stroke-linecap="round"`;
+ const arc=`<path d="M35,60 Q40,53 45,60" ${st}/><path d="M55,60 Q60,53 65,60" ${st}/>`;
+ const heart=cx=>`<path d="M${cx},63 C${cx-9},56 ${cx-5},49 ${cx},54 C${cx+5},49 ${cx+9},56 ${cx},63Z" fill="#ff3d6e"/>`;
+ const open=`<path d="M42,68 Q50,80 58,68Z" fill="#d6455a"/><path d="M46,74 Q50,77.5 54,74Z" fill="#ff9aa8"/>`;
+ switch(expr){
+  case 'happy':return blush(.55)+arc+open;
+  case 'love':return blush(.8)+heart(40)+heart(60)+open;
+  case 'sad':return blush(.2)+dots+`<path d="M34,50 L44,47" ${st}/><path d="M66,50 L56,47" ${st}/><path d="M44,74 Q50,69 56,74" ${st}/>`;
+  case 'angry':return dots+`<path d="M34,47 L45,52" ${st}/><path d="M66,47 L55,52" ${st}/><path d="M43,74 Q50,70 57,74" ${st}/><path d="M72,36 l4,4 m0,-4 l-4,4 M70,38 h8 M74,34 v8" stroke="#e2483e" stroke-width="2.2"/>`;
+  case 'surprise':return blush(.3)+`<circle cx="40" cy="58" r="4.4" fill="${ink}"/><circle cx="60" cy="58" r="4.4" fill="${ink}"/><circle cx="41.5" cy="56.5" r="1.4" fill="#fff"/><circle cx="61.5" cy="56.5" r="1.4" fill="#fff"/><ellipse cx="50" cy="72" rx="3.4" ry="4.4" fill="#d6455a"/>`;
+  case 'sleep':return blush(.35)+`<path d="M35,59 Q40,63 45,59" ${st}/><path d="M55,59 Q60,63 65,59" ${st}/><ellipse cx="50" cy="72" rx="2" ry="2.5" fill="#d6455a"/>`;
+  case 'shy':return blush(1)+dots+`<path d="M45,71 Q50,74 55,71" ${st}/>`;
+  case 'eat':return blush(.5)+arc+`<ellipse cx="50" cy="72" rx="5" ry="4.2" fill="#d6455a"/>`;
+  default:return blush(.3)+dots+`<path d="M44,70 Q50,75.5 56,70" ${st} stroke-width="2.2"/>`;
+ }
+}
+function bodyG(f,skin,pose,gender,noLegs){
+ const col=f.color,dk=shade(col,-.2);const dress=f.style==='dress';let s='';
+ const pants=gender==='f'?'#3d4b7c':'#2e3652';
+ if(!noLegs){
+  if(dress)s+=`<rect x="40" y="116" width="7" height="24" rx="3" fill="${skin}"/><rect x="53" y="116" width="7" height="24" rx="3" fill="${skin}"/>`;
+  else s+=`<rect x="37" y="107" width="11" height="32" rx="3" fill="${pants}"/><rect x="52" y="107" width="11" height="32" rx="3" fill="${pants}"/>`;
+  s+=`<ellipse cx="42" cy="141" rx="7.5" ry="4" fill="#5b3b2b"/><ellipse cx="58" cy="141" rx="7.5" ry="4" fill="#5b3b2b"/>`;
+ }
+ const short=['tshirt','aloha','dress'].includes(f.style);
+ const arm=(x1,y1,x2,y2)=>short?`<path d="M${x1},${y1} L${x2},${y2}" stroke="${skin}" stroke-width="7" stroke-linecap="round"/><path d="M${x1},${y1} L${x1+(x2-x1)*.35},${y1+(y2-y1)*.35}" stroke="${col}" stroke-width="10" stroke-linecap="round"/><circle cx="${x2}" cy="${y2+2}" r="4.6" fill="${skin}"/>`:`<path d="M${x1},${y1} L${x2},${y2}" stroke="${col}" stroke-width="9" stroke-linecap="round"/><path d="M${x1},${y1} L${x2},${y2}" stroke="${dk}" stroke-width="9" stroke-linecap="round" opacity=".15"/><circle cx="${x2}" cy="${y2+2}" r="4.6" fill="${skin}"/>`;
+ if(pose==='cheer')s+=arm(36,92,22,68)+arm(64,92,78,68);
+ else s+=arm(36,92,28,113)+arm(64,92,72,113);
+ if(dress)s+=`<path d="M36,87 Q50,83 64,87 L73,124 Q50,131 27,124Z" fill="${col}" stroke="${dk}" stroke-width=".8"/><path d="M29,120 Q50,127 71,120" stroke="${dk}" stroke-width="2" fill="none"/>`;
+ else s+=`<path d="M34,89 Q50,83 66,89 L67,113 Q50,117 33,113Z" fill="${col}" stroke="${dk}" stroke-width=".8"/>`;
+ switch(f.style){
+  case 'hoodie':s+=`<path d="M37,88 Q50,99 63,88" stroke="${dk}" stroke-width="4" fill="none" stroke-linecap="round"/><line x1="46" y1="93" x2="45.5" y2="102" stroke="${dk}" stroke-width="1.4"/><line x1="54" y1="93" x2="54.5" y2="102" stroke="${dk}" stroke-width="1.4"/><path d="M40,104 Q50,101 60,104 L61,111 L39,111Z" fill="${dk}" opacity=".3"/>`;break;
+  case 'jacket':s+=`<path d="M43,86 L50,104 L57,86Z" fill="#fff"/><line x1="50" y1="104" x2="50" y2="115" stroke="${dk}" stroke-width="1.5"/><path d="M43,86 L48,99 M57,86 L52,99" stroke="${dk}" stroke-width="2"/><circle cx="52" cy="108" r="1.2" fill="#ffd54a"/>`;break;
+  case 'border':[93,99,105,111].forEach(y=>s+=`<path d="M34.5,${y} L66.5,${y}" stroke="#fff" stroke-width="2.6"/>`);break;
+  case 'tshirt':s+=`<path d="M44,86 Q50,91 56,86" stroke="${dk}" stroke-width="2" fill="none"/>`;break;
+  case 'aloha':s+=`<path d="M43,86 L50,95 L57,86" stroke="#fff" stroke-width="2" fill="none"/>`+[[40,98],[58,96],[47,108],[60,108],[38,109]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="2.6" fill="#fff"/><circle cx="${x}" cy="${y}" r="1" fill="#ffd54a"/>`).join('');break;
+  case 'suit':s+=`<path d="M44,86 L50,100 L56,86Z" fill="#fff"/><path d="M48.5,90 L51.5,90 L52.5,104 L50,107 L47.5,104Z" fill="#d23c3c"/><path d="M44,86 L49,102 M56,86 L51,102" stroke="${shade(col,.3)}" stroke-width="1.6"/>`;break;
+  case 'dress':s+=`<path d="M43,86 Q50,92 57,86" stroke="#fff" stroke-width="2.5" fill="none"/>`;break;
+ }
+ return s;
+}
+function hatG(f){
+ if(!f)return '';const c=f.color,dk=shade(c,-.2);
+ switch(f.style){
+  case 'cap':return `<path d="M19,46 C19,14 81,14 81,46Z" fill="${c}"/><path d="M19,46 Q50,40 81,46 Q94,47 96,53 Q60,48 19,49Z" fill="${dk}"/><circle cx="50" cy="19" r="2.5" fill="${dk}"/>`;
+  case 'knit':return `<path d="M18,46 C18,8 82,8 82,46Z" fill="${c}"/><rect x="16" y="38" width="68" height="11" rx="5" fill="${dk}"/><circle cx="50" cy="11" r="7" fill="#fff"/>`;
+  case 'straw':return `<ellipse cx="50" cy="36" rx="45" ry="9" fill="${c}" stroke="${dk}" stroke-width="1"/><path d="M26,36 C26,11 74,11 74,36Z" fill="${shade(c,.1)}"/><path d="M26,31 L74,31 L74,36 Q50,39 26,36Z" fill="#e2483e"/>`;
+  case 'ribbon':return `<g transform="translate(70,27) rotate(18)"><path d="M0,0 L-13,-9 L-13,9Z" fill="${c}"/><path d="M0,0 L13,-9 L13,9Z" fill="${c}"/><circle r="3.8" fill="${dk}"/></g>`;
+  case 'crown':return `<path d="M30,30 L28,10 L39,20 L50,5 L61,20 L72,10 L70,30Z" fill="${c}" stroke="#d99a00" stroke-width="1.5"/><circle cx="50" cy="22" r="3" fill="#e2483e"/><circle cx="38" cy="25" r="2" fill="#4c8fd0"/><circle cx="62" cy="25" r="2" fill="#4c8fd0"/>`;
+ }
+ return '';
+}
+function accG(f){
+ if(!f)return '';const c=f.color;
+ switch(f.style){
+  case 'glasses':return `<g fill="none" stroke="${c}" stroke-width="2"><rect x="32" y="52" width="16" height="12" rx="3"/><rect x="52" y="52" width="16" height="12" rx="3"/><path d="M48,57 L52,57 M32,56 L22,54 M68,56 L78,54"/></g>`;
+  case 'round':return `<g fill="rgba(255,255,255,.15)" stroke="${c}" stroke-width="2"><circle cx="40" cy="58" r="7.5"/><circle cx="60" cy="58" r="7.5"/><path d="M47.5,57 Q50,55 52.5,57 M32.5,57 L22,54 M67.5,57 L78,54" fill="none"/></g>`;
+  case 'sun':return `<rect x="31" y="52" width="17" height="11" rx="4" fill="${c}"/><rect x="52" y="52" width="17" height="11" rx="4" fill="${c}"/><path d="M48,56 L52,56 M31,56 L22,54 M69,56 L78,54" stroke="${c}" stroke-width="2"/><path d="M34,55 L38,55" stroke="#fff" stroke-width="1.2" opacity=".6"/>`;
+  case 'phones':return `<path d="M17,56 C15,12 85,12 83,56" stroke="${c}" stroke-width="4.5" fill="none"/><rect x="12" y="49" width="11" height="17" rx="4" fill="${c}"/><rect x="77" y="49" width="11" height="17" rx="4" fill="${c}"/>`;
+ }
+ return '';
+}
+function miiG(r,o={}){
+ const expr=o.expr||'normal',pose=o.pose||'normal';
+ const skin=SKINS[r.skin]||SKINS[0];
+ const f=FASH[r.outfit]||FASH.hoodie_gray;
+ const [hb,hf]=hairG(r);
+ let s=`<ellipse cx="50" cy="146" rx="23" ry="4" fill="rgba(0,0,0,.18)"/>`;
+ s+=hb;
+ s+=bodyG(f,skin,pose,r.gender);
+ s+=`<circle cx="21" cy="59" r="6" fill="${skin}"/><circle cx="79" cy="59" r="6" fill="${skin}"/><circle cx="50" cy="55" r="30" fill="${skin}"/>`;
+ s+=faceG(expr);
+ s+=hf;
+ s+=hatG(FASH[r.hat]);
+ s+=accG(FASH[r.acc]);
+ return s;
+}
+const faceSVG=(r,expr)=>`<svg viewBox="14 12 72 72">${miiG(r,{expr:expr||'normal'})}</svg>`;
+const bodySVG=(r,o)=>`<svg viewBox="0 0 100 150">${miiG(r,o||{})}</svg>`;
+function itemSVG(f){
+ if(f.type==='clothes')return `<svg viewBox="16 80 68 52">${bodyG(f,'#f1d3b5','normal','m',true)}</svg>`;
+ if(f.type==='hat')return `<svg viewBox="2 0 96 58"><circle cx="50" cy="55" r="30" fill="#eef2f6"/>${hatG(f)}</svg>`;
+ return `<svg viewBox="10 36 80 40"><circle cx="50" cy="55" r="30" fill="#eef2f6"/>${accG(f)}</svg>`;
+}
+const appOf=r=>({name:r.name,gender:r.gender,skin:r.skin,hairStyle:r.hairStyle,hairColor:r.hairColor,outfit:r.outfit,hat:r.hat,acc:r.acc});
+function exprOf(r){
+ if(asleep(r))return 'sleep';
+ if(r.trouble)return r.trouble.type==='fight'?'angry':(r.trouble.type==='confess'||r.trouble.type==='propose')?'shy':r.trouble.type==='sing'||r.trouble.type==='play'?'happy':'sad';
+ if(r.hunger>75||r.sat<35)return 'sad';
+ if(r.sat>=70)return 'happy';
+ return 'normal';
+}
+function moodOf(r){
+ if(asleep(r))return ['すやすや','😴'];
+ if(r.trouble)return ['なやみ中','😟'];
+ if(r.hunger>75)return ['はらぺこ','😵'];
+ if(r.tired>80)return ['つかれ気味','😪'];
+ if(r.sat>=70)return ['ごきげん','😊'];
+ if(r.sat>=35)return ['ふつう','🙂'];
+ return ['しょんぼり','😢'];
+}
+
+// ================= drawing: backgrounds =================
+function skyG(x,y,w,hh,h){
+ const night=isNight(h),eve=h>=16&&h<19,morn=h>=5&&h<7,rain=S&&S.weather==='雨';
+ let [a,b]=night?['#17214a','#2f437f']:eve?['#ff9a6a','#ffd8a0']:morn?['#9ec3ee','#ffd9bd']:['#5bbcf2','#c9ecff'];
+ if(rain&&!night){a='#8496ad';b='#c3cdd8'}
+ let s=`<rect x="${x}" y="${y}" width="${w}" height="${hh}" fill="${b}"/><rect x="${x}" y="${y}" width="${w}" height="${hh*.62}" fill="${a}" opacity=".5"/><rect x="${x}" y="${y}" width="${w}" height="${hh*.3}" fill="${a}" opacity=".6"/>`;
+ if(night){for(let i=0;i<16;i++)s+=`<circle cx="${x+((i*97+13)%w)}" cy="${y+((i*53+7)%(hh*.7))}" r="${i%3?0.8:1.4}" fill="#fff" opacity=".85"/>`;s+=`<circle cx="${x+w*.82}" cy="${y+hh*.22}" r="${hh*.08}" fill="#fff6c8"/>`}
+ else{s+=`<g fill="#fff" opacity="${rain?.5:.85}"><ellipse cx="${x+w*.2}" cy="${y+hh*.25}" rx="${w*.08}" ry="${hh*.06}"/><ellipse cx="${x+w*.26}" cy="${y+hh*.21}" rx="${w*.06}" ry="${hh*.07}"/><ellipse cx="${x+w*.7}" cy="${y+hh*.35}" rx="${w*.09}" ry="${hh*.05}"/></g>`}
+ return s;
+}
+const tree=(x,y,s=1)=>`<g transform="translate(${x},${y}) scale(${s})"><rect x="-3" y="-4" width="6" height="22" fill="#8a5a33"/><circle cx="0" cy="-14" r="16" fill="#46a046"/><circle cx="-10" cy="-6" r="11" fill="#5cbf5c"/><circle cx="10" cy="-7" r="12" fill="#4fae4f"/><circle cx="2" cy="-22" r="9" fill="#6ccc6c"/></g>`;
+function rainG(){let s='<g stroke="#dfe9f5" stroke-width="1.3" opacity=".7">';for(let i=0;i<40;i++){const x=(i*37)%400,y=(i*61)%250;s+=`<line x1="${x}" y1="${y}" x2="${x-4}" y2="${y+12}"/>`}return s+'</g>'}
+function bgInner(place,h,wall){
+ const night=isNight(h),outdoor=['park','beach','apartbg'].includes(place);
+ let s='';
+ switch(place){
+  case 'room':{
+   const w=wall||'#f3e2c4';
+   s+=`<rect width="400" height="250" fill="${w}"/><rect width="400" height="10" fill="${shade(w,-.1)}"/>`;
+   for(let i=0;i<10;i++)s+=`<rect x="${i*42+10}" y="10" width="2" height="168" fill="${shade(w,-.05)}"/>`;
+   s+=`<rect x="232" y="30" width="146" height="5" fill="#8a5a33" rx="2"/><rect x="250" y="40" width="110" height="88" fill="#fff" rx="3"/>`+skyG(255,45,100,78,h);
+   if(!night)s+=`<path d="M255,110 Q290,95 320,105 Q340,98 355,104 L355,123 L255,123Z" fill="#7cc46a"/>`;
+   s+=`<rect x="303" y="45" width="4" height="78" fill="#fff"/><rect x="255" y="82" width="100" height="4" fill="#fff"/><path d="M238,34 Q252,80 246,136 L238,136Z" fill="#7fbf7f"/><path d="M372,34 Q358,80 364,136 L372,136Z" fill="#7fbf7f"/>`;
+   s+=`<rect x="18" y="58" width="62" height="120" fill="#a8703f" rx="2"/>`;
+   [70,100,130,160].forEach(y=>s+=`<rect x="22" y="${y}" width="54" height="3" fill="#7a4e2a"/>`);
+   [['#e2483e',24],['#4f95d6',31],['#ffd54a',38],['#5cbf5c',45],['#8b6ee6',60],['#ff9d3c',67]].forEach(([c,x],i)=>s+=`<rect x="${x}" y="${(i%2?103:73)+(i>3?30:0)}" width="6" height="${i%2?27:27}" fill="${c}"/>`);
+   s+=`<rect x="95" y="138" width="72" height="40" fill="#b57a45" rx="3"/><rect x="104" y="96" width="54" height="38" fill="#222" rx="3"/><rect x="108" y="100" width="46" height="30" fill="${night?'#2a3d66':'#3a6a9a'}"/><rect x="127" y="134" width="8" height="5" fill="#222"/>`;
+   s+=`<rect y="178" width="400" height="72" fill="#c98a55"/>`;
+   for(let i=0;i<5;i++)s+=`<line x1="0" y1="${190+i*14}" x2="400" y2="${190+i*14}" stroke="#b77a48" stroke-width="1"/>`;
+   s+=`<rect y="175" width="400" height="5" fill="#8a5a33"/><ellipse cx="200" cy="222" rx="120" ry="20" fill="#efdcb8" opacity=".9"/>`;
+   s+=`<rect x="300" y="152" width="96" height="34" rx="8" fill="#e8c9a0"/><rect x="304" y="140" width="88" height="18" rx="8" fill="#f0d7b5"/><rect x="300" y="183" width="96" height="6" fill="#c9a77d"/>`;
+   s+=`<rect x="358" y="128" width="16" height="16" fill="#c96f3b"/><circle cx="366" cy="118" r="14" fill="#5cbf5c"/><circle cx="360" cy="112" r="8" fill="#6ccc6c"/>`;
+   s+=`<line x1="200" y1="0" x2="200" y2="30" stroke="#666" stroke-width="1.5"/><path d="M186,30 L214,30 L208,20 L192,20Z" fill="#ffd28a"/>`;
+   if(night)s+=`<rect width="400" height="250" fill="#14204a" opacity=".22"/><circle cx="200" cy="34" r="22" fill="#fff3b0" opacity=".25"/>`;
+   break;}
+  case 'park':
+   s+=skyG(0,0,400,150,h);
+   s+=`<path d="M0,120 Q80,80 160,115 Q240,85 320,112 Q370,95 400,108 L400,160 L0,160Z" fill="#8fd18a"/>`;
+   s+=tree(30,128,1.1)+tree(110,120,.9)+tree(360,125,1.2)+tree(250,118,.8);
+   s+=`<rect y="148" width="400" height="102" fill="#79c46a"/><path d="M150,250 Q190,190 225,148 L255,148 Q235,200 260,250Z" fill="#ead9a6"/>`;
+   s+=`<ellipse cx="315" cy="168" rx="40" ry="10" fill="#c9d3dc"/><ellipse cx="315" cy="166" rx="34" ry="7" fill="#7cc8f0"/><rect x="311" y="138" width="8" height="28" fill="#c9d3dc"/><path d="M315,138 Q300,128 298,150 M315,138 Q330,128 332,150" stroke="#bfe6fb" stroke-width="3" fill="none"/>`;
+   s+=`<rect x="40" y="186" width="70" height="6" fill="#8a5a33"/><rect x="40" y="174" width="70" height="5" fill="#a8703f"/><rect x="44" y="192" width="4" height="12" fill="#555"/><rect x="102" y="192" width="4" height="12" fill="#555"/>`;
+   s+=`<rect x="134" y="120" width="3" height="60" fill="#444"/><circle cx="135.5" cy="118" r="5" fill="${night?'#fff3a0':'#eee'}"/>`;
+   [[20,220,'#ff7fa8'],[60,236,'#ffd54a'],[350,215,'#ff7fa8'],[380,238,'#fff'],[300,232,'#ffd54a']].forEach(([x,y,c])=>s+=`<circle cx="${x}" cy="${y}" r="3" fill="${c}"/><circle cx="${x+6}" cy="${y+3}" r="2.5" fill="${c}"/>`);
+   break;
+  case 'cafe':
+   s+=`<rect width="400" height="250" fill="#f2d4a8"/><rect y="130" width="400" height="48" fill="#a86a3c"/><rect y="128" width="400" height="4" fill="#7a4a25"/>`;
+   s+=`<rect x="24" y="26" width="130" height="92" fill="#fff" rx="4"/>`+skyG(29,31,120,82,h)+`<rect x="87" y="31" width="4" height="82" fill="#fff"/><path d="M24,26 L154,26 L148,40 L30,40Z" fill="#e2483e"/>`;
+   s+=`<rect x="232" y="104" width="168" height="76" fill="#8a5a33"/><rect x="232" y="98" width="168" height="8" fill="#6b4226"/><rect x="250" y="70" width="34" height="30" fill="#555" rx="3"/><circle cx="267" cy="84" r="5" fill="#999"/><rect x="300" y="40" width="90" height="4" fill="#7a4a25"/>`;
+   [306,322,338,354,370].forEach((x,i)=>s+=`<rect x="${x}" y="${30-(i%2)*2}" width="10" height="${10+(i%2)*2}" fill="${['#fff','#ffd54a','#4f95d6','#ff9cc4','#fff'][i]}" rx="2"/>`);
+   [190,330].forEach(x=>s+=`<line x1="${x}" y1="0" x2="${x}" y2="24" stroke="#555"/><path d="M${x-10},24 L${x+10},24 L${x+6},16 L${x-6},16Z" fill="#ffcf6b"/><circle cx="${x}" cy="27" r="3" fill="#fff6c0"/>`);
+   s+=`<rect y="178" width="400" height="72" fill="#7a4e33"/>`;for(let i=0;i<10;i++)s+=`<rect x="${i*40}" y="${178+(i%2)*36}" width="40" height="36" fill="#6b4226" opacity=".5"/>`;
+   s+=`<ellipse cx="60" cy="200" rx="34" ry="8" fill="#e8c9a0"/><rect x="57" y="200" width="6" height="30" fill="#555"/><text x="50" y="198" font-size="14">☕</text>`;
+   s+=`<text x="100" y="22" font-size="13" font-weight="800" fill="#7a4a25">CAFE ☕ HIDAMARI</text>`;
+   break;
+  case 'mall':
+   s+=`<rect width="400" height="250" fill="#f4f1ea"/><rect width="400" height="22" fill="#e1ddd2"/>`;
+   [[0,'#e2483e','👗'],[136,'#4f95d6','🍰'],[272,'#5cbf5c','🎁']].forEach(([x,c,e])=>{s+=`<rect x="${x+4}" y="40" width="124" height="128" fill="#fff" stroke="#ddd"/><rect x="${x+12}" y="72" width="108" height="96" fill="#cfe8f7"/><path d="M${x+4},40 h124 v18 h-124z" fill="${c}"/>`;for(let i=0;i<8;i++)s+=`<path d="M${x+4+i*15.5},58 a7.75,7.75 0 0,0 15.5,0" fill="${i%2?'#fff':c}"/>`;s+=`<text x="${x+50}" y="54" font-size="14">${e}</text><text x="${x+40}" y="128" font-size="30">${e}</text>`});
+   s+=`<rect y="168" width="400" height="82" fill="#e9e4da"/>`;for(let i=0;i<9;i++)s+=`<line x1="${i*50}" y1="168" x2="${i*50-40}" y2="250" stroke="#d6d0c4"/>`;
+   s+=`<line x1="0" y1="200" x2="400" y2="200" stroke="#d6d0c4"/><rect x="128" y="140" width="10" height="28" fill="#c96f3b"/><circle cx="133" cy="130" r="14" fill="#5cbf5c"/><rect x="264" y="140" width="10" height="28" fill="#c96f3b"/><circle cx="269" cy="130" r="14" fill="#5cbf5c"/>`;
+   break;
+  case 'beach':{
+   s+=skyG(0,0,400,118,h);
+   const sea=night?'#1d3f73':'#2fa4d9';
+   s+=`<rect y="110" width="400" height="58" fill="${sea}"/><rect y="110" width="400" height="10" fill="${shade(sea,.25)}"/>`;
+   for(let i=0;i<8;i++)s+=`<path d="M${i*55+10},${130+(i%3)*10} q8,-4 16,0" stroke="#fff" stroke-width="1.5" fill="none" opacity=".7"/>`;
+   s+=`<path d="M0,160 Q100,150 200,158 Q300,166 400,154 L400,250 L0,250Z" fill="#f2dca0"/><path d="M0,160 Q100,150 200,158 Q300,166 400,154" stroke="#fff" stroke-width="3" fill="none" opacity=".8"/>`;
+   s+=`<path d="M48,240 Q40,180 62,120" stroke="#8a5a33" stroke-width="8" fill="none"/><g fill="#3fa65a"><path d="M62,120 Q30,110 14,130 Q40,118 62,124Z"/><path d="M62,120 Q96,104 112,126 Q88,114 62,124Z"/><path d="M62,120 Q50,92 30,92 Q52,100 60,122Z"/><path d="M62,120 Q80,92 100,96 Q76,102 64,122Z"/></g>`;
+   s+=`<path d="M300,190 L300,240" stroke="#eee" stroke-width="2.5"/><path d="M262,192 Q300,160 338,192Z" fill="#ff5c5c"/><path d="M287,192 Q300,165 313,192Z" fill="#fff"/><rect x="310" y="226" width="44" height="10" fill="#4f95d6" rx="3" transform="rotate(-5 330 230)"/>`;
+   s+=`<text x="360" y="205" font-size="14">🐚</text><text x="150" y="232" font-size="12">⭐</text>`;
+   break;}
+  case 'game':
+   s+=`<rect width="400" height="250" fill="#3a2c5c"/><rect y="0" width="400" height="60" fill="#2a1f45"/>`;
+   s+=`<rect x="20" y="10" width="80" height="40" fill="#111" rx="3"/><rect x="24" y="14" width="72" height="32" fill="#2f6fae"/><text x="34" y="36" font-size="13" fill="#fff" font-weight="800">STRIKE!</text>`;
+   s+=`<rect x="300" y="10" width="80" height="40" fill="#111" rx="3"/><rect x="304" y="14" width="72" height="32" fill="#8b3fd0"/><text x="318" y="36" font-size="13" fill="#fff" font-weight="800">🎳 x 10</text>`;
+   s+=`<path d="M0,58 L400,58" stroke="#ff5ce1" stroke-width="3"/><path d="M0,64 L400,64" stroke="#4fe0ff" stroke-width="2"/>`;
+   [[60,80,0,90],[160,180,130,220],[220,240,250,350],[320,340,380,480]].forEach(([a,b,c,d])=>s+=`<path d="M${a},90 L${b},90 L${d},250 L${c},250Z" fill="#e9c48e"/><path d="M${a},90 L${b},90 L${d},250 L${c},250Z" fill="none" stroke="#c99b5c"/>`);
+   [70,170,230,330].forEach(x=>{for(let i=0;i<4;i++)s+=`<rect x="${x-6+i*4}" y="80" width="2.5" height="8" fill="#fff" rx="1"/>`});
+   s+=`<rect y="88" width="400" height="4" fill="#1a1430"/><rect y="215" width="400" height="35" fill="#2a3d6b" opacity=".85"/>`;
+   break;
+  case 'apartbg':
+   s+=skyG(0,0,400,180,h)+`<path d="M0,150 Q100,120 200,145 Q300,120 400,140 L400,250 L0,250Z" fill="#8fd18a"/><rect y="200" width="400" height="50" fill="#79c46a"/>`+tree(20,190,1)+tree(380,192,1.1);
+   break;
+ }
+ if(outdoor&&S&&S.weather==='雨')s+=rainG();
+ if(night&&place!=='room'&&place!=='game')s+=`<rect width="400" height="250" fill="#0d1840" opacity="${place==='cafe'||place==='mall'?.12:.3}"/>`;
+ return s;
+}
+const bgSVG=(place,h,wall)=>`<svg class="bg" viewBox="0 0 400 250" preserveAspectRatio="xMidYMid slice">${bgInner(place,h,wall)}</svg>`;
+
+// ================= UI helpers =================
+function toast(t){const e=document.createElement('div');e.className='toast';e.textContent=t;$('#toasts').appendChild(e);setTimeout(()=>e.remove(),3300);while($('#toasts').children.length>3)$('#toasts').firstChild.remove()}
+function modal(title,body,foot='',o={}){const m=$('#modal');m.innerHTML=`<div class="panel" style="${o.w?`width:min(${o.w}px,100%)`:''}"><div class="ph"><span>${title}</span>${o.noX?'':`<button class="x" onclick="${cb(o.onX||closeModal)}">✕</button>`}</div><div class="pb">${body}</div>${foot?`<div class="pf">${foot}</div>`:''}</div>`;m.classList.add('on')}
+function closeModal(){const m=$('#modal');m.classList.remove('on');m.innerHTML='';refresh()}
+const modalOn=()=>$('#modal').classList.contains('on');
+function say(text,then){modal('おしらせ',`<div style="font-size:16px;font-weight:700;line-height:1.8">${text}</div>`,`<button class="b" onclick="${cb(()=>{closeModal();then&&then()})}">OK</button>`,{w:420,noX:true})}
+function ask(text,yes){modal('かくにん',`<div style="font-size:16px;font-weight:700;line-height:1.8">${text}</div>`,`<button class="b gray" onclick="${cb(closeModal)}">やめる</button><button class="b red" onclick="${cb(()=>{closeModal();yes()})}">はい</button>`,{w:420})}
+const mb=(e,label,fn)=>`<button class="mb" onclick="${cb(fn)}"><span class="e">${e}</span>${label}</button>`;
+function bubble(text,x,extra=''){return `<div class="bub ${extra}" style="left:${clamp(x,22,78)}%">${text}</div>`}
+function charDiv(r,o={}){return `<div class="mii ${o.size||''} ${o.sel?'sel':''} ${o.jump?'jump':''}" style="left:${o.x}%;animation-delay:-${rnd(26)/10}s" ${o.onclick?`onclick="${o.onclick}"`:''}>${bodySVG(r,{expr:o.expr,pose:o.pose})}</div>`}
+function fxHTML(fx,x){
+ const sets={hearts:['💗','💕','💗'],notes:['🎵','🎶','🎵'],drop:['💧'],sparkle:['✨','⭐','✨'],anger:['💢'],zz:['💤']};
+ const ic=sets[fx]||[];return ic.map((e,i)=>`<div class="fx" style="left:${x-8+i*8}%;bottom:${48+i*6}%;animation-delay:${i*.6}s">${e}</div>`).join('');
+}
+function flash(){const e=document.createElement('div');e.className='flash';$('#app').appendChild(e);setTimeout(()=>e.remove(),700)}
+function narrowView(){return innerWidth<=640||innerWidth<innerHeight}
+
+// ================= screens =================
+let cur='map',curRes=null,curPlace=null,sel=null,retTo={scr:'map'},PL=null,RL=null,EV=null,BW=null;
+function show(n){cur=n;document.querySelectorAll('.screen').forEach(e=>e.classList.toggle('on',e.id==='scr-'+n));$('#nav').style.display=(n==='event'||n==='bowl')?'none':'';$('#hud').style.display=n==='bowl'?'none':''}
+function navMap(){closeModalQuiet();retTo={scr:'map'};show('map');renderMap()}
+function navApart(){closeModalQuiet();retTo={scr:'apart'};show('apart');renderApart()}
+function closeModalQuiet(){const m=$('#modal');m.classList.remove('on');m.innerHTML=''}
+function backTo(){
+ const t=retTo||{scr:'map'};
+ if(t.scr==='room')openRoom(t.id);else if(t.scr==='place')goPlace(t.id,true);else if(t.scr==='apart')navApart();else navMap();
+ save();updHud();setTimeout(checkLevel,300);
+}
+
+// ---- map ----
+function renderMap(){
+ const h=hour(),night=isNight(h),lit=night?'#ffe17a':'#a9d8f5';
+ let s=`<svg viewBox="0 0 400 260" preserveAspectRatio="xMidYMid meet"><defs><radialGradient id="mgsea" cx="50%" cy="50%" r="75%"><stop offset="0" stop-color="#6dd0f2"/><stop offset="1" stop-color="#2c8fcf"/></radialGradient></defs>`;
+ s+=`<rect x="-600" y="-400" width="1600" height="1060" fill="#3fa6dc"/><rect x="-20" y="-20" width="440" height="300" fill="url(#mgsea)"/>`;
+ for(let i=0;i<14;i++)s+=`<path d="M${(i*71)%400},${(i*43)%260} q6,-3 12,0" stroke="#fff" stroke-width="1.2" fill="none" opacity=".55"/>`;
+ s+=`<path d="M-10,30 L20,2 L46,22 L70,-4 L110,28 L-10,28Z" fill="#79b9a6" opacity=".7"/><path d="M330,20 L360,-2 L392,24Z" fill="#79b9a6" opacity=".7"/>`;
+ s+=`<path d="M40,140 C25,80 100,38 200,40 C300,36 385,80 372,145 C362,205 300,238 200,236 C105,240 52,200 40,140Z" fill="#f3dea4"/>`;
+ s+=`<path d="M55,138 C45,88 110,52 200,54 C292,50 362,88 352,140 C348,160 340,170 330,176 C300,180 280,196 262,216 C240,222 222,222 205,220 C120,224 66,190 55,138Z" fill="#86cf6e"/>`;
+ s+=`<path d="M100,108 C150,122 170,112 210,122 S280,142 300,112 M210,122 C200,150 190,165 205,188 M140,160 C170,168 190,175 205,188 S260,192 300,180" stroke="#efe6cc" stroke-width="7" fill="none" stroke-linecap="round"/>`;
+ [[70,120],[80,155],[160,72],[180,140],[250,140],[340,120],[150,200],[110,190],[270,62],[330,90]].forEach(([x,y])=>s+=tree(x,y,.42));
+ // apart
+ s+=`<g transform="translate(100,96)"><rect x="-34" y="-34" width="68" height="44" fill="#f4e2bf" stroke="#d6bf92"/><path d="M-38,-34 L0,-50 L38,-34Z" fill="#e2733a"/>`;for(let r=0;r<2;r++)for(let c=0;c<4;c++)s+=`<rect x="${-28+c*15}" y="${-28+r*16}" width="10" height="10" fill="${lit}" stroke="#fff"/>`;s+=`<rect x="-5" y="0" width="10" height="10" fill="#8a5a33"/></g>`;
+ // park
+ s+=`<g transform="translate(222,84)"><ellipse cx="0" cy="6" rx="34" ry="14" fill="#9be08a"/><ellipse cx="0" cy="6" rx="10" ry="5" fill="#7cc8f0" stroke="#ddd"/><path d="M0,4 Q-6,-6 -8,4 M0,4 Q6,-6 8,4" stroke="#fff" stroke-width="1.5" fill="none"/>${tree(-24,4,.35)}${tree(24,6,.38)}</g>`;
+ // cafe
+ s+=`<g transform="translate(120,160)"><rect x="-20" y="-20" width="40" height="26" fill="#fff6e6" stroke="#d9c49a"/><path d="M-24,-20 L0,-34 L24,-20Z" fill="#a0522d"/><path d="M-20,-14 h40 v5 h-40z" fill="#e2483e"/>`;for(let i=0;i<5;i++)s+=`<rect x="${-20+i*8}" y="-14" width="4" height="5" fill="#fff"/>`;s+=`<rect x="-14" y="-6" width="10" height="9" fill="${lit}"/><rect x="4" y="-6" width="8" height="12" fill="#8a5a33"/></g>`;
+ // mall
+ s+=`<g transform="translate(212,192)"><rect x="-38" y="-24" width="76" height="30" fill="#dfe9f3" stroke="#b9c9db"/><rect x="-38" y="-30" width="76" height="8" fill="#4f95d6"/>`;for(let i=0;i<6;i++)s+=`<rect x="${-34+i*12}" y="-18" width="9" height="14" fill="${lit}" opacity=".9"/>`;s+=`<text x="-12" y="-24" font-size="6" fill="#fff" font-weight="800">MALL</text></g>`;
+ // beach
+ s+=`<g transform="translate(316,198)"><path d="M-18,0 Q-8,-14 2,0Z" fill="#ff5c5c"/><path d="M6,4 Q14,-8 22,4Z" fill="#ffd54a"/><rect x="-24" y="6" width="12" height="4" fill="#4f95d6"/><path d="M30,-4 L52,-4" stroke="#a0754d" stroke-width="4"/>${tree(-30,-8,.32)}</g>`;
+ // game
+ s+=`<g transform="translate(306,108)"><rect x="-26" y="-24" width="52" height="32" fill="#8b6ee6" stroke="#6a4fc0"/><rect x="-26" y="-28" width="52" height="6" fill="#ff5ce1"/><path d="M0,-44 C-4,-40 -4,-36 -2,-33 C-5,-30 -5,-26 0,-26 C5,-26 5,-30 2,-33 C4,-36 4,-40 0,-44Z" fill="#fff" stroke="#e2483e" stroke-width="1"/><rect x="-18" y="-16" width="12" height="10" fill="${lit}"/><rect x="6" y="-16" width="12" height="10" fill="${lit}"/><rect x="-5" y="-4" width="10" height="12" fill="#3a2c5c"/></g>`;
+ // clock tower
+ s+=`<g transform="translate(262,62)"><rect x="-6" y="-26" width="12" height="34" fill="#f4e2bf" stroke="#d6bf92"/><path d="M-8,-26 L0,-38 L8,-26Z" fill="#e2733a"/><circle cx="0" cy="-17" r="4" fill="#fff" stroke="#999"/></g>`;
+ // residents
+ PLACES.forEach(p=>{
+  const here=S.res.filter(r=>p.id==='apart'?r.loc==='room':r.loc===p.id).slice(0,p.id==='apart'?0:3);
+  here.forEach((r,i)=>s+=`<svg x="${p.x-22+i*15}" y="${p.y+12}" width="16" height="24" viewBox="0 0 100 150">${miiG(r,{expr:'happy'})}</svg>`);
+ });
+ if(night)s+=`<rect x="-600" y="-400" width="1600" height="1060" fill="#0d1840" opacity=".32" pointer-events="none"/>`;
+ // labels
+ PLACES.forEach(p=>{
+  const cnt=p.id==='apart'?S.res.filter(r=>r.trouble).length:S.res.filter(r=>r.loc===p.id).length;
+  const w=p.name.length*8+30;
+  s+=`<g class="lbl" onclick="${cb(()=>goPlace(p.id))}"><rect x="${p.x-w/2}" y="${p.y-11}" width="${w}" height="20" rx="10" fill="#fff" stroke="#2f6fae" stroke-width="1.6"/><text x="${p.x-w/2+7}" y="${p.y+4}" font-size="11">${p.icon}</text><text x="${p.x-w/2+22}" y="${p.y+3.5}" font-size="9" font-weight="800" fill="#2b3d5c" font-family="M PLUS Rounded 1c,sans-serif">${p.name}</text>${cnt?`<circle cx="${p.x+w/2-2}" cy="${p.y-10}" r="6" fill="${p.id==='apart'?'#ff8c2b':'#2f6fae'}"/><text x="${p.x+w/2-2}" y="${p.y-7}" font-size="8" fill="#fff" text-anchor="middle" font-weight="800">${p.id==='apart'?'!':cnt}</text>`:''}</g>`;
+ });
+ s+='</svg>';
+ $('#scr-map').innerHTML=s;
+}
+
+// ---- apartment ----
+function renderApart(){
+ const h=hour();
+ let w=S.res.map(r=>{
+  const out=r.loc!=='room',sl=!out&&sleepHour(h);
+  const inner=out?`<div class="st">${PLC[r.loc].icon}<br>${PLC[r.loc].name}へ<br>おでかけ中</div>`:`<div class="face"><svg viewBox="8 12 84 104" preserveAspectRatio="xMidYMax meet">${miiG(r,{expr:exprOf(r)})}</svg></div>${sl?'<div class="zz">Zzz</div>':''}`;
+  const tb=r.trouble&&!out?`<div class="tb">${TRB[r.trouble.type].icon}</div>`:'';
+  return `<div class="win ${out?'out':sl?'sleep':''}" onclick="${cb(()=>openRoom(r.id))}">${inner}${tb}<div class="np">${esc(r.name)}</div></div>`;
+ }).join('');
+ w+=`<div class="win add" onclick="${cb(()=>openCreator())}"><div>+<br><small>住人を追加</small></div><div class="np">空き部屋</div></div>`;
+ $('#scr-apart').innerHTML=`${bgSVG('apartbg',h)}<div class="bld"><div class="roof"><span>🏠 トモダチ荘</span></div><div class="facade">${w}</div></div>`;
+}
+
+// ---- room ----
+function openRoom(id){closeModalQuiet();curRes=id;retTo={scr:'room',id};RL=null;show('room');renderRoom()}
+function greetLine(r){
+ const L=LINES[r.pers]||LINES.genki,h=hour();
+ if(r.hunger>70)return pick(L.hungry);
+ if(r.tired>75)return pick(L.tired);
+ if(r.sat<35)return pick(L.sad);
+ const pool=[...L.greet];
+ if(r.sat>=70)pool.push(...L.happy,...L.happy);
+ if(h>=19)pool.push(...L.night);
+ const bf=bestFriend(r),p=partnerOf(r);
+ if(bf)pool.push(`最近、${bf.name}とよく遊んでるんだ!`);
+ if(p)pool.push(`${p.name}のこと考えてた…えへへ`);
+ pool.push(`${FD[r.fav].name}食べたいな〜`,`${pick(r.hobbies)}って楽しいよね!`);
+ if(S.weather==='雨')pool.push('雨の日はおうちでゴロゴロ〜');
+ return pick(pool);
+}
+function renderRoom(){
+ const r=R(curRes);if(!r){navApart();return}
+ const h=hour(),sl=asleep(r);
+ let html=bgSVG('room',h,r.wall);
+ html+=`<div class="tr"><button class="nbtn sm" onclick="${cb(()=>openProfile(r.id))}">📋 プロフィール</button><button class="nbtn sm" onclick="${cb(navApart)}">🚪 部屋を出る</button></div>`;
+ if(r.loc!=='room'){
+  html+=`<div class="empty">${esc(r.name)}は今、${PLC[r.loc].icon} ${PLC[r.loc].name}に<br>出かけているよ。<br><button class="b" onclick="${cb(()=>goPlace(r.loc))}">会いに行く</button></div>`;
+ }else{
+  html+=charDiv(r,{expr:sl?'sleep':(RL&&RL.expr)||exprOf(r),x:50,onclick:cb(()=>talkTo(r))});
+  if(sl)html+=bubble('すやすや… Zzz',50)+fxHTML('zz',58);
+  else if(r.trouble){const T=TRB[r.trouble.type];html+=`<div class="bub trb" style="left:50%" onclick="${cb(()=>handleTrouble(r))}"><span class="tic">${T.icon}</span>${esc(T.text(r,r.trouble))}<br><span class="go">相談にのる ▶</span></div>`}
+  else{if(!RL)RL={text:greetLine(r)};html+=bubble(esc(RL.text),50)}
+  const ib=(e,l,fn)=>`<button class="ib" onclick="${cb(fn)}"><span class="e">${e}</span>${l}</button>`;
+  html+=`<div class="icol">`+(sl?ib('📷','写真',()=>roomPhoto(r)):ib('🍙','食べ物',()=>openFoodGive(r))+ib('👕','服',()=>openDress(r))+ib('🎁','プレゼント',()=>openGiftGive(r))+ib('💬','話す',()=>talkTo(r))+ib('🎤','歌う',()=>doSing(r))+ib('📷','写真',()=>roomPhoto(r)))+`</div>`;
+ }
+ $('#scr-room').innerHTML=html;
+}
+function roomPhoto(r){flash();addPhoto('room',[r],'住人',`${r.name}の部屋で`,{exprs:[asleep(r)?'sleep':'happy']});toast('📷 写真を撮った!');save()}
+function talkTo(r,inPlace){
+ if(asleep(r)){RL={text:'…むにゃむにゃ…'};renderRoom();return}
+ const hA=hourAbs();
+ if(r.lastTalk!==hA){r.lastTalk=hA;addSat(r,3)}
+ if(Math.random()<.3){
+  const Q=pick(QUESTIONS);
+  modal(`${esc(r.name)}からの質問`,`<div class="qface"><div class="ava">${faceSVG(r,'normal')}</div><div class="q">${esc(Q.q)}</div></div>`+Q.a.map((a,i)=>mb(i?'🅱️':'🅰️',esc(a),()=>{closeModalQuiet();const bad=Q.bad===i;if(!bad)addSat(r,3);const t=bad?pick(['そっか…がんばる…','うう、ショック…']):pick(['だよね!わかってる〜!','へぇ〜、そうなんだ!','なるほど〜!いいね!','やっぱり!気が合うね!']);const ex=bad?'sad':'happy';if(inPlace){PL={id:r.id,text:t};renderPlace()}else{RL={text:t,expr:ex};renderRoom()}save()})).join(''),'',{w:440});
+  return;
+ }
+ const t=greetLine(r);
+ if(inPlace){PL={id:r.id,text:t};renderPlace()}else{RL={text:t,expr:exprOf(r)==='normal'?'happy':undefined};renderRoom()}
+ save();
+}
+
+// ---- trouble handling ----
+function choice(r,q,opts){
+ modal(`${TRB[r.trouble?r.trouble.type:'gift'].icon} ${esc(r.name)}の相談`,`<div class="qface"><div class="ava">${faceSVG(r,exprOf(r))}</div><div class="q">${esc(q)}</div></div>`+opts.map(([e,l,f])=>mb(e,l,f)).join(''),'',{w:440});
+}
+function handleTrouble(r){
+ const t=r.trouble;if(!t)return;
+ if(t.target&&!R(t.target)){r.trouble=null;renderRoom();return}
+ switch(t.type){
+  case 'hungry':case 'wantFood':return openFoodGive(r);
+  case 'wantFashion':return openDress(r,t.ftype);
+  case 'gift':return openGiftGive(r);
+  case 'sing':return doSing(r);
+  case 'play':{
+   const others=shuffle(S.res.filter(x=>x.id!==r.id)).slice(0,2);
+   return startBowling([r.id,...others.map(x=>x.id)]);
+  }
+  case 'wantFriend':return choice(r,`${nm(t.target)}と友だちになりたいな…どうしよう?`,[['💬','話しかけてみたら?',()=>doFriend(r,R(t.target))],['⏳','もう少し様子を見よう',closeModal]]);
+  case 'confess':return choice(r,`${nm(t.target)}に告白したい…!どうやって伝えたらいいかな?`,[['🔥','ストレートに!',()=>doConfess(r,'straight')],['🌅','ロマンチックに!',()=>doConfess(r,'romantic')],['💌',`手紙で伝える ${S.inv.gift.letter?'(ラブレター×'+S.inv.gift.letter+')':'(ラブレターなし)'}`,()=>doConfess(r,'letter')],['✋','やめておこう',()=>{r.trouble=null;addSat(r,-3);closeModal()}]]);
+  case 'propose':return choice(r,`${nm(t.target)}にプロポーズしたい!応援してくれる?`,[['💍','がんばれ!',()=>doPropose(r)],['⏳','まだ早いかも',()=>{r.trouble=null;closeModal()}]]);
+  case 'fight':return choice(r,`${nm(t.target)}とケンカしちゃった…どうしよう?`,[['🙇','あやまってみたら?',()=>doMakeup(r,'sorry')],['🎁','プレゼントで仲直り',()=>doMakeup(r,'gift')],['🌀','そっとしておこう',()=>{relAdd(r,t.target,-6);r.trouble=null;closeModalQuiet();say('…しばらく時間が必要みたい。')}]]);
+ }
+}
+
+// ---- give food ----
+function openFoodGive(r,inPlace){
+ const rows=FOODS.filter(f=>S.inv.food[f.id]>0).map(f=>`<button class="row" onclick="${cb(()=>{closeModalQuiet();giveFood(r,f.id)})}"><span class="ic">${f.icon}</span><span class="n">${f.name}</span><span class="c">${S.inv.food[f.id]}</span></button>`).join('');
+ modal('🍙 食べ物をあげる',rows||'<p style="font-weight:700">食べ物を持っていないよ。<br>ショッピングモールで買ってこよう!</p>',`<button class="b gray" onclick="${cb(closeModal)}">✖ やめる</button>`,{w:420});
+}
+function giveFood(r,fid){
+ S.inv.food[fid]--;if(S.inv.food[fid]<=0)delete S.inv.food[fid];
+ const f=FD[fid],re=r.fav===fid?'fav':r.likes.includes(fid)?'like':r.dislike===fid?'bad':'ok';
+ const t=r.trouble,want=t&&(t.type==='hungry'||t.type==='wantFood'),exact=t&&t.type==='wantFood'&&t.food===fid;
+ r.hunger=clamp(r.hunger-45,0,100);
+ const satD={fav:28,like:16,ok:9,bad:2}[re]+(exact?15:0);
+ const lines=[{who:0,text:'いただきまーす!',expr:'eat'}];
+ if(re==='fav')lines.push({who:0,text:`うまーい!! ${f.name}は大好物なんだ!`,expr:'love',fx:'hearts',pose:'cheer'});
+ else if(re==='like')lines.push({who:0,text:'おいしい!',expr:'happy',fx:'hearts'});
+ else if(re==='bad')lines.push({who:0,text:`うっ…${f.name}はちょっと苦手…`,expr:'sad',fx:'drop'});
+ else lines.push({who:0,text:'うん、まあまあかな。',expr:'normal'});
+ if(exact)lines.push({who:0,text:'ちょうどこれが食べたかったんだ!ありがとう!',expr:'happy',fx:'sparkle'});
+ playScene({place:r.loc==='room'?'room':r.loc,wall:r.wall,cast:[r],lines,prop:f.icon,onEnd:()=>{if(want)resolveTrouble(r,satD,120+rnd(150));else addSat(r,satD);backTo()}});
+}
+// ---- give gift ----
+function openGiftGive(r){
+ const rows=GIFTS.filter(g=>S.inv.gift[g.id]>0).map(g=>`<button class="row" onclick="${cb(()=>{closeModalQuiet();giveGift(r,g.id)})}"><span class="ic">${g.icon}</span><span class="n">${g.name}</span><span class="c">${S.inv.gift[g.id]}</span></button>`).join('');
+ modal('🎁 プレゼントをあげる',rows||'<p style="font-weight:700">プレゼントを持っていないよ。<br>ショッピングモールで買ってこよう!</p>',`<button class="b gray" onclick="${cb(closeModal)}">✖ やめる</button>`,{w:420});
+}
+function useGift(id){S.inv.gift[id]--;if(S.inv.gift[id]<=0)delete S.inv.gift[id]}
+function giveGift(r,gid){
+ useGift(gid);const g=GF[gid];
+ const match=g.tag&&r.hobbies.includes(g.tag),want=r.trouble&&r.trouble.type==='gift';
+ const lines=[{who:0,text:`わぁ、${g.name}!くれるの?`,expr:'surprise'}];
+ let sd;
+ if(gid==='letter'){lines.push({who:0,text:'ラ、ラブレター…!? だれから…!?',expr:'shy',fx:'hearts'});sd=6}
+ else if(match){lines.push({who:0,text:`これ、ずっと欲しかったんだ!${g.tag}大好きなの!`,expr:'love',fx:'hearts',pose:'cheer'});sd=26}
+ else{lines.push({who:0,text:'ありがとう!大事にするね!',expr:'happy',fx:'sparkle'});sd=12}
+ playScene({place:r.loc==='room'?'room':r.loc,wall:r.wall,cast:[r],lines,prop:g.icon,onEnd:()=>{if(want)resolveTrouble(r,sd+8,200);else addSat(r,sd);backTo()}});
+}
+// ---- dress ----
+function openDress(r,tab){
+ tab=tab||'clothes';
+ const T={clothes:'👕 服',hat:'🧢 帽子',acc:'👓 小物'};
+ const worn=tab==='clothes'?r.outfit:tab==='hat'?r.hat:r.acc;
+ const mine=r.wardrobe.filter(id=>FASH[id]&&FASH[id].type===tab);
+ const stash=Object.keys(S.inv.fash).filter(id=>S.inv.fash[id]>0&&FASH[id]&&FASH[id].type===tab);
+ let b=`<div class="tabs">${Object.entries(T).map(([k,l])=>`<button class="tab ${k===tab?'on':''}" onclick="${cb(()=>openDress(r,k))}">${l}</button>`).join('')}</div>`;
+ b+=`<div class="sec">${esc(r.name)}のクローゼット(タップで着がえ)</div><div class="grid">`;
+ if(tab!=='clothes')b+=`<button class="card ${!worn?'sel':''}" onclick="${cb(()=>{wear(r,tab,null);openDress(r,tab)})}"><div class="em">🚫</div>なし</button>`;
+ b+=mine.map(id=>`<button class="card ${worn===id?'sel':''}" onclick="${cb(()=>{wear(r,tab,id);openDress(r,tab)})}">${itemSVG(FASH[id])}${FASH[id].name}</button>`).join('')+'</div>';
+ b+=`<div class="sec">持ち物からあげる</div>`;
+ b+=stash.length?`<div class="grid">${stash.map(id=>`<button class="card" onclick="${cb(()=>{closeModalQuiet();giveFashion(r,id)})}"><span class="cnt">×${S.inv.fash[id]}</span>${itemSVG(FASH[id])}${FASH[id].name}</button>`).join('')}</div>`:`<p style="font-weight:700;color:#7b8194;margin:4px">あげられるものがないよ。ショッピングモールで買ってこよう!</p>`;
+ modal(`👕 ${esc(r.name)}の着がえ`,b,`<button class="b" onclick="${cb(closeModal)}">OK</button>`);
+}
+function wear(r,type,id){if(type==='clothes'){if(id)r.outfit=id}else if(type==='hat')r.hat=id;else r.acc=id;save();if(cur==='room')renderRoom();else if(cur==='place')renderPlace()}
+function giveFashion(r,id){
+ S.inv.fash[id]--;if(S.inv.fash[id]<=0)delete S.inv.fash[id];
+ const f=FASH[id];if(!r.wardrobe.includes(id))r.wardrobe.push(id);
+ const want=r.trouble&&r.trouble.type==='wantFashion'&&r.trouble.ftype===f.type;
+ playScene({place:r.loc==='room'?'room':r.loc,wall:r.wall,cast:[r],lines:[
+  {who:0,text:`わぁ、${f.name}!ありがとう!さっそく着てみるね!`,expr:'happy'},
+  {who:0,text:'じゃーん!どうかな?似合う?',expr:'happy',pose:'cheer',fx:'sparkle',do:()=>wear(r,f.type,id)},
+ ],onEnd:()=>{if(want)resolveTrouble(r,25,200);else addSat(r,10);backTo()}});
+}
+// ---- sing ----
+function makeLyrics(r){
+ const fr=partnerOf(r)||bestFriend(r),f=FD[r.fav].name,h=pick(r.hobbies);
+ const sky={'晴れ':'青い空','くもり':'くもり空','雨':'雨の音'}[S.weather];
+ return [`♪ ${f}が だいすき〜 きょうも いっぱい たべたいな〜`,`♪ ${h}してると しあわせ〜 ${sky}の トモダチ島〜`,fr?`♪ ${fr.name}と いっしょなら どこまでも いけるよ〜`:`♪ いつか ともだち たくさん できるかな〜`];
+}
+function doSing(r){
+ const want=r.trouble&&r.trouble.type==='sing';
+ const lines=[{who:0,text:'それじゃあ、歌うね!',expr:'happy'}];
+ makeLyrics(r).forEach((l,i)=>lines.push({who:0,text:l,expr:i%2?'happy':'eat',fx:'notes',pose:i===2?'cheer':'normal'}));
+ lines.push({who:0,text:'ふぅ〜!聞いてくれてありがとう!',expr:'happy',fx:'sparkle',pose:'normal'});
+ playScene({place:r.loc==='room'?'room':r.loc,wall:r.wall,cast:[r],lines,prop:'🎤',onEnd:()=>{if(want)resolveTrouble(r,22,150);else addSat(r,6);backTo()}});
+}
+// ---- friend / confess / propose / makeup ----
+const me=r=>r.gender==='f'?'わたし':r.pers==='cool'?'オレ':'ぼく';
+function doFriend(r,t){
+ closeModalQuiet();
+ const ch=0.45+rel(r,t)/60+(t.pers==='yasashii'?0.15:0)+(r.hobbies.some(h=>t.hobbies.includes(h))?0.15:0);
+ const ok=Math.random()<ch;
+ playScene({place:'park',cast:[r,t],lines:[
+  {who:-1,text:`${r.name}は勇気を出して${t.name}に話しかけた…`},
+  {who:0,text:'あ、あの…',expr:'shy'},
+  {who:0,text:`${t.name}、よかったら${me(r)}と友だちになってくれない?`,expr:'shy'},
+  {who:1,text:'えっ…',expr:'surprise'},
+  ok?{who:1,text:'もちろん!これからよろしくね!',expr:'happy',fx:'sparkle'}:{who:1,text:'え、えっと…またこんどね!',expr:'normal'},
+  ok?{who:0,text:'やったー!!',expr:'happy',pose:'cheer',oexpr:'happy'}:{who:0,text:'そっか…',expr:'sad'},
+ ],onEnd:()=>{
+  if(ok){S.rel[RK(r.id,t.id)]=Math.max(rel(r,t),30);news(`${r.name}と${t.name}が友だちになった!`);addPhoto('park',[r,t],'イベント',`${r.name}と${t.name}が友だちに!`,{exprs:['happy','happy']});resolveTrouble(r,25,200)}
+  else{relAdd(r,t,4);r.trouble=null;addSat(r,3)}
+  backTo();
+ }});
+}
+function doConfess(r,style){
+ closeModalQuiet();
+ const t=R(r.trouble.target);let useLetter=false;
+ if(style==='letter'&&S.inv.gift.letter>0){useLetter=true;useGift('letter')}
+ let ch=(rel(r,t)-40)/60*.75+.1;const pref=PERS[t.pers].pref;
+ if(pref===style)ch+=.3;else if(!pref)ch+=.12;
+ if(style==='letter'&&!useLetter)ch-=.15;
+ if(partnerOf(t))ch=.03;
+ const ok=Math.random()<clamp(ch,.05,.95);
+ const say1={straight:`${t.name}!ずっと前から好きでした!付き合ってください!`,romantic:`きれいな夕日だね…。この景色みたいに、${t.name}のことがずっと輝いて見えてた。付き合ってほしい!`,letter:useLetter?`これ…${me(r)}の気持ち。読んでほしいんだ。`:`手紙…書けなかった…。えっと、す、好きです!`}[style];
+ const place=style==='romantic'?'beach':'park',hr=style==='romantic'?17:hour();
+ playScene({place,hour:hr,cast:[r,t],prop:style==='letter'&&useLetter?'💌':null,lines:[
+  {who:-1,text:`${r.name}は${t.name}を呼び出した…`},
+  {who:0,text:say1,expr:'shy',fx:'hearts'},
+  {who:1,text:'……!',expr:'surprise',fx:null},
+  ok?{who:1,text:`うれしい…!${me(t)}も好きだったの!`,expr:'love',fx:'hearts'}:{who:1,text:'ごめんなさい…。これからも友だちでいてほしいな。',expr:'sad',fx:null},
+  ok?{who:0,text:'ほ、ほんとに!? やったーー!!',expr:'love',pose:'cheer',fx:'hearts'}:{who:0,text:'そ、そっか…。ありがとう…',expr:'sad',fx:'drop'},
+ ],onEnd:()=>{
+  if(ok){S.couple[RK(r.id,t.id)]='lover';relAdd(r,t,10);news(`💗 ${r.name}と${t.name}が恋人になった!`);addPhoto(place,[r,t],'イベント',`${r.name}と${t.name}が恋人に!`,{exprs:['love','love'],hour:hr});resolveTrouble(r,40,500)}
+  else{relAdd(r,t,-5);r.trouble=null;addSat(r,-10);news(`${r.name}の告白は…残念ながら失敗…`)}
+  backTo();
+ }});
+}
+function doPropose(r){
+ closeModalQuiet();
+ const t=R(r.trouble.target);const ok=Math.random()<clamp(.55+(rel(r,t)-85)/25,.3,.95);
+ playScene({place:'beach',hour:18,cast:[r,t],prop:'💍',lines:[
+  {who:-1,text:`夕暮れの海で、${r.name}は${t.name}と向き合った…`},
+  {who:0,text:`${t.name}…。${me(r)}と、結婚してください!`,expr:'shy',fx:'sparkle'},
+  {who:1,text:'えっ…!',expr:'surprise',fx:null},
+  ok?{who:1,text:'…はい!よろこんで!',expr:'love',fx:'hearts'}:{who:1,text:'ごめん…まだ心の準備ができてないの…',expr:'sad'},
+  ok?{who:0,text:'しあわせにするからね!!',expr:'love',pose:'cheer',oexpr:'love'}:{who:0,text:'そっか…待ってるね。',expr:'sad'},
+ ],onEnd:()=>{
+  if(ok){S.couple[RK(r.id,t.id)]='married';relAdd(r,t,10);news(`💍 ${r.name}と${t.name}が結婚した!おめでとう!`);addPhoto('beach',[r,t],'イベント',`${r.name}と${t.name}の結婚`,{exprs:['love','love'],hour:18});resolveTrouble(r,50,1000)}
+  else{r.trouble=null;addSat(r,-8);relAdd(r,t,-3)}
+  backTo();
+ }});
+}
+function doMakeup(r,way){
+ const t=R(r.trouble.target);let gift=null;
+ if(way==='gift'){
+  const gs=GIFTS.filter(g=>S.inv.gift[g.id]>0&&g.id!=='letter');
+  if(!gs.length){closeModalQuiet();say('プレゼントを持っていないよ。<br>ショッピングモールで買ってこよう!');return}
+  gift=gs.find(g=>t.hobbies.includes(g.tag))||gs[0];useGift(gift.id);
+ }
+ closeModalQuiet();
+ const ok=way==='gift'||Math.random()<.45+rel(r,t)/150;
+ playScene({place:'park',cast:[r,t],prop:gift?gift.icon:null,lines:[
+  {who:1,text:'…ふん。',expr:'angry'},
+  {who:0,text:gift?`${t.name}、これ…この前のおわび。`:`${t.name}…この前はごめんね。`,expr:'shy'},
+  ok?{who:1,text:'…ううん、こっちこそごめん!仲直りしよ!',expr:'happy',fx:'sparkle'}:{who:1,text:'…まだ怒ってるんだからね!',expr:'angry',fx:'anger'},
+  ok?{who:0,text:'よかった〜!',expr:'happy',pose:'cheer'}:{who:0,text:'うう…',expr:'sad',fx:'drop'},
+ ],onEnd:()=>{
+  if(ok){relAdd(r,t,14);news(`${r.name}と${t.name}が仲直りした!`);resolveTrouble(r,25,200)}
+  else relAdd(r,t,-3);
+  backTo();
+ }});
+}
+
+// ================= event scene =================
+function playScene(o){
+ closeModalQuiet();
+ EV=Object.assign({i:-1,ex:o.cast.map(r=>exprOf(r)==='sleep'?'normal':exprOf(r)),po:o.cast.map(()=>'normal'),fx:null,fxWho:0},o);
+ show('event');nextLine();
+}
+function nextLine(){
+ if(!EV)return;
+ EV.i++;
+ if(EV.i>=EV.lines.length){const f=EV.onEnd;EV=null;f&&f();return}
+ const L=EV.lines[EV.i];
+ if(L.who>=0){if(L.expr)EV.ex[L.who]=L.expr;if(L.pose)EV.po[L.who]=L.pose}
+ if(L.oexpr)EV.ex=EV.ex.map((e,i)=>i===L.who?e:L.oexpr);
+ if('fx' in L){EV.fx=L.fx;EV.fxWho=Math.max(0,L.who)}
+ if(L.do)L.do();
+ renderEvent();
+}
+function renderEvent(){
+ const E=EV,n=E.cast.length,xs=POS[n];
+ let html=bgSVG(E.place,E.hour??hour(),E.wall);
+ E.cast.forEach((r,i)=>html+=charDiv(r,{expr:E.ex[i],pose:E.po[i],x:xs[i],size:n>2?'s':n>1?'m':'',jump:E.po[i]==='cheer'}));
+ if(E.prop)html+=`<div class="prop" style="left:${n>1?50:xs[0]+17}%">${E.prop}</div>`;
+ if(E.fx)html+=fxHTML(E.fx,xs[E.fxWho]||50);
+ const L=E.lines[E.i];
+ if(L){if(L.who<0)html+=`<div class="narr">${esc(L.text)}</div>`;else html+=bubble(esc(L.text),xs[L.who])}
+ html+=`<div class="tap">▼ タップ</div>`;
+ const el=$('#scr-event');el.innerHTML=html;el.onclick=nextLine;
+}
+
+// ================= places =================
+function hereAt(id){return S.res.filter(r=>r.loc===id).slice(0,4)}
+function goPlace(id,keep){
+ closeModalQuiet();
+ if(id==='apart'){navApart();return}
+ if(!keep||curPlace!==id){sel=null;PL=null}
+ curPlace=id;retTo={scr:'place',id};show('place');renderPlace();
+}
+function renderPlace(){
+ const id=curPlace,P=PLC[id],here=hereAt(id),h=hour();
+ if(sel&&!here.find(r=>r.id===sel))sel=null;
+ if(PL&&!here.find(r=>r.id===PL.id))PL=null;
+ if(!PL&&here.length){const r=pick(here);PL={id:r.id,text:here.length>1&&Math.random()<.35?`今度、一緒に${pick(['カフェ','海','公園','ボウリング'].filter(x=>x!==P.name))}行かない?`:pick(AMB[id])}}
+ const nv=narrowView(),xs=(POS[here.length]||[]).map(x=>nv?x:6+x*.6);
+ let html=bgSVG(id,h);
+ html+=`<div class="ptag">${P.icon} ${P.name}</div>`;
+ here.forEach((r,i)=>html+=charDiv(r,{expr:sel===r.id?'happy':exprOf(r),x:xs[i],size:here.length>2?'s':'m',sel:sel===r.id,onclick:cb(()=>{sel=sel===r.id?null:r.id;if(sel)PL={id:r.id,text:greetLine(r)};renderPlace()})}));
+ if(PL){const i=here.findIndex(r=>r.id===PL.id);if(i>=0)html+=bubble(esc(PL.text),xs[i])}
+ if(!here.length)html+=`<div class="empty" style="${nv?'':'left:36%'}">今はだれもいないみたい…<br><small>時間がたつと住人がやってくるよ</small></div>`;
+ const r=sel&&R(sel);
+ if(r){
+  html+=`<div class="side"><h3>${esc(r.name)}に…</h3>${mb('💬','話す',()=>talkTo(r,true))}${mb('🎁','プレゼント',()=>openGiveAny(r))}${mb('✊','遊ぶ',()=>janken(r))}${mb('👋','別れる',()=>{sel=null;renderPlace()})}</div>`;
+ }else{
+  const o=[];
+  const need=fn=>()=>here.length?fn():toast('だれもいないみたい…');
+  const need2=fn=>()=>here.length>=2?fn():toast('2人以上いないとできないよ');
+  if(id==='mall')o.push(mb('🛍️','お買い物',()=>openShop()));
+  if(id==='game')o.push(mb('🎳','ボウリング',()=>bowlFromPlace(here)));
+  if(id==='beach')o.push(mb('🌊','海を見に行く',need(()=>seaView(here))));
+  if(id==='cafe')o.push(mb('☕','みんなにおごる (600円)',need(()=>treat(here))));
+  if(id!=='beach')o.push(mb('💬','おしゃべりを見る',need2(()=>watchTalk(here))));
+  o.push(mb('📷','写真を撮る',need(()=>placePhoto(here))));
+  if(id==='park'||id==='beach')o.push(mb(id==='park'?'🏃':'🏐','遊ぶ',need(()=>playOutside(here))));
+  o.push(mb('✖','やめる',navMap));
+  html+=`<div class="side"><h3>何をしようかな?</h3>${o.join('')}</div>`;
+ }
+ $('#scr-place').innerHTML=html;
+}
+function placePhoto(here){flash();addPhoto(curPlace,here,'思い出',`${PLC[curPlace].name}で ${here.map(r=>r.name).join('・')}`,{exprs:here.map(()=>'happy'),pose:here.length>1?'cheer':'normal'});here.forEach(r=>addSat(r,2));toast('📷 写真を撮った!');save()}
+function makeTalk(a,b){
+ const v=rel(a,b),lines=[],common=a.hobbies.filter(h=>b.hobbies.includes(h)),c=coupleOf(a,b);
+ if(v<20)lines.push({who:0,text:`はじめまして!${a.name}だよ。`,expr:'happy'},{who:1,text:`${b.name}です。よろしくね!`,expr:'happy'});
+ else lines.push({who:0,text:pick([`あ、${b.name}!`,`やっほー、${b.name}!`,`${b.name}、元気?`]),expr:'happy'},{who:1,text:pick(['やあ!','元気だよ〜!','おっ、'+a.name+'!']),expr:'happy'});
+ const topics=[];
+ if(common.length){const h=pick(common);topics.push([{who:0,text:`ねえ、${h}って好き?`,expr:'normal'},{who:1,text:`大好き!今度いっしょにやろうよ!`,expr:'happy',fx:'sparkle',oexpr:'happy'}])}
+ else{const h=pick(a.hobbies);topics.push([{who:0,text:`最近${h}にハマってるんだ!`,expr:'happy'},{who:1,text:b.hobbies.length&&Math.random()<.5?`へぇ〜。${me(b)}は${pick(b.hobbies)}かな!`:'へぇ〜、楽しそう!',expr:'normal'}])}
+ const f=FD[a.fav];topics.push([{who:0,text:`${f.name}ってほんとおいしいよね!`,expr:'happy'},b.fav===a.fav?{who:1,text:'わかる!最高だよね!',expr:'love',fx:'hearts'}:b.dislike===a.fav?{who:1,text:'えー、ちょっと苦手かも…',expr:'sad'}:{who:1,text:'うんうん、いいよね〜',expr:'happy'}]);
+ topics.push([{who:0,text:`今度、一緒に${pick(['カフェ','海','公園','ボウリング'])}行かない?`,expr:'happy'},v>=30?{who:1,text:'いいね!行こう行こう!',expr:'happy',pose:'cheer'}:{who:1,text:'う、うん…考えとく!',expr:'normal'}]);
+ const others=S.res.filter(x=>x.id!==a.id&&x.id!==b.id);
+ if(others.length){const o=pick(others);topics.push([{who:0,text:`${o.name}ってさ、おもしろいよね!`,expr:'happy'},{who:1,text:rel(b,o)>=40?'わかる〜!いい人だよね!':`そうなの?あんまり話したことないかも`,expr:rel(b,o)>=40?'happy':'normal'}])}
+ if(c)topics.push([{who:0,text:'ねえ…大好きだよ。',expr:'love',fx:'hearts'},{who:1,text:`${me(b)}も…!`,expr:'love'}]);
+ const sel2=shuffle(topics).slice(0,2);sel2.forEach(t=>lines.push(...t));
+ return lines;
+}
+function watchTalk(here){
+ const [a,b]=shuffle(here);
+ playScene({place:curPlace,cast:[a,b],lines:makeTalk(a,b),onEnd:()=>{relAdd(a,b,4+rnd(4));addSat(a,3);addSat(b,3);backTo()}});
+}
+function seaView(here){
+ const c=here.slice(0,3);
+ playScene({place:'beach',cast:c,lines:[{who:-1,text:'みんなで海をながめた…'},{who:0,text:'わぁ〜…海、きれいだね!',expr:'happy',fx:'sparkle'},...(c[1]?[{who:1,text:'風が気持ちいい〜!',expr:'happy'}]:[]),{who:0,text:'また来ようね!',expr:'happy',oexpr:'happy',pose:'cheer'}],onEnd:()=>{c.forEach(r=>{addSat(r,6);r.tired=clamp(r.tired-10,0,100)});pairUp(c,3);backTo()}});
+}
+function playOutside(here){
+ const c=here.slice(0,3),beach=curPlace==='beach';
+ playScene({place:curPlace,cast:c,lines:[{who:0,text:beach?'ビーチバレーしよう!':'おにごっこしよう!',expr:'happy',pose:'cheer'},...(c[1]?[{who:1,text:beach?'負けないよ〜!':'まてまて〜!',expr:'happy',pose:'cheer',oexpr:'happy'}]:[{who:0,text:'…ひとりでも楽しいもん!',expr:'happy'}]),{who:-1,text:'みんな、たっぷり遊んだ!'},{who:0,text:'はぁ、はぁ…楽しかった〜!',expr:'happy',fx:'sparkle',pose:'normal'}],onEnd:()=>{c.forEach(r=>{addSat(r,8);r.tired=clamp(r.tired+12,0,100);r.hunger=clamp(r.hunger+8,0,100)});pairUp(c,5);backTo()}});
+}
+function treat(here){
+ if(S.money<600){toast('お金が足りないよ…');return}
+ S.money-=600;updHud();const c=here.slice(0,3);
+ playScene({place:'cafe',cast:c,prop:'🍰',lines:[{who:-1,text:'みんなにケーキとコーヒーをごちそうした!'},{who:0,text:'いただきまーす!',expr:'eat',oexpr:'eat'},{who:0,text:'おいしい〜!ありがとう!',expr:'happy',oexpr:'happy',fx:'hearts'}],onEnd:()=>{c.forEach(r=>{addSat(r,10);r.hunger=clamp(r.hunger-25,0,100)});pairUp(c,3);backTo()}});
+}
+function pairUp(c,d){for(let i=0;i<c.length;i++)for(let j=i+1;j<c.length;j++)relAdd(c[i],c[j],d)}
+function openGiveAny(r){
+ modal(`${esc(r.name)}になにをあげる?`,mb('🍙','食べ物',()=>openFoodGive(r))+mb('🎁','プレゼント',()=>openGiftGive(r))+mb('👕','服・小物',()=>openDress(r)),'',{w:380});
+}
+function janken(r,again){
+ const H=['✊','✌️','✋'];
+ modal(`✊ ${esc(r.name)}とじゃんけん`,`<div class="qface"><div class="ava">${faceSVG(r,'happy')}</div><div class="q">${again?'あいこで…!':'じゃんけん…!'}</div></div><div style="display:flex;gap:10px;justify-content:center">${H.map((h,i)=>`<button class="b" style="font-size:36px;padding:8px 16px" onclick="${cb(()=>jk(r,i))}">${h}</button>`).join('')}</div>`,'',{w:400});
+}
+function jk(r,i){
+ const H=['✊','✌️','✋'],c=rnd(3);
+ if(c===i){janken(r,true);return}
+ const win=(c-i+3)%3===1;
+ addSat(r,win?4:7);r.tired=clamp(r.tired+2,0,100);save();
+ modal(`✊ じゃんけん`,`<div style="text-align:center;font-size:44px;margin:6px 0">${H[i]} <small style="font-size:16px">vs</small> ${H[c]}</div><div class="qface"><div class="ava">${faceSVG(r,win?'sad':'happy')}</div><div class="q">${win?'くやしい〜!もう一回!':'やったー!勝った!'}</div></div>`,`<button class="b gray" onclick="${cb(closeModal)}">おわる</button><button class="b" onclick="${cb(()=>janken(r))}">もう一回</button>`,{w:400});
+}
+
+// ================= photos / album =================
+function addPhoto(place,rs,cat,caption,o={}){
+ const p={id:Date.now().toString(36)+rnd(999),place,hour:o.hour??hour(),wall:rs[0]&&rs[0].wall,cat,caption,day:Math.floor(S.t/1440),ids:rs.map(r=>r.id),cast:rs.map((r,i)=>({app:appOf(r),expr:(o.exprs&&o.exprs[i])||'happy',pose:o.pose||'normal'}))};
+ S.album.unshift(p);if(S.album.length>50)S.album.length=50;
+}
+function photoSVG(p,ratio){
+ const n=p.cast.length,xs=POS[n]||POS[4],h=n>2?135:155,w=h*100/150;
+ return `<svg viewBox="0 0 400 250" preserveAspectRatio="xMidYMid slice">${bgInner(p.place,p.hour,p.wall)}${p.cast.map((c,i)=>`<svg x="${xs[i]*4-w/2}" y="${240-h}" width="${w}" height="${h}" viewBox="0 0 100 150">${miiG(c.app,{expr:c.expr,pose:c.pose})}</svg>`).join('')}</svg>`;
+}
+function openAlbum(cat='all',page=0,rid=null){
+ const cats=[['all','すべて'],['住人','住人'],['イベント','イベント'],['思い出','思い出']];
+ let list=S.album.filter(p=>cat==='all'||p.cat===cat);if(rid)list=list.filter(p=>p.ids.includes(rid));
+ const per=8,pages=Math.max(1,Math.ceil(list.length/per));page=clamp(page,0,pages-1);
+ let b=`<div class="tabs">${cats.map(([k,l])=>`<button class="tab ${k===cat?'on':''}" onclick="${cb(()=>openAlbum(k,0,rid))}">${l}</button>`).join('')}</div>`;
+ b+=list.length?`<div class="agrid">${list.slice(page*per,page*per+per).map(p=>`<div class="photo" onclick="${cb(()=>viewPhoto(p,cat,page,rid))}">${photoSVG(p)}<div class="cap">${esc(p.caption)}</div></div>`).join('')}</div>`:`<p style="font-weight:700;color:#7b8194;text-align:center;padding:20px">まだ写真がないよ。<br>📷 写真を撮ったり、イベントが起きると増えていくよ!</p>`;
+ modal(`📷 アルバム${rid?' - '+esc(nm(rid)):''}`,b,`<button class="b gray" ${page<=0?'disabled':''} onclick="${cb(()=>openAlbum(cat,page-1,rid))}">◀</button><span style="font-weight:800;color:#2f6fae">${page+1} / ${pages}ページ ・ ${S.album.length} / 50枚</span><button class="b gray" ${page>=pages-1?'disabled':''} onclick="${cb(()=>openAlbum(cat,page+1,rid))}">▶</button>`,{w:720});
+}
+function viewPhoto(p,cat,page,rid){
+ modal('📷 '+esc(p.caption),`<div class="bigphoto">${photoSVG(p)}</div><p style="font-weight:800;color:#7b8194;margin:8px 2px 0">${dateStr(p.day)} ・ ${PLC[p.place]?PLC[p.place].name:''} ・ ${p.cat}</p>`,`<button class="b red" onclick="${cb(()=>ask('この写真を削除する?',()=>{S.album=S.album.filter(x=>x.id!==p.id);save();openAlbum(cat,page,rid)}))}">🗑 削除</button><button class="b" onclick="${cb(()=>openAlbum(cat,page,rid))}">もどる</button>`,{w:720});
+}
+
+// ================= inventory / shop =================
+const INVT=[['clothes','👕'],['hat','🧢'],['acc','👓'],['gift','🎁'],['food','🍙']];
+function invItems(tab){
+ if(tab==='food')return FOODS.filter(f=>S.inv.food[f.id]>0).map(f=>({id:f.id,name:f.name,icon:f.icon,cnt:S.inv.food[f.id],desc:`お店で${f.price}円。住人にあげるとおなかがふくれるよ。`}));
+ if(tab==='gift')return GIFTS.filter(g=>S.inv.gift[g.id]>0).map(g=>({id:g.id,name:g.name,icon:g.icon,cnt:S.inv.gift[g.id],desc:g.tag?`「${g.tag}」が好きな住人がとっても喜ぶプレゼント。`:'告白するときに使うと、気持ちが伝わりやすいかも…?'}));
+ return Object.keys(S.inv.fash).filter(id=>S.inv.fash[id]>0&&FASH[id].type===tab).map(id=>({id,name:FASH[id].name,svg:itemSVG(FASH[id]),cnt:S.inv.fash[id],desc:FASH[id].desc}));
+}
+function openInv(tab='clothes',selId=null){
+ const items=invItems(tab),s=items.find(x=>x.id===selId)||items[0];
+ let b=`<div class="tabs">${INVT.map(([k,e])=>`<button class="tab ${k===tab?'on':''}" style="font-size:20px" onclick="${cb(()=>openInv(k))}">${e}</button>`).join('')}</div>`;
+ b+=items.length?`<div class="grid">${items.map(x=>`<button class="card ${s&&s.id===x.id?'sel':''}" onclick="${cb(()=>openInv(tab,x.id))}"><span class="cnt">×${x.cnt}</span>${x.svg||`<div class="em">${x.icon}</div>`}${x.name}</button>`).join('')}</div>`:`<p style="font-weight:700;color:#7b8194;text-align:center;padding:16px">なにも持っていないよ。<br>ショッピングモールで買えるよ!</p>`;
+ b+=`<div class="desc">${s?`<b>${s.name}</b>${s.desc}`:'アイテムをえらんでね'}</div><p style="font-size:12px;color:#7b8194;font-weight:700;margin:8px 2px 0">住人の部屋の「食べ物」「服」「プレゼント」からあげられるよ。</p>`;
+ modal('🎒 持ち物',b,'',{w:560});
+}
+function openShop(tab='food'){
+ const T=[['food','🍙 食べ物'],['clothes','👕 服'],['hat','🧢 帽子'],['acc','👓 小物'],['gift','🎁 プレゼント']];
+ let items;
+ if(tab==='food')items=FOODS.map(f=>({id:f.id,name:f.name,html:`<div class="em">${f.icon}</div>`,price:f.price,own:S.inv.food[f.id]||0,kind:'food'}));
+ else if(tab==='gift')items=GIFTS.map(g=>({id:g.id,name:g.name,html:`<div class="em">${g.icon}</div>`,price:g.price,own:S.inv.gift[g.id]||0,kind:'gift'}));
+ else items=FASHION.filter(f=>f.type===tab).map(f=>({id:f.id,name:f.name,html:itemSVG(f),price:f.price,own:S.inv.fash[f.id]||0,kind:'fash'}));
+ let b=`<div class="tabs">${T.map(([k,l])=>`<button class="tab ${k===tab?'on':''}" onclick="${cb(()=>openShop(k))}">${l}</button>`).join('')}</div><div class="grid">`;
+ b+=items.map(x=>`<button class="card" onclick="${cb(()=>buy(x,tab))}">${x.own?`<span class="cnt">×${x.own}</span>`:''}${x.html}${x.name}<br><span class="pr">${x.price}円</span></button>`).join('')+'</div>';
+ modal(`🛍️ ショッピングモール <span style="font-size:14px;opacity:.9">所持金 ${S.money.toLocaleString()}円</span>`,b,`<button class="b" onclick="${cb(closeModal)}">おわる</button>`,{w:640});
+}
+function buy(x,tab){
+ if(S.money<x.price){toast('お金が足りないよ…');return}
+ S.money-=x.price;const bag=x.kind==='food'?S.inv.food:x.kind==='gift'?S.inv.gift:S.inv.fash;bag[x.id]=(bag[x.id]||0)+1;
+ toast(`${x.name}を買った!`);save();updHud();openShop(tab);
+}
+
+// ================= profile =================
+function openProfile(id,tab='prof'){
+ const r=R(id);if(!r)return;
+ const [md,me2]=moodOf(r),P=PERS[r.pers];
+ const T=[['prof','プロフィール'],['pers','性格'],['like','好きなもの'],['rel','関係']];
+ let b=`<div class="tabs">${T.map(([k,l])=>`<button class="tab ${k===tab?'on':''}" onclick="${cb(()=>openProfile(id,k))}">${l}</button>`).join('')}<button class="tab" onclick="${cb(()=>openAlbum('all',0,id))}">アルバム</button></div>`;
+ const others=S.res.filter(x=>x.id!==r.id).sort((a,b)=>rel(r,b)-rel(r,a));
+ if(tab==='prof'){
+  const top=others.filter(x=>rel(r,x)>=20).slice(0,3);
+  const bar=(ic,l,v,c)=>`<div class="stat"><span class="si">${ic}</span><div class="sv">${l}<div class="bar"><i style="width:${v}%;background:${c}"></i></div></div></div>`;
+  b+=`<div class="pgrid"><div class="pbox"><div class="ptop"><div class="ava">${faceSVG(r,exprOf(r))}</div><div><div class="pname">${esc(r.name)} <span style="color:${r.gender==='f'?'#ff6f9f':'#4f95d6'}">${r.gender==='f'?'♀':'♂'}</span></div><div style="font-weight:800;color:#7b8194;font-size:13px">Lv.${r.level} ・ ${P.icon}${P.name}</div></div></div>
+  <div class="lab">現在の気分</div><div class="chip" style="font-size:15px">${me2} ${md}</div>
+  <div class="lab">好み</div><div><span class="chip">${FD[r.fav].icon} ${FD[r.fav].name}</span>${r.hobbies.map(h=>`<span class="chip">${h}</span>`).join('')}</div>
+  <div class="lab">仲良しの住人</div><div class="frs">${top.length?top.map(x=>`<div class="fr"><div class="ava">${faceSVG(x,'happy')}</div>${esc(x.name)}</div>`).join(''):'<span style="font-size:13px;color:#7b8194;font-weight:700">まだいないみたい</span>'}</div></div>
+  <div class="pbox">${bar('😊','満足度',r.sat,'linear-gradient(90deg,#ff6f9f,#ff9cc4)')}${bar('🍗','空腹',r.hunger,'linear-gradient(90deg,#ff9d3c,#ffc36b)')}${bar('💤','疲れ',r.tired,'linear-gradient(90deg,#4f95d6,#8cc1f0)')}
+  <div class="stat"><span class="si">💞</span><div class="sv">パートナー<div style="font-size:15px">${partnerOf(r)?`${esc(partnerOf(r).name)} (${relLabel(r,partnerOf(r))[0]})`:'なし'}</div></div></div>
+  <div class="stat"><span class="si">🪙</span><div class="sv">所持金<div style="font-size:17px;text-align:right">${S.money.toLocaleString()}円</div></div></div></div></div>`;
+ }else if(tab==='pers'){
+  b+=`<div class="pbox" style="text-align:center"><div style="font-size:54px">${P.icon}</div><div style="font-size:22px;font-weight:800;color:${P.color}">${P.name}タイプ</div><p style="font-weight:700;line-height:1.8">${P.desc}</p><div class="lab">口ぐせ</div><div class="chip">「${esc(LINES[r.pers].greet[0])}」</div></div>`;
+ }else if(tab==='like'){
+  b+=`<div class="pbox"><div class="lab">大好物</div><div class="chip" style="font-size:16px">${FD[r.fav].icon} ${FD[r.fav].name}</div><div class="lab">好きな食べ物</div><div>${r.likes.map(f=>`<span class="chip">${FD[f].icon} ${FD[f].name}</span>`).join('')}</div><div class="lab">苦手な食べ物</div><div class="chip">${FD[r.dislike].icon} ${FD[r.dislike].name}</div><div class="lab">趣味</div><div>${r.hobbies.map(h=>`<span class="chip">${h}</span>`).join('')}</div><div class="lab">クローゼット</div><div>${r.wardrobe.filter(i=>FASH[i]).map(i=>`<span class="chip">${FASH[i].name}</span>`).join('')}</div></div>`;
+ }else{
+  b+=others.map(x=>{const [l,c]=relLabel(r,x);return `<div class="relrow"><div class="ava">${faceSVG(x,'normal')}</div><div class="n">${esc(x.name)}<div class="bar"><i style="width:${rel(r,x)}%;background:${c}"></i></div></div><span class="tagl" style="background:${c}">${l}</span></div>`}).join('')||'<p>ほかの住人がいないよ</p>';
+ }
+ modal(`📋 ${esc(r.name)}のプロフィール`,b,`<button class="b gray" onclick="${cb(()=>openCreator(r.id))}">✏️ 編集</button><button class="b gray" onclick="${cb(()=>{r.wall=WALLS[(WALLS.indexOf(r.wall)+1)%WALLS.length];save();renderRoom();toast('壁紙を変えた!')})}">🎨 壁紙</button><button class="b red" onclick="${cb(()=>ask(`${esc(r.name)}を島から送り出す?<br><small>(この操作は取り消せないよ)</small>`,()=>removeRes(r.id)))}">👋 送り出す</button>`,{w:640});
+}
+function removeRes(id){
+ const r=R(id);S.res=S.res.filter(x=>x.id!==id);
+ for(const k of Object.keys(S.rel))if(k.split('|').includes(id))delete S.rel[k];
+ for(const k of Object.keys(S.couple))if(k.split('|').includes(id))delete S.couple[k];
+ S.res.forEach(x=>{if(x.trouble&&x.trouble.target===id)x.trouble=null});
+ news(`${r.name}が島から旅立っていった…またね!`);save();navApart();
+}
+
+// ================= creator =================
+let CR=null;
+function randomRes(){
+ const fav=pick(FOODS).id,rest=shuffle(FOODS.map(f=>f.id).filter(x=>x!==fav));
+ return {name:'',gender:pick(['m','f']),skin:rnd(SKINS.length),hairStyle:rnd(HSTY.length),hairColor:rnd(HAIRC.length),pers:pick(Object.keys(PERS)),fav,likes:rest.slice(0,2),dislike:rest[2],hobbies:shuffle(HOBBIES).slice(0,2),outfit:pick(FASHION.filter(f=>f.type==='clothes'&&f.price<=1400)).id,hat:null,acc:null};
+}
+function openCreator(editId){
+ const base=editId?R(editId):randomRes();
+ CR={editId,d:JSON.parse(JSON.stringify({name:base.name,gender:base.gender,skin:base.skin,hairStyle:base.hairStyle,hairColor:base.hairColor,pers:base.pers,fav:base.fav,likes:base.likes,dislike:base.dislike,hobbies:base.hobbies,outfit:base.outfit,hat:base.hat,acc:base.acc}))};
+ renderCreator();
+}
+function renderCreator(){
+ const c=CR.d,set=(k,v)=>()=>{c[k]=v;renderCreator()};
+ const sw=(arr,k)=>arr.map((col,i)=>`<button class="sw ${c[k]===i?'on':''}" style="background:${col}" onclick="${cb(set(k,i))}"></button>`).join('');
+ const opt=(label,k,v)=>`<button class="opt ${c[k]===v?'on':''}" onclick="${cb(set(k,v))}">${label}</button>`;
+ const clothes=CR.editId?R(CR.editId).wardrobe.filter(i=>FASH[i]&&FASH[i].type==='clothes'):FASHION.filter(f=>f.type==='clothes'&&f.price<=1400).map(f=>f.id);
+ const foodSel=(k)=>`<select class="sel" onchange="${cb(e=>{c[k]=e.target.value;renderCreator()})}">${FOODS.map(f=>`<option value="${f.id}" ${c[k]===f.id?'selected':''}>${f.icon} ${f.name}</option>`).join('')}</select>`;
+ const likeSel=(i)=>`<select class="sel" onchange="${cb(e=>{c.likes[i]=e.target.value;renderCreator()})}">${FOODS.map(f=>`<option value="${f.id}" ${c.likes[i]===f.id?'selected':''}>${f.icon} ${f.name}</option>`).join('')}</select>`;
+ const hob=HOBBIES.map(h=>`<button class="opt ${c.hobbies.includes(h)?'on':''}" onclick="${cb(()=>{if(c.hobbies.includes(h))c.hobbies=c.hobbies.filter(x=>x!==h);else{c.hobbies.push(h);if(c.hobbies.length>2)c.hobbies.shift()}renderCreator()})}">${h}</button>`).join('');
+ const b=`<div class="crw"><div class="crprev">${bodySVG(c,{expr:'happy'})}</div><div>
+  <div class="fl">なまえ (8文字まで)</div><input class="inp" id="crname" maxlength="8" value="${esc(c.name)}" placeholder="なまえを入れてね" oninput="CR.d.name=this.value">
+  <div class="fl">性別</div>${opt('♂ 男の子','gender','m')}${opt('♀ 女の子','gender','f')}
+  <div class="fl">はだの色</div>${sw(SKINS,'skin')}
+  <div class="fl">髪型</div>${HSTY.map((h,i)=>opt(h,'hairStyle',i)).join('')}
+  <div class="fl">髪の色</div>${sw(HAIRC,'hairColor')}
+  <div class="fl">服</div>${clothes.map(id=>opt(FASH[id].name,'outfit',id)).join('')}
+  <div class="fl">性格</div>${Object.entries(PERS).map(([k,p])=>opt(p.icon+' '+p.name,'pers',k)).join('')}
+  <div class="fl">大好物 / 好きな食べ物 / 苦手</div><div style="display:flex;gap:4px;flex-wrap:wrap">${foodSel('fav')}${likeSel(0)}${likeSel(1)}${foodSel('dislike')}</div>
+  <div class="fl">趣味 (2つまで)</div>${hob}
+ </div></div>`;
+ modal(CR.editId?'✏️ 住人を編集':'✨ 新しい住人をつくる',b,`${CR.editId?'':`<button class="b gray" onclick="${cb(()=>{const n=CR.d.name;CR.d=randomRes();CR.d.name=n;renderCreator()})}">🎲 おまかせ</button>`}<button class="b gray" onclick="${cb(closeModal)}">やめる</button><button class="b blue" onclick="${cb(finishCreator)}">決定!</button>`,{w:760});
+}
+function finishCreator(){
+ const c=CR.d;c.name=(c.name||'').trim();
+ if(!c.name){toast('なまえを入れてね!');const i=$('#crname');i&&i.focus();return}
+ if(!c.hobbies.length)c.hobbies=[pick(HOBBIES)];
+ if(CR.editId){const r=R(CR.editId);Object.assign(r,c);closeModalQuiet();save();toast('住人の情報を更新した!');refresh();return}
+ const r=mkRes(Object.assign({},c,{wall:pick(WALLS),wardrobe:[c.outfit],sat:60}));
+ S.res.push(r);S.res.forEach(x=>{if(x.id!==r.id)S.rel[RK(x.id,r.id)]=5});
+ news(`🎉 ${r.name}がトモダチ島に引っ越してきた!`);
+ addPhoto('room',[r],'住人',`${r.name}、島にやってくる`,{exprs:['happy'],pose:'cheer'});
+ closeModalQuiet();save();
+ playScene({place:'room',wall:r.wall,cast:[r],lines:[{who:0,text:`はじめまして!${r.name}です!`,expr:'happy',pose:'cheer',fx:'sparkle'},{who:0,text:'これからよろしくね!',expr:'happy',pose:'normal'}],onEnd:()=>openRoom(r.id)});
+}
+
+// ================= bowling =================
+const PINS=[[100,66],[94,58],[106,58],[88,50],[100,50],[112,50],[82,42],[94,42],[106,42],[118,42]];
+function bowlFromPlace(here){
+ if(here.length){retTo={scr:'place',id:'game'};startBowling(here.map(r=>r.id));return}
+ const awake=S.res.filter(r=>!asleep(r));
+ if(!awake.length){toast('みんな寝てるみたい…');return}
+ const picked=[];
+ const draw=()=>modal('🎳 だれと遊ぶ? (最大4人)',awake.map(r=>`<button class="row" style="${picked.includes(r.id)?'background:#fff6d0;border-color:#f5b400':''}" onclick="${cb(()=>{if(picked.includes(r.id))picked.splice(picked.indexOf(r.id),1);else if(picked.length<4)picked.push(r.id);draw()})}"><span class="ic" style="width:40px;height:40px">${faceSVG(r,'happy')}</span><span class="n">${esc(r.name)}</span><span class="c">${picked.includes(r.id)?'✔ '+(picked.indexOf(r.id)+1):''}</span></button>`).join(''),`<button class="b gray" onclick="${cb(closeModal)}">やめる</button><button class="b blue" onclick="${cb(()=>{if(!picked.length){toast('1人以上えらんでね');return}retTo={scr:'place',id:'game'};startBowling(picked.slice())})}">スタート!</button>`,{w:420});
+ draw();
+}
+function startBowling(ids){
+ closeModalQuiet();
+ ids=ids.filter(id=>R(id)).slice(0,4);
+ BW={ids,frame:0,pi:0,pins:Array(10).fill(1),rolls:ids.map(()=>[[],[],[]]),phase:'aim',aim:0,power:0,t0:performance.now(),tp:0,msg:'',skill:ids.map(id=>{const r=R(id);return .45+Math.random()*.3+(r.hobbies.includes('スポーツ')?.2:0)})};
+ show('bowl');renderBowl();requestAnimationFrame(bowlLoop);
+}
+function frameTxt(f){if(!f.length)return '';if(f[0]===10)return 'X';if(f.length===2)return f[0]+f[1]===10?`${f[0]} /`:`${f[0]||'-'} ${f[1]||'-'}`;return `${f[0]||'-'}`}
+function frameScore(f){const s=f.reduce((a,b)=>a+b,0);return s+(f[0]===10?10:f.length===2&&s===10?5:0)}
+const total=fr=>fr.reduce((a,f)=>a+frameScore(f),0);
+function renderBowl(){
+ const B=BW,r=R(B.ids[B.pi]),human=B.pi===0;
+ const board=`<table class="sb"><tr><th>なまえ</th><th>1</th><th>2</th><th>3</th><th>計</th></tr>${B.ids.map((id,pi)=>`<tr class="${pi===B.pi?'cur':''}"><td class="nm">${esc(nm(id))}${pi===0?' 🎮':''}</td>${[0,1,2].map(f=>`<td>${frameTxt(B.rolls[pi][f])}</td>`).join('')}<td class="tot">${total(B.rolls[pi])}</td></tr>`).join('')}</table>`;
+ let lane=`<svg id="lane" viewBox="0 0 200 300" preserveAspectRatio="xMidYMid meet"><path d="M58,20 L142,20 L180,300 L20,300Z" fill="#2a2148"/><path d="M62,20 L138,20 L172,300 L28,300Z" fill="#5a4a8a"/><path d="M68,20 L132,20 L164,300 L36,300Z" fill="#e9c48e"/>`;
+ for(let i=1;i<6;i++){const xt=68+i*64/6,xb=36+i*128/6;lane+=`<line x1="${xt}" y1="20" x2="${xb}" y2="300" stroke="#d9ae74" stroke-width=".6"/>`}
+ [[-2,210],[-1,214],[0,216],[1,214],[2,210]].forEach(([k,y])=>lane+=`<path d="M${100+k*14},${y} l-3,6 h6z" fill="#b8864e"/>`);
+ lane+=`<rect x="58" y="10" width="84" height="10" fill="#1a1430"/><g id="pins"></g><line id="aimln" x1="100" y1="280" x2="100" y2="60" stroke="#ffd54a" stroke-width="2" stroke-dasharray="5 4" opacity="${human&&B.phase==='aim'?1:0}"/><circle id="ball" cx="100" cy="280" r="9" fill="#3a6fd8" stroke="#1f4e9f" stroke-width="1.5"/><circle id="ballhi" cx="97" cy="277" r="2.5" fill="#fff" opacity=".6"/></svg>`;
+ const btn=human?(B.phase==='aim'?'🎯 方向を決める':B.phase==='power'?'💪 投げる!':'…'):'…';
+ const msg=B.msg||(human?(B.phase==='aim'?`${B.frame+1}フレーム目!方向を決めてね`:B.phase==='power'?'パワーを決めて投げよう!':''):`${r.name}の番だよ`);
+ $('#scr-bowl').innerHTML=`<div class="bw">${board}${lane}<div class="bwb"><div class="who">${faceSVG(r,'happy')}</div><div class="mid"><div class="msg" id="bwmsg">${esc(msg)}</div><div class="pw"><i id="pwbar"></i></div></div><button class="b big" id="bwbtn" ${human&&B.phase!=='rolling'?'':'disabled'} onclick="bowlTap()">${btn}</button></div></div>`;
+ drawPins();
+}
+function drawPins(){
+ const g=document.getElementById('pins');if(!g)return;
+ g.innerHTML=PINS.map((p,i)=>[p,i]).sort((a,b)=>a[0][1]-b[0][1]).filter(([p,i])=>BW.pins[i]).map(([[x,y]])=>`<g transform="translate(${x},${y}) scale(1.25)"><ellipse cx="0" cy="0" rx="3" ry="1.2" fill="rgba(0,0,0,.25)"/><path d="M-2.2,0 C-3.2,-4 -1.2,-6 -1.3,-8 C-1.6,-10 -1,-12 0,-12 C1,-12 1.6,-10 1.3,-8 C1.2,-6 3.2,-4 2.2,0Z" fill="#fff" stroke="#ccc" stroke-width=".3"/><rect x="-1.4" y="-8.8" width="2.8" height="1.1" fill="#e2483e"/></g>`).join('');
+}
+function bowlLoop(){
+ if(!BW||cur!=='bowl')return;
+ const B=BW,now=performance.now();
+ if(B.pi===0&&B.phase==='aim'){B.aim=Math.sin((now-B.t0)/1000*2.3);const ln=document.getElementById('aimln'),bl=document.getElementById('ball'),bh=document.getElementById('ballhi');if(ln){ln.setAttribute('x1',100+B.aim*48);ln.setAttribute('x2',100+B.aim*20);bl.setAttribute('cx',100+B.aim*48);bh.setAttribute('cx',97+B.aim*48)}}
+ if(B.pi===0&&B.phase==='power'){B.power=(1-Math.cos((now-B.tp)/1000*3.4))/2;const pb=document.getElementById('pwbar');if(pb)pb.style.width=(B.power*100)+'%'}
+ requestAnimationFrame(bowlLoop);
+}
+function bowlTap(){
+ const B=BW;if(!B||B.pi!==0)return;
+ if(B.phase==='aim'){B.phase='power';B.tp=performance.now();const ln=document.getElementById('aimln');if(ln)ln.setAttribute('opacity','.5');$('#bwbtn').textContent='💪 投げる!';$('#bwmsg').textContent='パワーを決めて投げよう!'}
+ else if(B.phase==='power'){throwBall(B.aim,B.power)}
+}
+function knock(aim,power){
+ const B=BW;if(Math.abs(aim)>.88)return [];
+ const hx=100+aim*20,reach=5+power*12,fallen=[];
+ if(Math.abs(hx-103)<3.2&&power>.6&&Math.random()<.55)return PINS.map((p,i)=>i).filter(i=>B.pins[i]);
+ PINS.forEach((p,i)=>{if(!B.pins[i])return;const d=Math.abs(p[0]-hx);let pr=d<reach?.97-(d/reach)*.45:.06;pr*=.55+power*.5;if(Math.random()<pr)fallen.push(i)});
+ if(fallen.length>=5)PINS.forEach((p,i)=>{if(B.pins[i]&&!fallen.includes(i)&&Math.random()<.45)fallen.push(i)});
+ return fallen;
+}
+function throwBall(aim,power){
+ const B=BW;B.phase='rolling';const btn=$('#bwbtn');if(btn){btn.disabled=true;btn.textContent='…'}
+ const ln=document.getElementById('aimln');if(ln)ln.setAttribute('opacity','0');
+ const gutter=Math.abs(aim)>.88,x0=100+aim*48,x1=gutter?100+Math.sign(aim)*34:100+aim*20,dur=1300-power*600,t0=performance.now();
+ const bl=document.getElementById('ball'),bh=document.getElementById('ballhi');
+ const step=()=>{
+  if(!BW)return;
+  const k=Math.min(1,(performance.now()-t0)/dur),e=k*k*(3-2*k)*.3+k*.7;
+  const x=x0+(x1-x0)*e,y=280-220*e,rr=9-5*e;
+  if(bl){bl.setAttribute('cx',x);bl.setAttribute('cy',y);bl.setAttribute('r',rr);bh.setAttribute('cx',x-rr/3);bh.setAttribute('cy',y-rr/3);bh.setAttribute('r',rr/3.5)}
+  if(k<1){requestAnimationFrame(step);return}
+  const f=knock(aim,power);f.forEach(i=>B.pins[i]=0);
+  const fr=B.rolls[B.pi][B.frame];fr.push(f.length);
+  const st=B.pins.filter(x=>x).length;
+  B.msg=fr.length===1&&f.length===10?'🎉 ストライク!!':fr.length===2&&st===0?'✨ スペア!':gutter?'ガター…':f.length?`${f.length}本たおした!`:'おしい…!';
+  drawPins();$('#bwmsg').textContent=B.msg;
+  if(bl)bl.setAttribute('opacity','0');
+  const tr=document.querySelectorAll('.sb tr')[B.pi+1];if(tr){tr.children[B.frame+1].textContent=frameTxt(fr);tr.lastElementChild.textContent=total(B.rolls[B.pi])}
+  setTimeout(bowlAdvance,1100);
+ };
+ requestAnimationFrame(step);
+}
+function bowlAdvance(){
+ const B=BW;if(!B)return;
+ const fr=B.rolls[B.pi][B.frame],standing=B.pins.filter(x=>x).length;
+ if(!(fr.length===1&&standing>0)){
+  B.pi++;if(B.pi>=B.ids.length){B.pi=0;B.frame++}
+  B.pins.fill(1);
+  if(B.frame>=3){endBowl();return}
+ }
+ B.phase='aim';B.msg='';B.t0=performance.now();renderBowl();
+ if(B.pi!==0)setTimeout(autoThrow,750);
+}
+function autoThrow(){
+ const B=BW;if(!B)return;const sk=B.skill[B.pi];
+ const aim=(Math.random()-Math.random())*(1.15-sk)*1.1+(Math.random()<.5?.15:0),power=clamp(.45+Math.random()*.55*sk+.15,0,1);
+ const bl=document.getElementById('ball');if(bl)bl.setAttribute('cx',100+aim*48);
+ throwBall(clamp(aim,-1,1),power);
+}
+function endBowl(){
+ const B=BW;BW=null;
+ const sc=B.ids.map((id,i)=>({r:R(id),s:total(B.rolls[i])})).filter(x=>x.r).sort((a,b)=>b.s-a.s);
+ sc.forEach((x,i)=>{addSat(x.r,i===0?15:8);x.r.tired=clamp(x.r.tired+10,0,100);if(x.r.trouble&&x.r.trouble.type==='play')resolveTrouble(x.r,15,200)});
+ pairUp(sc.map(x=>x.r),5);save();
+ const medal=['🥇','🥈','🥉','🎖️'];
+ show(retTo.scr==='place'?'place':'room');
+ if(retTo.scr==='place'){curPlace=retTo.id;renderPlace()}else if(retTo.scr==='room'){curRes=retTo.id;renderRoom()}
+ modal('🎳 けっか発表',sc.map((x,i)=>`<div class="row"><span class="ic">${medal[i]}</span><span class="ic" style="width:44px;height:44px">${faceSVG(x.r,i===0?'happy':'normal')}</span><span class="n">${esc(x.r.name)}</span><span class="c" style="font-size:18px;color:#2f6fae">${x.s}点</span></div>`).join('')+`<p style="font-weight:700;text-align:center">${esc(sc[0].r.name)}の優勝!みんな仲良くなったみたい!</p>`,`<button class="b gray" onclick="${cb(()=>{flash();addPhoto('game',sc.map(x=>x.r),'思い出',`ボウリング大会 優勝:${sc[0].r.name}`,{exprs:sc.map((x,i)=>i===0?'love':'happy'),pose:'cheer'});save();toast('📷 記念写真を撮った!')})}">📷 記念写真</button><button class="b" onclick="${cb(()=>{closeModalQuiet();backTo()})}">もどる</button>`,{w:440,noX:true});
+}
+
+// ================= menu =================
+function openMenu(){
+ modal('⚙️ メニュー',mb('✨','新しい住人をつくる',()=>openCreator())+mb('📰','島のニュース',openNews)+mb('⏩',`時間の速さ:${S.speed===1?'ふつう':S.speed===3?'はやい':'とてもはやい'}`,()=>{S.speed=S.speed===1?3:S.speed===3?10:1;save();openMenu()})+mb('❓','遊び方',openHelp)+mb('🔄','はじめからやり直す',()=>ask('セーブデータを消して、はじめからやり直す?',()=>{try{localStorage.removeItem(KEY)}catch(e){}S=defState();save();navMap();intro()})),'',{w:420});
+}
+function openNews(){modal('📰 島のニュース',S.news.length?S.news.map(n=>`<div class="row"><span class="c" style="font-size:12px;min-width:90px">${dateStr(n.d)}</span><span class="n" style="font-size:14px">${esc(n.text)}</span></div>`).join(''):'<p>まだニュースはないよ</p>','',{w:560})}
+function openHelp(){
+ modal('❓ 遊び方',`<div style="line-height:1.9;font-weight:700;font-size:14px">
+ 🏝️ ここはトモダチ島。住人たちの暮らしを見守ろう!<br>
+ 🏠 <b>アパート</b>:窓に <span style="color:#ff8c2b">!マーク</span> が出ている住人は悩みがあるよ。部屋に入って「相談にのる」をタップ!<br>
+ 🍙 食べ物・👕服・🎁プレゼントをあげると満足度アップ。満足度がいっぱいになるとレベルアップ!<br>
+ 🤝 住人どうしは同じ場所にいると仲良くなる。友だち→仲良し→親友…恋人や夫婦になることも!<br>
+ 🗺️ <b>マップ</b>から公園・カフェ・モール・海・ゲームセンターへ。住人がいたらタップして話しかけてみよう。<br>
+ 🛍️ お金はショッピングモールで使えるよ。悩みを解決したり、毎朝の家賃で増えていくよ。<br>
+ ⏰ ゲーム内の1分=現実の1秒。夜11時〜朝7時はみんな寝ているよ。<br>
+ 💾 データはこのブラウザに自動で保存されます。</div>`,'',{w:560});
+}
+function intro(){
+ modal('🏝️ トモダチ島へようこそ!',`<div style="text-align:center;font-size:56px">🏝️</div><p style="font-weight:700;line-height:1.9;text-align:center">ここは、6人の住人がくらす小さな島。<br>あなたは島の見守り役です。<br>住人の悩みを聞いたり、プレゼントをあげたりして、<br>みんなを幸せにしてあげよう!</p><p style="font-weight:700;text-align:center;color:#7b8194;font-size:13px">さっそく、まさひろが何か困っているみたい…</p>`,`<button class="b gray" onclick="${cb(()=>openCreator())}">✨ 自分の住人をつくる</button><button class="b blue" onclick="${cb(()=>{closeModalQuiet();openRoom(S.res[0].id)})}">はじめる!</button>`,{w:480,noX:true});
+}
+
+// ================= boot =================
+const fresh=!load();
+if(fresh){S=defState();save()}
+S.res.forEach(r=>{if(!r.wardrobe)r.wardrobe=[r.outfit];if(r.lvPending==null)r.lvPending=0});
+show('map');renderMap();updHud();
+if(fresh)intro();else setTimeout(checkLevel,500);
+setInterval(tick,1000);
+let rsT;addEventListener('resize',()=>{clearTimeout(rsT);rsT=setTimeout(()=>{if(cur==='place'&&!modalOn())renderPlace()},150)});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)save()});
+</script>
+<script src="../../playtime.js" defer></script>
+</body>
+</html>
