@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>オセロ</title>
+<style>
+:root{
+  --bg:#0f1a14;--panel:#1a2a21;--line:#2f4a3a;--text:#eef5ef;--muted:#a9c2b1;
+  --board:#1f8a4c;--board2:#1a7a43;--grid:#0d4a28;--accent:#ffd54f;--hint:rgba(255,255,255,.28);--last:#ff7043;
+  --cell:min(11vw,62px);
+}
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);
+  font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI",Meiryo,sans-serif;
+  -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+body{min-height:100vh;display:flex;justify-content:center}
+#app{width:100%;max-width:560px;padding:10px 16px 24px;display:flex;flex-direction:column;align-items:center;gap:10px}
+button{font-family:inherit;color:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:8px 12px;font-size:14px}
+button:active{transform:scale(.97)}
+button:disabled{opacity:.4;cursor:default}
+header{width:100%;display:flex;align-items:center;gap:6px}
+header h1{font-size:20px;margin:0;flex:1;letter-spacing:.08em}
+header button{padding:6px 10px;font-size:13px}
+
+.scores{width:100%;display:flex;gap:8px}
+.score{flex:1;display:flex;align-items:center;gap:8px;background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:6px 10px;transition:border-color .2s,box-shadow .2s}
+.score.turn{border-color:var(--accent);box-shadow:0 0 12px rgba(255,213,79,.35)}
+.score .disc{width:26px;height:26px;flex:none}
+.score .name{font-size:12px;color:var(--muted);flex:1;line-height:1.2}
+.score .num{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
+#status{width:100%;text-align:center;font-size:15px;min-height:22px;color:var(--muted)}
+#status b{color:var(--text)}
+
+#board{display:grid;grid-template-columns:repeat(8,var(--cell));grid-template-rows:repeat(8,var(--cell));
+  gap:2px;padding:6px;background:var(--grid);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.5);position:relative;touch-action:manipulation}
+.cell{background:var(--board);position:relative;display:flex;align-items:center;justify-content:center;border-radius:2px}
+.cell:nth-child(odd){background:var(--board2)}
+.cell.can{cursor:pointer}
+.cell.can::after{content:"";width:28%;height:28%;border-radius:50%;background:var(--hint)}
+.cell.can:hover::after{background:rgba(255,255,255,.5)}
+body.nohint .cell.can::after{display:none}
+.cell.last::before{content:"";position:absolute;width:12%;height:12%;border-radius:50%;background:var(--last);z-index:3}
+.dot{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--grid);z-index:2;transform:translate(-50%,-50%)}
+
+.disc{width:84%;height:84%;position:relative;transform-style:preserve-3d;transition:transform .35s ease}
+.disc .f{position:absolute;inset:0;border-radius:50%;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.disc .b{background:radial-gradient(circle at 35% 30%,#555,#111 70%);box-shadow:0 2px 3px rgba(0,0,0,.6)}
+.disc .w{background:radial-gradient(circle at 35% 30%,#fff,#ccc 75%);box-shadow:0 2px 3px rgba(0,0,0,.4);transform:rotateY(180deg)}
+.disc.white{transform:rotateY(180deg)}
+.disc.pop{animation:pop .25s ease}
+@keyframes pop{from{scale:.3;opacity:0}to{scale:1;opacity:1}}
+
+.controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+
+/* モーダル */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;width:100%;max-width:380px;display:flex;flex-direction:column;gap:12px}
+.modal h2{margin:0;font-size:20px;text-align:center}
+.row{display:flex;flex-direction:column;gap:6px}
+.row label{font-size:12px;color:var(--muted)}
+.seg{display:flex;gap:6px}
+.seg button{flex:1;padding:10px 6px}
+.seg button.on{background:#2e6b45;border-color:var(--accent);color:#fff;font-weight:700}
+.big{padding:12px;font-size:16px;font-weight:700;background:#2e8b57;border-color:#3fae6f}
+.result{text-align:center;font-size:15px;line-height:1.7}
+.result .big-num{font-size:32px;font-weight:800}
+.toast{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);background:rgba(0,0,0,.8);padding:12px 22px;border-radius:12px;font-size:18px;font-weight:700;z-index:20;pointer-events:none;animation:fade 1.4s forwards}
+@keyframes fade{0%{opacity:0}15%{opacity:1}75%{opacity:1}100%{opacity:0}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>オセロ</h1>
+    <button id="btnHint">ヒント:ON</button>
+    <button id="btnMenu">メニュー</button>
+  </header>
+
+  <div class="scores">
+    <div class="score" id="scB"><div class="disc"><div class="f b"></div><div class="f w"></div></div><div class="name" id="nmB">黒</div><div class="num" id="numB">2</div></div>
+    <div class="score" id="scW"><div class="disc white"><div class="f b"></div><div class="f w"></div></div><div class="name" id="nmW">白</div><div class="num" id="numW">2</div></div>
+  </div>
+  <div id="status"></div>
+
+  <div id="board"></div>
+
+  <div class="controls">
+    <button id="btnUndo">↶ まった</button>
+    <button id="btnNew">はじめから</button>
+  </div>
+</div>
+
+<div class="overlay" id="menu">
+  <div class="modal">
+    <h2>オセロ</h2>
+    <div class="row"><label>あいて</label>
+      <div class="seg" id="segMode"><button data-v="cpu" class="on">コンピュータ</button><button data-v="pvp">ふたりで</button></div></div>
+    <div class="row" id="rowLv"><label>つよさ</label>
+      <div class="seg" id="segLv"><button data-v="1">よわい</button><button data-v="2" class="on">ふつう</button><button data-v="3">つよい</button></div></div>
+    <div class="row" id="rowColor"><label>あなたの色</label>
+      <div class="seg" id="segColor"><button data-v="1" class="on">● 黒（先手）</button><button data-v="2">○ 白（後手）</button></div></div>
+    <button class="big" id="btnStart">スタート</button>
+    <button id="btnClose" hidden>とじる</button>
+  </div>
+</div>
+
+<div class="overlay" id="resultBox" hidden>
+  <div class="modal">
+    <h2 id="resTitle"></h2>
+    <div class="result" id="resBody"></div>
+    <button class="big" id="btnAgain">もう一回</button>
+    <button id="btnResMenu">メニューへ</button>
+    <button id="btnResBoard">盤面を見る</button>
+  </div>
+</div>
+
+<script>
+(() => {
+const EMPTY = 0, BLACK = 1, WHITE = 2;
+const DIRS = [-9, -8, -7, -1, 1, 7, 8, 9];
+const $ = id => document.getElementById(id);
+
+// 位置評価（角が強く、角の隣は危険）
+const W = [
+  120,-20, 20,  5,  5, 20,-20,120,
+  -20,-40, -5, -5, -5, -5,-40,-20,
+   20, -5, 15,  3,  3, 15, -5, 20,
+    5, -5,  3,  3,  3,  3, -5,  5,
+    5, -5,  3,  3,  3,  3, -5,  5,
+   20, -5, 15,  3,  3, 15, -5, 20,
+  -20,-40, -5, -5, -5, -5,-40,-20,
+  120,-20, 20,  5,  5, 20,-20,120];
+
+let board, turn, history, lastMove, gameOver, busy = false;
+let settings = { mode: 'cpu', lv: 2, human: BLACK };
+let showHint = true;
+try { const s = JSON.parse(localStorage.getItem('othello-settings')); if (s) settings = Object.assign(settings, s); } catch (e) {}
+try { showHint = localStorage.getItem('othello-hint') !== '0'; } catch (e) {}
+
+const opp = c => 3 - c;
+
+function flipsFor(b, pos, c) {
+  if (b[pos] !== EMPTY) return [];
+  const res = [], o = opp(c), x0 = pos % 8;
+  for (const d of DIRS) {
+    const line = [];
+    let p = pos;
+    while (true) {
+      const x = p % 8;
+      if ((d === -9 || d === -1 || d === 7) && x === 0) break;
+      if ((d === -7 || d === 1 || d === 9) && x === 7) break;
+      p += d;
+      if (p < 0 || p > 63) break;
+      if (b[p] === o) { line.push(p); continue; }
+      if (b[p] === c && line.length) res.push(...line);
+      break;
+    }
+  }
+  return res;
+}
+function moves(b, c) {
+  const m = [];
+  for (let i = 0; i < 64; i++) if (b[i] === EMPTY && flipsFor(b, i, c).length) m.push(i);
+  return m;
+}
+function apply(b, pos, c) {
+  const f = flipsFor(b, pos, c);
+  const nb = b.slice();
+  nb[pos] = c;
+  for (const p of f) nb[p] = c;
+  return nb;
+}
+function count(b) {
+  let k = 0, w = 0;
+  for (const v of b) { if (v === BLACK) k++; else if (v === WHITE) w++; }
+  return [k, w];
+}
+
+// ---------- CPU ----------
+function evaluate(b, c) {
+  const o = opp(c);
+  let s = 0, empties = 0;
+  for (let i = 0; i < 64; i++) {
+    if (b[i] === c) s += W[i]; else if (b[i] === o) s -= W[i]; else empties++;
+  }
+  // 角を取ったら隣接マスの減点は無効に
+  for (const [cn, adj] of [[0,[1,8,9]],[7,[6,14,15]],[56,[48,49,57]],[63,[54,55,62]]]) {
+    if (b[cn] !== EMPTY) for (const a of adj) {
+      if (b[a] === c) s -= W[a]; else if (b[a] === o) s += W[a];
+    }
+  }
+  const mc = moves(b, c).length, mo = moves(b, o).length;
+  s += (mc - mo) * (empties > 20 ? 8 : 4);
+  return s;
+}
+function negamax(b, c, depth, alpha, beta, passed) {
+  const empties = b.reduce((n, v) => n + (v === EMPTY), 0);
+  if (empties === 0) { const [k, w] = count(b); const d = c === BLACK ? k - w : w - k; return d * 1000; }
+  if (depth === 0) return evaluate(b, c);
+  let ms = moves(b, c);
+  if (!ms.length) {
+    if (passed) { const [k, w] = count(b); const d = c === BLACK ? k - w : w - k; return d * 1000; }
+    return -negamax(b, opp(c), depth, -beta, -alpha, true);
+  }
+  ms.sort((a, z) => W[z] - W[a]);
+  let best = -Infinity;
+  for (const m of ms) {
+    const v = -negamax(apply(b, m, c), opp(c), depth - 1, -beta, -alpha, false);
+    if (v > best) best = v;
+    if (v > alpha) alpha = v;
+    if (alpha >= beta) break;
+  }
+  return best;
+}
+function cpuMove(b, c, lv) {
+  const ms = moves(b, c);
+  if (ms.length === 1) return ms[0];
+  if (lv === 1) {
+    // よわい: たまに角を取る以外はほぼランダム、たくさん返す手を好む
+    if (Math.random() < 0.6) return ms[Math.floor(Math.random() * ms.length)];
+    let best = ms[0], bn = -1;
+    for (const m of ms) { const n = flipsFor(b, m, c).length + Math.random() * 2; if (n > bn) { bn = n; best = m; } }
+    return best;
+  }
+  const empties = b.reduce((n, v) => n + (v === EMPTY), 0);
+  const depth = lv === 2 ? 2 : (empties <= 12 ? empties : 5);
+  let best = ms[0], bv = -Infinity;
+  const order = ms.slice().sort((a, z) => W[z] - W[a]);
+  for (const m of order) {
+    const v = -negamax(apply(b, m, c), opp(c), depth - 1, -Infinity, -bv, false) + (lv === 2 ? Math.random() * 6 : 0);
+    if (v > bv) { bv = v; best = m; }
+  }
+  return best;
+}
+
+// ---------- 表示 ----------
+const boardEl = $('board');
+const cells = [], discs = [];
+for (let i = 0; i < 64; i++) {
+  const c = document.createElement('div');
+  c.className = 'cell';
+  c.addEventListener('click', () => onCell(i));
+  boardEl.appendChild(c);
+  cells.push(c);
+  discs.push(null);
+}
+// 星（目印）
+for (const [x, y] of [[2,2],[6,2],[2,6],[6,6]]) {
+  const d = document.createElement('div');
+  d.className = 'dot';
+  d.style.left = `calc(6px + ${x} * (var(--cell) + 2px) - 1px)`;
+  d.style.top = `calc(6px + ${y} * (var(--cell) + 2px) - 1px)`;
+  boardEl.appendChild(d);
+}
+
+function makeDisc(color) {
+  const d = document.createElement('div');
+  d.className = 'disc' + (color === WHITE ? ' white' : '');
+  d.innerHTML = '<div class="f b"></div><div class="f w"></div>';
+  return d;
+}
+
+function isHumanTurn() {
+  return settings.mode === 'pvp' || turn === settings.human;
+}
+
+function render(placed) {
+  const legal = gameOver ? [] : moves(board, turn);
+  const canClick = !busy && isHumanTurn();
+  for (let i = 0; i < 64; i++) {
+    const v = board[i];
+    if (v === EMPTY) {
+      if (discs[i]) { discs[i].remove(); discs[i] = null; }
+    } else if (!discs[i]) {
+      discs[i] = makeDisc(v);
+      if (i === placed) discs[i].classList.add('pop');
+      cells[i].appendChild(discs[i]);
+    } else {
+      discs[i].classList.toggle('white', v === WHITE);
+    }
+    cells[i].classList.toggle('can', canClick && legal.includes(i));
+    cells[i].classList.toggle('last', i === lastMove);
+  }
+  const [k, w] = count(board);
+  $('numB').textContent = k;
+  $('numW').textContent = w;
+  $('scB').classList.toggle('turn', !gameOver && turn === BLACK);
+  $('scW').classList.toggle('turn', !gameOver && turn === WHITE);
+  if (settings.mode === 'cpu') {
+    $('nmB').textContent = settings.human === BLACK ? 'あなた（黒）' : 'CPU（黒）';
+    $('nmW').textContent = settings.human === WHITE ? 'あなた（白）' : 'CPU（白）';
+  } else {
+    $('nmB').textContent = '黒';
+    $('nmW').textContent = '白';
+  }
+  let st;
+  if (gameOver) st = k > w ? '<b>黒の勝ち！</b>' : w > k ? '<b>白の勝ち！</b>' : '<b>引き分け</b>';
+  else if (settings.mode === 'cpu') st = isHumanTurn() ? '<b>あなたの番</b>です' : 'CPU が考え中…';
+  else st = `<b>${turn === BLACK ? '黒' : '白'}</b>の番です`;
+  $('status').innerHTML = st;
+  $('btnUndo').disabled = busy || !history.length;
+  document.body.classList.toggle('nohint', !showHint);
+  $('btnHint').textContent = 'ヒント:' + (showHint ? 'ON' : 'OFF');
+}
+
+function toast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 1400);
+}
+
+// ---------- 進行 ----------
+function newGame() {
+  board = Array(64).fill(EMPTY);
+  board[27] = board[36] = WHITE;
+  board[28] = board[35] = BLACK;
+  turn = BLACK;
+  history = [];
+  lastMove = -1;
+  gameOver = false;
+  busy = false;
+  for (let i = 0; i < 64; i++) if (discs[i]) { discs[i].remove(); discs[i] = null; }
+  $('resultBox').hidden = true;
+  render();
+  next();
+}
+
+function play(pos) {
+  history.push({ board: board.slice(), turn, lastMove });
+  board = apply(board, pos, turn);
+  lastMove = pos;
+  turn = opp(turn);
+  render(pos);
+  next();
+}
+
+function next() {
+  if (!moves(board, turn).length) {
+    if (!moves(board, opp(turn)).length) { finish(); return; }
+    const who = settings.mode === 'cpu' ? (turn === settings.human ? 'あなた' : 'CPU') : (turn === BLACK ? '黒' : '白');
+    toast(`${who}はパス`);
+    turn = opp(turn);
+    render();
+  }
+  if (!isHumanTurn()) {
+    busy = true;
+    render();
+    const myTurn = turn, snapshot = history.length;
+    setTimeout(() => {
+      if (history.length !== snapshot || turn !== myTurn || gameOver) return;
+      const m = cpuMove(board, turn, settings.lv);
+      busy = false;
+      play(m);
+    }, 550);
+  }
+}
+
+function finish() {
+  gameOver = true;
+  busy = false;
+  render();
+  const [k, w] = count(board);
+  let title;
+  if (settings.mode === 'cpu') {
+    const mine = settings.human === BLACK ? k : w, theirs = settings.human === BLACK ? w : k;
+    title = mine > theirs ? '🎉 あなたの勝ち！' : mine < theirs ? 'ざんねん…負け' : '引き分け';
+  } else {
+    title = k > w ? '黒の勝ち！' : w > k ? '白の勝ち！' : '引き分け';
+  }
+  $('resTitle').textContent = title;
+  $('resBody').innerHTML = `<span class="big-num">● ${k} − ${w} ○</span>`;
+  setTimeout(() => { $('resultBox').hidden = false; }, 700);
+}
+
+function onCell(i) {
+  if (busy || gameOver || !isHumanTurn()) return;
+  if (!flipsFor(board, i, turn).length) return;
+  play(i);
+}
+
+function undo() {
+  if (busy || !history.length) return;
+  // CPU戦では自分の手番まで戻す
+  let idx = history.length - 1;
+  if (settings.mode === 'cpu') while (idx >= 0 && history[idx].turn !== settings.human) idx--;
+  if (idx < 0) return;
+  const h = history[idx];
+  history.length = idx;
+  board = h.board; turn = h.turn; lastMove = h.lastMove; gameOver = false;
+  $('resultBox').hidden = true;
+  render();
+}
+
+// ---------- メニュー ----------
+function seg(id, key, conv) {
+  const el = $(id);
+  const sync = () => el.querySelectorAll('button').forEach(b => b.classList.toggle('on', conv(b.dataset.v) === settings[key]));
+  el.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    settings[key] = conv(b.dataset.v);
+    sync();
+    syncRows();
+  });
+  sync();
+}
+function syncRows() {
+  const cpu = settings.mode === 'cpu';
+  $('rowLv').hidden = !cpu;
+  $('rowColor').hidden = !cpu;
+}
+seg('segMode', 'mode', v => v);
+seg('segLv', 'lv', Number);
+seg('segColor', 'human', Number);
+syncRows();
+
+$('btnStart').onclick = () => {
+  try { localStorage.setItem('othello-settings', JSON.stringify(settings)); } catch (e) {}
+  $('menu').hidden = true;
+  newGame();
+};
+$('btnMenu').onclick = () => { $('btnClose').hidden = !board; $('menu').hidden = false; };
+$('btnClose').onclick = () => { $('menu').hidden = true; };
+$('btnNew').onclick = () => newGame();
+$('btnUndo').onclick = undo;
+$('btnHint').onclick = () => {
+  showHint = !showHint;
+  try { localStorage.setItem('othello-hint', showHint ? '1' : '0'); } catch (e) {}
+  render();
+};
+$('btnAgain').onclick = () => newGame();
+$('btnResMenu').onclick = () => { $('resultBox').hidden = true; $('btnClose').hidden = true; $('menu').hidden = false; };
+$('btnResBoard').onclick = () => { $('resultBox').hidden = true; };
+
+// 背景に初期盤面を表示
+board = Array(64).fill(EMPTY);
+board[27] = board[36] = WHITE; board[28] = board[35] = BLACK;
+turn = BLACK; history = []; lastMove = -1; gameOver = false;
+render();
+board = null;
+})();
+</script>
+<script src="../../playtime.js" defer></script>
+</body>
+</html>
