@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#5aa9e6">
+<title>クライシスプラン</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&family=Klee+One:wght@600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eef5fc; --card:#fff; --line:#e3ebf4; --text:#22303f; --muted:#6c7b8d;
+  --primary:#1e88e5; --primary-d:#1565c0; --primary-l:#e3f0fd;
+  --g:#3fae5a; --g-bg:#e5f6e9; --y:#f2b200; --y-bg:#fff5d4;
+  --o:#f07b1d; --o-bg:#ffe8d8; --p:#e5487a; --p-bg:#ffe3ec;
+  --star:#f5b301; --radius:18px; --nav-h:64px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#d9e7f5}
+body{font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Meiryo",sans-serif;color:var(--text);font-size:15px;line-height:1.6}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;border:none;background:none;padding:0}
+#app{max-width:480px;margin:0 auto;height:100dvh;background:var(--bg);display:flex;flex-direction:column;position:relative;overflow:hidden;box-shadow:0 0 40px rgba(30,80,140,.15)}
+#main{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:24px}
+/* header */
+.topbar{display:flex;align-items:center;gap:8px;padding:14px 16px 10px;position:sticky;top:0;background:var(--bg);z-index:5}
+.topbar h1{font-size:18px;margin:0;flex:1}
+.back{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:22px;color:var(--text)}
+.back:active{background:var(--line)}
+.lead{color:var(--muted);font-size:13px;margin:0 16px 12px}
+.sec{margin:0 16px 16px}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:0 2px 10px rgba(40,90,150,.07);padding:14px}
+.card + .card{margin-top:10px}
+h2.sh{font-size:15px;margin:18px 16px 8px;display:flex;align-items:center;gap:6px}
+.btn{display:block;width:100%;padding:13px;border-radius:999px;background:var(--primary);color:#fff;font-weight:700;font-size:15px;text-align:center;box-shadow:0 4px 12px rgba(30,136,229,.3)}
+.btn:active{transform:scale(.98);background:var(--primary-d)}
+.btn.sub{background:var(--primary-l);color:var(--primary);box-shadow:none}
+.btn.pink{background:var(--p);box-shadow:0 4px 12px rgba(229,72,122,.3)}
+.btn.ghost{background:#fff;color:var(--primary);border:1.5px solid var(--primary);box-shadow:none}
+.btn:disabled{opacity:.45}
+.mini{padding:6px 14px;border-radius:999px;background:var(--primary);color:#fff;font-size:12px;font-weight:700;white-space:nowrap}
+.mini.sub{background:var(--primary-l);color:var(--primary)}
+.mini.del{background:#f1f3f6;color:#8a96a5}
+.row{display:flex;align-items:center;gap:12px}
+.grow{flex:1;min-width:0}
+.small{font-size:12px;color:var(--muted)}
+.chip{display:inline-block;padding:2px 8px;border-radius:999px;background:#f0f4f9;font-size:11px;color:var(--muted);margin-right:4px}
+.ico{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-size:24px;flex-shrink:0;background:var(--primary-l)}
+.empty{text-align:center;color:var(--muted);font-size:13px;padding:20px}
+/* home */
+.hero{position:relative;height:300px;background:linear-gradient(180deg,#5aa9e6 0%,#8cc7f2 45%,#cfe8fb 75%,#eaf5fe 100%);overflow:hidden;color:#fff;padding:22px 20px}
+.hero h1{margin:0 0 6px;font-size:26px;letter-spacing:.05em;text-shadow:0 2px 6px rgba(0,60,120,.25)}
+.hero p{margin:0;font-size:14px;line-height:1.9;text-shadow:0 1px 4px rgba(0,60,120,.3);position:relative;z-index:2;max-width:62%}
+.hero svg.scene{position:absolute;left:0;bottom:0;width:100%;height:100%}
+.hello{position:absolute;top:24px;right:18px;font-size:12px;background:rgba(255,255,255,.3);padding:3px 10px;border-radius:999px;z-index:2}
+.levels{margin:-60px 14px 0;position:relative;z-index:3;padding:16px}
+.levels h2{margin:0 0 10px;font-size:16px}
+.lv{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px;border-radius:16px;margin-top:8px;border:2px solid transparent;transition:.15s}
+.lv:active{transform:scale(.98)}
+.lv .face{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-size:24px;color:#fff;flex-shrink:0}
+.lv b{display:block;font-size:16px}
+.lv span{font-size:12px;color:var(--muted)}
+.lv.cur{border-color:currentColor}
+.lv0{background:var(--g-bg);color:var(--g)} .lv0 .face{background:var(--g)}
+.lv1{background:var(--y-bg);color:#c99400} .lv1 .face{background:var(--y)}
+.lv2{background:var(--o-bg);color:var(--o)} .lv2 .face{background:var(--o)}
+.lv3{background:var(--p-bg);color:var(--p)} .lv3 .face{background:var(--p)}
+.lv b,.lv span{color:var(--text)} .lv span{color:var(--muted)}
+.banner{display:flex;gap:10px;align-items:center;margin:12px 14px 0;padding:12px 14px;border-radius:16px;background:#fff;border-left:5px solid var(--primary);font-size:13px;box-shadow:0 2px 10px rgba(40,90,150,.07);width:calc(100% - 28px);text-align:left}
+.quick{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 14px 0}
+.quick button{background:#fff;border-radius:14px;padding:12px 4px;font-size:12px;box-shadow:0 2px 10px rgba(40,90,150,.07);display:flex;flex-direction:column;align-items:center;gap:2px}
+.quick button i{font-style:normal;font-size:22px}
+/* check */
+.q{display:flex;gap:12px;align-items:center}
+.q .qi{font-size:26px;width:38px;text-align:center}
+.q p{margin:0 0 6px;font-size:14px}
+.seg{display:flex;gap:6px}
+.seg button{flex:1;padding:6px 0;border-radius:999px;background:#f0f4f9;font-size:13px;color:var(--muted);border:1.5px solid transparent}
+.seg button.on{background:var(--primary-l);color:var(--primary);border-color:var(--primary);font-weight:700}
+.progress{height:6px;background:var(--line);border-radius:6px;margin:0 16px 12px;overflow:hidden}
+.progress div{height:100%;background:var(--primary);transition:.3s}
+/* result */
+.result{border-radius:22px;padding:22px 16px;text-align:center}
+.result .big{width:84px;height:84px;margin:0 auto 8px;border-radius:50%;display:grid;place-items:center;font-size:48px;background:rgba(255,255,255,.6)}
+.result h2{font-size:28px;margin:4px 0 8px}
+.result p{margin:0;font-size:14px;line-height:1.9}
+.signs li{list-style:none;padding:7px 0;border-bottom:1px dashed var(--line);font-size:13px;display:flex;gap:8px}
+.signs li:last-child{border:none}
+.signs{margin:0;padding:0}
+.meter{display:flex;gap:4px;margin:10px 0 4px}
+.meter div{flex:1;height:8px;border-radius:4px;background:var(--line)}
+/* todo */
+.lvchip{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;font-weight:700;margin:0 16px 8px}
+.act{display:flex;gap:12px;align-items:center;width:100%;text-align:left}
+.act b{font-size:15px;display:block}
+.chev{color:#b5c2d1;font-size:20px}
+/* list */
+.filters{display:flex;gap:6px;overflow-x:auto;padding:0 16px 10px;scrollbar-width:none}
+.filters::-webkit-scrollbar{display:none}
+.filters button{flex-shrink:0;padding:6px 13px;border-radius:999px;background:#fff;font-size:12px;border:1px solid var(--line)}
+.filters button.on{background:var(--primary);color:#fff;border-color:var(--primary)}
+.fav{font-size:20px;color:#c4cfdb;padding:6px}
+.fav.on{color:#ff6b9a}
+.stars{color:var(--star);font-size:13px}
+/* record */
+.starpick{display:flex;gap:6px;justify-content:center;align-items:center}
+.starpick button{font-size:36px;color:#d7dee7;line-height:1}
+.starpick button.on{color:var(--star)}
+textarea,input[type=text],input[type=tel],input[type=time],select{width:100%;padding:11px 12px;border-radius:12px;border:1.5px solid var(--line);background:#fbfdff;outline:none}
+textarea:focus,input:focus,select:focus{border-color:var(--primary)}
+textarea{min-height:90px;resize:vertical}
+label.f{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+/* mypage */
+.tabs{display:flex;background:#fff;border-radius:999px;padding:4px;margin:0 16px 12px}
+.tabs button{flex:1;padding:7px 0;border-radius:999px;font-size:13px;color:var(--muted)}
+.tabs button.on{background:var(--primary);color:#fff;font-weight:700}
+.rank{display:flex;align-items:center;gap:10px;padding:7px 0}
+.rank .n{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;font-size:12px;font-weight:700;background:#ffe9a8;color:#946c00}
+.rank:nth-child(3) .n{background:#e3e9f0;color:#5d6b7a}
+.rank:nth-child(4) .n{background:#f6dcc7;color:#9a5a2a}
+.bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden;flex:1}
+.bar div{height:100%;border-radius:4px}
+.hist{display:flex;align-items:flex-end;gap:4px;height:90px;padding-top:6px}
+.hist div{flex:1;border-radius:5px 5px 2px 2px;min-width:6px}
+.badges{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.badge{background:#fff;border-radius:16px;padding:14px 6px;text-align:center;font-size:11px;box-shadow:0 2px 10px rgba(40,90,150,.07)}
+.badge i{font-style:normal;font-size:32px;display:block}
+.badge.off{opacity:.38;filter:grayscale(1)}
+/* help */
+.alert{background:var(--p-bg);border-radius:var(--radius);padding:12px 14px;color:#b0244f;font-weight:700;display:flex;gap:8px;align-items:center}
+.tel{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.tel:last-child{border:none}
+.tel .ic{width:40px;height:40px;border-radius:50%;background:var(--p-bg);display:grid;place-items:center;font-size:20px;flex-shrink:0}
+.tel a.mini{text-decoration:none}
+/* menu */
+.menu a,.menu button.mi{display:flex;align-items:center;gap:12px;padding:13px 4px;border-bottom:1px solid var(--line);width:100%;text-align:left;color:inherit;text-decoration:none}
+.menu .mi:last-child{border:none}
+.menu .mi i{font-style:normal;font-size:20px;width:28px;text-align:center}
+/* toggle */
+.sw{position:relative;width:50px;height:30px;flex-shrink:0}
+.sw input{opacity:0;width:0;height:0}
+.sw span{position:absolute;inset:0;background:#cfd8e3;border-radius:999px;transition:.2s}
+.sw span::before{content:"";position:absolute;width:24px;height:24px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.sw input:checked + span{background:var(--primary)}
+.sw input:checked + span::before{transform:translateX(20px)}
+/* nav */
+nav{height:calc(var(--nav-h) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:#fff;display:flex;border-top:1px solid var(--line);flex-shrink:0}
+nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:10px;color:#8b98a8}
+nav button i{font-style:normal;font-size:21px;filter:grayscale(1);opacity:.65}
+nav button.on{color:var(--primary);font-weight:700}
+nav button.on i{filter:none;opacity:1}
+/* modal */
+.ov{position:absolute;inset:0;background:rgba(20,40,70,.45);display:flex;align-items:flex-end;z-index:50;animation:fade .2s}
+.sheet{background:#fff;width:100%;border-radius:24px 24px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom));max-height:88%;overflow-y:auto;animation:up .25s}
+.sheet h3{margin:0 0 10px;font-size:17px}
+@keyframes fade{from{opacity:0}}
+@keyframes up{from{transform:translateY(40px);opacity:0}}
+.toast{position:absolute;left:50%;bottom:calc(var(--nav-h) + 20px);transform:translateX(-50%);background:rgba(30,45,65,.92);color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;z-index:60;animation:fade .2s;white-space:nowrap}
+/* breathing */
+.breath{display:grid;place-items:center;height:260px;position:relative}
+.breath .c{width:110px;height:110px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#bfe3ff,#5aa9e6);transition:transform 4s ease-in-out;box-shadow:0 0 40px rgba(90,169,230,.5)}
+.breath .t{position:absolute;font-size:20px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,50,100,.4);text-align:center}
+/* message */
+.msg{position:absolute;inset:0;z-index:40;overflow:hidden;display:flex;flex-direction:column;align-items:center;animation:fade .6s}
+.msg svg{position:absolute;inset:0;width:100%;height:100%}
+.msg .words{position:relative;z-index:2;margin-top:12%;font-family:"Klee One",serif;color:#fff;font-size:24px;line-height:2;text-align:center;text-shadow:0 2px 10px rgba(80,30,90,.5);padding:0 24px;white-space:pre-line}
+.msg .btn{position:absolute;bottom:calc(36px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:auto;padding:13px 54px;background:rgba(30,136,229,.85);border:2px solid rgba(255,255,255,.7);z-index:3}
+.twinkle{animation:tw 3s ease-in-out infinite}
+@keyframes tw{50%{opacity:.2}}
+.fadein{animation:fade .35s}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="main"></div>
+  <nav id="nav">
+    <button data-tab="home"><i>🏠</i>ホーム</button>
+    <button data-tab="check"><i>📝</i>チェック</button>
+    <button data-tab="todo"><i>🧭</i>やること</button>
+    <button data-tab="list"><i>🎮</i>リスト</button>
+    <button data-tab="menu"><i>☰</i>メニュー</button>
+  </nav>
+</div>
+
+<script>
+'use strict';
+/* ========== データ定義 ========== */
+const LEVELS = [
+  {name:'日常のセルフケア', sub:'調子が安定しているとき', emoji:'😊', color:'var(--g)', bg:'var(--g-bg)',
+   msg:'調子は安定しているようです。\n今の生活リズムを大切にして、\n楽しいことも続けていきましょう。'},
+  {name:'早めの手当て', sub:'少し変化が出てきたとき', emoji:'😐', color:'var(--y)', bg:'var(--y-bg)',
+   msg:'少し変化が出ているようです。\nこのまま放っておくと、\n悪化する可能性があります。'},
+  {name:'リカバリー', sub:'明らかに不調が強くなっているとき', emoji:'😣', color:'var(--o)', bg:'var(--o-bg)',
+   msg:'不調が強くなっているようです。\n無理をせず、休むことを\nいちばんに考えましょう。'},
+  {name:'ヘルプ', sub:'一人で対応するのが難しいとき', emoji:'💗', color:'var(--p)', bg:'var(--p-bg)',
+   msg:'一人で抱えこまなくて大丈夫。\n信頼できる人や相談窓口に\n連絡してみましょう。'}
+];
+const QUESTIONS = [
+  {icon:'🚶', q:'外出したいと思えますか？', rev:false, sign:'外出するのが少し面倒になっている'},
+  {icon:'🎮', q:'好きなことを楽しめますか？', rev:false, sign:'好きなことの楽しさが少し減っている'},
+  {icon:'🍴', q:'朝食をきちんと取れていますか？', rev:false, sign:'食事のリズムが乱れている'},
+  {icon:'🕐', q:'やるべきことを後回しにしがちですか？', rev:true, sign:'「めんどくさい」と感じて行動まで時間がかかる'},
+  {icon:'🌧️', q:'同じことを繰り返し考えていますか？', rev:true, sign:'同じことを何度も考えてしまう'},
+  {icon:'🌙', q:'睡眠リズムは保てていますか？', rev:false, sign:'睡眠リズムが乱れている'}
+];
+const ANS = ['はい','少し','いいえ'];
+const DEFAULT_COPING = {
+  0:[{icon:'🎮',title:'好きなことを30分する',sub:'ゲーム・動画・音楽など'},
+     {icon:'🚶',title:'散歩する',sub:'気分転換に外の空気を'},
+     {icon:'🛏️',title:'同じ時間に寝て起きる',sub:'リズムを保つのがいちばんのケア'},
+     {icon:'🍙',title:'3食しっかり食べる',sub:'朝ごはんを抜かないように'}],
+  1:[{icon:'🌿',title:'10分散歩する',sub:'外の空気を吸うだけでも効果があります'},
+     {icon:'🎮',title:'好きなことを30分する',sub:'ゲーム・動画・音楽など'},
+     {icon:'🫁',title:'深呼吸をする',sub:'4秒吸って、4秒止めて、8秒吐く',breath:true},
+     {icon:'📝',title:'考えていることを書き出す',sub:'頭の中を整理しましょう'}],
+  2:[{icon:'🛌',title:'予定を減らして休む',sub:'休むことも大事な対処です'},
+     {icon:'🫁',title:'深呼吸をする',sub:'4秒吸って、4秒止めて、8秒吐く',breath:true},
+     {icon:'📱',title:'信頼できる人に話す',sub:'「ちょっとしんどい」と伝えるだけでOK'},
+     {icon:'🏥',title:'主治医・支援者に相談する',sub:'早めに相談すると回復も早くなります'}],
+  3:[{icon:'☎️',title:'連絡先に電話する',sub:'ヘルプ画面から電話できます',help:true},
+     {icon:'🫁',title:'深呼吸をする',sub:'4秒吸って、4秒止めて、8秒吐く',breath:true},
+     {icon:'🏠',title:'安全な場所で過ごす',sub:'一人にならないようにしましょう'}]
+};
+const DEFAULT_SIGNS = {0:['よく眠れている','ごはんがおいしい'],1:['外出したくなくなる','同じことを考え続ける'],2:['朝起きられない','人と話したくない'],3:['何も手につかない']};
+const DEFAULT_ACTS = [
+  {name:'ゲームをする',icon:'🎮',place:'家',time:'30分',cost:'無料',cat:'趣味'},
+  {name:'音楽を聴く',icon:'🎵',place:'家',time:'30分',cost:'無料',cat:'趣味'},
+  {name:'好きな動画を見る',icon:'▶️',place:'家',time:'30分',cost:'無料',cat:'趣味'},
+  {name:'散歩する',icon:'🌳',place:'近所',time:'30分',cost:'無料',cat:'運動'},
+  {name:'カフェでのんびりする',icon:'☕',place:'外出',time:'1時間',cost:'〜1,000円',cat:'外出'},
+  {name:'お風呂にゆっくり入る',icon:'🛁',place:'家',time:'30分',cost:'無料',cat:'リラックス'},
+  {name:'ストレッチする',icon:'🧘',place:'家',time:'10分',cost:'無料',cat:'運動'},
+  {name:'好きなおやつを食べる',icon:'🍰',place:'近所',time:'10分',cost:'〜1,000円',cat:'リラックス'},
+  {name:'本・マンガを読む',icon:'📚',place:'家',time:'30分',cost:'無料',cat:'趣味'},
+  {name:'ペットや動物の動画を見る',icon:'🐱',place:'家',time:'10分',cost:'無料',cat:'リラックス'}
+];
+const CATS = ['趣味','運動','外出','リラックス','その他'];
+const CAT_COLOR = {'趣味':'#e5487a','運動':'#3fae5a','外出':'#1e88e5','リラックス':'#f07b1d','その他':'#9aa7b6'};
+const PUBLIC_LINES = [
+  {name:'救急（命に関わるとき）',tel:'119',note:'24時間'},
+  {name:'よりそいホットライン',tel:'0120-279-338',note:'24時間・無料'},
+  {name:'#いのちSOS',tel:'0120-061-338',note:'無料・受付時間は公式サイトで確認'},
+  {name:'こころの健康相談統一ダイヤル',tel:'0570-064-556',note:'お住まいの地域の窓口につながります'},
+  {name:'いのちの電話（ナビダイヤル）',tel:'0570-783-556',note:'10:00〜22:00'}
+];
+const MESSAGES = [
+  'きっと、\nまた楽しいことが\n待ってるよ。',
+  '今日もよくがんばったね。\nゆっくり休んでいいんだよ。',
+  'つらい日があっても、\nあなたはひとりじゃない。',
+  '小さな一歩で十分。\nできたことを\n大切にしよう。',
+  '雨の日のあとには、\nちゃんと晴れの日が\nやってくるよ。'
+];
+
+/* ========== 保存 ========== */
+const KEY = 'crisis-plan-v1';
+function defaults(){
+  return {
+    profile:{name:'',avatar:'🐱'},
+    level:null,
+    checks:[],
+    signs:JSON.parse(JSON.stringify(DEFAULT_SIGNS)),
+    coping:JSON.parse(JSON.stringify(DEFAULT_COPING)),
+    contacts:[],
+    acts:DEFAULT_ACTS.map((a,i)=>({...a,id:'a'+i,fav:false})),
+    logs:[],
+    reminders:{daily:true,time:'09:00',todo:true,rhythm:false,low:false},
+    notified:''
+  };
+}
+let S = load();
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw){ return Object.assign(defaults(), JSON.parse(raw)); }
+  }catch(e){}
+  return defaults();
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+
+/* ========== ユーティリティ ========== */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+const today = () => { const d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); };
+const dayKey = iso => { const d=new Date(iso); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); };
+function fmt(iso){ const d=new Date(iso); const p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; }
+function stars(n){ const r=Math.round(n); return '★'.repeat(r)+'<span style="color:#d7dee7">'+'★'.repeat(5-r)+'</span>'; }
+function avgFor(name){ const l=S.logs.filter(x=>x.name===name); if(!l.length) return null; return l.reduce((a,b)=>a+b.stars,0)/l.length; }
+function toast(t){ const el=document.createElement('div'); el.className='toast'; el.textContent=t; $('#app').appendChild(el); setTimeout(()=>el.remove(),1900); }
+function modal(html, onMount){
+  const ov=document.createElement('div'); ov.className='ov';
+  ov.innerHTML=`<div class="sheet">${html}</div>`;
+  ov.addEventListener('click',e=>{ if(e.target===ov) ov.remove(); });
+  $('#app').appendChild(ov);
+  onMount && onMount(ov);
+  return ov;
+}
+function closeModal(){ document.querySelectorAll('.ov').forEach(o=>o.remove()); }
+
+/* ========== ルーター ========== */
+let stack = [], lastKey = '';
+const TAB_OF = {home:'home',check:'check',result:'check',todo:'todo',list:'list',record:'list',menu:'menu',mypage:'menu',help:'menu',custom:'menu',notify:'menu',settings:'menu'};
+function go(name, params={}, push=true){
+  if(name==='record') REC={stars:0,effect:null};
+  if(push && stack.length) stack.push({name,params}); else stack=[{name,params}];
+  render();
+}
+function tab(name){ stack=[{name,params:{}}]; render(); }
+function back(){ if(stack.length>1){ stack.pop(); render(); } else tab('home'); }
+function render(){
+  const {name,params} = stack[stack.length-1];
+  const main = $('#main');
+  const key = name+':'+stack.length, y = main.scrollTop;
+  main.innerHTML = '<div'+(key===lastKey?'':' class="fadein"')+'>'+(SCREENS[name]||SCREENS.home)(params)+'</div>';
+  main.scrollTop = key===lastKey ? y : 0;
+  lastKey = key;
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on', b.dataset.tab===TAB_OF[name]));
+  AFTER[name] && AFTER[name](params);
+}
+const bar = (title, showBack=true) => `<div class="topbar">${showBack?'<button class="back" onclick="back()" aria-label="戻る">‹</button>':''}<h1>${title}</h1></div>`;
+
+/* ========== 画面 ========== */
+const SCREENS = {}, AFTER = {};
+
+// 共通の風景（雲・山・木）＋ねこ
+function catSVG(x,y,s,color='#5b7fa6'){
+  return `<g transform="translate(${x} ${y}) scale(${s})" fill="${color}">
+    <path d="M-38 70 Q-46 20 -26 -2 Q0 -14 26 -2 Q46 20 38 70 Z"/>
+    <path d="M30 62 Q70 60 66 30 Q64 16 54 18" fill="none" stroke="${color}" stroke-width="10" stroke-linecap="round"/>
+    <circle cx="0" cy="-22" r="26"/>
+    <path d="M-24 -32 L-20 -62 L-4 -42 Z"/><path d="M24 -32 L20 -62 L4 -42 Z"/>
+    <path d="M-20 -36 L-18 -54 L-9 -42 Z" fill="#f6b8c8"/><path d="M20 -36 L18 -54 L9 -42 Z" fill="#f6b8c8"/>
+    <ellipse cx="0" cy="18" rx="18" ry="26" fill="#eaf2fb" opacity=".85"/>
+  </g>`;
+}
+function catFace(x,y,s){
+  return `<g transform="translate(${x} ${y}) scale(${s})">
+    <ellipse cx="-9" cy="-24" rx="3.5" ry="5" fill="#1f2d3d"/><ellipse cx="9" cy="-24" rx="3.5" ry="5" fill="#1f2d3d"/>
+    <circle cx="-8" cy="-26" r="1.3" fill="#fff"/><circle cx="10" cy="-26" r="1.3" fill="#fff"/>
+    <path d="M-3 -15 Q0 -12 3 -15" fill="none" stroke="#1f2d3d" stroke-width="1.6" stroke-linecap="round"/>
+    <ellipse cx="-17" cy="-15" rx="4" ry="2.4" fill="#f6a5bb" opacity=".8"/><ellipse cx="17" cy="-15" rx="4" ry="2.4" fill="#f6a5bb" opacity=".8"/>
+  </g>`;
+}
+
+SCREENS.home = () => {
+  const lv = S.level;
+  const checkedToday = S.checks.some(c=>dayKey(c.date)===today());
+  const now = new Date(); const [hh,mm]=(S.reminders.time||'09:00').split(':').map(Number);
+  const due = S.reminders.daily && !checkedToday && (now.getHours()*60+now.getMinutes() >= hh*60+mm);
+  return `
+  <div class="hero">
+    <svg class="scene" viewBox="0 0 400 300" preserveAspectRatio="xMidYMax slice">
+      <g fill="#fff" opacity=".85"><ellipse cx="300" cy="60" rx="46" ry="16"/><ellipse cx="330" cy="50" rx="30" ry="16"/><ellipse cx="80" cy="200" rx="50" ry="14" opacity=".6"/></g>
+      <path d="M0 230 Q60 190 120 215 Q190 180 260 212 Q330 185 400 205 L400 300 L0 300Z" fill="#9fd0a8"/>
+      <path d="M0 250 Q80 225 170 245 Q260 228 400 240 L400 300 L0 300Z" fill="#7cc08d"/>
+      <g fill="#5fa874"><circle cx="40" cy="232" r="14"/><circle cx="62" cy="238" r="10"/><circle cx="380" cy="222" r="16"/></g>
+      ${catSVG(315,180,0.95)}${catFace(315,180,0.95)}
+    </svg>
+    ${S.profile.name?`<div class="hello">${esc(S.profile.avatar)} ${esc(S.profile.name)}さん</div>`:''}
+    <h1>クライシスプラン</h1>
+    <p>つらい時も、<br>あなたはひとりじゃない。<br>今の状態を知って、<br>できることからはじめましょう。</p>
+  </div>
+  <div class="card levels">
+    <h2>今のあなたの状態は？</h2>
+    ${LEVELS.map((L,i)=>`<button class="lv lv${i} ${lv===i?'cur':''}" onclick="pickLevel(${i})">
+      <div class="face">${L.emoji}</div><div class="grow"><b>${L.name}</b><span>（${L.sub}）</span></div>${lv===i?'<span style="font-size:11px;font-weight:700">いまここ</span>':''}
+    </button>`).join('')}
+    <p class="small" style="margin:10px 2px 0;text-align:center">わからないときは <a href="#" onclick="tab('check');return false" style="color:var(--primary)">状態チェック</a> をしてみましょう</p>
+  </div>
+  ${due?`<button class="banner" onclick="tab('check')">⏰<span class="grow">今日の状態チェックがまだです。<br><b>1分でできます。やってみませんか？</b></span><span class="chev">›</span></button>`:''}
+  <div class="quick">
+    <button onclick="openBreath()"><i>🫁</i>深呼吸</button>
+    <button onclick="go('message',{})"><i>🌅</i>ひと休み</button>
+    <button onclick="go('help')" style="color:var(--p)"><i>☎️</i>ヘルプ</button>
+  </div>`;
+};
+function pickLevel(i){
+  S.level=i; save();
+  if(i===3){ go('help'); return; }
+  go('todo');
+}
+
+SCREENS.check = () => {
+  const a = CHECK;
+  const done = a.filter(x=>x!==null).length;
+  return `${bar('今の状態をチェック', false)}
+  <p class="lead">ここ数日のあなたの様子を教えてください。<br>（あてはまるものを選んでください）</p>
+  <div class="progress"><div style="width:${done/QUESTIONS.length*100}%"></div></div>
+  <div class="sec">
+  ${QUESTIONS.map((q,i)=>`<div class="card q"><div class="qi">${q.icon}</div><div class="grow"><p>${q.q}</p>
+    <div class="seg">${ANS.map((t,j)=>`<button class="${a[i]===j?'on':''}" onclick="answer(${i},${j})">${t}</button>`).join('')}</div></div></div>`).join('')}
+  </div>
+  <div class="sec"><button class="btn" ${done<QUESTIONS.length?'disabled':''} onclick="finishCheck()">チェックを完了する</button></div>`;
+};
+let CHECK = QUESTIONS.map(()=>null);
+function answer(i,j){ CHECK[i]=j; const y=$('#main').scrollTop; render(); $('#main').scrollTop=y; }
+function scoreOf(i,j){ return QUESTIONS[i].rev ? 2-j : j; }
+function finishCheck(){
+  const scores = CHECK.map((j,i)=>scoreOf(i,j));
+  const total = scores.reduce((a,b)=>a+b,0);
+  const level = total<=2?0: total<=6?1: total<=9?2:3;
+  const signs = scores.map((s,i)=>s>0?QUESTIONS[i].sign:null).filter(Boolean);
+  const rec = {date:new Date().toISOString(), score:total, level, signs};
+  S.checks.push(rec); S.level=level; save();
+  CHECK = QUESTIONS.map(()=>null);
+  go('result',{rec});
+}
+
+SCREENS.result = ({rec}) => {
+  rec = rec || S.checks[S.checks.length-1];
+  if(!rec) return bar('あなたの今の状態')+'<div class="empty">まだチェックの記録がありません</div>';
+  const L = LEVELS[rec.level];
+  return `${bar('あなたの今の状態')}
+  <div class="sec"><div class="result" style="background:${L.bg}">
+    <div class="big">${L.emoji}</div>
+    <h2 style="color:${L.color}">${L.name}</h2>
+    <p>${esc(L.msg).replace(/\n/g,'<br>')}</p>
+    <div class="meter">${LEVELS.map((x,i)=>`<div style="background:${i<=rec.level?x.color:''}"></div>`).join('')}</div>
+  </div></div>
+  <h2 class="sh">主なサイン</h2>
+  <div class="sec card"><ul class="signs">${rec.signs.length?rec.signs.map(s=>`<li><span style="color:var(--star)">★</span>${esc(s)}</li>`).join(''):'<li>大きな変化は見られませんでした 🌱</li>'}</ul></div>
+  ${S.signs[rec.level]?.length?`<h2 class="sh">あなたが登録した「${L.name}」のサイン</h2>
+  <div class="sec card"><ul class="signs">${S.signs[rec.level].map(s=>`<li>🔖 ${esc(s)}</li>`).join('')}</ul>
+  <p class="small" style="margin:6px 0 0">当てはまるものがあれば、この段階の対処をためしてみましょう。</p></div>`:''}
+  <div class="sec">
+    ${rec.level===3?`<button class="btn pink" onclick="go('help')">ヘルプ画面をひらく</button>`:`<button class="btn" onclick="tab('todo')">おすすめの行動を見る</button>`}
+    <div style="height:10px"></div>
+    <button class="btn sub" onclick="tab('home')">ホームにもどる</button>
+  </div>
+  <p class="small" style="margin:0 20px">※このチェックは目安です。診断ではありません。気になるときは主治医や支援者に相談しましょう。</p>`;
+};
+
+SCREENS.todo = () => {
+  const lv = S.level;
+  if(lv===null) return `${bar('今のあなたにおすすめのこと',false)}
+    <div class="sec card empty">まだ今の状態が選ばれていません。<br><br>
+    <button class="btn" onclick="tab('home')">ホームで状態を選ぶ</button><div style="height:8px"></div>
+    <button class="btn sub" onclick="tab('check')">状態チェックをする</button></div>`;
+  const L = LEVELS[lv];
+  const items = S.coping[lv]||[];
+  return `${bar('今のあなたにおすすめのこと',false)}
+  <div class="lvchip" style="background:${L.bg};color:${L.color}">${L.emoji} ${L.name}</div>
+  <p class="lead">まずは、できることから少しずつ。<br>無理をせず、できそうなことを選んでみましょう。</p>
+  ${lv===3?`<div class="sec"><button class="btn pink" onclick="go('help')">☎️ すぐに連絡先をひらく</button></div>`:''}
+  <h2 class="sh">◯ おすすめの行動</h2>
+  <div class="sec">
+  ${items.length?items.map((it,i)=>`<div class="card"><button class="act" onclick="doCoping(${i})">
+    <div class="ico">${esc(it.icon)}</div><div class="grow"><b>${esc(it.title)}</b>${it.sub?`<span class="small">（${esc(it.sub)}）</span>`:''}</div><span class="chev">›</span>
+  </button></div>`).join(''):'<div class="card empty">行動が登録されていません。<br>メニュー →「自分専用のプランを作る」から追加できます。</div>'}
+  </div>
+  <div class="sec"><button class="btn" onclick="tab('list')">他のおすすめを見る（楽しい活動リスト）</button>
+  <div style="height:8px"></div><button class="btn sub" onclick="go('custom',{lv:${lv}})">この段階の行動を編集する</button></div>`;
+};
+function doCoping(i){
+  const it = S.coping[S.level][i];
+  if(it.breath){ openBreath(it); return; }
+  if(it.help){ go('help'); return; }
+  modal(`<h3>${esc(it.icon)} ${esc(it.title)}</h3>
+    ${it.sub?`<p class="small" style="margin:0 0 14px">${esc(it.sub)}</p>`:''}
+    <p style="font-size:14px">できそうなら、ためしてみましょう。<br>やってみたら、感想を記録しておくとあとで役に立ちます。</p>
+    <button class="btn" id="mDo">やってみた！記録する</button><div style="height:8px"></div>
+    <button class="btn sub" onclick="closeModal()">あとでやる</button>`, ov=>{
+      ov.querySelector('#mDo').onclick=()=>{ closeModal(); go('record',{name:it.title,icon:it.icon,cat:'その他'}); };
+    });
+}
+
+let FILTER='all';
+SCREENS.list = () => {
+  const F = {all:()=>true, home:a=>a.place==='家', short:a=>['10分','30分'].includes(a.time), free:a=>a.cost==='無料', fav:a=>a.fav};
+  const list = S.acts.filter(F[FILTER]);
+  const btn=(k,t)=>`<button class="${FILTER===k?'on':''}" onclick="FILTER='${k}';render()">${t}</button>`;
+  return `${bar('楽しい活動リスト',false)}
+  <p class="lead">今の気分に合った「楽しいこと」を見つけましょう。</p>
+  <div class="filters">${btn('all','すべて')}${btn('home','家でできる')}${btn('short','30分以内')}${btn('free','お金をかけない')}${btn('fav','♥ お気に入り')}</div>
+  <div class="sec">
+  ${list.length?list.map(a=>{const av=avgFor(a.name);return `<div class="card row">
+    <button class="row grow" style="text-align:left" onclick="go('record',{actId:'${a.id}'})">
+      <div class="ico">${esc(a.icon)}</div>
+      <div class="grow"><b>${esc(a.name)}</b><div><span class="chip">${esc(a.place)}</span><span class="chip">${esc(a.time)}</span><span class="chip">${esc(a.cost)}</span></div>
+      <div class="stars">${av?`★ ${av.toFixed(1)} <span class="small">（${S.logs.filter(x=>x.name===a.name).length}回）</span>`:'<span class="small">まだ記録なし</span>'}</div></div>
+    </button>
+    <button class="fav ${a.fav?'on':''}" onclick="toggleFav('${a.id}')" aria-label="お気に入り">${a.fav?'♥':'♡'}</button>
+  </div>`;}).join(''):'<div class="card empty">該当する活動がありません</div>'}
+  </div>
+  <div class="sec"><button class="btn ghost" onclick="addAct()">＋ 自分の「楽しいこと」を追加</button></div>`;
+};
+function toggleFav(id){ const a=S.acts.find(x=>x.id===id); a.fav=!a.fav; save(); const y=$('#main').scrollTop; render(); $('#main').scrollTop=y; }
+function addAct(editId){
+  const a = editId ? S.acts.find(x=>x.id===editId) : {name:'',icon:'⭐',place:'家',time:'30分',cost:'無料',cat:'趣味'};
+  const sel=(id,opts,v)=>`<select id="${id}">${opts.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('')}</select>`;
+  modal(`<h3>${editId?'活動を編集':'楽しいことを追加'}</h3>
+    <div class="row"><div style="width:70px"><label class="f">絵文字</label><input type="text" id="aIcon" value="${esc(a.icon)}" maxlength="4" style="text-align:center;font-size:20px"></div>
+    <div class="grow"><label class="f">名前</label><input type="text" id="aName" value="${esc(a.name)}" placeholder="例：プラモデルを作る" maxlength="30"></div></div>
+    <div class="row"><div class="grow"><label class="f">場所</label>${sel('aPlace',['家','近所','外出'],a.place)}</div>
+    <div class="grow"><label class="f">時間</label>${sel('aTime',['10分','30分','1時間','それ以上'],a.time)}</div></div>
+    <div class="row"><div class="grow"><label class="f">お金</label>${sel('aCost',['無料','〜1,000円','それ以上'],a.cost)}</div>
+    <div class="grow"><label class="f">カテゴリ</label>${sel('aCat',CATS,a.cat)}</div></div>
+    <div style="height:16px"></div><button class="btn" id="aSave">保存する</button>
+    ${editId?'<div style="height:8px"></div><button class="btn sub" id="aDel" style="color:#c0392b">この活動を削除</button>':''}`, ov=>{
+      ov.querySelector('#aSave').onclick=()=>{
+        const name=ov.querySelector('#aName').value.trim(); if(!name){ toast('名前を入れてください'); return; }
+        const v={name,icon:ov.querySelector('#aIcon').value.trim()||'⭐',place:ov.querySelector('#aPlace').value,time:ov.querySelector('#aTime').value,cost:ov.querySelector('#aCost').value,cat:ov.querySelector('#aCat').value};
+        if(editId) Object.assign(a,v); else S.acts.push({...v,id:uid(),fav:false});
+        save(); closeModal(); render(); toast('保存しました');
+      };
+      const d=ov.querySelector('#aDel'); if(d) d.onclick=()=>{ if(confirm('削除しますか？')){ S.acts=S.acts.filter(x=>x.id!==editId); save(); closeModal(); tab('list'); } };
+    });
+}
+
+let REC = {stars:0,effect:null};
+SCREENS.record = (p) => {
+  const a = p.actId ? S.acts.find(x=>x.id===p.actId) : {name:p.name,icon:p.icon,place:'',time:'',cost:'',cat:p.cat||'その他'};
+  if(!a) return bar('活動記録')+'<div class="empty">活動が見つかりません</div>';
+  const eff=['良くなった','少し良くなった','変わらない'];
+  return `${bar('活動記録')}
+  <div class="sec card row">
+    <div class="ico" style="width:56px;height:56px;font-size:30px">${esc(a.icon)}</div>
+    <div class="grow"><b style="font-size:17px">${esc(a.name)}</b>
+    <div>${a.place?`<span class="chip">${esc(a.place)}</span><span class="chip">${esc(a.time)}</span><span class="chip">${esc(a.cost)}</span>`:''}</div>
+    <div class="small">${fmt(new Date().toISOString())}</div></div>
+    ${p.actId?`<button class="mini sub" onclick="addAct('${a.id}')">編集</button>`:''}
+  </div>
+  <div class="sec card">
+    <b>どのくらい楽しかったですか？</b>
+    <div class="starpick" style="margin:10px 0">${[1,2,3,4,5].map(n=>`<button class="${REC.stars>=n?'on':''}" onclick="REC.stars=${n};render()">★</button>`).join('')}
+    <span class="small" style="margin-left:8px">${REC.stars} / 5</span></div>
+    <b>気分への効果</b>
+    <div class="seg" style="margin:8px 0 4px">${eff.map((t,i)=>`<button class="${REC.effect===i?'on':''}" onclick="REC.effect=${i};render()" style="font-size:12px">${t}</button>`).join('')}</div>
+    <label class="f">メモ（任意）</label>
+    <textarea id="memo" placeholder="例：楽しかったです。少し気分が軽くなりました。">${esc(REC.memo||'')}</textarea>
+  </div>
+  <div class="sec"><button class="btn" ${!REC.stars||REC.effect===null?'disabled':''} onclick="saveRec()">保存する</button></div>`;
+};
+AFTER.record = () => { const m=$('#memo'); if(m) m.oninput=()=>REC.memo=m.value; };
+function saveRec(){
+  const p = stack[stack.length-1].params;
+  const a = p.actId ? S.acts.find(x=>x.id===p.actId) : {name:p.name,icon:p.icon,cat:p.cat||'その他'};
+  S.logs.push({id:uid(),name:a.name,icon:a.icon,cat:a.cat,date:new Date().toISOString(),stars:REC.stars,effect:REC.effect,memo:REC.memo||''});
+  save(); REC={stars:0,effect:null};
+  go('message',{after:true});
+}
+
+SCREENS.message = (p) => {
+  const m = MESSAGES[Math.floor(Math.random()*MESSAGES.length)];
+  let st=''; for(let i=0;i<40;i++){ const x=(i*97)%400, y=(i*53)%170; st+=`<circle class="twinkle" style="animation-delay:${(i%7)*.4}s" cx="${x}" cy="${y}" r="${(i%3)*.5+.6}" fill="#fff"/>`; }
+  let city=''; for(let i=0;i<22;i++){ const w=14+(i*7)%18, h=30+(i*37)%70, x=i*19; city+=`<rect x="${x}" y="${560-h}" width="${w}" height="${h+300}" fill="#3e4673"/>`; if(i%2) city+=`<rect x="${x+4}" y="${570-h}" width="3" height="4" fill="#ffd98a"/><rect x="${x+9}" y="${585-h}" width="3" height="4" fill="#ffd98a"/>`; }
+  return `<div class="msg">
+    <svg viewBox="0 0 400 800" preserveAspectRatio="xMidYMid slice">
+      <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#3b4f9a"/><stop offset=".3" stop-color="#7a6fbf"/><stop offset=".55" stop-color="#e79ab5"/><stop offset=".72" stop-color="#ffc58a"/><stop offset=".85" stop-color="#ffdf9e"/></linearGradient>
+        <radialGradient id="sun"><stop offset="0" stop-color="#fff7d6"/><stop offset=".4" stop-color="#ffe08a" stop-opacity=".9"/><stop offset="1" stop-color="#ffb36b" stop-opacity="0"/></radialGradient></defs>
+      <rect width="400" height="800" fill="url(#sky)"/>
+      ${st}
+      <circle cx="200" cy="560" r="150" fill="url(#sun)"/>
+      <g fill="#f7b8c6" opacity=".7"><ellipse cx="90" cy="300" rx="70" ry="12"/><ellipse cx="320" cy="360" rx="80" ry="10"/><ellipse cx="260" cy="250" rx="50" ry="8"/></g>
+      <path d="M0 520 Q100 480 200 505 Q300 470 400 500 L400 800 L0 800Z" fill="#6c6aa3" opacity=".7"/>
+      ${city}
+      <rect x="0" y="640" width="400" height="160" fill="#2b2f55"/>
+      <rect x="0" y="636" width="400" height="8" fill="#4a4f80"/>
+      <g transform="translate(250 590)">${catSVG(0,0,.75,'#2b2f55').replace('fill="#eaf2fb" opacity=".85"','fill="#2b2f55"')}</g>
+    </svg>
+    <div class="words">${esc(m)}</div>
+    <button class="btn" onclick="tab('home')">ホームに戻る</button>
+  </div>`;
+};
+AFTER.message = (p) => { if(p.after) setTimeout(()=>toast('記録を保存しました'),300); };
+
+SCREENS.menu = () => `${bar('メニュー',false)}
+  <div class="sec card menu">
+    ${[['mypage','📊','マイページ','記録の分析・バッジ'],['help','☎️','ヘルプ（もっともつらいとき）','緊急時の連絡先・相談窓口'],['custom','🛠️','自分専用のクライシスプランを作る','サインと対処方法を設定'],['notify','🔔','通知・リマインダー','習慣化をサポート'],['message','🌅','ひと休みメッセージ','気分が落ちたときに'],['settings','⚙️','設定','プロフィール・バックアップ']]
+     .map(([k,i,t,s])=>`<button class="mi" onclick="go('${k}')"><i>${i}</i><div class="grow"><b>${t}</b><div class="small">${s}</div></div><span class="chev">›</span></button>`).join('')}
+  </div>`;
+
+let MYTAB='stat';
+SCREENS.mypage = () => {
+  const t=(k,n)=>`<button class="${MYTAB===k?'on':''}" onclick="MYTAB='${k}';render()">${n}</button>`;
+  let body='';
+  if(MYTAB==='stat'){
+    const names=[...new Set(S.logs.map(l=>l.name))];
+    const rank=names.map(n=>({n,icon:S.logs.find(l=>l.name===n).icon,av:avgFor(n)})).sort((a,b)=>b.av-a.av).slice(0,3);
+    const catCount={}; S.logs.forEach(l=>catCount[l.cat||'その他']=(catCount[l.cat||'その他']||0)+1);
+    const tot=S.logs.length;
+    const good=S.logs.filter(l=>l.effect!==2).length;
+    const hist=S.checks.slice(-14);
+    body=`
+    <h2 class="sh">あなたの傾向</h2>
+    <div class="sec card"><b>効果が高い活動 TOP3</b>
+      ${rank.length?`<div>${rank.map((r,i)=>`<div class="rank"><span class="n">${i+1}</span><span>${esc(r.icon)}</span><span class="grow">${esc(r.n)}</span><b>${r.av.toFixed(1)}</b></div>`).join('')}</div>
+      <p class="small" style="margin:6px 0 0">→ 「${esc(rank[0].n)}」で気分が上がりやすい傾向があります。</p>`:'<div class="empty">活動を記録すると、ここに表示されます</div>'}
+    </div>
+    ${tot?`<div class="sec card"><b>記録 ${tot}回</b><span class="small">　うち気分が良くなった：${Math.round(good/tot*100)}%</span></div>`:''}
+    <div class="sec card"><b>よく使うカテゴリ</b>
+      ${tot?CATS.filter(c=>catCount[c]).map(c=>{const pc=Math.round(catCount[c]/tot*100);return `<div class="row" style="margin-top:8px"><span style="width:76px;font-size:13px">${c}</span><div class="bar"><div style="width:${pc}%;background:${CAT_COLOR[c]}"></div></div><span class="small" style="width:36px;text-align:right">${pc}%</span></div>`}).join(''):'<div class="empty">まだ記録がありません</div>'}
+    </div>
+    <div class="sec card"><b>状態チェックの記録</b><span class="small">（最近${hist.length}回）</span>
+      ${hist.length?`<div class="hist">${hist.map(c=>`<div title="${fmt(c.date)} ${LEVELS[c.level].name}" style="height:${25+c.level*25}%;background:${LEVELS[c.level].color}"></div>`).join('')}</div>
+      <div class="row" style="flex-wrap:wrap;gap:8px;margin-top:6px">${LEVELS.map(L=>`<span class="small"><span style="color:${L.color}">●</span>${L.name}</span>`).join('')}</div>`:'<div class="empty">チェックをすると変化がグラフで見られます</div>'}
+    </div>
+    <h2 class="sh">最近の記録</h2>
+    <div class="sec">${S.logs.slice(-10).reverse().map(l=>`<div class="card"><div class="row"><span style="font-size:22px">${esc(l.icon)}</span><div class="grow"><b>${esc(l.name)}</b><div class="small">${fmt(l.date)}</div></div><span class="stars">${stars(l.stars)}</span></div>${l.memo?`<p class="small" style="margin:6px 0 0">${esc(l.memo)}</p>`:''}</div>`).join('')||'<div class="card empty">まだ記録がありません</div>'}</div>`;
+  } else {
+    const days=new Set(S.checks.map(c=>dayKey(c.date)));
+    let streak=0; const d=new Date(); while(days.has(d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate())){ streak++; d.setDate(d.getDate()-1); }
+    const B=[
+      ['🌱','はじめてのチェック',S.checks.length>=1],['📅','チェック3日連続',streak>=3],['🗓️','チェック7日連続',streak>=7],
+      ['✏️','はじめての記録',S.logs.length>=1],['⭐','記録10回',S.logs.length>=10],['🏆','記録30回',S.logs.length>=30],
+      ['🛠️','プランを作った',JSON.stringify(S.coping)!==JSON.stringify(DEFAULT_COPING)||JSON.stringify(S.signs)!==JSON.stringify(DEFAULT_SIGNS)],
+      ['☎️','連絡先を登録',S.contacts.length>=1],['💖','お気に入り3つ',S.acts.filter(a=>a.fav).length>=3]
+    ];
+    body=`<p class="lead">現在のチェック連続日数：<b>${streak}日</b></p><div class="sec badges">${B.map(([i,n,ok])=>`<div class="badge ${ok?'':'off'}"><i>${i}</i>${n}</div>`).join('')}</div>`;
+  }
+  return `${bar('マイページ')}<div class="tabs">${t('stat','記録の分析')}${t('badge','バッジ')}<button onclick="go('settings')">設定</button></div>${body}`;
+};
+
+SCREENS.help = () => `${bar('ヘルプ（もっともつらいとき）')}
+  <div class="sec alert">📞 すぐに連絡してください</div>
+  <div class="sec card">
+    ${S.contacts.length?S.contacts.map((c,i)=>`<div class="tel"><div class="ic">📞</div><div class="grow"><b>${esc(c.name)}</b><div class="small">${esc(c.tel)}</div></div>
+      <a class="mini" style="background:var(--p)" href="tel:${esc(c.tel.replace(/[^\d+#*]/g,''))}">電話する</a>
+      <button class="mini del" onclick="delContact(${i})">✕</button></div>`).join(''):'<div class="empty">まだ連絡先が登録されていません。<br>家族・主治医・支援機関などを登録しておきましょう。</div>'}
+    <div style="height:8px"></div><button class="btn ghost" onclick="addContact()">＋ 連絡先を追加</button>
+  </div>
+  <h2 class="sh">◯ その他の相談窓口</h2>
+  <div class="sec card">
+    ${PUBLIC_LINES.map(c=>`<div class="tel"><div class="ic" style="background:var(--primary-l)">${c.tel==='119'?'🚑':'🤝'}</div><div class="grow"><b style="font-size:14px">${c.name}</b><div class="small">${c.tel}（${c.note}）</div></div>
+      <a class="mini" href="tel:${c.tel.replace(/[^\d#]/g,'')}">電話する</a></div>`).join('')}
+    <p class="small" style="margin:8px 0 0">※受付時間や番号は変わることがあります。各窓口の公式情報もご確認ください。</p>
+  </div>
+  <div class="sec"><button class="btn sub" onclick="openBreath()">🫁 まずは一緒に深呼吸する</button></div>`;
+function addContact(){
+  modal(`<h3>連絡先を追加</h3>
+    <label class="f">名前（例：家族（母）、主治医、支援センター）</label><input type="text" id="cName" maxlength="30">
+    <label class="f">電話番号</label><input type="tel" id="cTel" maxlength="20" placeholder="090-0000-0000">
+    <div style="height:16px"></div><button class="btn" id="cSave">保存する</button>`, ov=>{
+      ov.querySelector('#cSave').onclick=()=>{
+        const name=ov.querySelector('#cName').value.trim(), tel=ov.querySelector('#cTel').value.trim();
+        if(!name||!tel){ toast('名前と電話番号を入れてください'); return; }
+        S.contacts.push({name,tel}); save(); closeModal(); render(); toast('登録しました');
+      };
+    });
+}
+function delContact(i){ if(confirm(`「${S.contacts[i].name}」を削除しますか？`)){ S.contacts.splice(i,1); save(); render(); } }
+
+SCREENS.custom = (p) => {
+  const lv = p.lv ?? (S.level ?? 1);
+  const L = LEVELS[lv];
+  return `${bar('自分専用のクライシスプランを作る')}
+  <div class="tabs" style="flex-wrap:wrap">${LEVELS.map((x,i)=>`<button class="${i===lv?'on':''}" style="${i===lv?`background:${x.color}`:''};font-size:11px" onclick="stack[stack.length-1].params={lv:${i}};render()">${x.emoji}${x.name}</button>`).join('')}</div>
+  <h2 class="sh">自分のサイン（${L.name}）</h2>
+  <p class="lead">あなたが「${L.sub}」に出るサインを登録します。</p>
+  <div class="sec card">
+    ${(S.signs[lv]||[]).map((s,i)=>`<div class="row" style="padding:6px 0;border-bottom:1px dashed var(--line)"><span>🔖</span><span class="grow">${esc(s)}</span><button class="mini del" onclick="delItem('signs',${lv},${i})">✕</button></div>`).join('')}
+    <div class="row" style="margin-top:10px"><input type="text" id="newSign" placeholder="例：外出したくなくなる" maxlength="40"><button class="mini" onclick="addSign(${lv})">追加</button></div>
+  </div>
+  <h2 class="sh">対処方法（${L.name}）</h2>
+  <p class="lead">このサインが出たときに「やること」を決めておきましょう。</p>
+  <div class="sec card">
+    ${(S.coping[lv]||[]).map((c,i)=>`<div class="row" style="padding:6px 0;border-bottom:1px dashed var(--line)"><span>${esc(c.icon)}</span><div class="grow">${esc(c.title)}${c.sub?`<div class="small">${esc(c.sub)}</div>`:''}</div><button class="mini del" onclick="delItem('coping',${lv},${i})">✕</button></div>`).join('')}
+    <div class="row" style="margin-top:10px"><input type="text" id="newIcon" value="✨" maxlength="4" style="width:56px;text-align:center"><input type="text" id="newCope" placeholder="例：好きな音楽を3曲聴く" maxlength="40"></div>
+    <input type="text" id="newCopeSub" placeholder="ひとこと補足（任意）" maxlength="40" style="margin-top:6px">
+    <button class="mini" style="margin-top:8px;width:100%;padding:9px" onclick="addCope(${lv})">対処方法を追加</button>
+  </div>
+  <div class="sec"><button class="btn sub" onclick="resetPlan(${lv})">この段階を初期設定にもどす</button></div>`;
+};
+function addSign(lv){ const v=$('#newSign').value.trim(); if(!v) return; (S.signs[lv]=S.signs[lv]||[]).push(v); save(); render(); toast('追加しました'); }
+function addCope(lv){ const t=$('#newCope').value.trim(); if(!t) return; (S.coping[lv]=S.coping[lv]||[]).push({icon:$('#newIcon').value.trim()||'✨',title:t,sub:$('#newCopeSub').value.trim()}); save(); render(); toast('追加しました'); }
+function delItem(k,lv,i){ S[k][lv].splice(i,1); save(); const y=$('#main').scrollTop; render(); $('#main').scrollTop=y; }
+function resetPlan(lv){ if(confirm('この段階のサインと対処方法を初期設定にもどしますか？')){ S.signs[lv]=[...DEFAULT_SIGNS[lv]]; S.coping[lv]=JSON.parse(JSON.stringify(DEFAULT_COPING[lv])); save(); render(); } }
+
+SCREENS.notify = () => {
+  const R=S.reminders;
+  const sw=(k)=>`<label class="sw"><input type="checkbox" ${R[k]?'checked':''} onchange="setRem('${k}',this.checked)"><span></span></label>`;
+  const perm = ('Notification' in window) ? Notification.permission : 'unsupported';
+  return `${bar('通知・リマインダー')}
+  <div class="sec card">
+    <div class="row" style="padding:8px 0;border-bottom:1px solid var(--line)"><span style="font-size:22px">⏰</span><div class="grow"><b>毎日の状態チェック</b><div class="small">毎日 <input type="time" value="${R.time}" onchange="setRem('time',this.value)" style="width:auto;padding:2px 6px;display:inline-block"></div></div>${sw('daily')}</div>
+    <div class="row" style="padding:8px 0;border-bottom:1px solid var(--line)"><span style="font-size:22px">🧭</span><div class="grow"><b>やることのリマインダー</b><div class="small">不調のときに、おすすめの行動をお知らせ</div></div>${sw('todo')}</div>
+    <div class="row" style="padding:8px 0;border-bottom:1px solid var(--line)"><span style="font-size:22px">🌙</span><div class="grow"><b>生活リズムのリマインダー</b><div class="small">就寝・起床・食事（22時・8時・12時）</div></div>${sw('rhythm')}</div>
+    <div class="row" style="padding:8px 0"><span style="font-size:22px">🌧️</span><div class="grow"><b>気分が落ち込みやすい時間の通知</b><div class="small">夕方18時に「ひと休み」をお知らせ</div></div>${sw('low')}</div>
+  </div>
+  <div class="sec card small">
+    ${perm==='granted'?'✅ 通知は許可されています。':perm==='unsupported'?'このブラウザは通知に対応していません。ホーム画面にお知らせを表示します。':`通知を受け取るには許可が必要です。<div style="height:8px"></div><button class="btn sub" onclick="askPerm()">通知を許可する</button>`}
+    <p style="margin:8px 0 0">※Webアプリのため、通知はこのページを開いている間に届きます。毎日のチェックは、時間を過ぎるとホーム画面にもお知らせが出ます。</p>
+  </div>`;
+};
+function setRem(k,v){ S.reminders[k]=v; save(); if(v===true && 'Notification' in window && Notification.permission==='default') askPerm(); }
+function askPerm(){ try{ Notification.requestPermission().then(()=>render()); }catch(e){} }
+function notify(id, title, body){
+  const key=today()+id; if(S.notified===key) return;
+  if(!('Notification' in window) || Notification.permission!=='granted') return;
+  try{ new Notification(title,{body}); S.notified=key; save(); }catch(e){}
+}
+function reminderTick(){
+  const R=S.reminders, n=new Date(), hm=n.getHours()*60+n.getMinutes();
+  const at=(t)=>{ const [h,m]=t.split(':').map(Number); return hm===h*60+m; };
+  if(R.daily && at(R.time) && !S.checks.some(c=>dayKey(c.date)===today())) notify('d','クライシスプラン','今日の状態チェックをしてみませんか？');
+  if(R.rhythm){ if(at('22:00')) notify('r1','おやすみの準備','そろそろ寝る準備をはじめましょう'); if(at('08:00')) notify('r2','おはようございます','カーテンを開けて朝の光を浴びましょう'); if(at('12:00')) notify('r3','お昼ごはん','ごはんを食べましたか？'); }
+  if(R.low && at('18:00')) notify('l','ひと休みしませんか','深呼吸をひとつ。今日もおつかれさま。');
+  if(R.todo && (S.level===1||S.level===2) && at('15:00')) notify('t','やることリマインダー','おすすめの行動をひとつ、ためしてみませんか？');
+}
+
+SCREENS.settings = () => `${bar('設定')}
+  <div class="sec card">
+    <b>プロフィール</b>
+    <div class="row"><div style="width:70px"><label class="f">アバター</label><input type="text" id="pAv" value="${esc(S.profile.avatar)}" maxlength="4" style="text-align:center;font-size:20px"></div>
+    <div class="grow"><label class="f">ニックネーム</label><input type="text" id="pName" value="${esc(S.profile.name)}" maxlength="20" placeholder="例：ともや"></div></div>
+    <div style="height:10px"></div><button class="btn sub" onclick="saveProfile()">プロフィールを保存</button>
+  </div>
+  <div class="sec card menu">
+    <button class="mi" onclick="privacy()"><i>🛡️</i><div class="grow"><b>プライバシー</b><div class="small">データの保存場所について</div></div><span class="chev">›</span></button>
+    <button class="mi" onclick="exportData()"><i>💾</i><div class="grow"><b>データのバックアップ</b><div class="small">ファイルに書き出す</div></div><span class="chev">›</span></button>
+    <button class="mi" onclick="$('#imp').click()"><i>📂</i><div class="grow"><b>バックアップから復元</b><div class="small">書き出したファイルを読み込む</div></div><span class="chev">›</span></button>
+    <button class="mi" onclick="howto()"><i>❓</i><div class="grow"><b>アプリの使い方</b></div><span class="chev">›</span></button>
+  </div>
+  <input type="file" id="imp" accept=".json,application/json" style="display:none" onchange="importData(this)">
+  <div class="sec"><button class="btn pink" onclick="resetAll()">すべてのデータを削除する</button></div>`;
+function saveProfile(){ S.profile.name=$('#pName').value.trim(); S.profile.avatar=$('#pAv').value.trim()||'🐱'; save(); toast('保存しました'); }
+function privacy(){ modal(`<h3>🛡️ プライバシー</h3><p style="font-size:14px">このアプリのデータ（チェック結果・記録・連絡先など）は、<b>お使いの端末のブラウザの中だけ</b>に保存されます。インターネット上に送信されることはありません。</p><p style="font-size:14px">ブラウザのデータを消したり、別の端末を使ったりすると記録は引き継がれません。大切な記録は「データのバックアップ」で保存しておきましょう。</p><button class="btn" onclick="closeModal()">わかりました</button>`); }
+function howto(){ modal(`<h3>❓ アプリの使い方</h3><ol style="font-size:14px;padding-left:20px;margin:0 0 14px">
+  <li><b>ホーム</b>で今の状態を4段階から選びます。わからないときは<b>チェック</b>で質問に答えましょう。</li>
+  <li><b>やること</b>に、その段階のおすすめの行動が出ます。</li>
+  <li><b>リスト</b>から楽しいことを選んで、やったら感想を記録します。</li>
+  <li><b>マイページ</b>で、どの活動が効果的かがわかります。</li>
+  <li><b>自分専用のプラン</b>で、自分のサインと対処方法を登録しておきましょう。主治医や支援者と一緒に作るのもおすすめです。</li>
+  <li>とてもつらいときは<b>ヘルプ</b>からすぐに電話できます。</li></ol><button class="btn" onclick="closeModal()">閉じる</button>`); }
+function exportData(){
+  try{
+    const blob=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`crisis-plan-backup-${today()}.json`; a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),1000); toast('バックアップを書き出しました');
+  }catch(e){ toast('書き出しに失敗しました'); }
+}
+function importData(inp){
+  const f=inp.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ try{ const d=JSON.parse(r.result); if(typeof d!=='object'||!Array.isArray(d.logs)) throw 0; if(!confirm('今のデータを上書きして復元しますか？')) return; S=Object.assign(defaults(),d); save(); toast('復元しました'); tab('home'); }catch(e){ toast('ファイルを読み込めませんでした'); } };
+  r.readAsText(f); inp.value='';
+}
+function resetAll(){ if(confirm('すべての記録・設定を削除します。元に戻せません。よろしいですか？')){ S=defaults(); save(); tab('home'); toast('削除しました'); } }
+
+/* ========== 深呼吸ガイド ========== */
+let breathTimer=null;
+function openBreath(){
+  const ov=modal(`<h3>🫁 深呼吸をしよう</h3><p class="small" style="margin:0">4秒吸って、4秒止めて、8秒かけて吐きます。（3回）</p>
+    <div class="breath"><div class="c" id="bc"></div><div class="t" id="bt">準備…</div></div>
+    <p class="small" style="text-align:center;margin:0 0 12px" id="bn"></p>
+    <button class="btn sub" id="bClose">終わる</button>`, ov=>{
+      ov.querySelector('#bClose').onclick=()=>{ clearTimeout(breathTimer); closeModal(); };
+      ov.addEventListener('click',e=>{ if(e.target===ov) clearTimeout(breathTimer); });
+    });
+  const c=ov.querySelector('#bc'), t=ov.querySelector('#bt'), n=ov.querySelector('#bn');
+  const steps=[['吸って',4,1.9],['止めて',4,1.9],['吐いて',8,1]];
+  let cycle=0, idx=0;
+  function step(){
+    if(!document.body.contains(c)) return;
+    if(idx===steps.length){ idx=0; cycle++; }
+    if(cycle===3){ t.textContent='おつかれさま'; c.style.transitionDuration='1.5s'; c.style.transform='scale(1.3)'; n.textContent='少し落ち着けましたか？'; ov.querySelector('#bClose').textContent='閉じる'; return; }
+    const [label,sec,scale]=steps[idx];
+    c.style.transitionDuration=sec+'s'; c.style.transform=`scale(${scale})`;
+    let left=sec; t.innerHTML=`${label}<br>${left}`; n.textContent=`${cycle+1} / 3 回目`;
+    const tick=()=>{ left--; if(left>0){ t.innerHTML=`${label}<br>${left}`; breathTimer=setTimeout(tick,1000); } else { idx++; step(); } };
+    breathTimer=setTimeout(tick,1000);
+  }
+  breathTimer=setTimeout(step,800);
+}
+
+/* ========== 起動 ========== */
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
+setInterval(reminderTick, 30000); reminderTick();
+tab('home');
+</script>
+<script src="../../playtime.js" defer></script>
+</body>
+</html>
