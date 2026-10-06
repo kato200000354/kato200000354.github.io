@@ -140,6 +140,7 @@ header button{padding:6px 10px;font-size:13px}
       <button data-v="1" class="on">初級</button>
       <button data-v="2">中級</button>
       <button data-v="3">上級</button>
+      <button data-v="4" style="grid-column:1/-1">最強</button>
     </div>
     <button class="go" id="btnStart">対局開始</button>
     <button id="btnCloseNew">キャンセル</button>
@@ -317,16 +318,21 @@ function negamax(pos,depth,alpha,beta,ply,allowNull){
   if(ttKey[idx]===pos.h2){ttm=ttMove[idx];
     if(ttDepth[idx]>=depth){let v=ttScore[idx];if(v>MATE-1000)v-=ply;else if(v<-MATE+1000)v+=ply;
       const f=ttFlag[idx];if(f===0||(f===1&&v>=beta)||(f===2&&v<=alpha))return v;}}
-  if(allowNull&&!inChk&&depth>=3&&evaluate(pos)>=beta){
-    pos.nullMove();const v=-negamax(pos,depth-3,-beta,-beta+1,ply+1,false);pos.nullMove();
+  const stat=inChk?-INF:evaluate(pos);
+  if(allowNull&&!inChk&&depth>=3&&stat>=beta){
+    pos.nullMove();const v=-negamax(pos,depth-3-(depth>=7?1:0),-beta,-beta+1,ply+1,false);pos.nullMove();
     if(stopped)return 0;if(v>=beta)return beta;}
+  const fut=!inChk&&depth<=2&&stat+(depth===1?220:480)<=alpha;
   const ms=pos.gen(false,false),sc=scoreMoves(pos,ms,ttm,ply);
   const a0=alpha;let best=-INF,bestM=0,legal=0;
-  for(let i=0;i<ms.length;i++){const m=pick(ms,sc,i);pos.make(m);
+  for(let i=0;i<ms.length;i++){const m=pick(ms,sc,i);const quiet=!pos.b[mvTo(m)]&&!mvPro(m)&&sc[i]<8e5;pos.make(m);
     if(!pos.legalAfter(m)){pos.unmake();continue;}
-    legal++;const quiet=!sc[i]||sc[i]<8e5;let v;
+    legal++;const gc=pos.inCheck();
+    if(legal>1&&!inChk&&quiet&&!gc&&(fut||(depth<=3&&legal>5+depth*depth*3))){pos.unmake();continue;}
+    let v;
     if(legal===1)v=-negamax(pos,depth-1,-beta,-alpha,ply+1,true);
-    else{let red=(legal>4&&depth>=3&&!inChk&&quiet)?1+(legal>12&&depth>=5?1:0):0;
+    else{let red=(legal>3&&depth>=3&&!inChk&&quiet&&!gc)?1+(legal>8?1:0)+(depth>=6&&legal>20?1:0):0;
+      if(red>depth-1)red=depth-1;
       v=-negamax(pos,depth-1-red,-alpha-1,-alpha,ply+1,true);
       if(v>alpha&&!stopped&&(red||v<beta))v=-negamax(pos,depth-1,-beta,-alpha,ply+1,true);}
     pos.unmake();if(stopped)return 0;
@@ -373,9 +379,9 @@ if(typeof window==="undefined"){
 const NAME=["","歩","香","桂","銀","金","角","飛","玉","と","成香","成桂","成銀","","馬","龍"];
 const GLYPH=["","歩","香","桂","銀","金","角","飛","玉","と","杏","圭","全","","馬","龍"];
 const ZEN=["","１","２","３","４","５","６","７","８","９"],KAN=["","一","二","三","四","五","六","七","八","九"];
-const LEVELS=[{name:"入門",time:250,noise:400},{name:"初級",time:600,noise:140},{name:"中級",time:1500,noise:30},{name:"上級",time:2500,noise:0}];
-// ヒントは常にCPUより深く読む（CPUの約2.5倍・最低3秒）
-const hintTime=()=>mode==="cpu"?Math.max(3000,LEVELS[level].time*2.5):4000;
+const LEVELS=[{name:"入門",time:300,noise:260},{name:"初級",time:800,noise:90},{name:"中級",time:1500,noise:0},{name:"上級",time:3000,noise:0},{name:"最強",time:6000,noise:0}];
+// ヒントは常にCPUより深く読む（CPUの2倍・最低3秒）
+const hintTime=()=>mode==="cpu"?Math.max(3000,LEVELS[level].time*2):4000;
 let hintT0=0,hintTimer=0,senteScore=0,flashed=-1,flashAt=0;
 const winProb=s=>Math.abs(s)>MATE-1000?(s>0?1:0):1/(1+Math.exp(-s/600));
 const $=id=>document.getElementById(id);
