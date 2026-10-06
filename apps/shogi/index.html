@@ -41,7 +41,17 @@ header button{padding:6px 10px;font-size:13px}
 .cell{position:relative;border-right:1px solid var(--grid);border-bottom:1px solid var(--grid);display:flex;align-items:center;justify-content:center}
 .cell:nth-child(9n){border-right:none}
 .cell:nth-child(n+73){border-bottom:none}
-.cell.last{background:var(--last)}
+.cell.lastFrom{background:rgba(255,150,40,.28);box-shadow:inset 0 0 0 2px rgba(255,120,0,.55)}
+.cell.lastTo{background:rgba(255,120,0,.55);box-shadow:inset 0 0 0 3px #ff6a00}
+.cell.lastTo.flash{animation:flash 1.1s ease-out 2}
+@keyframes flash{0%{background:rgba(255,80,0,.95);box-shadow:inset 0 0 0 5px #fff}100%{background:rgba(255,120,0,.55);box-shadow:inset 0 0 0 3px #ff6a00}}
+#winBar{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 10px}
+#winBar .row{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px}
+#winBar .row b{font-size:17px}
+#winBar .track{position:relative;height:12px;border-radius:6px;background:#1a1a1a;overflow:hidden}
+#winBar .track i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#f3e3c0,#e0c48a);transition:width .5s}
+#winBar .track::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;background:#ff6a00a0}
+#lastInfo{color:#ffa45c;font-weight:700}
 .cell.sel{background:var(--sel)}
 .cell.dest::after{content:"";position:absolute;width:28%;height:28%;border-radius:50%;background:rgba(30,110,220,.55);pointer-events:none}
 .cell.dest.cap::after{width:84%;height:84%;background:none;border:3px solid rgba(30,110,220,.6)}
@@ -97,6 +107,7 @@ header button{padding:6px 10px;font-size:13px}
     <button id="btnNew">新規</button>
   </header>
   <div id="status"></div>
+  <div id="winBar"><div class="row"><span id="wbS"></span><span id="wbG"></span></div><div class="track"><i id="wbFill" style="width:50%"></i></div></div>
   <div class="hand" id="handTop"></div>
   <div id="boardWrap"><div id="board"></div><svg id="arrow"></svg></div>
   <div class="hand" id="handBottom"></div>
@@ -361,7 +372,8 @@ const ZEN=["","１","２","３","４","５","６","７","８","９"],KAN=["","�
 const LEVELS=[{name:"入門",time:250,noise:400},{name:"初級",time:600,noise:140},{name:"中級",time:1500,noise:30},{name:"上級",time:2500,noise:0}];
 // ヒントは常にCPUより深く読む（CPUの約2.5倍・最低3秒）
 const hintTime=()=>mode==="cpu"?Math.max(3000,LEVELS[level].time*2.5):4000;
-let hintT0=0,hintTimer=0;
+let hintT0=0,hintTimer=0,senteScore=0,flashed=-1,flashAt=0;
+const winProb=s=>Math.abs(s)>MATE-1000?(s>0?1:0):1/(1+Math.exp(-s/600));
 const $=id=>document.getElementById(id);
 
 let pos,mode="cpu",humanSide=0,level=1,flip=false,hintOn=false,legal=[],sel=null,kifu=[],over=null,rep=new Map();
@@ -423,11 +435,13 @@ function isHumanTurn(){return !over&&(mode==="pvp"||pos.side===humanSide);}
 function render(){
   if(!pos)return;
   const last=pos.lastMove(),dests=new Map();
+  if(flashed!==kifu.length){flashed=kifu.length;flashAt=Date.now();}
   if(sel){for(const m of legal){if(sel.drop?mvFrom(m)===81+sel.drop:mvFrom(m)===sel.from)dests.set(mvTo(m),1);}}
   const hm=hintOn&&hint&&isHumanTurn()?hint.move:0;
   for(let d=0;d<81;d++){const sq=flip?80-d:d,c=cells[d],p=pos.b[sq];c.innerHTML="";
     let cls="cell";
-    if(last>=0&&(mvTo(last)===sq||mvFrom(last)===sq))cls+=" last";
+    if(last>=0&&mvTo(last)===sq){cls+=" lastTo";if(Date.now()-flashAt<2200)cls+=" flash";}
+    else if(last>=0&&mvFrom(last)===sq)cls+=" lastFrom";
     if(sel&&sel.from===sq)cls+=" sel";
     if(dests.has(sq))cls+=" dest"+(p?" cap":"");
     if(hm&&mvTo(hm)===sq)cls+=" hintTo";
@@ -435,7 +449,8 @@ function render(){
     if(p)c.appendChild(pieceEl(Math.abs(p),(p<0)!==flip));}
   const bottom=flip?1:0;
   renderHand($("handBottom"),bottom,hm);renderHand($("handTop"),1-bottom,hm);
-  drawArrow(hm);
+  drawArrow(hm,last);
+  renderWin();
   // status
   let st="";
   if(over)st="<b>終局</b>　"+over.text;
@@ -443,6 +458,7 @@ function render(){
     if(mode==="cpu")st=pos.side===humanSide?"<b>あなたの番</b>（"+who+"）":"<b>CPU 考え中…</b>（"+who+"）";
     else st="<b>"+who+"の番</b>";
     if(!over&&pos.inCheck())st+="　<span style='color:#ff6b6b;font-weight:700'>王手！</span>";}
+  if(!over&&kifu.length){const who=mode==="cpu"&&pos.side===humanSide?"相手":"直前";st+="<br><span id='lastInfo'>"+who+"の手："+kifu[kifu.length-1]+"</span>";}
   $("status").innerHTML=st;
   renderHintBox();
   // kifu
@@ -473,18 +489,22 @@ function renderHand(el,side,hm){
     h.appendChild(pieceEl(t,(side===1)!==flip,true));
     if(hd[t]>1){const n=document.createElement("span");n.className="n";n.textContent=hd[t];h.appendChild(n);}
     h.onclick=()=>onHand(side,t);el.appendChild(h);}}
-function drawArrow(m){
-  const svg=$("arrow");
-  if(!m){svg.innerHTML="";return;}
-  const ctr=sq=>{const d=flip?80-sq:sq;return [d%9+.5,(d/9|0)+.5];};
-  const [x2,y2]=ctr(mvTo(m));
-  if(mvFrom(m)>=81){svg.innerHTML=`<circle cx="${x2}" cy="${y2}" r=".44" fill="none" stroke="#2fd38a" stroke-width=".09" opacity=".9"/><text x="${x2}" y="${y2+.15}" font-size=".4" text-anchor="middle" fill="#0b6b3f" font-weight="700">打</text>`;return;}
-  const [x1,y1]=ctr(mvFrom(m)),dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy),ux=dx/len,uy=dy/len;
-  const ex=x2-ux*.22,ey=y2-uy*.22;
-  svg.innerHTML=`<defs><marker id="ah" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#18b06d"/></marker></defs>
-  <circle cx="${x1}" cy="${y1}" r=".16" fill="#18b06d" opacity=".85"/>
-  <line x1="${x1}" y1="${y1}" x2="${ex}" y2="${ey}" stroke="#18b06d" stroke-width=".14" stroke-linecap="round" opacity=".85" marker-end="url(#ah)"/>`;}
-
+function drawArrow(m,last){
+  const svg=$("arrow"),ctr=sq=>{const d=flip?80-sq:sq;return [d%9+.5,(d/9|0)+.5];};
+  let out=`<defs><marker id="ah" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#18b06d"/></marker>
+  <marker id="ahl" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3" markerHeight="3" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ff6a00"/></marker></defs>`;
+  const arrow=(mv,col,mk,w,op)=>{const [x2,y2]=ctr(mvTo(mv));
+    if(mvFrom(mv)>=81)return col==="#ff6a00"?"":`<circle cx="${x2}" cy="${y2}" r=".44" fill="none" stroke="${col}" stroke-width=".09" opacity=".9"/><text x="${x2}" y="${y2+.15}" font-size=".4" text-anchor="middle" fill="#0b6b3f" font-weight="700">打</text>`;
+    const [x1,y1]=ctr(mvFrom(mv)),dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy),ux=dx/len,uy=dy/len,ex=x2-ux*.22,ey=y2-uy*.22;
+    return `<circle cx="${x1}" cy="${y1}" r="${w*1.1}" fill="${col}" opacity="${op}"/><line x1="${x1}" y1="${y1}" x2="${ex}" y2="${ey}" stroke="${col}" stroke-width="${w}" stroke-linecap="round" opacity="${op}" marker-end="url(#${mk})"/>`;};
+  if(last>=0)out+=arrow(last,"#ff6a00","ahl",.09,.7);
+  if(m)out+=arrow(m,"#18b06d","ah",.14,.85);
+  svg.innerHTML=out;}
+function renderWin(){
+  const p=winProb(senteScore),ps=Math.round(p*100),pg=100-ps;
+  const nm=s=>mode==="cpu"?(s===humanSide?"あなた":"CPU"):(s===0?"先手":"後手");
+  $("wbS").innerHTML="☗"+nm(0)+" <b>"+ps+"%</b>";$("wbG").innerHTML="<b>"+pg+"%</b> ☖"+nm(1);
+  $("wbFill").style.width=(p*100)+"%";}
 /* ---------- input ---------- */
 function onCell(sq){
   if(!isHumanTurn()||cpuThinking)return;
@@ -516,14 +536,16 @@ function afterMove(){
   render();
   if(over){showResult();return;}
   if(mode==="cpu"&&pos.side!==humanSide)cpuMove();
-  else if(hintOn)requestHint();}
+  else requestHint();}
 function cpuMove(){
   cpuThinking=true;render();const lv=LEVELS[level],t0=Date.now();
-  search(lv.time,lv.noise,null,r=>{
+  const cs=pos.side;
+  search(lv.time,lv.noise,d=>{if(d.move&&d.depth>=3){senteScore=cs===0?d.score:-d.score;renderWin();}},r=>{
     setTimeout(()=>{cpuThinking=false;if(!r.move){over={winner:humanSide,text:"CPUの投了"};render();showResult();return;}play(r.move);},Math.max(0,350-(Date.now()-t0)));});}
 function requestHint(){
-  hintT0=Date.now();clearInterval(hintTimer);hintTimer=setInterval(()=>{if(!hint||hint.done||!hintOn){clearInterval(hintTimer);return;}renderHintBox();},200);
-  search(hintTime(),0,d=>{if(d.move){hint=d;render();}},d=>{if(d.move){hint={...d,done:true};render();}});}
+  hintT0=Date.now();clearInterval(hintTimer);hintTimer=setInterval(()=>{if(hint&&hint.done){clearInterval(hintTimer);return;}if(hintOn)renderHintBox();},200);
+  const hs=pos.side,upd=d=>{senteScore=hs===0?d.score:-d.score;};
+  search(hintTime(),0,d=>{if(d.move){hint=d;upd(d);render();}},d=>{if(d.move){hint={...d,done:true};upd(d);render();}});}
 function showResult(){
   let title;
   if(over.winner===-1)title="引き分け";
@@ -539,7 +561,7 @@ function undo(){
   if(mode==="cpu")while(kifu.length&&pos.side!==humanSide)pop();
   afterMove();}
 function newGame(){
-  cancelSearch();pos=Pos.initial();kifu=[];rep=new Map([[pos.key(),1]]);over=null;
+  cancelSearch();senteScore=0;pos=Pos.initial();kifu=[];rep=new Map([[pos.key(),1]]);over=null;
   flip=mode==="cpu"&&humanSide===1;buildBoard();afterMove();}
 
 /* ---------- buttons ---------- */
@@ -560,8 +582,7 @@ $("btnStart").onclick=()=>{mode=pendMode==="pvp"?"pvp":"cpu";humanSide=pendMode=
   try{localStorage.setItem("shogi.cfg",JSON.stringify({pendMode,pendLevel}));}catch(e){}
   $("newModal").hidden=true;newGame();};
 function toggleHint(){hintOn=!hintOn;try{localStorage.setItem("shogi.hint",hintOn?"1":"0");}catch(e){}
-  if(hintOn&&isHumanTurn()&&!cpuThinking&&!hint)requestHint();
-  else if(!hintOn&&isHumanTurn()){cancelSearch();hint=null;}
+  if(hintOn&&isHumanTurn()&&!cpuThinking&&!(hint&&hint.done))renderHintBox();
   render();}
 $("hintToggle").onclick=toggleHint;
 $("hintToggle").onkeydown=e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();toggleHint();}};
