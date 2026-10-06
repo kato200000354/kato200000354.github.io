@@ -66,6 +66,9 @@ header button{padding:6px 10px;font-size:13px}
 .toggle .sub{font-size:11px;color:var(--muted)}
 #hintBox{width:100%;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--hint);border-radius:10px;padding:8px 12px;font-size:14px;min-height:40px}
 #hintBox .mv{font-size:18px;font-weight:700;color:var(--hint)}
+#hintBox .ok{color:var(--hint);font-size:12px;font-weight:700}
+#hintBox .bar{height:4px;background:#0006;border-radius:2px;margin-top:6px;overflow:hidden}
+#hintBox .bar i{display:block;height:100%;background:var(--hint);transition:width .2s linear}
 #hintBox .meta{font-size:12px;color:var(--muted)}
 #kifu{width:100%;display:flex;gap:6px;overflow-x:auto;font-size:13px;padding:4px 0;scrollbar-width:thin}
 #kifu span{flex:none;background:var(--panel);border-radius:6px;padding:3px 7px;color:var(--muted)}
@@ -355,8 +358,10 @@ if(typeof window==="undefined"){
 const NAME=["","歩","香","桂","銀","金","角","飛","玉","と","成香","成桂","成銀","","馬","龍"];
 const GLYPH=["","歩","香","桂","銀","金","角","飛","玉","と","杏","圭","全","","馬","龍"];
 const ZEN=["","１","２","３","４","５","６","７","８","９"],KAN=["","一","二","三","四","五","六","七","八","九"];
-const LEVELS=[{name:"入門",time:250,noise:400},{name:"初級",time:600,noise:140},{name:"中級",time:1500,noise:30},{name:"上級",time:4000,noise:0}];
-const HINT_TIME=2500;
+const LEVELS=[{name:"入門",time:250,noise:400},{name:"初級",time:600,noise:140},{name:"中級",time:1500,noise:30},{name:"上級",time:2500,noise:0}];
+// ヒントは常にCPUより深く読む（CPUの約2.5倍・最低3秒）
+const hintTime=()=>mode==="cpu"?Math.max(3000,LEVELS[level].time*2.5):4000;
+let hintT0=0,hintTimer=0;
 const $=id=>document.getElementById(id);
 
 let pos,mode="cpu",humanSide=0,level=1,flip=false,hintOn=false,legal=[],sel=null,kifu=[],over=null,rep=new Map();
@@ -439,18 +444,22 @@ function render(){
     else st="<b>"+who+"の番</b>";
     if(!over&&pos.inCheck())st+="　<span style='color:#ff6b6b;font-weight:700'>王手！</span>";}
   $("status").innerHTML=st;
-  // hint box
-  const hb=$("hintBox");
-  if(hintOn&&isHumanTurn()){hb.hidden=false;
-    if(!hint)hb.innerHTML="<span class='meta'>💡 最善手を考え中…</span>";
-    else hb.innerHTML="💡 最善手：<span class='mv'>"+notation(pos,hint.move)+"</span>"+(hint.done?"":" <span class='meta'>（読み中…）</span>")+
-      "<div class='meta'>"+scoreText(hint.score,pos.side)+"・読み "+hint.depth+" 手</div>";}
-  else hb.hidden=true;
+  renderHintBox();
   // kifu
   const k=$("kifu");k.innerHTML=kifu.map((s,i)=>"<span>"+(i+1)+" "+s+"</span>").join("");k.scrollLeft=k.scrollWidth;
   $("btnUndo").disabled=kifu.length===0||cpuThinking;
   $("btnResign").disabled=!!over;
   $("hintToggle").classList.toggle("on",hintOn);$("hintState").textContent=hintOn?"ON":"OFF";}
+function renderHintBox(){
+  const hb=$("hintBox");
+  if(!(hintOn&&isHumanTurn())){hb.hidden=true;return;}
+  hb.hidden=false;
+  const T=hintTime(),pct=hint&&hint.done?100:Math.min(99,(Date.now()-hintT0)/T*100);
+  const bar="<div class='bar'><i style='width:"+pct+"%'></i></div>";
+  if(!hint){hb.innerHTML="<span class='meta'>💡 最善手を考え中…</span>"+bar;return;}
+  hb.innerHTML="💡 最善手：<span class='mv'>"+notation(pos,hint.move)+"</span> "+
+    (hint.done?"<span class='ok'>✓ 読み完了</span>":"<span class='meta'>読み中… 完了を待つと精度UP</span>")+
+    "<div class='meta'>"+scoreText(hint.score,pos.side)+"・読み "+hint.depth+" 手</div>"+bar;}
 function renderHand(el,side,hm){
   el.innerHTML="";el.classList.toggle("turn",!over&&pos.side===side);
   const who=document.createElement("div");who.className="who";
@@ -513,7 +522,8 @@ function cpuMove(){
   search(lv.time,lv.noise,null,r=>{
     setTimeout(()=>{cpuThinking=false;if(!r.move){over={winner:humanSide,text:"CPUの投了"};render();showResult();return;}play(r.move);},Math.max(0,350-(Date.now()-t0)));});}
 function requestHint(){
-  search(HINT_TIME,0,d=>{if(d.move){hint=d;render();}},d=>{if(d.move){hint={...d,done:true};render();}});}
+  hintT0=Date.now();clearInterval(hintTimer);hintTimer=setInterval(()=>{if(!hint||hint.done||!hintOn){clearInterval(hintTimer);return;}renderHintBox();},200);
+  search(hintTime(),0,d=>{if(d.move){hint=d;render();}},d=>{if(d.move){hint={...d,done:true};render();}});}
 function showResult(){
   let title;
   if(over.winner===-1)title="引き分け";
