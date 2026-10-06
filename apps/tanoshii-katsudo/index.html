@@ -1,0 +1,573 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#2b8ff0">
+<title>楽しい活動リスト</title>
+<style>
+:root{
+  --bg:#eef5fc; --card:#ffffff; --line:#dbe7f3; --text:#1d2b3a; --sub:#6b7c8f;
+  --pri:#1f8bf0; --pri2:#0f6fd0; --priSoft:#e3f0fd; --yellow:#ffc531; --yellowSoft:#fff3d1;
+  --green:#4cc27a; --greenSoft:#e3f6ea; --pink:#ff6b8a; --chip:#f1f6fb; --shadow:0 4px 14px rgba(31,90,160,.10);
+}
+:root[data-theme="dark"]{
+  --bg:#0f1824; --card:#18243a; --line:#2a3a52; --text:#e8eef6; --sub:#9aabbf;
+  --pri:#4aa6ff; --pri2:#2b8ff0; --priSoft:#1d3350; --yellowSoft:#3a3220; --greenSoft:#1c3628; --chip:#22314a; --shadow:0 4px 14px rgba(0,0,0,.35);
+}
+[hidden]{display:none!important}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--text);font-family:"Hiragino Maru Gothic ProN","Hiragino Sans","Noto Sans JP","Yu Gothic UI",Meiryo,sans-serif;font-size:15px;line-height:1.5}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+input,textarea{font:inherit;color:var(--text)}
+#app{max-width:480px;margin:0 auto;min-height:100%;position:relative;background:var(--bg)}
+#view{padding-bottom:84px;min-height:100vh}
+.hdr{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:8px;padding:14px 16px;background:var(--bg);font-weight:800;font-size:18px}
+.hdr .t{flex:1}
+.hdr.center .t{text-align:center}
+.ib{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:20px}
+.ib:active{background:var(--chip)}
+.pad{padding:0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)}
+.sec{font-weight:800;font-size:14px;margin:18px 0 8px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;border-radius:999px;background:var(--pri);color:#fff;font-weight:800;box-shadow:0 6px 14px rgba(31,139,240,.3)}
+.btn:active{transform:scale(.98);background:var(--pri2)}
+.btn.ghost{background:var(--chip);color:var(--text);box-shadow:none}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 16px 10px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;padding:6px 14px;border-radius:999px;background:var(--card);border:1px solid var(--line);font-size:13px;font-weight:700;color:var(--sub)}
+.chip.on{background:var(--pri);border-color:var(--pri);color:#fff}
+.tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:6px;background:var(--chip);color:var(--sub);font-weight:700;margin-right:4px}
+.star{color:var(--yellow)}
+.rate{font-weight:800;font-size:13px}
+.thumb{width:64px;height:64px;border-radius:14px;display:grid;place-items:center;font-size:34px;flex:none}
+/* home */
+.hero{background:linear-gradient(180deg,#2b8ff0 0%,#5fb2f7 45%,#bfe1fb 75%,#e9f5fe 100%);padding:34px 20px 110px;color:#fff;text-align:center;position:relative;overflow:hidden}
+:root[data-theme="dark"] .hero{background:linear-gradient(180deg,#123a66 0%,#1d5a95 50%,#24476e 80%,var(--bg) 100%)}
+.hero h1{margin:0;font-size:32px;letter-spacing:.06em;text-shadow:0 2px 0 rgba(0,0,0,.08)}
+.hero p{margin:8px 0 0;font-weight:700;opacity:.95}
+.hero .cloud{position:absolute;font-size:40px;opacity:.7}
+.moodbox{margin:-86px 16px 0;padding:34px 16px 18px;position:relative;text-align:center}
+.moodbox .face{position:absolute;left:50%;top:-24px;transform:translateX(-50%);width:48px;height:48px;border-radius:50%;background:var(--card);border:2px solid var(--pri);display:grid;place-items:center;font-size:26px}
+.mood{display:flex;align-items:center;gap:12px;width:100%;padding:12px 16px;border-radius:16px;margin-top:10px;font-weight:800;text-align:left}
+.mood .ic{width:38px;height:38px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:22px}
+.mood.m1{background:var(--yellowSoft)}.mood.m2{background:var(--greenSoft)}.mood.m3{background:var(--priSoft)}
+.mood.on{outline:3px solid var(--pri)}
+.cat{font-size:64px;text-align:right;margin:10px 20px 0;animation:bob 3s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-6px)}}
+/* list */
+.item{display:flex;gap:12px;align-items:center;padding:12px;margin:0 16px 10px;position:relative}
+.item .nm{font-weight:800}
+.fav{position:absolute;right:10px;top:10px;font-size:18px;color:var(--sub)}
+.fav.on{color:var(--pink)}
+.search{margin:0 16px 10px;display:flex;gap:8px;align-items:center;padding:8px 14px;border-radius:999px}
+.search input{border:0;outline:0;background:none;flex:1;padding:4px 0}
+/* filter */
+.grp{margin:0 16px 16px}
+.grp .lb{font-weight:800;font-size:14px;margin-bottom:8px}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:8px}
+.opt{padding:10px 4px;border-radius:12px;background:var(--card);border:1.5px solid var(--line);font-size:13px;font-weight:700;color:var(--sub)}
+.opt.on{border-color:var(--pri);background:var(--priSoft);color:var(--pri)}
+.opt.on.y{border-color:var(--yellow);background:var(--yellowSoft);color:#a06d00}
+/* recommend */
+.bubble{display:flex;gap:10px;margin:0 16px 14px;align-items:flex-start}
+.bubble .av{width:44px;height:44px;border-radius:50%;background:var(--priSoft);display:grid;place-items:center;font-size:26px;flex:none}
+.bubble .tx{padding:12px 14px;border-radius:16px;font-size:13px;font-weight:700}
+.pic{height:170px;border-radius:14px;display:grid;place-items:center;font-size:90px;position:relative;overflow:hidden}
+.pic .badge{position:absolute;top:10px;left:10px;background:var(--yellow);color:#5a3d00;font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px}
+.mini{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 16px}
+.mini .card{padding:10px;text-align:center;font-size:12px;font-weight:700}
+.mini .e{font-size:30px;height:48px;display:grid;place-items:center;border-radius:12px;margin-bottom:4px}
+/* detail */
+.big{height:240px;display:grid;place-items:center;font-size:120px;position:relative}
+.big .badge{position:absolute;top:14px;right:14px;background:var(--yellow);color:#5a3d00;font-size:12px;font-weight:800;padding:4px 12px;border-radius:999px}
+.chk{display:flex;gap:8px;align-items:center;font-size:14px;margin:6px 0}
+.chk b{width:20px;height:20px;border-radius:50%;background:var(--green);color:#fff;display:grid;place-items:center;font-size:12px}
+/* gacha */
+.gbg{background:linear-gradient(180deg,#fff6d8,#fffbe9 50%,var(--bg));min-height:100vh;position:relative;overflow:hidden}
+:root[data-theme="dark"] .gbg{background:linear-gradient(180deg,#3a3220,var(--bg))}
+.conf{position:absolute;width:8px;height:14px;border-radius:2px;opacity:.8}
+.machine{width:200px;margin:10px auto 0;position:relative}
+.globe{width:200px;height:200px;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.95),rgba(220,240,255,.7) 60%,rgba(170,210,240,.7));border:6px solid #e94646;position:relative;overflow:hidden}
+.ball{position:absolute;width:44px;height:44px;border-radius:50%;border:2px solid rgba(0,0,0,.1)}
+.ball::after{content:"";position:absolute;left:0;right:0;top:50%;height:2px;background:rgba(0,0,0,.12)}
+.base{width:170px;height:110px;margin:-12px auto 0;background:linear-gradient(#ef5050,#c93232);border-radius:16px 16px 22px 22px;position:relative}
+.knob{position:absolute;left:50%;top:26px;transform:translateX(-50%);width:54px;height:54px;border-radius:50%;background:#fff;border:6px solid #ffd34d;transition:transform .8s}
+.knob::after{content:"";position:absolute;left:50%;top:4px;width:6px;height:36px;background:#e0a800;border-radius:3px;transform:translateX(-50%)}
+.slot{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);width:60px;height:22px;background:#7a1e1e;border-radius:8px}
+.spinning .globe{animation:shake .15s linear infinite}
+.spinning .knob{transform:translateX(-50%) rotate(720deg)}
+@keyframes shake{25%{transform:rotate(-3deg)}75%{transform:rotate(3deg)}}
+.pop{position:absolute;right:-30px;top:120px;width:100px;height:100px;border-radius:50%;background:#fff;border:3px solid #e94646;color:#e94646;font-weight:900;display:grid;place-items:center;transform:rotate(-8deg);font-size:15px;box-shadow:var(--shadow)}
+.drop{position:absolute;left:50%;bottom:4px;width:40px;height:40px;margin-left:-20px;border-radius:50%;opacity:0}
+.drop.go{animation:drop .6s ease-out forwards}
+@keyframes drop{0%{opacity:1;transform:translateY(-40px) scale(.5)}100%{opacity:1;transform:translateY(40px) scale(1)}}
+.result{margin:40px 16px 16px;padding:16px;animation:rise .4s ease-out}
+@keyframes rise{from{opacity:0;transform:translateY(20px)}}
+/* record */
+.rrow{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line);font-weight:700}
+.rrow:last-child{border:0}
+.stars button{font-size:24px;color:#cfd8e3;padding:0 1px}
+.stars button.on{color:var(--yellow)}
+.yn{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.yn button{padding:10px;border-radius:999px;background:var(--chip);font-weight:800;color:var(--sub)}
+.yn button.on{background:var(--pri);color:#fff}
+textarea,.inp{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--card);outline:0;resize:vertical}
+textarea:focus,.inp:focus{border-color:var(--pri)}
+/* mypage */
+.prof{display:flex;gap:14px;align-items:center;margin:0 16px 14px}
+.prof .av{width:72px;height:72px;border-radius:50%;background:var(--priSoft);border:3px solid var(--pri);display:grid;place-items:center;font-size:42px;flex:none}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:0 16px 14px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px}
+.tabs button{padding:8px;border-radius:9px;font-weight:800;color:var(--sub)}
+.tabs button.on{background:var(--pri);color:#fff}
+.bar{height:12px;border-radius:99px;background:var(--chip);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--pri);border-radius:99px;transition:width .5s}
+.crow{display:flex;align-items:center;gap:10px;padding:8px 0;font-weight:700;font-size:14px}
+.crow .ci{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:16px}
+.crow .n{margin-left:auto}
+.cols{display:flex;align-items:flex-end;gap:8px;height:130px;padding-top:10px}
+.cols div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-size:11px;color:var(--sub)}
+.cols i{display:block;width:100%;max-width:28px;background:var(--pri);border-radius:6px 6px 2px 2px;margin:2px 0 4px;min-height:2px}
+.cols b{font-size:11px;color:var(--text)}
+/* zukan */
+.zgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 16px}
+.zc{padding:12px 6px;text-align:center;font-weight:800;font-size:13px}
+.zc .s{width:64px;height:64px;margin:0 auto 6px;border-radius:50%;display:grid;place-items:center;font-size:34px}
+.zc.lock .s{background:var(--chip)!important;filter:grayscale(1);opacity:.45}
+.zc small{display:block;color:var(--sub);font-weight:700}
+.stamps{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.stamp{aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font-size:28px;border:2px dashed var(--line)}
+.stamp.got{border:2px solid var(--pink);background:#fff0f3;transform:rotate(-8deg)}
+:root[data-theme="dark"] .stamp.got{background:#3a1f28}
+/* settings */
+.srow{display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid var(--line);width:100%;text-align:left}
+.srow:last-child{border:0}
+.srow .ic{font-size:20px;width:28px;text-align:center}
+.srow small{display:block;color:var(--sub);font-size:12px}
+.srow .ar{margin-left:auto;color:var(--sub)}
+.sw{width:46px;height:26px;border-radius:99px;background:#c9d4e0;position:relative;margin-left:auto;flex:none;transition:.2s}
+.sw::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s}
+.sw.on{background:var(--pri)}.sw.on::after{left:23px}
+/* nav */
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;display:grid;grid-template-columns:repeat(5,1fr);background:var(--card);border-top:1px solid var(--line);padding:6px 0 calc(8px + env(safe-area-inset-bottom));z-index:20}
+nav button{display:flex;flex-direction:column;align-items:center;font-size:10px;font-weight:700;color:var(--sub);gap:1px}
+nav button span{font-size:22px;filter:grayscale(1);opacity:.6}
+nav button.on{color:var(--pri)}
+nav button.on span{filter:none;opacity:1}
+/* modal / toast */
+.ov{position:fixed;inset:0;background:rgba(10,20,35,.45);display:grid;place-items:center;z-index:50;padding:16px}
+.modal{width:100%;max-width:420px;padding:20px;max-height:85vh;overflow:auto}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:#1d2b3a;color:#fff;padding:10px 18px;border-radius:999px;font-weight:700;font-size:13px;z-index:60;animation:rise .25s}
+.empty{text-align:center;color:var(--sub);padding:30px 10px;font-weight:700}
+</style>
+</head>
+<body>
+<div id="app">
+  <main id="view"></main>
+  <nav id="nav">
+    <button data-tab="home"><span>🏠</span>ホーム</button>
+    <button data-tab="list"><span>📋</span>リスト</button>
+    <button data-tab="gacha"><span>🎁</span>ガチャ</button>
+    <button data-tab="mypage"><span>📒</span>記録</button>
+    <button data-tab="settings"><span>☰</span>メニュー</button>
+  </nav>
+</div>
+<div id="ov" class="ov" hidden></div>
+
+<script>
+// ===== データ =====
+const CATS={
+  '趣味':{e:'🎨',c:'#ffe9b8'},'外出':{e:'🏠',c:'#c9ecff'},'運動':{e:'👟',c:'#d6f5dd'},
+  '食べる':{e:'🍜',c:'#ffd9cc'},'リラックス':{e:'🌙',c:'#e7dcff'},'体験':{e:'🌟',c:'#c9f3ea'},
+  '旅行':{e:'🧳',c:'#d9e4ff'},'イベント':{e:'🎉',c:'#ffd6ea'},'特別':{e:'💎',c:'#e0f0ff'}
+};
+const CAT_ORDER=Object.keys(CATS);
+// id,名前,絵文字,カテゴリ,場所,時間(分),費用(円),体力1-3,人数,評価,評価数,キャッチ,説明,おすすめの人
+const RAW=[
+['game','ゲームをする','🎮','趣味','家',30,0,1,'一人,友人',4.8,12,'好きなゲームを30分だけ遊ぶ','好きなゲームを30分だけプレイして、気分をリフレッシュしましょう。時間を決めることで、やりすぎを防げます。','気分転換したいとき|ストレスを感じているとき|家でゆっくりしたいとき'],
+['music','音楽を聴く','🎵','リラックス','家',30,0,1,'一人',4.5,20,'好きな音楽を聴きながらゆっくり過ごす','お気に入りのプレイリストを流して、目を閉じて聴いてみましょう。歌詞や音に集中すると心が落ち着きます。','頭を休めたいとき|眠る前のひとときに|気分を上げたいとき'],
+['walk','散歩する','👟','運動','近所',60,0,2,'一人,家族,友人',4.2,15,'近所をのんびり散歩する','いつもと違う道を選んで歩いてみましょう。季節の花や新しいお店が見つかるかも。','体を軽く動かしたいとき|考えごとを整理したいとき|天気がいい日に'],
+['cafe','カフェでのんびりする','☕','外出','近所',60,1000,1,'一人,友人',4.3,18,'カフェでお気に入りの一杯を','近くのカフェで好きな飲み物を注文して、ぼーっと過ごしましょう。読書やおしゃべりにも。','家にいると落ち着かないとき|自分へのごほうびに|友達とゆっくり話したいとき'],
+['book','好きな本を読む','📖','趣味','家',60,0,1,'一人',4.6,14,'好きな本を1章だけ読む','積んでいた本や、何度も読んだお気に入りの本を開いてみましょう。1章だけと決めると気軽です。','静かに過ごしたいとき|違う世界に浸りたいとき|寝る前に'],
+['video','動画を見る','📺','リラックス','家',30,0,1,'一人,家族',4.3,22,'笑える動画で気分転換','好きな配信者やお笑いの動画を見て、思いきり笑いましょう。','落ち込んでいるとき|疲れて何もしたくないとき|家族と笑いたいとき'],
+['drink','温かい飲み物を飲む','🍵','食べる','家',10,0,1,'一人,家族',4.2,9,'温かい飲み物でほっと一息','お茶やココアをゆっくり淹れて、湯気と香りを楽しみましょう。','寒い日に|ひと休みしたいとき|気持ちを落ち着けたいとき'],
+['sweets','お菓子作り','🧁','食べる','家',120,1000,2,'一人,家族,友人',4.5,11,'簡単なお菓子を作ってみる','クッキーやマフィンなど、簡単なレシピに挑戦。焼ける匂いだけで幸せになれます。','手を動かしたいとき|家族と楽しみたいとき|甘いものが食べたいとき'],
+['stretch','ストレッチ','🙆','運動','家',10,0,1,'一人',4.1,16,'10分だけストレッチ','肩や腰をゆっくり伸ばしましょう。深呼吸と一緒にやると効果アップ。','体がこわばっているとき|座りっぱなしのとき|寝る前に'],
+['yoga','ヨガをする','🧘','運動','家',30,0,2,'一人',4.3,10,'動画を見ながらヨガ','初心者向けのヨガ動画に合わせて体を動かしてみましょう。','心と体を整えたいとき|運動不足のとき|集中したいとき'],
+['jog','ジョギング','🏃','運動','近所',30,0,3,'一人,友人',4.0,12,'近所を軽くジョギング','無理のないペースで走ってみましょう。走ったあとの爽快感は格別です。','元気があり余っているとき|モヤモヤを発散したいとき|体力をつけたいとき'],
+['movie','映画館に行く','🎬','外出','遠出',180,2000,2,'一人,家族,友人',4.6,19,'映画館で話題の映画を観る','大きなスクリーンと音響で、物語の世界に入り込みましょう。','非日常を味わいたいとき|休日をたっぷり使えるとき|誰かと感想を語りたいとき'],
+['picnic','公園でピクニック','🧺','外出','近所',120,1000,2,'家族,友人',4.4,8,'お弁当を持って公園へ','おにぎりやサンドイッチを持って、公園の芝生でのんびりしましょう。','天気がいい日に|家族や友達と過ごしたいとき|外の空気を吸いたいとき'],
+['draw','絵を描く','✏️','趣味','家',60,0,1,'一人',4.4,9,'思いつくまま絵を描く','上手く描こうとせず、好きなものを自由に描いてみましょう。','何かを作りたいとき|集中したいとき|気持ちを表現したいとき'],
+['diary','日記を書く','📝','趣味','家',10,0,1,'一人',4.0,7,'今日の「よかったこと」を3つ書く','小さなことでOK。よかったことを書き出すと、気持ちが前向きになります。','一日をふり返りたいとき|気持ちを整理したいとき|寝る前に'],
+['puzzle','パズルをする','🧩','趣味','家',120,1000,1,'一人,家族',4.3,6,'ジグソーパズルに没頭する','ピースがはまる瞬間が気持ちいい。少しずつ進めるのも楽しいです。','無心になりたいとき|雨の日に|家族で協力したいとき'],
+['bath','お風呂でゆっくり','🛁','リラックス','家',30,0,1,'一人',4.7,25,'入浴剤を入れてお風呂タイム','好きな入浴剤を入れて、いつもより少し長めに湯船につかりましょう。','とても疲れているとき|よく眠りたいとき|自分をいたわりたいとき'],
+['nap','昼寝する','😴','リラックス','家',30,0,1,'一人',4.4,17,'20分だけお昼寝','短い昼寝は頭をすっきりさせてくれます。アラームをかけて安心して。','眠気があるとき|かなり疲れたとき|午後をがんばりたいとき'],
+['aroma','アロマを焚く','🕯️','リラックス','家',10,0,1,'一人',4.1,5,'好きな香りで部屋を満たす','アロマやお香を焚いて、香りで気分を切り替えましょう。','リラックスしたいとき|部屋の空気を変えたいとき|寝る前に'],
+['lunch','新しいお店でランチ','🍜','食べる','近所',60,1000,2,'一人,家族,友人',4.5,13,'行ったことのないお店でランチ','気になっていたお店に思いきって入ってみましょう。新しいお気に入りが見つかるかも。','ちょっと冒険したいとき|おなかが空いたとき|誰かとおしゃべりしたいとき'],
+['cake','スイーツを食べに行く','🍰','食べる','近所',60,1000,1,'一人,友人',4.7,21,'ごほうびスイーツを食べに行く','がんばった自分へのごほうびに、好きなケーキやパフェを。','がんばったあとに|甘いもので元気を出したいとき|友達と出かけたいとき'],
+['cook','料理に挑戦','🍳','食べる','家',60,1000,2,'一人,家族',4.2,10,'作ったことのない料理に挑戦','レシピを見ながら新しい料理を作ってみましょう。','新しいことをしたいとき|家族に喜んでほしいとき|料理が好きなとき'],
+['pottery','陶芸体験','🏺','体験','遠出',180,2000,2,'一人,家族,友人',4.6,7,'陶芸教室で器を作る','土に触れて、世界にひとつの器を作ってみましょう。','ものづくりがしたいとき|特別な思い出を作りたいとき|集中したいとき'],
+['karaoke','カラオケ','🎤','体験','近所',120,2000,3,'一人,友人,家族',4.5,23,'カラオケで思いきり歌う','好きな歌を大声で歌って、ストレスを吹き飛ばしましょう。','発散したいとき|友達と盛り上がりたいとき|元気なとき'],
+['climb','ボルダリング','🧗','体験','遠出',120,2000,3,'一人,友人',4.4,8,'ボルダリングに挑戦','壁を登りきったときの達成感は最高です。初心者コースからでも楽しめます。','体を思いきり動かしたいとき|新しいことに挑戦したいとき|元気なとき'],
+['onsen','日帰り温泉','♨️','旅行','遠出',240,2000,1,'一人,家族,友人',4.8,16,'日帰り温泉でとろける','少し足をのばして温泉へ。広いお風呂で体も心もほぐれます。','とても疲れているとき|休日をゆっくり過ごしたいとき|自分をいたわりたいとき'],
+['station','知らない駅で降りる','🚃','旅行','遠出',180,1000,3,'一人,友人',4.3,6,'行ったことのない駅で降りてみる','電車に乗って、気になる駅で降りてぶらぶら。小さな旅気分が味わえます。','冒険したいとき|いつもの日常に飽きたとき|写真を撮りたいとき'],
+['festival','お祭りに行く','🏮','イベント','遠出',180,1000,3,'家族,友人',4.6,9,'近くのお祭りに出かける','屋台やにぎやかな雰囲気を楽しみましょう。季節を感じられます。','わいわいしたいとき|季節を感じたいとき|家族や友達と過ごしたいとき'],
+['live','ライブに行く','🎸','イベント','遠出',180,2000,3,'一人,友人',4.8,11,'好きなアーティストのライブへ','生の音楽と会場の一体感は、ほかでは味わえません。','とにかく元気を出したいとき|好きなものに浸りたいとき|特別な日に'],
+['stars','星空を眺める','🌌','特別','近所',30,0,1,'一人,家族,友人',4.7,8,'夜空を見上げて星をさがす','少し暗い場所で空を見上げてみましょう。星座アプリを使うともっと楽しい。','考えごとをしたいとき|ロマンチックな気分のとき|心を静めたいとき'],
+['sunrise','朝日を見に行く','🌅','特別','近所',60,0,3,'一人,家族,友人',4.6,5,'早起きして朝日を見に行く','いつもより早く起きて、日の出を見に行きましょう。特別な一日の始まりに。','気持ちをリセットしたいとき|早起きできた日に|新しいことを始めたいとき'],
+['plant','植物を育てる','🌱','趣味','家',10,1000,1,'一人,家族',4.2,7,'小さな鉢植えを育ててみる','水やりの時間が、ちょっとした癒しの時間になります。','毎日の楽しみがほしいとき|部屋を明るくしたいとき|のんびりしたいとき'],
+['museum','美術館に行く','🖼️','外出','遠出',120,2000,2,'一人,友人',4.5,10,'美術館で作品を眺める','静かな空間で作品とじっくり向き合ってみましょう。','感性を刺激したいとき|静かに過ごしたいとき|一人の時間を楽しみたいとき'],
+['cycle','サイクリング','🚴','運動','近所',60,0,3,'一人,友人,家族',4.4,9,'自転車で少し遠くまで','風を感じながら、いつもより少し遠くまで走ってみましょう。','風を感じたいとき|体を動かしたいとき|天気がいい日に'],
+['call','友達に電話する','📞','リラックス','家',30,0,1,'一人',4.3,12,'久しぶりの友達に連絡する','なかなか話せていなかった友達に電話してみましょう。声を聞くだけで元気が出ます。','さびしいとき|誰かと話したいとき|近況を伝えたいとき'],
+];
+const ACTS=RAW.map(a=>({id:a[0],n:a[1],e:a[2],cat:a[3],place:a[4],t:a[5],cost:a[6],en:a[7],ppl:a[8].split(','),r:a[9],rc:a[10],catch:a[11],d:a[12],f:a[13].split('|')}));
+const byId=id=>ACTS.find(a=>a.id===id);
+
+// ===== 保存 =====
+const KEY='tanoshii-katsudo-v1';
+let S={records:[],favs:[],name:'パスタt',bio:'楽しいことを見つけるのが得意です！',avatar:'🐱',notify:true,theme:'light',goal:20};
+try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s)S=Object.assign(S,s)}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function applyTheme(){document.documentElement.dataset.theme=S.theme}
+applyTheme();
+
+// ===== ユーティリティ =====
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const tLabel=t=>t<=10?'10分以内':t<=30?'30分以内':t<=60?'1時間以内':'1時間以上';
+const costLabel=c=>c===0?'無料':c<=1000?'〜1,000円':'1,000円〜';
+function myRecs(id){return S.records.filter(r=>r.aid===id)}
+function rating(a){const m=myRecs(a.id);const sum=a.r*a.rc+m.reduce((s,r)=>s+r.fun,0);const c=a.rc+m.length;return{v:(sum/c).toFixed(1),c}}
+function tags(a){return `<span class="tag">${a.cat}</span><span class="tag">${a.place}</span><span class="tag">${tLabel(a.t)}</span>`}
+function thumb(a,size){return `<div class="thumb" style="background:${CATS[a.cat].c}${size?`;width:${size}px;height:${size}px;font-size:${size*.55}px`:''}">${a.e}</div>`}
+function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),1800)}
+function modal(html){const o=$('#ov');o.innerHTML=`<div class="modal card">${html}</div>`;o.hidden=false}
+function closeModal(){$('#ov').hidden=true;$('#ov').innerHTML=''}
+$('#ov').addEventListener('click',e=>{if(e.target.id==='ov')closeModal()});
+const pick=arr=>arr[Math.floor(Math.random()*arr.length)];
+
+// ===== ルーター =====
+let stack=[{name:'home',p:{}}];
+const TAB_OF={home:'home',list:'list',search:'home',recommend:'home',detail:null,gacha:'gacha',record:null,mypage:'mypage',zukan:'mypage',settings:'settings'};
+function go(name,p={}){stack.push({name,p});render()}
+function back(){if(stack.length>1)stack.pop();render()}
+function tab(name){stack=[{name,p:{}}];render()}
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
+function hdr(title,{backBtn=true,right=''}={}){return `<div class="hdr${backBtn?' center':''}">${backBtn?'<button class="ib" onclick="back()">‹</button>':''}<div class="t">${title}</div>${right||(backBtn?'<span style="width:36px"></span>':'')}</div>`}
+
+function render(){
+  const cur=stack[stack.length-1];
+  $('#view').innerHTML=SCREENS[cur.name](cur.p);
+  const tb=TAB_OF[cur.name]??TAB_OF[stack[0].name];
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tb));
+  window.scrollTo(0,0);
+  if(AFTER[cur.name])AFTER[cur.name](cur.p);
+}
+const AFTER={};
+
+// ===== 状態 =====
+let listCat='すべて',listQ='',listFavOnly=false;
+let F={mood:'元気',time:30,money:1000,place:'家',ppl:'一人',en:2};
+let myTab='記録',zCat='すべて';
+let lastGacha=null;
+let draft=null;
+
+// ===== 推薦ロジック =====
+function moodMaxEn(m){return m==='元気'?3:m==='ちょっと疲れた'?2:1}
+function score(a,f){
+  let s=0;
+  if(a.t<=f.time)s+=3;else s-=2;
+  if(a.cost<=f.money)s+=3;else s-=3;
+  if(a.place===f.place)s+=3;else if(f.place==='近所'&&a.place==='家')s+=1;else if(f.place==='遠出'&&a.place==='近所')s+=1;
+  if(a.ppl.includes(f.ppl))s+=2;else s-=2;
+  if(a.en<=f.en)s+=2;else s-=3;
+  if(a.en<=moodMaxEn(f.mood))s+=2;else s-=3;
+  if(f.mood==='元気'&&a.en===3)s+=1;
+  if(S.favs.includes(a.id))s+=1;
+  return s+a.r/5+Math.random()*.8;
+}
+function recommend(f){return ACTS.map(a=>({a,s:score(a,f)})).sort((x,y)=>y.s-x.s).map(x=>x.a)}
+
+// ===== 画面 =====
+const SCREENS={
+home(){
+  const moods=[['元気','☀️','m1'],['ちょっと疲れた','🍃','m2'],['かなり疲れた','😮‍💨','m3']];
+  return `<div class="hero"><span class="cloud" style="left:-10px;top:20px">☁️</span><span class="cloud" style="right:-6px;top:90px">☁️</span>
+    <h1>楽しい活動リスト</h1><p>〜 好きなことを見つけて、<br>今日をちょっと楽しく 〜</p></div>
+  <div class="moodbox card"><div class="face">😊</div>
+    <div style="font-weight:800">今日はどんな気分ですか？</div>
+    ${moods.map(([m,i,c])=>`<button class="mood ${c}${F.mood===m?' on':''}" onclick="setMood('${m}')"><span class="ic">${i}</span>${m}</button>`).join('')}
+  </div>
+  <div class="pad" style="margin-top:16px"><button class="btn" onclick="fromHome()">今できることを見つける ›</button></div>
+  <div class="pad" style="display:flex;gap:10px;margin-top:10px">
+    <button class="btn ghost" onclick="go('search')">🔍 条件で探す</button>
+    <button class="btn ghost" onclick="tab('gacha')">🎁 ガチャ</button>
+  </div>
+  <div class="cat">🐈</div>`;
+},
+list(){
+  const cats=['すべて','趣味','外出','運動','リラックス','食べる','体験','旅行','イベント','特別'];
+  return hdr('楽しい活動リスト',{backBtn:false,right:`<button class="ib" onclick="toggleFavOnly()" title="お気に入り">${listFavOnly?'❤️':'🤍'}</button><button class="ib" onclick="go('search')">🔍</button>`})+
+  `<div class="search card"><span>🔎</span><input id="q" placeholder="活動をさがす" value="${esc(listQ)}" oninput="listQ=this.value;drawList()"></div>
+  <div class="chips">${cats.map(c=>`<button class="chip${listCat===c?' on':''}" onclick="listCat='${c}';render()">${c}</button>`).join('')}</div>
+  <div id="items"></div>`;
+},
+search(){
+  const g=(lb,key,opts,cls='')=>`<div class="grp"><div class="lb">${lb}</div><div class="opts">${opts.map(([v,l])=>`<button class="opt${F[key]===v?' on '+cls:''}" onclick="F.${key}=${typeof v==='string'?`'${v}'`:v};render()">${l}</button>`).join('')}</div></div>`;
+  return hdr('今できることを探す')+
+  g('今の気分','mood',[['元気','元気'],['ちょっと疲れた','ちょっと疲れた'],['かなり疲れた','かなり疲れた']],'y')+
+  g('時間','time',[[10,'10分'],[30,'30分'],[60,'1時間'],[9999,'それ以上']])+
+  g('お金','money',[[0,'無料'],[1000,'〜1,000円'],[99999,'1,000円〜']])+
+  g('場所','place',[['家','家'],['近所','近所'],['遠出','遠出']])+
+  g('一人・複数人','ppl',[['一人','一人'],['家族','家族'],['友人','友人']])+
+  g('体力','en',[[1,'★'],[2,'★★'],[3,'★★★']])+
+  `<div class="pad"><button class="btn" onclick="go('recommend',{})">🔍 この条件で探す</button></div>`;
+},
+recommend(){
+  const list=recommend(F);const top=list[0],others=list.slice(1,4);const rt=rating(top);
+  const msg={'元気':'元気いっぱいですね！<br>今の気分にぴったりの活動を見つけました♪','ちょっと疲れた':'今の気分にぴったりの活動を見つけました！<br>無理せず、できそうなものからやってみましょう♪','かなり疲れた':'今日はゆっくり休むのがいちばん。<br>体にやさしい活動を選びました🍵'}[F.mood];
+  return hdr('あなたにおすすめ')+
+  `<div class="bubble"><div class="av">🐱</div><div class="tx card">${msg}</div></div>
+  <div class="card" style="margin:0 16px;padding:10px">
+    <div class="pic" style="background:${CATS[top.cat].c}"><span class="badge">★ おすすめ</span>${top.e}</div>
+    <div style="padding:10px 6px 4px">
+      <div style="font-weight:800;font-size:17px">${top.catch}</div>
+      <div style="margin:6px 0">${tags(top)}</div>
+      <div class="rate"><span class="star">★</span> ${rt.v}</div>
+      <div style="font-size:12px;color:var(--sub);margin:4px 0 12px">${top.f[0]}にぴったりです！</div>
+      <button class="btn" onclick="go('detail',{id:'${top.id}'})">詳細を見る</button>
+      <button class="btn ghost" style="margin-top:8px" onclick="render()">🔄 別の活動を見る</button>
+    </div>
+  </div>
+  <div class="pad sec">他のおすすめ</div>
+  <div class="mini">${others.map(a=>`<button class="card" onclick="go('detail',{id:'${a.id}'})"><div class="e" style="background:${CATS[a.cat].c}">${a.e}</div>${a.n}<div class="rate"><span class="star">★</span> ${rating(a).v}</div></button>`).join('')}</div>`;
+},
+detail({id}){
+  const a=byId(id);const rt=rating(a);const fav=S.favs.includes(id);const m=myRecs(id);
+  return `<div class="hdr"><button class="ib" onclick="back()">‹</button><div class="t"></div><button class="ib" onclick="toggleFav('${id}');render()" style="color:${fav?'var(--pink)':'var(--sub)'}">${fav?'❤️':'🤍'}</button><button class="ib" onclick="share('${id}')">⤴</button></div>
+  <div class="card" style="margin:0 16px;overflow:hidden">
+    <div class="big" style="background:${CATS[a.cat].c}">${a.r>=4.5?'<span class="badge">★ おすすめ</span>':''}${a.e}</div>
+    <div style="padding:16px">
+      <div style="font-weight:800;font-size:20px">${a.catch}</div>
+      <div style="margin:8px 0">${tags(a)}<span class="tag">${costLabel(a.cost)}</span><span class="tag">体力${'★'.repeat(a.en)}</span></div>
+      <div class="rate"><span class="star">★</span> ${rt.v} <span style="color:var(--sub);font-weight:600">（${rt.c}件の評価）</span></div>
+      <div class="sec">詳細</div><div style="font-size:14px">${a.d}</div>
+      <div class="sec">この活動におすすめの人</div>
+      ${a.f.map(x=>`<div class="chk"><b>✓</b>${x}</div>`).join('')}
+      <div class="sec">一緒にできる人</div><div>${a.ppl.map(p=>`<span class="tag">${p}</span>`).join('')}</div>
+      ${m.length?`<div class="sec">あなたの記録</div><div style="font-size:13px;color:var(--sub)">これまで <b style="color:var(--pri)">${m.length}回</b> やりました！最後は ${fmtDate(m[m.length-1].date)}</div>`:''}
+      <div style="margin-top:18px"><button class="btn" onclick="startRecord('${id}')">やった！を記録する</button></div>
+    </div>
+  </div>`;
+},
+gacha(){
+  const cols=['#ff7a7a','#ffd34d','#6cc4ff','#7be0a0','#c89bff','#ff9fd0','#ffb36b'];
+  const balls=[[20,110],[70,120],[120,105],[40,70],[95,65],[140,60],[10,30],[65,25],[115,20]].map((p,i)=>`<div class="ball" style="left:${p[0]}px;top:${p[1]}px;background:linear-gradient(${cols[i%7]} 50%,#fff 50%)"></div>`).join('');
+  const conf=Array.from({length:22},(_,i)=>`<i class="conf" style="left:${(i*47)%100}%;top:${(i*29)%60+4}%;background:${cols[i%7]};transform:rotate(${i*37}deg)"></i>`).join('');
+  return `<div class="gbg">${conf}
+    <div style="text-align:center;padding:24px 16px 0;position:relative">
+      <div style="font-size:28px;font-weight:900">楽しい活動ガチャ</div>
+      <div style="font-size:13px;font-weight:700;color:var(--sub)">今日のあなたにぴったりの<br>楽しいことを1つ提案します！</div>
+    </div>
+    <div class="machine" id="machine">
+      <div class="globe">${balls}</div>
+      <div class="base"><div class="knob"></div><div class="slot"></div><div class="drop" id="drop"></div></div>
+      <button class="pop" onclick="spin()">ガチャを<br>回す</button>
+    </div>
+    <div id="gres">${lastGacha?gachaCard(lastGacha):`<div class="pad" style="margin-top:40px"><button class="btn" onclick="spin()">🎁 ガチャを回す</button></div>`}</div>
+  </div>`;
+},
+record({id}){
+  const a=byId(id);const d=draft;
+  const st=(k)=>`<span class="stars">${[1,2,3,4,5].map(n=>`<button class="${d[k]>=n?'on':''}" onclick="draft.${k}=${n};render()">★</button>`).join('')}</span><b style="width:16px;text-align:right">${d[k]}</b>`;
+  return hdr('活動を記録する')+
+  `<div class="card" style="margin:0 16px 12px;padding:14px;display:flex;gap:12px;align-items:center">${thumb(a)}
+    <div style="flex:1"><div style="font-weight:800">${a.n}</div>
+    <div style="font-size:12px;color:var(--sub);display:grid;grid-template-columns:auto 1fr;gap:2px 10px;align-items:center;margin-top:4px">
+      <span>実施日時</span><input type="datetime-local" class="inp" style="padding:4px 6px;font-size:12px" value="${d.date}" onchange="draft.date=this.value">
+      <span>所要時間</span><span><input type="number" min="1" class="inp" style="padding:4px 6px;font-size:12px;width:70px" value="${d.dur}" onchange="draft.dur=+this.value||0"> 分</span>
+    </div></div></div>
+  <div class="card" style="margin:0 16px 12px;padding:4px 16px">
+    <div class="rrow"><span>楽しさ</span><span style="display:flex;align-items:center;gap:6px">${st('fun')}</span></div>
+    <div class="rrow"><span>気分への効果</span><span style="display:flex;align-items:center;gap:6px">${st('eff')}</span></div>
+    <div style="padding:12px 0"><div style="font-weight:700;margin-bottom:8px">またやりたい？</div>
+      <div class="yn"><button class="${d.again?'on':''}" onclick="draft.again=true;render()">はい</button><button class="${!d.again?'on':''}" onclick="draft.again=false;render()">いいえ</button></div></div>
+  </div>
+  <div class="card" style="margin:0 16px 16px;padding:14px">
+    <div style="font-weight:700;margin-bottom:8px">メモ（任意）</div>
+    <textarea rows="4" placeholder="感想を書いてみよう" oninput="draft.memo=this.value">${esc(d.memo)}</textarea>
+  </div>
+  <div class="pad"><button class="btn" onclick="saveRecord()">保存する</button></div>`;
+},
+mypage(){
+  return hdr('マイページ',{backBtn:false,right:`<button class="ib" onclick="tab('settings')">⚙️</button>`})+
+  `<div class="prof"><div class="av">${S.avatar}</div><div><div style="font-weight:800;font-size:18px">${esc(S.name)}</div><div style="font-size:12px;color:var(--sub)">${esc(S.bio)}</div></div></div>
+  <div class="tabs">${['記録','図鑑','統計'].map(t=>`<button class="${myTab===t?'on':''}" onclick="${t==='図鑑'?"go('zukan')":`myTab='${t}';render()`}">${t}</button>`).join('')}</div>
+  ${myTab==='記録'?myRecordsView():myStatsView()}`;
+},
+zukan(){
+  const cats=['すべて',...CAT_ORDER];
+  const done=new Set(S.records.map(r=>r.aid));
+  const shown=zCat==='すべて'?CAT_ORDER:[zCat];
+  const total=ACTS.length,got=ACTS.filter(a=>done.has(a.id)).length;
+  let body;
+  if(zCat==='すべて'){
+    body=`<div class="zgrid">${shown.map(c=>{const all=ACTS.filter(a=>a.cat===c);const g=all.filter(a=>done.has(a.id)).length;
+      return `<button class="card zc${g?'':' lock'}" onclick="zCat='${c}';render()"><div class="s" style="background:${CATS[c].c}">${CATS[c].e}</div>${c}<small>${g}/${all.length}</small></button>`}).join('')}</div>`;
+  }else{
+    const all=ACTS.filter(a=>a.cat===zCat);
+    body=`<div class="card" style="margin:0 16px;padding:16px"><div class="stamps">${all.map(a=>`<button class="stamp${done.has(a.id)?' got':''}" onclick="go('detail',{id:'${a.id}'})" title="${a.n}">${done.has(a.id)?a.e:'？'}</button>`).join('')}</div>
+      <div style="margin-top:12px;font-size:12px;color:var(--sub)">${all.map(a=>`${done.has(a.id)?'✅':'⬜'} ${a.n}`).join('<br>')}</div></div>`;
+  }
+  return hdr('楽しい活動図鑑')+
+  `<div class="chips">${cats.map(c=>`<button class="chip${zCat===c?' on':''}" onclick="zCat='${c}';render()">${c}</button>`).join('')}</div>
+  <div class="card" style="margin:0 16px 12px;padding:12px 16px"><div style="display:flex;justify-content:space-between;font-weight:800;font-size:13px"><span>コンプリート率</span><span>${got} / ${total}</span></div><div class="bar" style="margin-top:6px"><i style="width:${got/total*100}%"></i></div></div>
+  ${body}
+  <div class="card" style="margin:14px 16px;padding:14px;text-align:center;font-size:13px;font-weight:700">スタンプを集めて、<br><span style="color:var(--pri)">自分だけの「楽しいこと図鑑」を完成させよう！</span></div>`;
+},
+settings(){
+  const row=(ic,t,s,act,right='<span class="ar">›</span>')=>`<button class="srow" onclick="${act}"><span class="ic">${ic}</span><span><b>${t}</b><small>${s}</small></span>${right}</button>`;
+  return hdr('設定',{backBtn:false})+
+  `<div class="card" style="margin:0 16px">
+    ${row('👤','基本情報','ニックネーム・プロフィール',"editProfile()")}
+    ${row('🔔','通知設定','通知のON/OFF',"S.notify=!S.notify;save();render()",`<span class="sw${S.notify?' on':''}"></span>`)}
+    ${row('💾','データのバックアップ','書き出し・読み込み',"backup()")}
+    ${row('🎨','テーマ設定',S.theme==='dark'?'ダーク':'ライト',"S.theme=S.theme==='dark'?'light':'dark';save();applyTheme();render()",`<span class="sw${S.theme==='dark'?' on':''}"></span>`)}
+    ${row('🎯','今月の目標',`${S.goal}件`,"editGoal()")}
+    ${row('❓','よくある質問','使い方・Q&A',"faq()")}
+    ${row('💬','お問い合わせ','ご意見・ご要望',"contact()")}
+  </div>
+  <div class="pad" style="margin-top:20px"><button class="btn ghost" style="color:#e04848" onclick="resetAll()">記録をすべて消去</button></div>
+  <div style="text-align:center;color:var(--sub);font-size:12px;margin:16px">楽しい活動リスト v1.0</div>`;
+}
+};
+
+// ===== 画面ごとの処理 =====
+function setMood(m){F.mood=m;F.en=moodMaxEn(m);render()}
+function fromHome(){F.en=moodMaxEn(F.mood);go('recommend',{})}
+function toggleFavOnly(){listFavOnly=!listFavOnly;render()}
+function toggleFav(id){const i=S.favs.indexOf(id);if(i<0){S.favs.push(id);toast('お気に入りに追加しました')}else S.favs.splice(i,1);save()}
+function drawList(){
+  const q=listQ.trim();
+  const list=ACTS.filter(a=>(listCat==='すべて'||a.cat===listCat)&&(!listFavOnly||S.favs.includes(a.id))&&(!q||(a.n+a.catch+a.cat+a.place).includes(q)));
+  $('#items').innerHTML=list.length?list.map(a=>`<div class="card item" onclick="go('detail',{id:'${a.id}'})">${thumb(a)}
+    <div style="min-width:0"><div class="nm">${a.n}</div><div style="margin:3px 0">${tags(a)}</div><div class="rate"><span class="star">★</span> ${rating(a).v}</div></div>
+    <button class="fav${S.favs.includes(a.id)?' on':''}" onclick="event.stopPropagation();toggleFav('${a.id}');drawList()">${S.favs.includes(a.id)?'♥':'♡'}</button></div>`).join('')
+    :`<div class="empty">${listFavOnly?'お気に入りはまだありません🤍':'見つかりませんでした'}</div>`;
+}
+AFTER.list=drawList;
+async function share(id){
+  const a=byId(id);const text=`「${a.catch}」をやってみよう！ #楽しい活動リスト`;
+  try{if(navigator.share){await navigator.share({title:'楽しい活動リスト',text});return}}catch(e){return}
+  try{await navigator.clipboard.writeText(text);toast('コピーしました')}catch(e){toast(text)}
+}
+function nowLocal(){const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16)}
+function fmtDate(s){const d=new Date(s);return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`}
+function startRecord(id){draft={date:nowLocal(),dur:byId(id).t>=240?120:byId(id).t,fun:5,eff:4,again:true,memo:''};go('record',{id})}
+function saveRecord(){
+  const id=stack[stack.length-1].p.id;
+  const firstTime=!S.records.some(r=>r.aid===id);
+  S.records.push({id:Date.now(),aid:id,...draft});save();
+  stack=[{name:'mypage',p:{}}];myTab='記録';render();
+  if(firstTime)modal(`<div style="text-align:center"><div style="font-size:64px;transform:rotate(-8deg)">${byId(id).e}</div><div style="font-weight:900;font-size:20px;margin:8px 0">スタンプゲット！</div><div style="color:var(--sub);font-size:13px">「${byId(id).n}」が図鑑に登録されました</div><button class="btn" style="margin-top:16px" onclick="closeModal();go('zukan')">図鑑を見る</button><button class="btn ghost" style="margin-top:8px" onclick="closeModal()">とじる</button></div>`);
+  else toast('記録しました！');
+}
+function gachaCard(a){
+  return `<div class="card result"><div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:800;color:var(--pri)"><span>🐾 今日のおすすめ</span>
+    <button onclick="toggleFav('${a.id}');render()" style="font-size:18px">${S.favs.includes(a.id)?'❤️':'🤍'}</button></div>
+    <div style="display:flex;gap:12px;align-items:center;margin:10px 0">${thumb(a,70)}<div style="font-weight:800;font-size:16px">${a.catch}</div></div>
+    <div>${tags(a)}</div><div class="rate" style="margin-top:6px"><span class="star">★</span> ${rating(a).v}</div>
+    <button class="btn" style="margin-top:14px" onclick="go('detail',{id:'${a.id}'})">詳細を見る</button></div>
+    <div class="pad"><button class="btn ghost" onclick="spin()">🔄 もう一度回す</button></div>`;
+}
+let spinning=false;
+function spin(){
+  if(spinning)return;spinning=true;
+  const m=$('#machine');m.classList.add('spinning');
+  const a=pick(ACTS.filter(x=>x!==lastGacha));
+  setTimeout(()=>{const d=$('#drop');d.style.background=`linear-gradient(${CATS[a.cat].c} 50%,#fff 50%)`;d.classList.add('go')},700);
+  setTimeout(()=>{m.classList.remove('spinning');lastGacha=a;spinning=false;$('#gres').innerHTML=gachaCard(a);$('#gres').scrollIntoView({behavior:'smooth',block:'center'})},1400);
+}
+function monthRecs(off=0){const n=new Date();const y=n.getFullYear(),mo=n.getMonth()+off;const s=new Date(y,mo,1),e=new Date(y,mo+1,1);return S.records.filter(r=>{const d=new Date(r.date);return d>=s&&d<e})}
+function catCounts(recs){const c={};recs.forEach(r=>{const k=byId(r.aid)?.cat;if(k)c[k]=(c[k]||0)+1});return Object.entries(c).sort((a,b)=>b[1]-a[1])}
+function myRecordsView(){
+  const cur=monthRecs(0),prev=monthRecs(-1);const diff=cur.length-prev.length;
+  const cc=catCounts(cur);
+  const recent=[...S.records].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,10);
+  return `<div class="card" style="margin:0 16px 12px;padding:16px">
+    <div style="font-weight:800;font-size:13px">今月の活動記録</div>
+    <div style="display:flex;align-items:baseline;justify-content:space-between"><div><b style="font-size:36px;color:var(--pri)">${cur.length}</b> 件</div><div style="font-size:12px;color:var(--sub)">先月より <b style="color:${diff>=0?'var(--green)':'#e04848'}">${diff>=0?'+':''}${diff}</b></div></div>
+    <div class="bar"><i style="width:${Math.min(100,cur.length/S.goal*100)}%"></i></div>
+    <div style="font-size:11px;color:var(--sub);margin-top:4px;text-align:right">目標 ${S.goal}件</div>
+  </div>
+  <div class="card" style="margin:0 16px 12px;padding:12px 16px"><div style="font-weight:800;font-size:13px">よくやる活動カテゴリ</div>
+    ${cc.length?cc.map(([c,n])=>`<div class="crow"><span class="ci" style="background:${CATS[c].c}">${CATS[c].e}</span>${c}<span class="n">${n}</span></div>`).join(''):'<div class="empty">今月の記録はまだありません</div>'}
+  </div>
+  <div class="card" style="margin:0 16px 12px;padding:12px 16px"><div style="font-weight:800;font-size:13px;margin-bottom:6px">最近の記録</div>
+    ${recent.length?recent.map(r=>{const a=byId(r.aid);return `<div class="crow" style="align-items:flex-start;border-bottom:1px solid var(--line);padding:10px 0">
+      <span class="ci" style="background:${CATS[a.cat].c}">${a.e}</span><div style="flex:1;min-width:0"><div>${a.n}</div>
+      <div style="font-size:11px;color:var(--sub);font-weight:600">${fmtDate(r.date)}・${r.dur}分・<span class="star">${'★'.repeat(r.fun)}</span>${r.again?'・またやりたい':''}</div>
+      ${r.memo?`<div style="font-size:12px;font-weight:500;margin-top:2px">${esc(r.memo)}</div>`:''}</div>
+      <button style="color:var(--sub);font-size:12px" onclick="delRec(${r.id})">削除</button></div>`}).join(''):'<div class="empty">まだ記録がありません。<br>活動をやったら「やった！」を記録しよう</div>'}
+  </div>`;
+}
+function myStatsView(){
+  const days=[];const n=new Date();
+  for(let i=6;i>=0;i--){const d=new Date(n.getFullYear(),n.getMonth(),n.getDate()-i);const e=new Date(d);e.setDate(e.getDate()+1);
+    days.push({l:`${d.getMonth()+1}/${d.getDate()}`,c:S.records.filter(r=>{const x=new Date(r.date);return x>=d&&x<e}).length})}
+  const mx=Math.max(1,...days.map(d=>d.c));
+  const all=S.records;const avg=k=>all.length?(all.reduce((s,r)=>s+r[k],0)/all.length).toFixed(1):'-';
+  const mins=all.reduce((s,r)=>s+(r.dur||0),0);
+  const top=Object.entries(all.reduce((o,r)=>(o[r.aid]=(o[r.aid]||0)+1,o),{})).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  const tile=(l,v)=>`<div class="card" style="padding:12px;text-align:center"><div style="font-size:11px;color:var(--sub);font-weight:700">${l}</div><div style="font-size:22px;font-weight:900;color:var(--pri)">${v}</div></div>`;
+  return `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 16px 12px">${tile('総記録',all.length+'件')}${tile('合計時間',mins>=60?Math.floor(mins/60)+'h'+(mins%60?mins%60+'m':''):mins+'分')}${tile('平均楽しさ',avg('fun'))}</div>
+  <div class="card" style="margin:0 16px 12px;padding:12px 16px"><div style="font-weight:800;font-size:13px">この7日間</div>
+    <div class="cols">${days.map(d=>`<div><b>${d.c||''}</b><i style="height:${d.c/mx*90}%"></i>${d.l}</div>`).join('')}</div></div>
+  <div class="card" style="margin:0 16px 12px;padding:12px 16px"><div style="font-weight:800;font-size:13px">よくやる活動 TOP3</div>
+    ${top.length?top.map(([id,c],i)=>{const a=byId(id);return `<div class="crow"><b style="width:18px">${i+1}</b><span class="ci" style="background:${CATS[a.cat].c}">${a.e}</span>${a.n}<span class="n">${c}回</span></div>`}).join(''):'<div class="empty">記録するとここに表示されます</div>'}
+    <div style="font-size:12px;color:var(--sub);margin-top:6px">気分への効果（平均）：<b style="color:var(--text)">${avg('eff')}</b></div></div>`;
+}
+function delRec(id){if(!confirm('この記録を削除しますか？'))return;S.records=S.records.filter(r=>r.id!==id);save();render()}
+function editProfile(){
+  const avs=['🐱','🐶','🐰','🐻','🐼','🦊','🐸','🐧'];
+  modal(`<div style="font-weight:900;font-size:18px;margin-bottom:12px">基本情報</div>
+    <div style="font-weight:700;font-size:13px">アイコン</div><div id="avs" style="display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px">${avs.map(a=>`<button class="ib" style="font-size:26px;width:44px;height:44px;${a===S.avatar?'background:var(--priSoft);outline:2px solid var(--pri)':''}" onclick="S.avatar='${a}';editProfile()">${a}</button>`).join('')}</div>
+    <div style="font-weight:700;font-size:13px">ニックネーム</div><input id="pn" class="inp" maxlength="20" value="${esc(S.name)}" style="margin:6px 0 12px">
+    <div style="font-weight:700;font-size:13px">ひとこと</div><input id="pb" class="inp" maxlength="40" value="${esc(S.bio)}" style="margin:6px 0 16px">
+    <button class="btn" onclick="S.name=$('#pn').value.trim()||'ゲスト';S.bio=$('#pb').value;save();closeModal();render();toast('保存しました')">保存する</button>`);
+}
+function editGoal(){
+  modal(`<div style="font-weight:900;font-size:18px;margin-bottom:12px">今月の目標</div><input id="gl" type="number" min="1" max="200" class="inp" value="${S.goal}"><button class="btn" style="margin-top:14px" onclick="S.goal=Math.max(1,+$('#gl').value||20);save();closeModal();render()">保存する</button>`);
+}
+function backup(){
+  modal(`<div style="font-weight:900;font-size:18px;margin-bottom:8px">データのバックアップ</div>
+    <div style="font-size:13px;color:var(--sub);margin-bottom:14px">記録・お気に入り・設定をファイルに保存したり、読み込んだりできます。</div>
+    <button class="btn" onclick="exportData()">⬇ ファイルに書き出す</button>
+    <label class="btn ghost" style="margin-top:8px">⬆ ファイルから読み込む<input type="file" accept=".json,application/json" hidden onchange="importData(this.files[0])"></label>`);
+}
+function exportData(){
+  const b=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});const u=URL.createObjectURL(b);
+  const a=document.createElement('a');a.href=u;a.download=`tanoshii-katsudo-${new Date().toISOString().slice(0,10)}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);toast('書き出しました');
+}
+function importData(f){
+  if(!f)return;const r=new FileReader();
+  r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.records))throw 0;S=Object.assign(S,d);save();applyTheme();closeModal();render();toast('読み込みました')}catch(e){toast('読み込みに失敗しました')}};
+  r.readAsText(f);
+}
+function faq(){
+  const qa=[['どうやって使うの？','ホームで今の気分を選ぶか、条件検索で探すと、ぴったりの活動をおすすめします。'],['記録はどうやってつける？','活動の詳細画面で「やった！を記録する」を押してください。'],['図鑑のスタンプは？','活動を初めて記録すると、その活動のスタンプがもらえます。'],['データはどこに保存される？','この端末のブラウザ内に保存されます。機種変更の前にはバックアップを書き出してください。'],['ガチャって何？','迷ったときに、ランダムで活動を1つ提案してくれる機能です。']];
+  modal(`<div style="font-weight:900;font-size:18px;margin-bottom:8px">よくある質問</div>${qa.map(([q,a])=>`<div style="margin:12px 0"><b>Q. ${q}</b><div style="font-size:13px;color:var(--sub)">A. ${a}</div></div>`).join('')}<button class="btn ghost" onclick="closeModal()">とじる</button>`);
+}
+function contact(){
+  modal(`<div style="font-weight:900;font-size:18px;margin-bottom:8px">お問い合わせ</div><div style="font-size:13px;color:var(--sub);margin-bottom:10px">「こんな活動を追加してほしい」などのご意見をどうぞ。</div>
+    <textarea id="ct" rows="4" placeholder="ご意見・ご要望"></textarea>
+    <button class="btn" style="margin-top:12px" onclick="if($('#ct').value.trim()){closeModal();toast('ありがとうございます！')}">送信する</button>`);
+}
+function resetAll(){if(!confirm('すべての記録とお気に入りを消去します。よろしいですか？'))return;S.records=[];S.favs=[];save();render();toast('消去しました')}
+
+render();
+</script>
+<script src="../../playtime.js" defer></script>
+</body>
+</html>
