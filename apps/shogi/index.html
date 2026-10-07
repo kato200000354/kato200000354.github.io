@@ -619,8 +619,15 @@ function afterMove(){
   if(over){showResult();return;}
   if(mode==="cpu"&&pos.side!==humanSide)cpuMove();
   else requestHint();}
+// 定跡（居飛車・矢倉・角換わり・相掛かり・横歩取り・中飛車・三間飛車・ゴキゲン中飛車・雁木）
+const BOOK=[[6072,4248,6717,4119,8653,1802,8524,1540,8386,1420,6330,1291],[6072,3603,6201,4248,8395,1667,6717,1925,8782,1538,6330,3990],[6072,3603,6717,4764,7232,4248,8266,1925,5556,1410],[6717,3603,5556,4764,8395,1925,4395,4377,4422,5925,5943,5898],[6072,4248,6717,3603,5556,4764,8395,1925,4395,4377,4422,5925,5943,5898],[6330,3603,8646,4764,6072,4248,7232,1925,8780,1796],[6072,3603,6201,4248,8390,1538,8780,1796,8900,1934],[6072,4248,6717,3990,5556,1674,8524,1540,8386,1420],[6072,3603,6201,4248,8395,1925,6717,3861,5556,3088]];
+function bookMove(){const seq=pos.stk.filter((_,i)=>i%4===0),n=seq.length,c=[];
+  for(const L of BOOK)if(L.length>n&&seq.every((m,i)=>L[i]===m)&&legal.includes(L[n]))c.push(L[n]);
+  return c.length?c[Math.floor(Math.random()*c.length)]:0;}
 function cpuMove(){
   cpuThinking=true;render();const lv=LEVELS[level],t0=Date.now();
+  const bm=level>=1?bookMove():0;
+  if(bm){const id=++reqId;setTimeout(()=>{if(id!==reqId)return;cpuThinking=false;play(bm);},500);return;}
   const cs=pos.side;
   search(lv.time,lv.noise,d=>{if(d.move&&d.depth>=3){senteScore=cs===0?d.score:-d.score;renderWin();}},r=>{
     setTimeout(()=>{cpuThinking=false;if(!r.move){over={winner:humanSide,text:"CPUの投了"};render();showResult();return;}play(r.move);},Math.max(0,350-(Date.now()-t0)));});}
