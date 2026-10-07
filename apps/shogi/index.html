@@ -79,6 +79,9 @@ header button{padding:6px 10px;font-size:13px}
 #hintBox .ok{color:var(--hint);font-size:12px;font-weight:700}
 #hintBox .bar{height:4px;background:#0006;border-radius:2px;margin-top:6px;overflow:hidden}
 #hintBox .bar i{display:block;height:100%;background:var(--hint);transition:width .2s linear}
+#hintBox .why{margin:6px 0 2px;padding-left:0;list-style:none;font-size:13.5px;line-height:1.5}
+#hintBox .why li::before{content:"▸ ";color:var(--hint)}
+#hintBox .pv{font-size:12.5px;color:var(--text);opacity:.85;margin-top:2px}
 #hintBox .meta{font-size:12px;color:var(--muted)}
 #kifu{width:100%;display:flex;gap:6px;overflow-x:auto;font-size:13px;padding:4px 0;scrollbar-width:thin}
 #kifu span{flex:none;background:var(--panel);border-radius:6px;padding:3px 7px;color:var(--muted)}
@@ -344,12 +347,17 @@ function negamax(pos,depth,alpha,beta,ply,allowNull){
   ttKey[idx]=pos.h2;ttMove[idx]=bestM;ttScore[idx]=st;ttDepth[idx]=depth;ttFlag[idx]=best>=beta?1:best<=a0?2:0;
   return best;}
 
+// 置換表をたどって読み筋（最善手から続く予想手順）を取り出す
+function getPV(pos,first,max){const pv=[first];pos.make(first);let n=1;
+  while(n<max){const idx=pos.h1&TT_MASK;if(ttKey[idx]!==pos.h2)break;const m=ttMove[idx];
+    if(!m||!pos.genLegal(false).includes(m))break;pv.push(m);pos.make(m);n++;}
+  for(let i=0;i<n;i++)pos.unmake();return pv;}
 function think(pos,timeMs,noise,onIter){
   nodes=0;stopped=false;const t0=now();deadline=t0+timeMs;killers.fill(0);
   for(let i=0;i<hist.length;i++)hist[i]>>=2;
   const root=pos.genLegal(false);if(!root.length)return null;
   const rs=new Map();let best=root[0],bestScore=0,depthDone=0;
-  if(root.length===1)return {move:best,score:evaluate(pos),depth:0};
+  if(root.length===1)return {move:best,score:evaluate(pos),depth:0,pv:[best]};
   for(let depth=1;depth<=40;depth++){
     let alpha=-INF,iterBest=0,iterScore=-INF;
     root.sort((a,b)=>(b===best)-(a===best)||(rs.get(b)||0)-(rs.get(a)||0));
@@ -362,10 +370,10 @@ function think(pos,timeMs,noise,onIter){
       if(nv>alpha||i===0){alpha=Math.max(alpha,nv);if(nv>=iterScore){iterScore=nv;iterBest=m;}}}
     if(stopped){if(iterBest&&iterBest!==best&&rs.get(iterBest)>bestScore){best=iterBest;bestScore=rs.get(iterBest);}break;}
     best=iterBest;bestScore=rs.get(iterBest);depthDone=depth;
-    if(onIter)onIter({move:best,score:bestScore,depth,nodes});
+    if(onIter)onIter({move:best,score:bestScore,depth,nodes,pv:getPV(pos,best,7)});
     if(Math.abs(bestScore)>MATE-1000)break;
     if(now()-t0>timeMs*0.45)break;}
-  return {move:best,score:bestScore,depth:depthDone,nodes};}
+  return {move:best,score:bestScore,depth:depthDone,nodes,pv:getPV(pos,best,7)};}
 
 if(typeof window==="undefined"){
   self.onmessage=e=>{const d=e.data,pos=Pos.from(d.pos);
@@ -485,6 +493,58 @@ function renderToggles(){
     $("hintState"+s).textContent=hintFor[s]?"ON":"OFF";
     $("hintName"+s).textContent=mode==="pvp"?(s===0?"☗先手":"☖後手")+"のヒント":"最善手ヒント";
     $("hintSub"+s).textContent=mode==="pvp"?(s===0?"先手":"後手")+"の番だけ最善手を表示":"AIが考えた理想の一手を盤上に表示";}}
+/* ---------- ヒント解説（盤面と読み筋から理由を組み立てる） ---------- */
+const BIG=new Set([HI,KA,RY,UM]);
+const LN=["","歩","香車","桂馬","銀","金","角","飛車","玉","と金","成香","成桂","成銀","","馬","龍"];
+function attacksFrom(p,sq,t,side){const out=[],b=p.b;
+  for(const to of STEP[side][t][sq])out.push(to);
+  for(const ray of SLIDE[side][t][sq])for(const to of ray){out.push(to);if(b[to])break;}
+  return out;}
+function kdist(a,b){return Math.max(Math.abs((a/9|0)-(b/9|0)),Math.abs(a%9-b%9));}
+function threatened(p,side){const res=[],sgn=side?-1:1,them=side^1;
+  for(let sq=0;sq<81;sq++){const v=p.b[sq]*sgn;if(v<=0||v===OU)continue;
+    if(p.attacked(sq,them)&&(BIG.has(v)||!p.attacked(sq,side)))res.push(sq);}
+  return res;}
+function explainMove(src,h){
+  const p=Pos.from(src.serialize()),m=h.move,us=p.side,them=us^1,sgn=us?-1:1;
+  const from=mvFrom(m),to=mvTo(m),drop=from>=81,t=drop?from-81:Math.abs(p.b[from]),cap=drop?0:Math.abs(p.b[to]);
+  const why=[],wasCheck=p.inCheck(),thrBefore=threatened(p,us),myK=p.king[us],opK=p.king[them];
+  const plies=kifu.length;
+  const mateN=h.score>MATE-1000?MATE-h.score:0;
+  if(mateN===1)why.push("<b>この手で詰み！</b>相手玉はどこにも逃げられません");
+  else if(mateN)why.push("<b>"+mateN+"手で詰み</b>があります。読み筋どおりに指せば勝ちです");
+  if(wasCheck)why.push(t===OU?"王手を受けているので、玉を安全なマスへ逃がします":cap?"王手をかけてきた駒を取って王手を防ぎます":"駒を間に入れて（合駒）王手を防ぎます");
+  p.make(m);
+  const nt=mvPro(m)?t+8:t;
+  if(p.inCheck()&&mateN!==1)why.push("<b>王手</b>をかけて相手の応手を限定します");
+  if(cap)why.push("相手の<b>"+LN[cap]+"</b>を取って駒得します"+(p.attacked(to,them)&&VAL[cap]<VAL[t]?"（取り返されても損の少ない交換）":""));
+  if(mvPro(m))why.push(LN[t]+"が<b>成って"+LN[nt]+"</b>になり、動ける範囲が広がります");
+  if(!drop&&!cap&&thrBefore.includes(from)&&!(p.attacked(to,them)&&!p.attacked(to,us)))why.push("狙われていた<b>"+LN[t]+"</b>を安全な場所へ逃がします");
+  const thrAfter=threatened(p,us),saved=thrBefore.filter(sq=>sq!==from&&!thrAfter.includes(sq)&&p.b[sq]*sgn>0);
+  if(saved.length&&!cap)why.push("取られそうだった<b>"+saved.map(sq=>LN[Math.abs(p.b[sq])]).join("・")+"</b>を守ります");
+  const targets=attacksFrom(p,to,nt,us).filter(sq=>{const v=-p.b[sq]*sgn;return v>0&&v!==OU&&(BIG.has(v)||VAL[v]>=495||!p.attacked(sq,them));});
+  const tn=[...new Set(targets.map(sq=>LN[Math.abs(p.b[sq])]))];
+  if(tn.length>=2)why.push("<b>両取り</b>！ "+tn.join("と")+"を同時に狙います");
+  else if(tn.length===1&&!(p.inCheck()))why.push("<b>"+tn[0]+"取り</b>をかけて相手に受けを強制します");
+  if(mateN===1){}
+  else if(drop){const de=kdist(to,opK),dm=kdist(to,myK);
+    if(de<=2)why.push("持ち駒の"+LN[t]+"を相手玉の近くに打って攻めを厚くします");
+    else if(dm<=2)why.push("持ち駒の"+LN[t]+"を自玉の近くに打って守りを固めます");
+    else if(!why.length)why.push("持ち駒の"+LN[t]+"を働きの良い場所に打ちます");}
+  else if((t===KI||t===GI)&&kdist(to,myK)<kdist(from,myK)&&kdist(to,myK)<=2&&!cap)why.push(LN[t]+"を玉に近づけて<b>囲いを固めます</b>");
+  else if(t===OU&&!wasCheck)why.push("玉を戦場から遠ざけ、安全な場所へ移動します（囲いの準備）");
+  else if(!cap&&!drop&&kdist(to,opK)<kdist(from,opK)&&kdist(to,opK)<=3&&t!==OU)why.push(LN[t]+"を相手玉に近づけて攻めの準備をします");
+  if(plies<16&&t===FU&&!cap){const file=9-to%9;
+    if((us===0&&file===7)||(us===1&&file===3))why.push("<b>角道を開ける</b>序盤の基本の一手です");
+    else if((us===0&&file===2)||(us===1&&file===8))why.push("<b>飛車先の歩を伸ばし</b>、攻めの準備をします");}
+  if(!why.length)why.push("目立つ駒の取り合いはありませんが、先を読んだ結果、形勢を最も良く保てる手です");
+  // 読み筋
+  const q=Pos.from(src.serialize());let pvTxt=[];
+  for(const mv of (h.pv||[m])){if(!q.genLegal(true).includes(mv))break;pvTxt.push(notation(q,mv));q.make(mv);}
+  return {why:why.slice(0,4),pv:pvTxt.join(" ")};}
+let explCache={key:"",val:null};
+function getExplain(){const key=kifu.length+":"+hint.move+":"+(hint.pv||[]).join(",");
+  if(explCache.key!==key)explCache={key,val:explainMove(pos,hint)};return explCache.val;}
 function renderHintBox(){
   const hb=$("hintBox");
   if(!hintActive()){hb.hidden=true;return;}
@@ -492,8 +552,11 @@ function renderHintBox(){
   const T=hintTime(),pct=hint&&hint.done?100:Math.min(99,(Date.now()-hintT0)/T*100);
   const bar="<div class='bar'><i style='width:"+pct+"%'></i></div>";
   if(!hint){hb.innerHTML="<span class='meta'>💡 最善手を考え中…</span>"+bar;return;}
+  const ex=getExplain();
   hb.innerHTML="💡 最善手：<span class='mv'>"+notation(pos,hint.move)+"</span> "+
     (hint.done?"<span class='ok'>✓ 読み完了</span>":"<span class='meta'>読み中… 完了を待つと精度UP</span>")+
+    "<ul class='why'>"+ex.why.map(w=>"<li>"+w+"</li>").join("")+"</ul>"+
+    (ex.pv?"<div class='pv'>📖 読み筋："+ex.pv+"</div>":"")+
     "<div class='meta'>"+scoreText(hint.score,pos.side)+"・読み "+hint.depth+" 手</div>"+bar;}
 function renderHand(el,side,hm){
   el.innerHTML="";el.classList.toggle("turn",!over&&pos.side===side);
