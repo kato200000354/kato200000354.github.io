@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>ヒント将棋</title>
+<!-- GitHub Pages で SharedArrayBuffer を使えるようにする（やねうら王WASM用） -->
+<script src="coi-serviceworker.js"></script>
 <style>
 :root{
   --bg:#1b1410;--panel:#2a1f17;--line:#6b4f35;--text:#f6ead8;--muted:#c9b291;
@@ -82,6 +84,9 @@ header button{padding:6px 10px;font-size:13px}
 #hintBox .why{margin:6px 0 2px;padding-left:0;list-style:none;font-size:13.5px;line-height:1.5}
 #hintBox .why li::before{content:"▸ ";color:var(--hint)}
 #hintBox .pv{font-size:12.5px;color:var(--text);opacity:.85;margin-top:2px}
+#engineInfo{width:100%;font-size:11.5px;color:var(--muted);text-align:center}
+#engineInfo a{color:var(--muted)}
+.box .opts small{display:block;font-size:10px;color:var(--muted)}
 #hintBox .meta{font-size:12px;color:var(--muted)}
 #kifu{width:100%;display:flex;gap:6px;overflow-x:auto;font-size:13px;padding:4px 0;scrollbar-width:thin}
 #kifu span{flex:none;background:var(--panel);border-radius:6px;padding:3px 7px;color:var(--muted)}
@@ -125,6 +130,7 @@ header button{padding:6px 10px;font-size:13px}
     </div>
   </div>
   <div id="hintBox" hidden></div>
+  <div id="engineInfo"></div>
   <div id="kifu"></div>
 </div>
 
@@ -142,9 +148,9 @@ header button{padding:6px 10px;font-size:13px}
       <button data-v="0">入門</button>
       <button data-v="1" class="on">初級</button>
       <button data-v="2">中級</button>
-      <button data-v="3">上級</button>
-      <button data-v="4">最強</button>
-      <button data-v="5">👹 鬼</button>
+      <button data-v="3">上級<small>やねうら王</small></button>
+      <button data-v="4">最強<small>やねうら王</small></button>
+      <button data-v="5">👹 鬼<small>やねうら王</small></button>
     </div>
     <button class="go" id="btnStart">対局開始</button>
     <button id="btnCloseNew">キャンセル</button>
@@ -388,9 +394,13 @@ if(typeof window==="undefined"){
 const NAME=["","歩","香","桂","銀","金","角","飛","玉","と","成香","成桂","成銀","","馬","龍"];
 const GLYPH=["","歩","香","桂","銀","金","角","飛","玉","と","杏","圭","全","","馬","龍"];
 const ZEN=["","１","２","３","４","５","６","７","８","９"],KAN=["","一","二","三","四","五","六","七","八","九"];
-const LEVELS=[{name:"入門",time:300,noise:260},{name:"初級",time:800,noise:90},{name:"中級",time:1500,noise:0},{name:"上級",time:3000,noise:0},{name:"最強",time:6000,noise:0},{name:"鬼",time:10000,noise:0}];
+// time/noise=内蔵エンジン用、yo=やねうら王の持ち時間(ms)。やねうら王が使えない環境では内蔵エンジンで代用
+const LEVELS=[{name:"入門",time:300,noise:260},{name:"初級",time:800,noise:90},{name:"中級",time:1500,noise:0},
+  {name:"上級",time:3000,noise:0,yo:500},{name:"最強",time:6000,noise:0,yo:2000},{name:"鬼",time:10000,noise:0,yo:5000}];
 // ヒントは常にCPUより深く読む（CPUの2倍・最低3秒）
-const hintTime=()=>mode==="cpu"?Math.max(3000,LEVELS[level].time*2):4000;
+const hintTime=()=>{const lv=LEVELS[level];
+  if(yoReady)return mode==="cpu"&&lv.yo?Math.max(2000,lv.yo*2):mode==="cpu"?2000:3000;
+  return mode==="cpu"?Math.max(3000,lv.time*2):4000;};
 let hintT0=0,hintTimer=0,senteScore=0,flashed=-1,flashAt=0;
 const winProb=s=>Math.abs(s)>MATE-1000?(s>0?1:0):1/(1+Math.exp(-s/600));
 const $=id=>document.getElementById(id);
@@ -405,9 +415,10 @@ const hintActive=()=>isHumanTurn()&&hintFor[pos.side];
 /* ---------- worker ---------- */
 const engineSrc=$("engine").textContent;
 function makeWorker(){try{return new Worker(URL.createObjectURL(new Blob([engineSrc],{type:"text/javascript"})));}catch(e){return null;}}
-function cancelSearch(){reqId++;cpuThinking=false;if(busy&&worker){worker.terminate();worker=null;}busy=false;}
-function search(time,noise,onPartial,onDone){
+function cancelSearch(){reqId++;cpuThinking=false;if(yoBusy){yoQueue=null;yo.postMessage("stop");}if(busy&&worker){worker.terminate();worker=null;}busy=false;}
+function search(time,noise,onPartial,onDone,useYo){
   const id=++reqId;
+  if(useYo&&yoReady){yoSearch(id,time,onPartial,onDone);return;}
   if(!worker)worker=makeWorker();
   if(!worker){ // fallback: main thread
     setTimeout(()=>{if(id!==reqId)return;const p=Pos.from(pos.serialize());const r=think(p,Math.min(time,1500),noise)||{move:0,score:-MATE,depth:0};onDone(r);},30);return;}
@@ -415,6 +426,55 @@ function search(time,noise,onPartial,onDone){
   worker.onmessage=e=>{const d=e.data;if(d.id!==reqId)return;if(d.partial){onPartial&&onPartial(d);}else{busy=false;onDone(d);}};
   worker.postMessage({id,pos:pos.serialize(),time,noise});
 }
+
+/* ---------- やねうら王（WebAssembly・USIプロトコル） ---------- */
+let yo=null,yoReady=false,yoBusy=false,yoCur=null,yoQueue=null,yoThreads=1;
+const USI_P="PLNSGBR";
+const usiSq=sq=>(9-sq%9)+String.fromCharCode(97+(sq/9|0));
+function toUSI(m){const f=mvFrom(m),t=mvTo(m);return f>=81?USI_P[f-82]+"*"+usiSq(t):usiSq(f)+usiSq(t)+(mvPro(m)?"+":"");}
+function fromUSI(p,u){return p.genLegal(true).find(m=>toUSI(m)===u)||0;}
+function usiPosition(){const ms=pos.stk.filter((_,i)=>i%4===0);return "position startpos"+(ms.length?" moves "+ms.map(toUSI).join(" "):"");}
+function parseInfo(line,req){
+  const sc=line.match(/ score (cp|mate) (-?\d+)/),pvm=line.match(/ pv (.+)$/),dm=line.match(/ depth (\d+)/);
+  if(!sc||!pvm||/(lower|upper)bound/.test(line))return null;
+  let score=+sc[2];if(sc[1]==="mate")score=score>=0?MATE-score:-(MATE+score);
+  const q=Pos.from(req.snap),pv=[];
+  for(const u of pvm[1].trim().split(/\s+/)){const m=fromUSI(q,u);if(!m)break;pv.push(m);q.make(m);if(pv.length>=7)break;}
+  return pv.length?{move:pv[0],score,depth:dm?+dm[1]:0,pv}:null;}
+function yoSearch(id,time,onPartial,onDone){
+  const req={id,time,onPartial,onDone,snap:pos.serialize(),usi:usiPosition(),last:null};
+  if(yoBusy){yoQueue=req;yo.postMessage("stop");return;}
+  yoStart(req);}
+function yoStart(req){yoBusy=true;yoCur=req;yo.postMessage(req.usi);yo.postMessage("go btime 0 wtime 0 byoyomi "+req.time);}
+function yoLine(l){
+  const req=yoCur;
+  if(l.startsWith("info")){if(req){const r=parseInfo(l,req);if(r){req.last=r;if(req.id===reqId&&req.onPartial)req.onPartial(r);}}return;}
+  if(!l.startsWith("bestmove"))return;
+  yoBusy=false;yoCur=null;
+  if(req&&req.id===reqId){const u=l.split(" ")[1];let r=req.last;
+    if(u==="resign"||u==="win")r={move:0,score:-MATE,depth:0};
+    else{const m=fromUSI(Pos.from(req.snap),u);if(!r||r.move!==m)r={move:m,score:r?r.score:0,depth:r?r.depth:0,pv:[m]};}
+    req.onDone({...r,done:true});}
+  if(yoQueue){const q=yoQueue;yoQueue=null;if(q.id===reqId)yoStart(q);}}
+function updEngine(msg){
+  $("engineInfo").innerHTML=yoReady
+    ?"🧠 AI：やねうら王（評価関数 水匠Petite）"+yoThreads+"スレッド・中級以下は内蔵AI ｜ <a href='yaneuraou/LICENSE.txt' target='_blank'>GPLv3</a>"
+    :"🧠 AI：内蔵エンジン"+(msg?"（"+msg+"）":"");}
+function initYo(){
+  if(!window.crossOriginIsolated||typeof SharedArrayBuffer==="undefined"){updEngine(location.protocol==="file:"?"やねうら王はWeb公開版で有効":"この環境ではやねうら王を使えません");return;}
+  updEngine("やねうら王を読み込み中…");
+  const sc=document.createElement("script");sc.src="yaneuraou/yaneuraou.k-p.js";
+  sc.onerror=()=>updEngine("やねうら王の読み込みに失敗");
+  sc.onload=()=>{YaneuraOu_K_P().then(m=>{yo=m;
+    yo.addMessageListener(l=>{
+      if(l==="readyok"){yoReady=true;updEngine();
+        // 読み込み完了時点で人間の手番なら、やねうら王で解析し直す
+        if(pos&&!over&&isHumanTurn()&&!cpuThinking){cancelSearch();hint=null;requestHint();render();}}
+      else yoLine(l);});
+    yoThreads=Math.max(1,Math.min(4,(navigator.hardwareConcurrency||2)-1));
+    for(const c of ["usi","setoption name Threads value "+yoThreads,"setoption name USI_Hash value 64","setoption name NetworkDelay value 0","setoption name NetworkDelay2 value 0","isready"])yo.postMessage(c);
+  }).catch(e=>{console.warn(e);updEngine("やねうら王の起動に失敗");});};
+  document.head.appendChild(sc);}
 
 /* ---------- notation ---------- */
 function sqName(sq){return ZEN[9-sq%9]+KAN[(sq/9|0)+1];}
@@ -630,12 +690,13 @@ function cpuMove(){
   const bm=level>=1?bookMove():0;
   if(bm){const id=++reqId;setTimeout(()=>{if(id!==reqId)return;cpuThinking=false;play(bm);},500);return;}
   const cs=pos.side;
-  search(lv.time,lv.noise,d=>{if(d.move&&d.depth>=3){senteScore=cs===0?d.score:-d.score;renderWin();}},r=>{
-    setTimeout(()=>{cpuThinking=false;if(!r.move){over={winner:humanSide,text:"CPUの投了"};render();showResult();return;}play(r.move);},Math.max(0,350-(Date.now()-t0)));});}
+  const useYo=yoReady&&!!lv.yo;
+  search(useYo?lv.yo:lv.time,lv.noise,d=>{if(d.move&&d.depth>=3){senteScore=cs===0?d.score:-d.score;renderWin();}},r=>{
+    setTimeout(()=>{cpuThinking=false;if(!r.move){over={winner:humanSide,text:"CPUの投了"};render();showResult();return;}play(r.move);},Math.max(0,350-(Date.now()-t0)));},useYo);}
 function requestHint(){
   hintT0=Date.now();clearInterval(hintTimer);hintTimer=setInterval(()=>{if(hint&&hint.done){clearInterval(hintTimer);return;}if(hintActive())renderHintBox();},200);
   const hs=pos.side,upd=d=>{senteScore=hs===0?d.score:-d.score;};
-  search(hintTime(),0,d=>{if(d.move){hint=d;upd(d);render();}},d=>{if(d.move){hint={...d,done:true};upd(d);render();}});}
+  search(hintTime(),0,d=>{if(d.move){hint=d;upd(d);render();}},d=>{if(d.move){hint={...d,done:true};upd(d);render();}},true);}
 function showResult(){
   let title;
   if(over.winner===-1)title="引き分け";
@@ -681,7 +742,7 @@ try{const c=JSON.parse(localStorage.getItem("shogi.cfg")||"null");if(c){pendMode
   document.querySelectorAll("#modeOpts button").forEach(b=>b.classList.toggle("on",b.dataset.v===pendMode));
   document.querySelectorAll("#levelOpts button").forEach(b=>b.classList.toggle("on",+b.dataset.v===pendLevel));
   mode=pendMode==="pvp"?"pvp":"cpu";humanSide=pendMode==="cpu1"?1:0;level=pendLevel;}}catch(e){}
-pos=Pos.initial();layout();newGame();
+pos=Pos.initial();layout();newGame();initYo();
 </script>
 <script src="../../playtime.js" defer></script>
 </body>
