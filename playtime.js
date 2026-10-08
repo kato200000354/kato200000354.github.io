@@ -10,6 +10,19 @@
   const TILT = 8;       // スマホをこの角度（度）以上動かしたら操作とみなす
   const SHAKE = 3;      // 加速度がこれ（m/s²）以上変わったら操作とみなす
 
+  // この端末だけの遊んだ記録（トップページの「あなたへのおすすめ」に使う。外には送らない）
+  const ID = m[1];
+  const remember = (secs) => {
+    try {
+      const h = JSON.parse(localStorage.getItem('my-history')) || {};
+      const r = h[ID] ||= { opens: 0, secs: 0 };
+      if (secs) r.secs += secs; else r.opens++;
+      r.last = Date.now();
+      localStorage.setItem('my-history', JSON.stringify(h));
+    } catch {}
+  };
+  remember(0);
+
   let last = Date.now();
   let held = 0;         // 押しっぱなしのボタン・指・キーの数
   const touch = () => { last = Date.now(); };
@@ -42,6 +55,7 @@
     if (++sec >= UNIT) {
       sec = 0;
       fetch(URL, { keepalive: true }).catch(() => {});
+      remember(UNIT);
     }
   }, 1000);
 })();

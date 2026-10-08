@@ -85,6 +85,23 @@ h1 span{color:var(--accent)}
 .meta{margin-top:auto;padding-top:6px;display:flex;justify-content:space-between;gap:6px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 @media (max-width:480px){.name{font-size:14px}.desc{font-size:12px}.meta{font-size:11px}.body{padding:10px 11px 12px}}
 
+/* あなたへのおすすめ */
+.rec{margin:8px 0 4px}
+.rec h2{font-size:20px;font-weight:800;margin:0}
+.rec .sub{margin:2px 0 12px;font-size:13px;color:var(--muted)}
+.rec-list{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px}
+.rec-card{display:flex;flex-direction:column;background:var(--card);border-radius:16px;overflow:hidden;text-decoration:none;box-shadow:var(--shadow);transition:transform .15s ease}
+.rec-card:hover{transform:translateY(-3px)}
+.rec-card:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.rec-card .thumb{aspect-ratio:3/4}
+.rec-body{padding:8px 10px 10px;display:flex;flex-direction:column;gap:2px}
+.why{font-size:10.5px;font-weight:800;color:var(--accent);line-height:1.3}
+.rec-name{font-size:13px;font-weight:800;line-height:1.35}
+@media (max-width:900px){
+  .rec-list{display:flex;overflow-x:auto;margin:0 -16px;padding:2px 16px 8px;scroll-padding-inline:16px;scroll-snap-type:x mandatory;scrollbar-width:none}
+  .rec-list::-webkit-scrollbar{display:none}
+  .rec-card{flex:0 0 140px;scroll-snap-align:start}
+}
 footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--muted);font-size:13px}
 </style>
 </head>
@@ -104,6 +121,12 @@ footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--muted);f
     <a class="line-add" href="https://line.me/R/ti/p/@744txljx" target="_blank" rel="noopener"><span class="ic">LINE</span>まいにちらぼを友だち追加</a>
     <span class="line-note">新しいゲームができたら LINE でお知らせします</span>
   </header>
+
+  <section class="rec" id="rec" hidden aria-labelledby="rec-h">
+    <h2 id="rec-h">あなたへのおすすめ</h2>
+    <p class="sub" id="rec-sub"></p>
+    <div class="rec-list" id="rec-list"></div>
+  </section>
 
   <nav class="tabs bar" aria-label="絞り込みと並べ替え">
     <div class="filters" id="filters" role="group" aria-label="ジャンル"></div>
@@ -269,11 +292,77 @@ async function getCount(key) {
   saveCache();
   showTotal();
 })();
-// カードを開いたら1回として数える
-grid.addEventListener('click', e => {
-  const c = e.target.closest('.card');
-  if (c) fetch(`${COUNTER}/hit/${NS}/${c.dataset.id}`, {keepalive: true}).catch(() => {});
-});
+// ---------- あなたへのおすすめ ----------
+// この端末で開いた作品・遊んだ時間（my-history）から好きなジャンルを推定し、まだ遊んでいない作品を選ぶ。
+// 記録がない人には、人気と新作から選ぶ。日替わりで少し入れ替わる。
+const REC_COUNT = 6;
+const SHORT = { puzzle: 'パズル', rpg: 'RPG', sim: '育成', music: 'リズム' }; // おすすめの理由に使う短い呼び方
+const shortName = g => SHORT[g] || genreName(g);
+let history = {};
+try { history = JSON.parse(localStorage.getItem('my-history')) || {}; } catch {}
+const saveHistory = () => { try { localStorage.setItem('my-history', JSON.stringify(history)); } catch {} };
+
+function recommend() {
+  const byId = Object.fromEntries(WORKS.map(w => [w.id, w]));
+  // 好きなジャンル: 開いた回数 + 遊んだ分数（最近ほど重く）
+  const like = {};
+  for (const [id, h] of Object.entries(history)) {
+    const w = byId[id]; if (!w) continue;
+    const recent = h.last ? Math.max(0.3, 1 - (Date.now() - h.last) / (30 * 864e5)) : 0.5;
+    like[genreOf(w)] = (like[genreOf(w)] || 0) + (h.opens + Math.min(h.secs / 60, 30)) * recent;
+  }
+  const maxLike = Math.max(0, ...Object.values(like));
+  const maxPlays = Math.max(1, ...WORKS.map(w => w.plays || 0));
+  const maxSecs = Math.max(1, ...WORKS.map(w => w.secs || 0));
+  const day = new Date().toISOString().slice(0, 10);
+  const jitter = id => { let h = 0; for (const c of day + id) h = (h * 31 + c.charCodeAt(0)) | 0; return (h >>> 0) / 4294967296; }; // 日替わりの揺らぎ
+
+  const scored = WORKS.filter(w => !history[w.id]).map(w => {
+    const g = genreOf(w);
+    const fan = maxLike ? (like[g] || 0) / maxLike : 0;
+    const pop = Math.sqrt((w.plays || 0) / maxPlays) * 0.6 + Math.sqrt((w.secs || 0) / maxSecs) * 0.4;
+    const fresh = isNew(w.made) ? 1 : Date.now() - w.made < 7 * 864e5 ? 0.5 : 0;
+    const score = fan * 2 + pop * 1.2 + fresh * 0.6 + jitter(w.id) * 0.5;
+    const reason = fan >= 0.5 ? `${shortName(g)}好きのあなたに` : fresh === 1 ? '新作' : pop > 0.35 ? 'みんなに人気' : fan > 0 ? `${shortName(g)}好きのあなたに` : 'ピックアップ';
+    return { w, score, reason, g };
+  }).sort((a, b) => b.score - a.score);
+
+  // いちばん好きなジャンルは3つまで、ほかのジャンルは2つまで（足りなければ解除）
+  const fav = maxLike ? Object.keys(like).find(g => like[g] === maxLike) : null;
+  const picked = [], perGenre = {};
+  for (const s of scored) {
+    if (picked.length >= REC_COUNT) break;
+    if ((perGenre[s.g] || 0) >= (s.g === fav ? 3 : 2)) continue;
+    picked.push(s); perGenre[s.g] = (perGenre[s.g] || 0) + 1;
+  }
+  for (const s of scored) { if (picked.length >= REC_COUNT) break; if (!picked.includes(s)) picked.push(s); }
+  return { picked, personal: maxLike > 0 };
+}
+
+function renderRec() {
+  const { picked, personal } = recommend();
+  const sec = document.getElementById('rec');
+  if (!picked.length) { sec.hidden = true; return; }
+  document.getElementById('rec-sub').textContent = personal ? 'あなたがよく遊ぶジャンルから、まだ遊んでいない作品を選びました' : 'まずはこのあたりから遊んでみて！遊ぶほどあなた好みになっていきます';
+  document.getElementById('rec-list').innerHTML = picked.map(({ w, reason }) => `
+    <a class="rec-card" href="${w.href}" data-id="${w.id}">
+      <div class="thumb"><img src="thumbs/${w.id}.jpg" alt="" loading="lazy" width="420" height="560"></div>
+      <div class="rec-body"><span class="why">${reason}</span><span class="rec-name">${w.name}</span></div>
+    </a>`).join('');
+  sec.hidden = false;
+}
+
+// カードを開いたら1回として数え、この端末の記録にも残す
+const onOpen = e => {
+  const c = e.target.closest('.card, .rec-card');
+  if (!c) return;
+  const h = history[c.dataset.id] ||= { opens: 0, secs: 0 };
+  h.last = Date.now(); saveHistory(); // 回数は作品ページ側（playtime.js）で数える
+  fetch(`${COUNTER}/hit/${NS}/${c.dataset.id}`, {keepalive: true}).catch(() => {});
+};
+grid.addEventListener('click', onOpen);
+document.getElementById('rec-list').addEventListener('click', onOpen);
+renderRec(); // 集計ファイルとブラウザの記憶から回数を読み終えたあとに作る
 })();
 </script>
 </body>
