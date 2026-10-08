@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>ワードウルフ</title>
+<style>
+:root{
+  --bg:#17122b;--panel:#241c40;--panel2:#2f2552;--line:#43376e;--text:#f4f0ff;--muted:#b3a8d6;
+  --accent:#ffcf4a;--wolf:#ff5d73;--cit:#4ad6a7;--blue:#6ea8ff;
+}
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);
+  font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI",Meiryo,sans-serif;
+  -webkit-tap-highlight-color:transparent}
+body{min-height:100vh;display:flex;justify-content:center;
+  background:radial-gradient(circle at 50% -10%,#3a2470 0,var(--bg) 60%) fixed}
+#app{width:100%;max-width:520px;padding:14px 16px 32px;display:flex;flex-direction:column;gap:14px}
+header{display:flex;align-items:center;gap:8px}
+header h1{margin:0;font-size:22px;flex:1;letter-spacing:.1em}
+header h1 span{color:var(--wolf)}
+button{font-family:inherit;color:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel2);
+  border-radius:12px;padding:10px 14px;font-size:15px;-webkit-user-select:none;user-select:none}
+button:active{transform:scale(.97)}
+button:disabled{opacity:.35;cursor:default;transform:none}
+.big{width:100%;padding:16px;font-size:18px;font-weight:700;border:none;background:var(--accent);color:#2a1d00;border-radius:14px;box-shadow:0 4px 0 #b88c14}
+.big:active{box-shadow:0 1px 0 #b88c14;transform:translateY(3px)}
+.big.sub{background:var(--panel2);color:var(--text);box-shadow:0 4px 0 #120d24;border:1px solid var(--line)}
+.small{padding:6px 10px;font-size:13px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px}
+.card h2{margin:0 0 10px;font-size:15px;color:var(--muted);font-weight:600;letter-spacing:.05em}
+.row{display:flex;align-items:center;gap:8px}
+.muted{color:var(--muted);font-size:13px;line-height:1.6}
+.center{text-align:center}
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper b{min-width:56px;text-align:center;font-size:20px}
+.stepper button{width:40px;height:40px;padding:0;font-size:20px}
+.players{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.players input{width:100%;font:inherit;font-size:15px;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 10px}
+.players input:focus{outline:2px solid var(--accent);border-color:transparent}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:7px 12px;border-radius:999px;font-size:14px}
+.chip.on{background:var(--accent);color:#2a1d00;border-color:var(--accent);font-weight:700}
+.setting{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0}
+.setting + .setting{border-top:1px dashed var(--line)}
+
+/* 受け渡し */
+.pass{min-height:62vh;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:18px;text-align:center}
+.pass .who{font-size:34px;font-weight:800}
+.pass .who small{display:block;font-size:14px;color:var(--muted);font-weight:400;margin-bottom:6px}
+.progress{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+.progress i{width:10px;height:10px;border-radius:50%;background:var(--line)}
+.progress i.done{background:var(--accent)}
+.word{font-size:clamp(34px,11vw,56px);font-weight:900;padding:28px 18px;border-radius:20px;width:100%;
+  background:linear-gradient(135deg,#3b2d73,#251c48);border:2px solid var(--accent);letter-spacing:.06em;word-break:break-all}
+.hold{width:100%;min-height:180px;border-radius:20px;border:2px dashed var(--accent);background:rgba(255,207,74,.07);
+  display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--accent);font-weight:700;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none}
+
+/* 議論 */
+.timer{font-size:clamp(64px,22vw,110px);font-weight:900;text-align:center;font-variant-numeric:tabular-nums;letter-spacing:.04em;line-height:1}
+.timer.warn{color:var(--wolf);animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.5}}
+.bar{height:8px;background:var(--line);border-radius:99px;overflow:hidden}
+.bar div{height:100%;background:var(--accent);transition:width 1s linear}
+.tips{margin:0;padding-left:20px;color:var(--muted);font-size:13px;line-height:1.8}
+
+/* 投票 */
+.vote-list{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
+.vote-list button{padding:18px 8px;font-size:17px;font-weight:700}
+.vote-list button.sel{background:var(--wolf);border-color:var(--wolf)}
+
+/* 結果 */
+.tally{display:flex;flex-direction:column;gap:8px}
+.tally .t{display:flex;align-items:center;gap:10px}
+.tally .t .n{width:84px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tally .t .b{flex:1;height:24px;background:var(--bg);border-radius:8px;overflow:hidden}
+.tally .t .b div{height:100%;background:var(--blue);width:0;transition:width .8s ease}
+.tally .t.top .b div{background:var(--wolf)}
+.tally .t .c{width:28px;text-align:right;font-weight:700}
+.banner{text-align:center;padding:22px 12px;border-radius:18px;font-weight:900;font-size:26px}
+.banner small{display:block;font-size:14px;font-weight:500;margin-top:6px;opacity:.9}
+.banner.wolf{background:linear-gradient(135deg,#7a1f3a,#3d0f22);border:2px solid var(--wolf)}
+.banner.cit{background:linear-gradient(135deg,#145a49,#0b2f27);border:2px solid var(--cit)}
+.banner.neutral{background:var(--panel2);border:2px solid var(--line)}
+.reveal{display:flex;flex-direction:column;gap:6px}
+.reveal .r{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:12px;background:var(--bg)}
+.reveal .r .n{flex:1;font-weight:700}
+.tag{font-size:12px;padding:3px 8px;border-radius:99px;font-weight:700}
+.tag.wolf{background:var(--wolf);color:#fff}
+.tag.cit{background:var(--cit);color:#06261d}
+.reveal .r .w{font-weight:700;min-width:5em;text-align:right}
+.reveal .r .p{color:var(--accent);font-weight:700;width:48px;text-align:right;font-size:13px}
+.guess input{width:100%;font:inherit;font-size:20px;text-align:center;color:var(--text);background:var(--bg);border:2px solid var(--wolf);border-radius:12px;padding:12px}
+.score-list{display:flex;flex-direction:column;gap:4px}
+.score-list .s{display:flex;justify-content:space-between;padding:6px 4px;border-bottom:1px dashed var(--line)}
+.score-list .s:last-child{border:none}
+.score-list .s b{color:var(--accent)}
+.modal{position:fixed;inset:0;background:rgba(5,3,15,.75);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+.modal .card{max-width:480px;width:100%;max-height:85vh;overflow:auto}
+.modal h3{margin:0 0 8px}
+.modal p,.modal li{font-size:14px;line-height:1.7;color:var(--text)}
+.modal ol{padding-left:20px;margin:6px 0}
+.fade{animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>ワード<span>ウルフ</span></h1>
+    <button class="small" id="btnRule">ルール</button>
+    <button class="small" id="btnHome" hidden>設定へ</button>
+  </header>
+
+  <!-- 設定 -->
+  <section id="scSetup" class="fade">
+    <div class="card" style="margin-bottom:14px">
+      <h2>プレイヤー</h2>
+      <div class="setting">
+        <span>人数</span>
+        <div class="stepper"><button id="pMinus">−</button><b id="pCount">4人</b><button id="pPlus">＋</button></div>
+      </div>
+      <div class="players" id="playerInputs" style="margin-top:8px"></div>
+    </div>
+    <div class="card" style="margin-bottom:14px">
+      <h2>ルール設定</h2>
+      <div class="setting">
+        <span>ウルフの人数</span>
+        <div class="stepper"><button id="wMinus">−</button><b id="wCount">1人</b><button id="wPlus">＋</button></div>
+      </div>
+      <div class="setting">
+        <span>話し合いの時間</span>
+        <div class="stepper"><button id="tMinus">−</button><b id="tCount">3分</b><button id="tPlus">＋</button></div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:14px">
+      <h2>お題のジャンル</h2>
+      <div class="chips" id="genreChips"></div>
+    </div>
+    <button class="big" id="btnStart">ゲームスタート！</button>
+    <div class="card" id="scoreCard" style="margin-top:14px" hidden>
+      <h2>これまでの得点</h2>
+      <div class="score-list" id="scoreListSetup"></div>
+      <button class="small" id="btnResetScore" style="margin-top:8px">得点をリセット</button>
+    </div>
+  </section>
+
+  <!-- お題配布 -->
+  <section id="scDeal" hidden>
+    <div class="progress" id="dealProgress"></div>
+    <div class="pass fade" id="dealCover">
+      <div class="muted">スマホを渡してください</div>
+      <div class="who"><small>次は</small><span id="dealName"></span> さん</div>
+      <div class="muted">ほかの人に画面を見られないように！</div>
+      <button class="big" id="btnShowWord">お題を見る</button>
+    </div>
+    <div class="pass fade" id="dealWord" hidden>
+      <div class="muted"><span id="dealName2"></span> さんのお題</div>
+      <div class="word" id="wordBox"></div>
+      <div class="muted">このお題を覚えたら隠してね。<br>自分がウルフかどうかは、まだ誰にも分かりません。</div>
+      <button class="big" id="btnHideWord">覚えた！隠す</button>
+    </div>
+  </section>
+
+  <!-- 話し合い -->
+  <section id="scTalk" hidden>
+    <div class="card center fade">
+      <div class="muted" style="margin-bottom:6px">話し合いタイム</div>
+      <div class="timer" id="timer">3:00</div>
+      <div class="bar" style="margin-top:12px"><div id="timerBar" style="width:100%"></div></div>
+      <div class="row" style="justify-content:center;margin-top:14px;flex-wrap:wrap">
+        <button id="btnPause">一時停止</button>
+        <button id="btnAdd">＋30秒</button>
+        <button id="btnPeek">お題を確認</button>
+      </div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <h2>最初に話す人：<span id="firstTalker" style="color:var(--accent)"></span></h2>
+      <ul class="tips">
+        <li>お題について、ふわっとした質問やヒントを出し合おう</li>
+        <li>具体的すぎると、ウルフにお題がバレるかも…</li>
+        <li>「あれ、話が合わない？」と思ったら自分がウルフかも！</li>
+      </ul>
+    </div>
+    <button class="big" id="btnToVote" style="margin-top:14px">投票へ進む</button>
+  </section>
+
+  <!-- お題確認（話し合い中） -->
+  <section id="scPeek" hidden>
+    <div class="pass fade" id="peekPick">
+      <div class="muted">お題を確認したい人を選んでね</div>
+      <div class="vote-list" id="peekList"></div>
+      <button class="big sub" id="btnPeekBack">もどる</button>
+    </div>
+    <div class="pass fade" id="peekShow" hidden>
+      <div class="muted"><span id="peekName"></span> さんのお題（画面を隠してね）</div>
+      <div class="hold" id="peekHold">ここを長押ししている間だけ表示</div>
+      <button class="big sub" id="btnPeekDone">確認おわり</button>
+    </div>
+  </section>
+
+  <!-- 投票 -->
+  <section id="scVote" hidden>
+    <div class="progress" id="voteProgress"></div>
+    <div class="pass fade" id="voteCover">
+      <div class="muted" id="voteTitle">投票タイム</div>
+      <div class="who"><small>次の投票者は</small><span id="voteName"></span> さん</div>
+      <div class="muted">ウルフだと思う人にこっそり投票しよう</div>
+      <button class="big" id="btnVoteOpen">投票する</button>
+    </div>
+    <div class="pass fade" id="votePick" hidden>
+      <div class="muted"><span id="voteName2"></span> さん、ウルフだと思うのは？</div>
+      <div class="vote-list" id="voteList"></div>
+      <button class="big" id="btnVoteOk" disabled>この人に決定</button>
+    </div>
+  </section>
+
+  <!-- 開票 -->
+  <section id="scTally" hidden>
+    <div class="card fade">
+      <h2 id="tallyTitle">開票結果</h2>
+      <div class="tally" id="tally"></div>
+    </div>
+    <div id="tallyMsg" class="banner neutral fade" style="margin-top:14px" hidden></div>
+    <button class="big" id="btnTallyNext" style="margin-top:14px" hidden></button>
+  </section>
+
+  <!-- ウルフの逆転チャンス -->
+  <section id="scGuess" hidden>
+    <div class="banner wolf fade"><span id="guessWho"></span> はウルフだった！<small>でもまだ終わらない…逆転チャンス！</small></div>
+    <div class="card guess" style="margin-top:14px">
+      <h2>ウルフは、市民のお題を当てたら逆転勝利</h2>
+      <p class="muted" style="margin-top:0">ウルフのお題は「<b id="guessWolfWord" style="color:var(--text)"></b>」。<br>みんなのお題は何だったでしょう？ 声に出して答えるか、下に入力してください。</p>
+      <input id="guessInput" placeholder="市民のお題は…？" autocomplete="off">
+      <button class="big" id="btnGuessOpen" style="margin-top:12px">答え合わせ</button>
+    </div>
+    <div class="card center fade" id="guessJudge" style="margin-top:14px" hidden>
+      <div class="muted">市民のお題は…</div>
+      <div class="word" id="guessAnswer" style="margin:10px 0"></div>
+      <div class="muted" style="margin-bottom:10px">ウルフの答え：「<span id="guessEcho"></span>」<br>正解かどうか、みんなで判定してください</div>
+      <div class="row">
+        <button class="big" id="btnGuessYes" style="background:var(--wolf);box-shadow:0 4px 0 #8a2033;color:#fff">正解！</button>
+        <button class="big" id="btnGuessNo" style="background:var(--cit);box-shadow:0 4px 0 #1e7a5d">ハズレ！</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 最終結果 -->
+  <section id="scResult" hidden>
+    <div class="banner fade" id="resultBanner"></div>
+    <div class="card" style="margin-top:14px">
+      <h2>お題と正体</h2>
+      <div class="reveal" id="revealList"></div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <h2>得点（市民の勝ち：市民+1点／ウルフの勝ち：ウルフ+3点）</h2>
+      <div class="score-list" id="scoreList"></div>
+    </div>
+    <button class="big" id="btnNext" style="margin-top:14px">同じメンバーで次のラウンド</button>
+    <button class="big sub" id="btnBackSetup" style="margin-top:12px">設定を変える</button>
+  </section>
+</div>
+
+<div class="modal" id="ruleModal" hidden>
+  <div class="card">
+    <h3>ワードウルフの遊び方</h3>
+    <p>みんなに「お題」が配られますが、<b>少数派（ウルフ）だけ少し違うお題</b>をもらっています。自分がウルフかどうかは本人にも分かりません。</p>
+    <ol>
+      <li>スマホを順番に回して、自分のお題をこっそり確認</li>
+      <li>制限時間内に、お題についてみんなでトーク</li>
+      <li>話が微妙にかみ合わない人＝ウルフを探す</li>
+      <li>順番にスマホを回して、ウルフだと思う人に投票</li>
+      <li>最多得票の人がウルフなら<b>市民の勝ち</b>。市民なら<b>ウルフの勝ち</b></li>
+      <li>ウルフが見つかっても、市民のお題を当てたら<b>ウルフの逆転勝ち</b></li>
+    </ol>
+    <p class="muted">同票の場合は同票の人だけで決選投票。それでも決まらなければウルフの勝ちです。</p>
+    <p class="muted">人数：3〜10人（おすすめ4〜6人）</p>
+    <button class="big" id="btnRuleClose">わかった！</button>
+  </div>
+</div>
+
+<script>
+const GENRES = {
+  "食べ物": [
+    ["ラーメン","うどん"],["カレー","シチュー"],["寿司","刺身"],["ハンバーガー","サンドイッチ"],
+    ["たこ焼き","お好み焼き"],["ケーキ","パフェ"],["チョコレート","キャンディ"],["おにぎり","パン"],
+    ["焼肉","すき焼き"],["コーヒー","紅茶"],["餃子","シュウマイ"],["アイス","かき氷"],
+    ["納豆","豆腐"],["唐揚げ","とんかつ"],["ピザ","グラタン"],["みかん","りんご"],
+    ["いちご","さくらんぼ"],["ポテトチップス","ポップコーン"],["牛丼","親子丼"],["味噌汁","コーンスープ"],
+    ["焼きそば","パスタ"],["メロン","スイカ"],["ドーナツ","クッキー"],["おでん","鍋"]
+  ],
+  "場所": [
+    ["海","プール"],["遊園地","動物園"],["図書館","本屋"],["コンビニ","スーパー"],
+    ["病院","歯医者"],["映画館","カラオケ"],["温泉","銭湯"],["学校","塾"],
+    ["空港","駅"],["山","キャンプ場"],["カフェ","ファミレス"],["北海道","沖縄"],
+    ["ハワイ","グアム"],["京都","奈良"],["水族館","博物館"],["公園","校庭"],
+    ["ショッピングモール","デパート"],["お祭り","花火大会"],["美容院","ネイルサロン"],["ジム","体育館"]
+  ],
+  "生活": [
+    ["歯ブラシ","くし"],["傘","レインコート"],["スマホ","パソコン"],["布団","ベッド"],
+    ["冷蔵庫","電子レンジ"],["掃除機","洗濯機"],["メガネ","コンタクト"],["腕時計","目覚まし時計"],
+    ["エレベーター","エスカレーター"],["自転車","バイク"],["電車","バス"],["財布","カバン"],
+    ["シャンプー","ボディソープ"],["鉛筆","ボールペン"],["LINE","メール"],["誕生日","クリスマス"],
+    ["夏休み","冬休み"],["朝ごはん","夜ごはん"],["お風呂","シャワー"],["引っ越し","旅行"],
+    ["マスク","ハンカチ"],["テレビ","ラジオ"],["お正月","ゴールデンウィーク"],["タクシー","新幹線"]
+  ],
+  "動物・自然": [
+    ["犬","猫"],["ライオン","トラ"],["パンダ","コアラ"],["ペンギン","アザラシ"],
+    ["イルカ","クジラ"],["うさぎ","ハムスター"],["カブトムシ","クワガタ"],["桜","梅"],
+    ["雪","雨"],["太陽","月"],["ひまわり","チューリップ"],["富士山","エベレスト"],
+    ["キリン","ゾウ"],["カラス","ハト"],["金魚","メダカ"],["虹","オーロラ"],
+    ["台風","地震"],["サル","ゴリラ"],["春","秋"],["森","ジャングル"]
+  ],
+  "趣味・エンタメ": [
+    ["サッカー","野球"],["テニス","卓球"],["スキー","スノボ"],["YouTube","テレビ"],
+    ["漫画","アニメ"],["ゲーム","トランプ"],["カラオケ","ライブ"],["ピアノ","ギター"],
+    ["マラソン","水泳"],["将棋","オセロ"],["映画","ドラマ"],["ダンス","体操"],
+    ["筋トレ","ヨガ"],["釣り","キャンプ"],["バスケ","バレー"],["料理","お菓子作り"],
+    ["写真","絵"],["ボウリング","ビリヤード"],["ディズニー","ジブリ"],["ジェットコースター","観覧車"]
+  ],
+  "人・仕事": [
+    ["先生","先輩"],["親友","恋人"],["警察官","消防士"],["医者","看護師"],
+    ["アイドル","芸人"],["社長","校長"],["パイロット","客室乗務員"],["サンタクロース","トナカイ"],
+    ["お父さん","おじいちゃん"],["忍者","侍"],["魔法使い","王様"],["YouTuber","俳優"],
+    ["告白","プロポーズ"],["初恋","片思い"],["結婚式","卒業式"],["コック","パティシエ"]
+  ]
+};
+
+const $ = id => document.getElementById(id);
+const sections = ["scSetup","scDeal","scTalk","scPeek","scVote","scTally","scGuess","scResult"];
+function show(id){
+  sections.forEach(s => $(s).hidden = s !== id);
+  $("btnHome").hidden = id === "scSetup";
+  window.scrollTo(0,0);
+}
+const shuffle = a => { a = a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];} return a; };
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+// ---------- 効果音 ----------
+let actx = null;
+function beep(freq=880, dur=.15, type="sine", vol=.2, delay=0){
+  try{
+    actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    const t = actx.currentTime + delay, o = actx.createOscillator(), g = actx.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t+dur);
+    o.connect(g).connect(actx.destination); o.start(t); o.stop(t+dur);
+  }catch(e){}
+}
+const sfx = {
+  tap(){ beep(660,.08,"triangle",.15); },
+  ok(){ beep(784,.1,"triangle",.18); beep(1046,.15,"triangle",.18,.1); },
+  end(){ [0,.25,.5].forEach(d => beep(988,.2,"square",.12,d)); },
+  win(){ [523,659,784,1046].forEach((f,i) => beep(f,.22,"triangle",.18,i*.12)); },
+  lose(){ [440,370,311].forEach((f,i) => beep(f,.3,"sawtooth",.1,i*.18)); }
+};
+
+// ---------- 状態 ----------
+const DEFAULT_NAMES = ["プレイヤー1","プレイヤー2","プレイヤー3","プレイヤー4","プレイヤー5","プレイヤー6","プレイヤー7","プレイヤー8","プレイヤー9","プレイヤー10"];
+let cfg = { names: DEFAULT_NAMES.slice(0,4), wolves: 1, minutes: 3, genres: Object.keys(GENRES) };
+let scores = {};
+try{
+  const saved = JSON.parse(localStorage.getItem("wordwolf-cfg") || "null");
+  if(saved && Array.isArray(saved.names) && saved.names.length >= 3) cfg = Object.assign(cfg, saved);
+  cfg.genres = (cfg.genres || []).filter(g => GENRES[g]);
+  if(!cfg.genres.length) cfg.genres = Object.keys(GENRES);
+  scores = JSON.parse(localStorage.getItem("wordwolf-scores") || "{}") || {};
+}catch(e){}
+function save(){
+  try{
+    localStorage.setItem("wordwolf-cfg", JSON.stringify(cfg));
+    localStorage.setItem("wordwolf-scores", JSON.stringify(scores));
+  }catch(e){}
+}
+const usedPairs = new Set();
+let game = null;
+
+// ---------- 設定画面 ----------
+const maxWolves = n => n >= 7 ? 2 : 1;
+function renderSetup(){
+  const n = cfg.names.length;
+  $("pCount").textContent = n + "人";
+  cfg.wolves = Math.min(cfg.wolves, maxWolves(n));
+  $("wCount").textContent = cfg.wolves + "人";
+  $("tCount").textContent = cfg.minutes + "分";
+  $("pMinus").disabled = n <= 3; $("pPlus").disabled = n >= 10;
+  $("wMinus").disabled = cfg.wolves <= 1; $("wPlus").disabled = cfg.wolves >= maxWolves(n);
+  $("tMinus").disabled = cfg.minutes <= 1; $("tPlus").disabled = cfg.minutes >= 10;
+
+  const box = $("playerInputs");
+  box.innerHTML = "";
+  cfg.names.forEach((name,i) => {
+    const inp = document.createElement("input");
+    inp.value = name; inp.maxLength = 8; inp.placeholder = "プレイヤー" + (i+1);
+    inp.addEventListener("input", () => { cfg.names[i] = inp.value; save(); });
+    box.appendChild(inp);
+  });
+
+  const chips = $("genreChips");
+  chips.innerHTML = "";
+  const all = document.createElement("button");
+  all.className = "chip" + (cfg.genres.length === Object.keys(GENRES).length ? " on" : "");
+  all.textContent = "ぜんぶ";
+  all.onclick = () => { cfg.genres = Object.keys(GENRES); sfx.tap(); save(); renderSetup(); };
+  chips.appendChild(all);
+  Object.keys(GENRES).forEach(g => {
+    const b = document.createElement("button");
+    const on = cfg.genres.includes(g) && cfg.genres.length !== Object.keys(GENRES).length;
+    b.className = "chip" + (on ? " on" : "");
+    b.textContent = g;
+    b.onclick = () => {
+      if(cfg.genres.length === Object.keys(GENRES).length) cfg.genres = [g];
+      else if(cfg.genres.includes(g)) cfg.genres = cfg.genres.length > 1 ? cfg.genres.filter(x => x !== g) : Object.keys(GENRES);
+      else cfg.genres.push(g);
+      sfx.tap(); save(); renderSetup();
+    };
+    chips.appendChild(b);
+  });
+  renderScoreList($("scoreListSetup"));
+  $("scoreCard").hidden = !Object.keys(scores).length;
+}
+$("pMinus").onclick = () => { cfg.names.pop(); sfx.tap(); save(); renderSetup(); };
+$("pPlus").onclick = () => {
+  let i = cfg.names.length, name = DEFAULT_NAMES[i];
+  while(cfg.names.includes(name)) name = "プレイヤー" + (++i + 1);
+  cfg.names.push(name); sfx.tap(); save(); renderSetup();
+};
+$("wMinus").onclick = () => { cfg.wolves--; sfx.tap(); save(); renderSetup(); };
+$("wPlus").onclick = () => { cfg.wolves++; sfx.tap(); save(); renderSetup(); };
+$("tMinus").onclick = () => { cfg.minutes--; sfx.tap(); save(); renderSetup(); };
+$("tPlus").onclick = () => { cfg.minutes++; sfx.tap(); save(); renderSetup(); };
+$("btnResetScore").onclick = () => { if(confirm("得点をリセットしますか？")){ scores = {}; save(); renderSetup(); } };
+
+function renderScoreList(el){
+  const names = game ? game.players : cfg.names;
+  const rows = names.map(n => [n, scores[n] || 0]).sort((a,b) => b[1]-a[1]);
+  el.innerHTML = rows.map(([n,s],i) =>
+    `<div class="s"><span>${i===0 && s>0 ? "👑 " : ""}${esc(n)}</span><b>${s}点</b></div>`).join("");
+}
+
+// ---------- ゲーム開始 ----------
+function pickPair(){
+  let pool = [];
+  cfg.genres.forEach(g => GENRES[g].forEach(p => pool.push(p)));
+  let fresh = pool.filter(p => !usedPairs.has(p[0]));
+  if(!fresh.length){ usedPairs.clear(); fresh = pool; }
+  const p = fresh[Math.random()*fresh.length|0];
+  usedPairs.add(p[0]);
+  return Math.random() < .5 ? p : [p[1],p[0]];
+}
+
+function startGame(){
+  // 名前の整理（空欄・重複を解消）
+  const seen = new Set();
+  cfg.names = cfg.names.map((n,i) => {
+    let name = (n || "").trim() || "プレイヤー" + (i+1);
+    let base = name, k = 2;
+    while(seen.has(name)) name = base + k++;
+    seen.add(name); return name;
+  });
+  save();
+  const players = cfg.names.slice();
+  const [citWord, wolfWord] = pickPair();
+  const wolfIdx = shuffle(players.map((_,i) => i)).slice(0, cfg.wolves);
+  game = {
+    players, citWord, wolfWord,
+    wolves: new Set(wolfIdx),
+    deal: 0,
+    timeLeft: cfg.minutes*60, timeTotal: cfg.minutes*60, timerId: null, paused: false,
+    votes: [], voter: 0, candidates: players.map((_,i) => i), runoff: false, sel: null
+  };
+  game.wordOf = i => game.wolves.has(i) ? game.wolfWord : game.citWord;
+  sfx.ok();
+  show("scDeal");
+  renderDeal();
+}
+$("btnStart").onclick = startGame;
+
+// ---------- お題配布 ----------
+function renderProgress(el, done){
+  el.innerHTML = game.players.map((_,i) => `<i class="${i<done?"done":""}"></i>`).join("");
+}
+function renderDeal(){
+  renderProgress($("dealProgress"), game.deal);
+  $("dealName").textContent = game.players[game.deal];
+  $("dealCover").hidden = false; $("dealWord").hidden = true;
+}
+$("btnShowWord").onclick = () => {
+  sfx.tap();
+  $("dealName2").textContent = game.players[game.deal];
+  $("wordBox").textContent = game.wordOf(game.deal);
+  $("dealCover").hidden = true; $("dealWord").hidden = false;
+};
+$("btnHideWord").onclick = () => {
+  sfx.tap();
+  $("wordBox").textContent = "";
+  game.deal++;
+  if(game.deal < game.players.length) renderDeal();
+  else startTalk();
+};
+
+// ---------- 話し合い ----------
+function fmt(s){ return Math.floor(s/60) + ":" + String(s%60).padStart(2,"0"); }
+function renderTimer(){
+  $("timer").textContent = fmt(Math.max(0,game.timeLeft));
+  $("timer").classList.toggle("warn", game.timeLeft <= 10);
+  $("timerBar").style.width = Math.max(0, game.timeLeft/game.timeTotal*100) + "%";
+}
+function tick(){
+  if(game.paused) return;
+  game.timeLeft--;
+  if(game.timeLeft > 0 && game.timeLeft <= 5) beep(700,.08,"square",.08);
+  renderTimer();
+  if(game.timeLeft <= 0){
+    clearInterval(game.timerId); game.timerId = null;
+    sfx.end();
+    $("timer").textContent = "終了！";
+    if(navigator.vibrate) navigator.vibrate([200,100,200]);
+  }
+}
+function startTicking(){
+  clearInterval(game.timerId);
+  game.paused = false; $("btnPause").textContent = "一時停止";
+  game.timerId = setInterval(tick, 1000);
+}
+function startTalk(){
+  show("scTalk");
+  $("firstTalker").textContent = game.players[Math.random()*game.players.length|0] + " さん";
+  renderTimer();
+  startTicking();
+  sfx.ok();
+}
+$("btnPause").onclick = () => {
+  if(game.timeLeft <= 0) return;
+  game.paused = !game.paused;
+  $("btnPause").textContent = game.paused ? "再開" : "一時停止";
+  sfx.tap();
+};
+$("btnAdd").onclick = () => {
+  game.timeLeft = Math.max(0,game.timeLeft) + 30;
+  game.timeTotal = Math.max(game.timeTotal, game.timeLeft);
+  sfx.tap(); renderTimer();
+  if(!game.timerId) startTicking();
+};
+
+// お題の再確認
+let peekWasPaused = false, peekIdx = 0;
+$("btnPeek").onclick = () => {
+  peekWasPaused = game.paused; game.paused = true;
+  $("peekList").innerHTML = "";
+  game.players.forEach((n,i) => {
+    const b = document.createElement("button");
+    b.textContent = n;
+    b.onclick = () => {
+      peekIdx = i; sfx.tap();
+      $("peekName").textContent = n;
+      $("peekPick").hidden = true; $("peekShow").hidden = false;
+      $("peekHold").textContent = "ここを長押ししている間だけ表示";
+    };
+    $("peekList").appendChild(b);
+  });
+  $("peekPick").hidden = false; $("peekShow").hidden = true;
+  show("scPeek");
+};
+const holdEl = $("peekHold");
+const holdOn = e => { e.preventDefault(); holdEl.textContent = game.wordOf(peekIdx); holdEl.style.fontSize = "34px"; };
+const holdOff = () => { holdEl.textContent = "ここを長押ししている間だけ表示"; holdEl.style.fontSize = ""; };
+holdEl.addEventListener("pointerdown", holdOn);
+["pointerup","pointerleave","pointercancel"].forEach(ev => holdEl.addEventListener(ev, holdOff));
+holdEl.addEventListener("contextmenu", e => e.preventDefault());
+function backToTalk(){ holdOff(); game.paused = peekWasPaused; show("scTalk"); }
+$("btnPeekBack").onclick = backToTalk;
+$("btnPeekDone").onclick = backToTalk;
+
+$("btnToVote").onclick = () => {
+  if(game.timeLeft > 0 && !confirm("まだ時間が残っています。投票に進みますか？")) return;
+  clearInterval(game.timerId); game.timerId = null;
+  startVote(game.players.map((_,i) => i), false);
+};
+
+// ---------- 投票 ----------
+function startVote(candidates, runoff){
+  game.candidates = candidates; game.runoff = runoff;
+  game.votes = new Array(game.players.length).fill(0);
+  game.voter = 0;
+  show("scVote");
+  renderVoteCover();
+}
+function renderVoteCover(){
+  renderProgress($("voteProgress"), game.voter);
+  $("voteTitle").textContent = game.runoff ? "決選投票" : "投票タイム";
+  $("voteName").textContent = game.players[game.voter];
+  $("voteCover").hidden = false; $("votePick").hidden = true;
+}
+$("btnVoteOpen").onclick = () => {
+  sfx.tap();
+  game.sel = null; $("btnVoteOk").disabled = true;
+  $("voteName2").textContent = game.players[game.voter];
+  const list = $("voteList"); list.innerHTML = "";
+  let opts = game.candidates.filter(i => i !== game.voter);
+  if(!opts.length) opts = game.candidates; // 決選で自分しか候補がいない場合は念のため
+  opts.forEach(i => {
+    const b = document.createElement("button");
+    b.textContent = game.players[i];
+    b.onclick = () => {
+      game.sel = i; sfx.tap();
+      [...list.children].forEach(c => c.classList.toggle("sel", c === b));
+      $("btnVoteOk").disabled = false;
+    };
+    list.appendChild(b);
+  });
+  $("voteCover").hidden = true; $("votePick").hidden = false;
+};
+$("btnVoteOk").onclick = () => {
+  if(game.sel === null) return;
+  game.votes[game.sel]++;
+  sfx.ok();
+  game.voter++;
+  if(game.voter < game.players.length) renderVoteCover();
+  else showTally();
+};
+
+// ---------- 開票 ----------
+function showTally(){
+  show("scTally");
+  $("tallyTitle").textContent = game.runoff ? "決選投票の結果" : "開票結果";
+  const max = Math.max(...game.votes);
+  const top = game.candidates.filter(i => game.votes[i] === max);
+  const rows = game.candidates.slice().sort((a,b) => game.votes[b]-game.votes[a]);
+  $("tally").innerHTML = rows.map(i =>
+    `<div class="t ${top.includes(i)?"top":""}"><span class="n">${esc(game.players[i])}</span><span class="b"><div data-w="${max?game.votes[i]/max*100:0}"></div></span><span class="c">${game.votes[i]}</span></div>`
+  ).join("");
+  $("tallyMsg").hidden = true; $("btnTallyNext").hidden = true;
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    document.querySelectorAll("#tally .b div").forEach(d => d.style.width = d.dataset.w + "%");
+  }));
+  setTimeout(() => {
+    const msg = $("tallyMsg"), btn = $("btnTallyNext");
+    msg.hidden = false; btn.hidden = false;
+    if(top.length === 1){
+      game.executed = top[0];
+      msg.className = "banner neutral fade";
+      msg.innerHTML = `いちばん疑われたのは…<br>${esc(game.players[top[0]])} さん！<small>果たして正体は…？</small>`;
+      btn.textContent = "正体を見る";
+      btn.onclick = revealExecuted;
+      sfx.ok();
+    }else if(!game.runoff){
+      msg.className = "banner neutral fade";
+      msg.innerHTML = `同票！<small>${top.map(i => esc(game.players[i])).join("・")} で決選投票します</small>`;
+      btn.textContent = "決選投票へ";
+      btn.onclick = () => startVote(top, true);
+      sfx.tap();
+    }else{
+      game.executed = null;
+      msg.className = "banner neutral fade";
+      msg.innerHTML = `また同票…！<small>ウルフを決められませんでした</small>`;
+      btn.textContent = "結果を見る";
+      btn.onclick = () => finish("wolf", "誰も選ばれず、ウルフが逃げ切った！");
+      sfx.lose();
+    }
+  }, 1100);
+}
+function revealExecuted(){
+  const i = game.executed;
+  if(game.wolves.has(i)){
+    show("scGuess");
+    $("guessWho").textContent = game.players[i] + " さん";
+    $("guessWolfWord").textContent = game.wolfWord;
+    $("guessInput").value = "";
+    $("guessJudge").hidden = true;
+    $("btnGuessOpen").disabled = false;
+    sfx.win();
+  }else{
+    finish("wolf", `${game.players[i]} さんは市民だった…！`);
+  }
+}
+
+// ---------- 逆転チャンス ----------
+const norm = s => s.trim().replace(/\s/g,"").normalize("NFKC").toLowerCase()
+  .replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0)-0x60));
+$("btnGuessOpen").onclick = () => {
+  const g = $("guessInput").value;
+  $("guessAnswer").textContent = game.citWord;
+  $("guessEcho").textContent = g.trim() || "（口頭で回答）";
+  $("guessJudge").hidden = false;
+  $("btnGuessOpen").disabled = true;
+  $("guessInput").blur();
+  if(g.trim() && norm(g) === norm(game.citWord)){ sfx.win(); } else sfx.tap();
+  setTimeout(() => $("guessJudge").scrollIntoView({behavior:"smooth", block:"center"}), 50);
+};
+$("btnGuessYes").onclick = () => finish("wolf", "ウルフがお題を見破った！大逆転！");
+$("btnGuessNo").onclick = () => finish("cit", "ウルフを見つけ出した！");
+
+// ---------- 結果 ----------
+function finish(winner, detail){
+  show("scResult");
+  const banner = $("resultBanner");
+  banner.className = "banner fade " + (winner === "wolf" ? "wolf" : "cit");
+  banner.innerHTML = (winner === "wolf" ? "🐺 ウルフの勝ち！" : "🎉 市民の勝ち！") + `<small>${esc(detail)}</small>`;
+  winner === "wolf" ? sfx.lose() : sfx.win();
+
+  const gained = {};
+  game.players.forEach((n,i) => {
+    const isWolf = game.wolves.has(i);
+    gained[n] = winner === "wolf" ? (isWolf ? 3 : 0) : (isWolf ? 0 : 1);
+    scores[n] = (scores[n] || 0) + gained[n];
+  });
+  save();
+
+  $("revealList").innerHTML = game.players.map((n,i) => {
+    const w = game.wolves.has(i);
+    return `<div class="r"><span class="n">${esc(n)}</span><span class="tag ${w?"wolf":"cit"}">${w?"ウルフ":"市民"}</span><span class="w">${esc(game.wordOf(i))}</span><span class="p">${gained[n]?"+"+gained[n]:""}</span></div>`;
+  }).join("") + `<div class="muted" style="margin-top:4px">市民のお題「${esc(game.citWord)}」／ウルフのお題「${esc(game.wolfWord)}」</div>`;
+  renderScoreList($("scoreList"));
+}
+$("btnNext").onclick = startGame;
+$("btnBackSetup").onclick = () => { game = null; show("scSetup"); renderSetup(); };
+$("btnHome").onclick = () => {
+  if(game && !$("scResult").hidden){ $("btnBackSetup").onclick(); return; }
+  if(game && !confirm("ゲームを中断して設定に戻りますか？")) return;
+  if(game) clearInterval(game.timerId);
+  game = null; show("scSetup"); renderSetup();
+};
+
+// ---------- ルール ----------
+$("btnRule").onclick = () => $("ruleModal").hidden = false;
+$("btnRuleClose").onclick = () => $("ruleModal").hidden = true;
+$("ruleModal").onclick = e => { if(e.target.id === "ruleModal") $("ruleModal").hidden = true; };
+
+renderSetup();
+try{ if(!localStorage.getItem("wordwolf-seen")){ $("ruleModal").hidden = false; localStorage.setItem("wordwolf-seen","1"); } }catch(e){}
+</script>
+<script src="../../playtime.js" defer></script>
+</body>
+</html>
