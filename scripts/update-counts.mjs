@@ -32,3 +32,15 @@ if (JSON.stringify(counts) === JSON.stringify(old.counts)) {
   fs.writeFileSync('counts.json', JSON.stringify({ updatedAt: new Date().toISOString(), counts }, null, 2) + '\n');
   console.log('counts.json を更新しました');
 }
+
+// 日ごとの記録（週間ランキング用）。日本時間の日付ごとに、その日の最新の値を残す。40日分まで
+const HISTORY = 'counts-history.json';
+const history = fs.existsSync(HISTORY) ? JSON.parse(fs.readFileSync(HISTORY, 'utf8')) : {};
+const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+const before = JSON.stringify(history);
+history[today] = counts;
+for (const d of Object.keys(history).sort().slice(0, -40)) delete history[d];
+if (JSON.stringify(history) !== before) {
+  fs.writeFileSync(HISTORY, JSON.stringify(history) + '\n');
+  console.log(`${HISTORY} を更新しました（${Object.keys(history).length}日分）`);
+}

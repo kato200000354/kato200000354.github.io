@@ -102,6 +102,32 @@ h1 span{color:var(--accent)}
   .rec-list::-webkit-scrollbar{display:none}
   .rec-card{flex:0 0 140px;scroll-snap-align:start}
 }
+/* ランキング */
+.rank{margin:30px 0 4px;background:var(--card);border-radius:20px;padding:16px 16px 10px;box-shadow:var(--shadow);max-width:720px}
+.rank-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
+.rank h2{font-size:20px;font-weight:800;margin:0}
+.rank .sub{margin:6px 0 8px;font-size:12px;color:var(--muted)}
+.rank-tabs{display:flex;gap:4px;background:var(--chip);border-radius:999px;padding:3px}
+.rank-tabs button{appearance:none;border:0;background:none;font:inherit;font-size:12.5px;font-weight:800;color:var(--muted);padding:6px 11px;border-radius:999px;cursor:pointer}
+.rank-tabs button[aria-selected="true"]{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.rank-list{list-style:none;margin:0;padding:0}
+.rank-item{display:flex;align-items:center;gap:10px;padding:8px 4px;text-decoration:none;border-top:1px solid var(--line);border-radius:8px}
+.rank-list li:first-child .rank-item{border-top:0}
+.rank-item:hover{background:var(--chip)}
+.rank-item:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+.rank-item .no{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.rank-item.top .no{color:#fff}
+.rank-item.top1 .no{background:#e8a317}
+.rank-item.top2 .no{background:#9aa3ad}
+.rank-item.top3 .no{background:#c27a45}
+.rank-item img{flex:none;width:42px;height:56px;object-fit:cover;object-position:top;border-radius:8px;background:var(--chip)}
+.rank-item .info{flex:1;min-width:0;display:flex;flex-direction:column}
+.rank-item .info b{font-size:14px;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rank-item .info small{font-size:11px;color:var(--muted);font-weight:700}
+.rank-item .val{flex:none;font-size:13px;font-weight:800;font-variant-numeric:tabular-nums}
+.rank-empty{padding:18px 4px;color:var(--muted);font-size:13px;text-align:center}
+#rank-more{display:block;margin:6px auto 2px;appearance:none;border:0;background:none;font:inherit;font-size:13px;font-weight:800;color:var(--accent);cursor:pointer;padding:6px 10px}
+@media (max-width:480px){.rank-tabs button{font-size:11.5px;padding:6px 8px}}
 footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--muted);font-size:13px}
 </style>
 </head>
@@ -126,6 +152,13 @@ footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--muted);f
     <h2 id="rec-h">あなたへのおすすめ</h2>
     <p class="sub" id="rec-sub"></p>
     <div class="rec-list" id="rec-list"></div>
+  </section>
+
+  <section class="rank" id="rank" aria-labelledby="rank-h">
+    <div class="rank-head"><h2 id="rank-h">🏆 ランキング</h2><div class="rank-tabs" id="rank-tabs" role="tablist" aria-label="ランキングの種類"></div></div>
+    <p class="sub" id="rank-sub"></p>
+    <ol class="rank-list" id="rank-list"></ol>
+    <button id="rank-more" hidden></button>
   </section>
 
   <nav class="tabs bar" aria-label="絞り込みと並べ替え">
@@ -354,7 +387,7 @@ function renderRec() {
 
 // カードを開いたら1回として数え、この端末の記録にも残す
 const onOpen = e => {
-  const c = e.target.closest('.card, .rec-card');
+  const c = e.target.closest('.card, .rec-card, .rank-item');
   if (!c) return;
   const h = history[c.dataset.id] ||= { opens: 0, secs: 0 };
   h.last = Date.now(); saveHistory(); // 回数は作品ページ側（playtime.js）で数える
@@ -363,6 +396,75 @@ const onOpen = e => {
 grid.addEventListener('click', onOpen);
 document.getElementById('rec-list').addEventListener('click', onOpen);
 renderRec(); // 集計ファイルとブラウザの記憶から回数を読み終えたあとに作る
+
+// ---------- ランキング ----------
+// 今週の人気（7日前からの増え方）／累計プレイ時間／累計の人気。日ごとの記録は counts-history.json（1時間ごとの自動集計が保存）
+const RANKS = {
+  week: { label: '今週の人気', unit: w => `▶ ${w.v.toLocaleString()}回` },
+  time: { label: '累計プレイ時間', unit: w => `⏱ ${fmtTime(w.v)}` },
+  plays: { label: '累計の人気', unit: w => `▶ ${w.v.toLocaleString()}回` },
+};
+let rankKind = 'week', rankAll = false, weekBase = null;
+const fmtMD = d => `${+d.slice(5, 7)}/${+d.slice(8, 10)}`;
+
+async function loadWeekBase() {
+  try {
+    const h = await (await fetch('counts-history.json', {cache: 'no-cache'})).json();
+    const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+    const weekAgo = new Date(Date.now() + 9 * 3600e3 - 7 * 864e5).toISOString().slice(0, 10);
+    const days = Object.keys(h).sort().filter(d => d < today);
+    const date = days.filter(d => d <= weekAgo).pop() || days[0]; // 7日前（なければいちばん古い日）
+    if (date) weekBase = { date, counts: h[date] };
+  } catch {}
+}
+
+function renderRank() {
+  const tabsEl = document.getElementById('rank-tabs');
+  tabsEl.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', b.dataset.r === rankKind));
+  let rows, sub;
+  if (rankKind === 'week') {
+    if (!weekBase) {
+      sub = '今週のランキングは、毎日の記録がたまる明日から表示されます';
+      rows = [];
+    } else {
+      sub = `${fmtMD(weekBase.date)} から今日までに開かれた回数`;
+      rows = WORKS.map(w => ({ w, v: Math.max(0, (w.plays ?? 0) - (weekBase.counts[w.id] ?? 0)) }));
+    }
+  } else if (rankKind === 'time') {
+    sub = 'これまでにみんなが遊んだ時間';
+    rows = WORKS.filter(timed).map(w => ({ w, v: w.secs ?? 0 }));
+  } else {
+    sub = 'これまでに開かれた回数';
+    rows = WORKS.map(w => ({ w, v: w.plays ?? 0 }));
+  }
+  rows = rows.filter(r => r.v > 0).sort((a, b) => b.v - a.v || b.w.made - a.w.made).slice(0, 10);
+  document.getElementById('rank-sub').textContent = sub;
+  const shown = rankAll ? rows : rows.slice(0, 5);
+  let prev = null, no = 0;
+  document.getElementById('rank-list').innerHTML = shown.length ? shown.map((r, i) => {
+    if (r.v !== prev) { no = i + 1; prev = r.v; } // 同じ数なら同じ順位
+    return `<li><a class="rank-item${no <= 3 ? ' top top' + no : ''}" href="${r.w.href}" data-id="${r.w.id}">
+      <span class="no">${no}</span>
+      <img src="thumbs/${r.w.id}.jpg" alt="" loading="lazy" width="42" height="56">
+      <span class="info"><b>${r.w.name}</b><small>${genreName(genreOf(r.w))}</small></span>
+      <span class="val">${RANKS[rankKind].unit(r)}</span></a></li>`;
+  }).join('') : `<li class="rank-empty">${rankKind === 'week' && !weekBase ? 'もうすぐ集計がはじまります' : 'まだデータがありません'}</li>`;
+  const more = document.getElementById('rank-more');
+  more.hidden = rows.length <= 5;
+  more.textContent = rankAll ? '閉じる' : `もっと見る（${rows.length}位まで）`;
+}
+
+document.getElementById('rank-tabs').innerHTML = Object.entries(RANKS).map(([k, r]) => `<button role="tab" data-r="${k}">${r.label}</button>`).join('');
+document.getElementById('rank-tabs').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  rankKind = b.dataset.r; rankAll = false; renderRank();
+});
+document.getElementById('rank-more').addEventListener('click', () => { rankAll = !rankAll; renderRank(); });
+document.getElementById('rank-list').addEventListener('click', onOpen);
+await loadWeekBase();
+if (!weekBase) rankKind = 'time'; // 今週の記録がまだなければ累計から見せる
+renderRank();
+
 })();
 </script>
 </body>
