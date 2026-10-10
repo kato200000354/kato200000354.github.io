@@ -1,6 +1,6 @@
 // オフラインでも開けるようにする。表示はまず保存済みのものを使い、裏で最新版を取りに行く
-const CACHE = 'anger-log-v1';
-const CORE = ['./', './index.html', './style.css', './app.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
+const CACHE = 'anger-log-v2';
+const CORE = ['./', './index.html', './style.css', './app.js', './manifest.webmanifest', './icons/icon-192-v2.png', './icons/icon-512-v2.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));
