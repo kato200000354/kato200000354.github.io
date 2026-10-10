@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>ヒント将棋</title>
+<meta name="description" content="AIの最善手ヒントを見ながら指せる将棋。入門から最強クラスのやねうら王まで、CPUや2人で対局できます。">
+<meta name="theme-color" content="#1b1410">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <!-- GitHub Pages で SharedArrayBuffer を使えるようにする（やねうら王WASM用） -->
 <script src="coi-serviceworker.js"></script>
 <style>
@@ -25,6 +30,7 @@ button:disabled{opacity:.4;cursor:default}
 header{width:100%;display:flex;align-items:center;gap:6px}
 header h1{font-size:18px;margin:0;flex:1;letter-spacing:.05em}
 header button{padding:6px 10px;font-size:13px}
+@media (max-width:420px){header h1{font-size:16px;white-space:nowrap}header{gap:4px}header button{padding:6px 7px;font-size:12px}}
 #status{width:100%;text-align:center;font-size:15px;min-height:22px;color:var(--muted)}
 #status b{color:var(--text)}
 
@@ -100,6 +106,10 @@ header button{padding:6px 10px;font-size:13px}
 .box .opts button.on{border-color:var(--accent);background:#1d3a4a}
 .box .go{background:var(--accent);color:#06222e;font-weight:700;font-size:16px;border:none;padding:12px}
 .box .lab{font-size:12px;color:var(--muted);text-align:left;margin-bottom:-6px}
+.credits{text-align:left;font-size:13px;line-height:1.7;max-height:60vh;overflow:auto}
+.credits h3{font-size:14px;margin:12px 0 2px;color:var(--wood)}
+.credits p{margin:0}
+.credits a{color:var(--accent);word-break:break-all}
 .promoBtns{display:flex;gap:12px;justify-content:center}
 .promoBtns button{width:110px;height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:14px}
 .promoBtns .piece{width:56px;height:60px;font-size:32px}
@@ -113,6 +123,7 @@ header button{padding:6px 10px;font-size:13px}
     <button id="btnFlip" title="盤を反転">⇅</button>
     <button id="btnResign">投了</button>
     <button id="btnNew">新規</button>
+    <button id="btnInfo" title="このアプリについて" aria-label="このアプリについて">ⓘ</button>
   </header>
   <div id="status"></div>
   <div id="winBar"><div class="row"><span id="wbS"></span><span id="wbG"></span></div><div class="track"><i id="wbFill" style="width:50%"></i></div></div>
@@ -154,6 +165,30 @@ header button{padding:6px 10px;font-size:13px}
     </div>
     <button class="go" id="btnStart">対局開始</button>
     <button id="btnCloseNew">キャンセル</button>
+  </div>
+</div>
+
+<div class="modal" id="infoModal" hidden>
+  <div class="box">
+    <h2>このアプリについて</h2>
+    <div class="credits">
+      <p><b>ヒント将棋</b> v1.0</p>
+      <h3>思考エンジン</h3>
+      <p>上級・最強・鬼のCPUには、オープンソースの将棋エンジン「<b>やねうら王（YaneuraOu）</b>」の WebAssembly 版（@mizarjp/yaneuraou.k-p 7.6.3-alpha.0）を、改変せずに使用しています。</p>
+      <p>ライセンス：GNU General Public License v3（<a href="yaneuraou/LICENSE.txt" target="_blank" rel="noopener">全文</a>）</p>
+      <p>ソースコード：<br>
+        <a href="https://github.com/yaneurao/YaneuraOu" target="_blank" rel="noopener">https://github.com/yaneurao/YaneuraOu</a><br>
+        <a href="https://github.com/arashigaoka/YaneuraOu.wasm" target="_blank" rel="noopener">https://github.com/arashigaoka/YaneuraOu.wasm</a><br>
+        <a href="https://www.npmjs.com/package/@mizarjp/yaneuraou.k-p" target="_blank" rel="noopener">https://www.npmjs.com/package/@mizarjp/yaneuraou.k-p</a></p>
+      <h3>評価関数</h3>
+      <p>水匠Petite（2021-11）／たややん氏（上記パッケージに内蔵）</p>
+      <h3>そのほか</h3>
+      <p>coi-serviceworker（MIT License, Guido Zuidhof and contributors）</p>
+      <p>入門〜中級のCPUと、ヒント機能の一部は、このアプリ独自のAIです。</p>
+      <h3>プライバシー</h3>
+      <p>個人情報は集めません。設定は端末の中だけに保存されます。<a href="privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a></p>
+    </div>
+    <button id="btnCloseInfo">閉じる</button>
   </div>
 </div>
 
@@ -722,6 +757,8 @@ $("btnFlip").onclick=()=>{flip=!flip;buildBoard();render();};
 $("btnResign").onclick=()=>{if(over)return;cancelSearch();
   const loser=mode==="cpu"?humanSide:pos.side;over={winner:1-loser,text:(loser===0?"☗先手":"☖後手")+"の投了",resigned:true};render();showResult();};
 $("btnNew").onclick=()=>{$("newModal").hidden=false;};
+$("btnInfo").onclick=()=>{$("infoModal").hidden=false;};
+$("btnCloseInfo").onclick=()=>{$("infoModal").hidden=true;};
 $("btnCloseNew").onclick=()=>{$("newModal").hidden=true;};
 $("btnAgain").onclick=()=>{$("resultModal").hidden=true;$("newModal").hidden=false;};
 $("btnResultClose").onclick=()=>{$("resultModal").hidden=true;};
