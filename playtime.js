@@ -4,6 +4,11 @@
 (() => {
   const m = location.pathname.match(/\/apps\/([^/]+)\//);
   if (!m || location.protocol === 'file:') return;
+  // Playストア版のアプリ（?src=android で開く）では数えない（アプリは外部にデータを送らない約束のため）
+  try {
+    if (new URLSearchParams(location.search).get('src') === 'android') sessionStorage.setItem('in-android-app', '1');
+    if (sessionStorage.getItem('in-android-app')) return;
+  } catch {}
   const URL = 'https://abacus.jasoncameron.dev/hit/kato200000354-works/' + encodeURIComponent(m[1]) + '-t30';
   const UNIT = 30;      // 何秒たまったら記録するか
   const IDLE = 20;      // 最後の操作から何秒で「放置」とみなすか
