@@ -158,7 +158,9 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
 .nick input{flex:1;min-width:0;font:inherit;font-weight:700;font-size:16px;padding:9px 12px;border-radius:10px;border:2px solid var(--line);background:#fff;color:var(--navy)}
 .nick button{background:var(--navy);color:#fff;font-weight:800;padding:10px 16px;border-radius:10px}
 .entry{width:100%;display:flex;flex-direction:column;gap:8px;background:rgba(8,31,69,.82);border-radius:16px;padding:12px;border:1px solid rgba(255,255,255,.2);color:#fff}
-.entry label{font-weight:800;font-size:14px}
+.entry label,.entry .lbl{font-weight:800;font-size:14px}
+.entry .nickname{flex:1;min-width:0;font-size:17px;color:#ffe08a}
+.nick select{flex:1;min-width:0;font:inherit;font-weight:700;font-size:15px;padding:8px 10px;border-radius:10px;border:2px solid var(--line);background:#fff;color:var(--navy)}
 .entry .msg{font-size:13px;line-height:1.6;font-weight:700}
 .entry button{background:var(--gold);color:var(--navy)}
 .entry button:disabled{opacity:.6}
@@ -241,7 +243,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
         <div>風<b id="rS4"></b></div>
         <div>天気<b id="rS5"></b></div>
       </div>
-      <div class="entry" id="rEntry"><div class="nick"><label for="rName">名前</label><input id="rName" maxlength="12" placeholder="ニックネーム" autocomplete="nickname"><button id="rSubmit" type="button">ランキングに登録</button></div><div class="msg" id="rMsg"></div><div class="nick" id="rCodeRow" hidden><input id="rCode" readonly aria-label="記録コード"><button id="rCopy" type="button">コピー</button></div></div>
+      <div class="entry" id="rEntry"><div class="nick"><span class="lbl">ランキング名</span><b id="rNick" class="nickname"></b><button id="rNickChange" type="button">変更</button></div><div class="nick" id="rNickPick" hidden><select id="rNickA" aria-label="ことば"></select><select id="rNickB" aria-label="どうぶつ"></select></div><div class="msg" id="rMsg"></div></div>
       <div class="rbtns">
         <button class="primary" id="rAgain"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.4-5.7M20 3v5h-5" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>もう一度プレイ</button>
         <button class="ghost" id="rRankBtn">ランキング</button>
@@ -289,8 +291,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
       <div class="body">
         <div class="tabs" id="rkTabs" role="tablist"></div>
         <div class="rk-status" id="rkStatus">ランキングを読み込んでいます…</div>
-        <div class="nick" id="rkCodeRow" hidden><label for="rkCode" style="font-weight:800;font-size:14px">記録コード</label><input id="rkCode" placeholder="SJ1-…" autocomplete="off"><button id="rkCodeAdd" type="button">登録</button></div>
-        <ol class="rk-list" id="rkList"></ol>
+                <ol class="rk-list" id="rkList"></ol>
       </div>
     </div>
   </div>
@@ -740,7 +741,7 @@ cv.addEventListener('pointerdown', e => { e.preventDefault(); if (G.state === 't
 window.addEventListener('pointerup', release);
 window.addEventListener('pointercancel', release);
 window.addEventListener('keydown', e => {
-  if (e.target && e.target.tagName === 'INPUT') { if (e.code === 'Enter' && e.target.id === 'rName') $('#rSubmit').click(); if (e.code === 'Enter' && e.target.id === 'rkCode') $('#rkCodeAdd').click(); return; }
+  if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) return;
   if (e.code === 'Space' || e.code === 'Enter') {
     if (!ui.settings.hidden || !ui.howto.hidden || !ui.pause.hidden || !$('#ranking').hidden) return;
     if (e.repeat) { e.preventDefault(); return; }
@@ -1168,171 +1169,149 @@ function openSettings(){
 $('#sBgm').addEventListener('input', e => { S.bgm = +e.target.value; $('#oBgm').textContent = S.bgm; AU.apply(); save(); });
 $('#sSe').addEventListener('input', e => { S.se = +e.target.value; $('#oSe').textContent = S.se; AU.apply(); save(); });
 
-/* ---------- ranking (shared db) ---------- */
-const RK = { db:null, user:null, uid:null, canWrite:null, scores:[], entries:[], status:'loading', tab:S.hill, queue:Promise.resolve(), renderSeq:0, lastRec:null };
-const rkEl = { modal:$('#ranking'), tabs:$('#rkTabs'), status:$('#rkStatus'), list:$('#rkList'), codeRow:$('#rkCodeRow'), code:$('#rkCode'), codeAdd:$('#rkCodeAdd') };
-const GRADES = ['PERFECT','GREAT','GOOD','はやすぎ','おそすぎ'];
-function fnv(str){ let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return h >>> 0; }
-function nameKey(n){ return 'n' + fnv(n.normalize('NFKC').toLowerCase()).toString(16); }
+/* ---------- ranking (Firebase: 匿名ログイン + Firestore) ---------- */
+// ジャンプが終わったら自己ベストを自動で登録する。名前は「言葉＋動物」の組み合わせから選ぶ（自由入力なし）
+const FB = {
+  key: 'AIzaSyBxirxHLrhJjH0ACv4Aw_LDFckLVCb97RA',
+  db: 'https://firestore.googleapis.com/v1/projects/mainichi-lab-games/databases/(default)/documents',
+};
+const NICK_A = ['はやい','とおくまで','そらとぶ','げんきな','しずかな','ゆうかんな','ふわふわの','きらきらの','のんびり','さすらいの','ほっきょくの','ゆきやまの','かぜをよむ','はやてな','つよきの','まっしろな','おひさまの','よぞらの','ジャンプずきの','かがやく'];
+const NICK_B = ['ペンギン','キツネ','ウサギ','シロクマ','フクロウ','オコジョ','ライチョウ','トナカイ','アザラシ','ハヤブサ','ツバメ','カモシカ','リス','タヌキ','ワシ','ラッコ','パンダ','コアラ','カワウソ','ユキヒョウ'];
+const nickOf = (a, b) => (NICK_A[a] || NICK_A[0]) + (NICK_B[b] || NICK_B[0]);
+const RK = { status:'loading', tab:S.hill, board:[], uid:null, mine:null, loadSeq:0, lastRec:null };
+const rkEl = { modal:$('#ranking'), tabs:$('#rkTabs'), status:$('#rkStatus'), list:$('#rkList') };
 function hillName(id){ return (HILLS.find(h => h.id === id) || HILLS[0]).name; }
-async function initRanking(){
-  const c = window.claude;
-  if (!c || typeof c.use !== 'function') { RK.status = 'none'; renderRanking(); return; }
+if (!S.nick) { S.nick = [irandR(NICK_A.length), irandR(NICK_B.length)]; save(); }
+function irandR(n){ return Math.floor(Math.random() * n); }
+
+// --- 匿名ログイン（トークンは端末に保存して使い回す）
+const AUTH_KEY = 'sukijanpu-auth';
+let auth = null;
+try { auth = JSON.parse(localStorage.getItem(AUTH_KEY) || 'null'); } catch (e) {}
+async function idToken(){
+  if (auth && auth.exp > Date.now() + 60e3) return auth.token;
+  let r;
+  if (auth && auth.refresh) {
+    r = await fetch(`https://securetoken.googleapis.com/v1/token?key=${FB.key}`, { method:'POST', headers:{ 'Content-Type':'application/x-www-form-urlencoded' }, body:'grant_type=refresh_token&refresh_token=' + encodeURIComponent(auth.refresh) }).then(x => x.json());
+    if (r.id_token) auth = { uid:r.user_id, token:r.id_token, refresh:r.refresh_token, exp:Date.now() + (+r.expires_in) * 1000 };
+  }
+  if (!r || !r.id_token) {
+    r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FB.key}`, { method:'POST', headers:{ 'Content-Type':'application/json' }, body:'{"returnSecureToken":true}' }).then(x => x.json());
+    if (!r.idToken) throw new Error('auth');
+    auth = { uid:r.localId, token:r.idToken, refresh:r.refreshToken, exp:Date.now() + (+r.expiresIn) * 1000 };
+  }
+  try { localStorage.setItem(AUTH_KEY, JSON.stringify(auth)); } catch (e) {}
+  RK.uid = auth.uid;
+  return auth.token;
+}
+
+// --- Firestore の値 ⇔ ふつうの値
+const toFs = v => typeof v === 'string' ? { stringValue:v }
+  : Number.isInteger(v) ? { integerValue:String(v) }
+  : typeof v === 'number' ? { doubleValue:v }
+  : { mapValue:{ fields:Object.fromEntries(Object.entries(v).map(([k, x]) => [k, toFs(x)])) } };
+const fromFs = f => 'stringValue' in f ? f.stringValue : 'integerValue' in f ? +f.integerValue : 'doubleValue' in f ? f.doubleValue
+  : 'mapValue' in f ? Object.fromEntries(Object.entries(f.mapValue.fields || {}).map(([k, x]) => [k, fromFs(x)])) : null;
+const docOf = d => ({ id:d.name.split('/').pop(), ...fromFs({ mapValue:{ fields:d.fields || {} } }) });
+
+async function loadMine(){
+  const t = await idToken();
+  const r = await fetch(`${FB.db}/skijump/${RK.uid}?key=${FB.key}`, { headers:{ Authorization:'Bearer ' + t } });
+  RK.mine = r.ok ? docOf(await r.json()) : { hills:{} };
+}
+async function saveMine(){
+  const t = await idToken();
+  const body = { a:S.nick[0], b:S.nick[1], hills:RK.mine.hills || {}, at:Date.now() };
+  const r = await fetch(`${FB.db}/skijump/${RK.uid}?key=${FB.key}`, { method:'PATCH', headers:{ Authorization:'Bearer ' + t, 'Content-Type':'application/json' }, body:JSON.stringify({ fields:toFs(body).mapValue.fields }) });
+  if (!r.ok) throw new Error('save ' + r.status);
+}
+async function loadBoard(hill){
+  const seq = ++RK.loadSeq;
+  const q = { structuredQuery:{ from:[{ collectionId:'skijump' }], orderBy:[{ field:{ fieldPath:`hills.${hill}.d` }, direction:'DESCENDING' }], limit:100 } };
+  const res = await fetch(`${FB.db}:runQuery?key=${FB.key}`, { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(q) }).then(x => x.json());
+  if (seq !== RK.loadSeq) return;
+  if (!Array.isArray(res)) throw new Error('query');
+  RK.board = res.filter(x => x.document).map(x => docOf(x.document)).filter(r => r.hills && r.hills[hill] && r.hills[hill].d > 0);
+}
+
+// --- 結果画面：自己ベストなら自動で登録
+const rEl = { msg:$('#rMsg'), nick:$('#rNick'), change:$('#rNickChange'), pick:$('#rNickPick'), selA:$('#rNickA'), selB:$('#rNickB') };
+NICK_A.forEach((w, i) => rEl.selA.add(new Option(w, i)));
+NICK_B.forEach((w, i) => rEl.selB.add(new Option(w, i)));
+function showNick(){ rEl.nick.textContent = nickOf(S.nick[0], S.nick[1]); rEl.selA.value = S.nick[0]; rEl.selB.value = S.nick[1]; }
+showNick();
+rEl.change.addEventListener('click', () => { AU.play('tap'); rEl.pick.hidden = !rEl.pick.hidden; });
+async function onNickChange(){
+  S.nick = [+rEl.selA.value, +rEl.selB.value]; save(); showNick();
+  try { if (!RK.mine) await loadMine(); await saveMine(); toast(`名前を「${nickOf(S.nick[0], S.nick[1])}」にしました`); } catch (e) { toast('名前を保存できませんでした'); }
+}
+rEl.selA.addEventListener('change', onNickChange);
+rEl.selB.addEventListener('change', onNickChange);
+
+async function prepareEntry(rec){
+  RK.lastRec = rec; rEl.pick.hidden = true; showNick();
+  if (!(rec.d > 0)) { rEl.msg.textContent = 'ランキングは着地できた記録が対象です'; return; }
+  rEl.msg.textContent = 'ランキングを確認しています…';
   try {
-    const [db, user] = await Promise.all([c.use('db'), c.use('user')]);
-    RK.db = db; RK.user = user;
-    if (!db) { RK.status = 'none'; renderRanking(); return; }
-    RK.uid = user ? await user.id() : null;
-    RK.canWrite = user ? await user.can('data.write') : null;
-    RK.status = 'ok';
-    const onErr = () => { RK.status = 'error'; renderRanking(); };
-    db.collection('scores').limit(1000).onSnapshot(snap => { RK.scores = snap.docs.filter(d => d.exists).map(d => ({ id: d.id, kind: 'user', ...d.data() })); renderRanking(); }, onErr);
-    db.collection('entries').limit(1000).onSnapshot(snap => { RK.entries = snap.docs.filter(d => d.exists).map(d => ({ id: d.id, kind: 'name', ...d.data() })); renderRanking(); }, onErr);
-  } catch (e) { RK.status = 'none'; renderRanking(); }
-}
-function boardFor(hill){
-  return RK.scores.concat(RK.entries).filter(r => r.hills && r.hills[hill] && r.hills[hill].d > 0)
-    .sort((a, b) => b.hills[hill].d - a.hills[hill].d || (a.hills[hill].at || 0) - (b.hills[hill].at || 0));
-}
-function canTryWrite(){ return RK.status === 'ok' && RK.canWrite !== false; }
-/* register a named record; resolves 'ok' | 'nochange' | 'fail' */
-function writeEntry(name, rec){
-  RK.queue = RK.queue.then(async () => {
-    const key = nameKey(name), ex = RK.entries.find(r => r.id === key);
-    const cur = ex && ex.hills && ex.hills[rec.hill] ? ex.hills[rec.hill].d : 0;
-    if (rec.d <= cur) return 'nochange';
-    const hills = ex && ex.hills ? JSON.parse(JSON.stringify(ex.hills)) : {};
-    hills[rec.hill] = { d: rec.d, g: rec.g, wx: rec.wx, w: rec.w, at: Date.now() };
-    const body = { nick: name, hills, at: Date.now() };
-    const attempt = () => RK.db.doc('entries/' + key).set(body);
-    try { await attempt(); }
-    catch (e) {
-      if (e && e.code === 'unavailable') { await new Promise(r => setTimeout(r, 400 + Math.random() * 600)); try { await attempt(); } catch (e2) { return 'fail'; } }
-      else { if (e && e.code === 'invalid_argument') RK.canWrite = false; return 'fail'; }
+    if (!RK.mine) await loadMine();
+    const cur = RK.mine.hills && RK.mine.hills[rec.hill] ? RK.mine.hills[rec.hill].d : 0;
+    if (rec.d > cur) {
+      RK.mine.hills = { ...(RK.mine.hills || {}), [rec.hill]:{ d:rec.d, g:rec.g || '', wx:rec.wx, w:rec.w, at:Date.now() } };
+      await saveMine();
     }
-    const i = RK.entries.findIndex(r => r.id === key), row = { id: key, kind: 'name', ...body };
-    if (i >= 0) RK.entries[i] = row; else RK.entries.push(row);
-    renderRanking();
-    return 'ok';
-  });
-  return RK.queue;
+    await loadBoard(rec.hill);
+    if (RK.lastRec !== rec) return;
+    const idx = RK.board.findIndex(r => r.id === RK.uid);
+    const where = idx >= 0 ? `${hillName(rec.hill)}台 ${idx + 1}位 / ${RK.board.length}人中` : `${hillName(rec.hill)}台 100位圏外`;
+    rEl.msg.textContent = rec.d > cur ? `🎉 自己ベスト更新！ランキングに登録しました（${where}）` : `自己ベストは ${cur.toFixed(1)}m です（${where}）`;
+  } catch (e) {
+    rEl.msg.textContent = 'ランキングにつながりませんでした。通信できる場所でもう一度遊ぶと登録されます。';
+  }
 }
-/* record codes: SJ1-<base64url json>-<checksum> */
-function b64e(s){ return btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
-function b64d(s){ s = s.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; return decodeURIComponent(escape(atob(s))); }
-function makeCode(name, rec){
-  const p = b64e(JSON.stringify({ n: name, h: rec.hill, d: rec.d, g: rec.g, wx: rec.wx, w: rec.w }));
-  return `SJ1-${p}-${(fnv(p) & 0xffff).toString(16).padStart(4, '0')}`;
-}
-function parseCode(code){
-  const m = /^SJ1-([A-Za-z0-9_-]+)-([0-9a-f]{4})$/.exec(code.trim());
-  if (!m || (fnv(m[1]) & 0xffff).toString(16).padStart(4, '0') !== m[2]) return null;
-  try {
-    const o = JSON.parse(b64d(m[1]));
-    const n = typeof o.n === 'string' ? o.n.trim().slice(0, 12) : '';
-    if (!n || !HILLS.some(h => h.id === o.h) || typeof o.d !== 'number' || !(o.d > 0 && o.d < 2000)) return null;
-    return { name: n, rec: { hill: o.h, d: Math.round(o.d * 10) / 10, g: GRADES.includes(o.g) ? o.g : '', wx: WX[o.wx] ? o.wx : 'sunny', w: typeof o.w === 'number' ? clamp(o.w, -20, 20) : 0 } };
-  } catch (e) { return null; }
-}
-/* result screen */
-const rEl = { name:$('#rName'), submit:$('#rSubmit'), msg:$('#rMsg'), codeRow:$('#rCodeRow'), code:$('#rCode'), copy:$('#rCopy') };
-function prepareEntry(rec){
-  RK.lastRec = rec;
-  rEl.name.value = S.name || '';
-  rEl.submit.disabled = false; rEl.submit.textContent = 'ランキングに登録';
-  rEl.codeRow.hidden = true; rEl.msg.textContent = '名前を入れて登録しよう（12文字まで）';
-}
-function showCode(name, rec, why){
-  rEl.code.value = makeCode(name, rec); rEl.codeRow.hidden = false;
-  rEl.msg.textContent = why + 'この記録コードをコピーして、ページのオーナーにLINEなどで送ってください。オーナーがランキング画面に貼り付けると登録されます。';
-}
-rEl.submit.addEventListener('click', async () => {
-  AU.play('tap');
-  const name = rEl.name.value.trim().slice(0, 12), rec = RK.lastRec;
-  if (!rec) return;
-  if (!name) { rEl.msg.textContent = '名前を入れてください'; rEl.name.focus(); return; }
-  S.name = name; save();
-  if (!canTryWrite()) { showCode(name, rec, RK.status === 'ok' ? '閲覧のみのため直接は登録できません。' : 'この画面では直接登録できません。'); rEl.submit.disabled = true; return; }
-  rEl.submit.disabled = true; rEl.msg.textContent = '登録しています…';
-  const res = await writeEntry(name, rec);
-  if (res === 'fail') { showCode(name, rec, '直接は登録できませんでした。'); return; }
-  const board = boardFor(rec.hill), idx = board.findIndex(r => r.id === nameKey(name));
-  rEl.submit.textContent = '登録済み';
-  rEl.msg.textContent = (res === 'ok' ? `${name}さんの記録を登録しました！` : `${name}さんの登録済みの記録の方が上です。`) + (idx >= 0 ? ` ${hillName(rec.hill)}台 ${idx + 1}位 / ${board.length}人中` : '');
-});
-rEl.copy.addEventListener('click', () => {
-  const v = rEl.code.value;
-  const fallback = () => { rEl.code.focus(); rEl.code.select(); toast('コードを選択しました。長押しでコピーしてください'); };
-  try { navigator.clipboard.writeText(v).then(() => toast('記録コードをコピーしました'), fallback); } catch (e) { fallback(); }
-});
-/* ranking modal */
+
+// --- ランキング画面
 function renderTabs(){
   rkEl.tabs.innerHTML = '';
   HILLS.forEach(h => {
     const b = document.createElement('button'); b.className = 'tab'; b.type = 'button'; b.setAttribute('role', 'tab');
     b.setAttribute('aria-selected', String(h.id === RK.tab)); b.textContent = h.name;
-    b.addEventListener('click', () => { AU.play('tap'); RK.tab = h.id; renderTabs(); renderRanking(); });
+    b.addEventListener('click', () => { AU.play('tap'); RK.tab = h.id; renderTabs(); refreshRanking(); });
     rkEl.tabs.appendChild(b);
   });
 }
-async function renderRanking(){
+async function refreshRanking(){
+  rkEl.status.hidden = false; rkEl.status.textContent = 'ランキングを読み込んでいます…'; rkEl.list.innerHTML = '';
+  try { await idToken().catch(() => {}); await loadBoard(RK.tab); RK.status = 'ok'; }
+  catch (e) { RK.status = 'error'; }
+  renderRanking();
+}
+function renderRanking(){
   if (rkEl.modal.hidden) return;
-  const seq = ++RK.renderSeq;
-  if (RK.status !== 'ok') {
-    rkEl.status.hidden = false; rkEl.codeRow.hidden = true; rkEl.list.innerHTML = '';
-    rkEl.status.textContent = RK.status === 'loading' ? 'ランキングを読み込んでいます…'
-      : RK.status === 'error' ? 'ランキングの読み込みが止まりました。ページを開き直してください。'
-      : 'ランキングは claude.ai で共有されたページを開いたときに表示されます。結果画面で名前を入れると記録コードが出るので、ページのオーナーに送ってください。';
-    return;
-  }
-  const board = boardFor(RK.tab).slice(0, 100);
-  rkEl.codeRow.hidden = !canTryWrite();
-  const msgs = [];
-  if (!canTryWrite()) msgs.push('閲覧のみの権限です。結果画面で名前を入れると記録コードが出るので、ページのオーナーに送ると登録してもらえます。');
-  else msgs.push('友だちから届いた記録コードを貼り付けて登録できます。');
-  if (!board.length) msgs.push('まだ記録がありません。最初の挑戦者になりましょう！');
-  rkEl.status.hidden = false; rkEl.status.textContent = msgs.join(' ');
-  const userIds = board.filter(r => r.kind === 'user').map(r => r.id);
-  const ps = RK.user && userIds.length ? await RK.user.profiles(userIds) : {};
-  if (seq !== RK.renderSeq) return;
   rkEl.list.innerHTML = '';
-  board.forEach((r, i) => {
-    const h = r.hills[RK.tab], p = ps[r.id] || {};
-    const li = document.createElement('li');
-    const mine = (r.kind === 'user' && r.id === RK.uid) || (r.kind === 'name' && S.name && r.id === nameKey(S.name));
-    if (mine) li.className = 'me';
+  if (RK.status !== 'ok') { rkEl.status.hidden = false; rkEl.status.textContent = 'ランキングを読み込めませんでした。通信できる場所で開き直してください。'; return; }
+  rkEl.status.hidden = false;
+  rkEl.status.textContent = RK.board.length ? `全国のジャンパー ${RK.board.length}人（上位100人まで）・あなたは「${nickOf(S.nick[0], S.nick[1])}」` : 'まだ記録がありません。最初の挑戦者になりましょう！';
+  RK.board.forEach((r, i) => {
+    const h = r.hills[RK.tab];
+    const li = document.createElement('li'); if (r.id === RK.uid) li.className = 'me';
     const rank = document.createElement('span'); rank.className = 'rank'; rank.textContent = i + 1;
-    const img = document.createElement('img'); img.alt = '';
-    if (r.kind === 'user' && p.avatarUrl) img.src = p.avatarUrl; else { img.style.visibility = 'hidden'; }
+    const img = document.createElement('img'); img.alt = ''; img.style.visibility = 'hidden';
     const mid = document.createElement('div'); mid.style.minWidth = '0';
-    const nm = document.createElement('div'); nm.className = 'nm';
-    const nick = typeof r.nick === 'string' ? r.nick.slice(0, 12) : '';
-    nm.textContent = nick || p.name || 'プレイヤー';
+    const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = nickOf(r.a, r.b) + (r.id === RK.uid ? '（あなた）' : '');
     const meta = document.createElement('div'); meta.className = 'meta';
     const wk = typeof h.w === 'number' ? `${h.w > 0.3 ? '向かい風' : h.w < -0.3 ? '追い風' : '無風'} ${Math.abs(h.w).toFixed(1)}m/s` : '';
-    meta.textContent = [typeof h.g === 'string' ? h.g : '', WX[h.wx] ? WX[h.wx].name : '', wk].filter(Boolean).join(' ・ ');
+    meta.textContent = [GRADES.includes(h.g) ? h.g : '', WX[h.wx] ? WX[h.wx].name : '', wk].filter(Boolean).join(' ・ ');
     mid.append(nm, meta);
     const d = document.createElement('span'); d.className = 'd'; d.textContent = Number(h.d).toFixed(1);
     const sm = document.createElement('small'); sm.textContent = 'm'; d.appendChild(sm);
     li.append(rank, img, mid, d); rkEl.list.appendChild(li);
   });
 }
+const GRADES = ['PERFECT','GREAT','GOOD','はやすぎ','おそすぎ'];
 function openRanking(){
   AU.init(); AU.play('tap');
-  RK.tab = S.hill; rkEl.modal.hidden = false; renderTabs(); renderRanking();
+  RK.tab = S.hill; rkEl.modal.hidden = false; renderTabs(); refreshRanking();
 }
-rkEl.codeAdd.addEventListener('click', async () => {
-  AU.play('tap');
-  const parsed = parseCode(rkEl.code.value);
-  if (!parsed) { toast('記録コードが正しくありません'); return; }
-  rkEl.codeAdd.disabled = true;
-  const res = await writeEntry(parsed.name, parsed.rec);
-  rkEl.codeAdd.disabled = false;
-  if (res === 'fail') { toast('登録できませんでした'); return; }
-  rkEl.code.value = '';
-  RK.tab = parsed.rec.hill; renderTabs(); renderRanking();
-  toast(res === 'ok' ? `${parsed.name}さん（${hillName(parsed.rec.hill)}台 ${parsed.rec.d.toFixed(1)}m）を登録しました` : `${parsed.name}さんの登録済みの記録の方が上です`);
-});
 $('#tRank').addEventListener('click', openRanking);
 $('#rRankBtn').addEventListener('click', openRanking);
 $('#rkClose').addEventListener('click', () => { AU.play('tap'); rkEl.modal.hidden = true; });
@@ -1349,7 +1328,6 @@ resize();
 rollWeather(true);
 resetRun();
 setState('title');
-initRanking();
 let last = performance.now();
 function frame(now){
   const dt = Math.min(1 / 30, (now - last) / 1000); last = now;
