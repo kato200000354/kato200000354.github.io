@@ -1204,7 +1204,7 @@ async function idToken(){
   }
   if (!r || !r.id_token) {
     r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FB.key}`, { method:'POST', headers:{ 'Content-Type':'application/json' }, body:'{"returnSecureToken":true}' }).then(x => x.json());
-    if (!r.idToken) throw new Error('auth');
+    if (!r.idToken) throw new Error('auth ' + ((r.error && r.error.message) || '').slice(0, 40));
     auth = { uid:r.localId, token:r.idToken, refresh:r.refreshToken, exp:Date.now() + (+r.expiresIn) * 1000 };
   }
   try { localStorage.setItem(AUTH_KEY, JSON.stringify(auth)); } catch (e) {}
@@ -1272,7 +1272,7 @@ async function prepareEntry(rec){
     const where = idx >= 0 ? `${hillName(rec.hill)}台 ${idx + 1}位 / ${RK.board.length}人中` : `${hillName(rec.hill)}台 100位圏外`;
     rEl.msg.textContent = rec.d > cur ? `🎉 自己ベスト更新！ランキングに登録しました（${where}）` : `自己ベストは ${cur.toFixed(1)}m です（${where}）`;
   } catch (e) {
-    rEl.msg.textContent = 'ランキングにつながりませんでした。通信できる場所でもう一度遊ぶと登録されます。';
+    rEl.msg.textContent = 'ランキングにつながりませんでした。通信できる場所でもう一度遊ぶと登録されます。' + (e && e.message ? `（${e.message}）` : '');
   }
 }
 
