@@ -1,6 +1,11 @@
 <title>すきーじゃんぷ</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="description" content="タイミングよく飛び出して、風を読んで遠くまで。全国ランキングで飛距離を競うスキージャンプゲーム。">
+<meta name="theme-color" content="#75CCFD">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800;900&display=swap">
@@ -143,14 +148,14 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
 .tab[aria-selected="true"]{background:var(--navy);color:#fff;border-color:var(--navy)}
 .rk-status{font-size:13px;line-height:1.6;color:#33507a;background:#fff;border-radius:12px;padding:10px 12px;border:1px solid var(--line)}
 .rk-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
-.rk-list li{display:grid;grid-template-columns:40px 32px minmax(0,1fr) auto;align-items:center;gap:10px;background:#fff;border-radius:12px;padding:8px 12px;box-shadow:0 2px 6px rgba(13,47,99,.08)}
+.rk-list li{display:grid;grid-template-columns:32px minmax(0,1fr) auto;align-items:center;gap:8px;background:#fff;border-radius:12px;padding:8px 12px;box-shadow:0 2px 6px rgba(13,47,99,.08)}
 .rk-list li.me{background:#fff7d6;box-shadow:0 0 0 2px var(--gold)}
 .rk-list .rank{font-weight:900;font-size:18px;text-align:center;color:var(--navy);font-variant-numeric:tabular-nums}
 .rk-list li:nth-child(1) .rank{color:#d49a00}
 .rk-list li:nth-child(2) .rank{color:#7d8ea8}
 .rk-list li:nth-child(3) .rank{color:#b8703a}
 .rk-list img{width:32px;height:32px;border-radius:50%;object-fit:cover;background:var(--ice-2)}
-.rk-list .nm{font-weight:800;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rk-list .nm{font-weight:800;font-size:14px;line-height:1.35;overflow-wrap:anywhere}
 .rk-list .meta{font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rk-list .d{font-weight:900;font-size:18px;font-variant-numeric:tabular-nums;color:var(--navy);white-space:nowrap}
 .rk-list .d small{font-size:12px;margin-left:2px}
@@ -280,6 +285,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
         <section><h3>キャラクター</h3><div class="picks c4 chars" id="pickChara"></div></section>
         <section><h3>スキージャンプ台</h3><div class="picks c4" id="pickHill"></div></section>
         <section><h3>ステージ（時間・景色）</h3><div class="picks c4" id="pickStage"></div></section>
+        <section><h3>このゲームについて</h3><p style="font-size:13px;line-height:1.7;margin:0">ジャンプの自己ベストは、全国ランキングに自動で登録されます（名前は自動で付くニックネームで、個人情報は送りません）。<a href="privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a></p></section>
       </div>
     </div>
   </div>
@@ -1189,6 +1195,7 @@ const AUTH_KEY = 'sukijanpu-auth';
 let auth = null;
 try { auth = JSON.parse(localStorage.getItem(AUTH_KEY) || 'null'); } catch (e) {}
 async function idToken(){
+  if (auth && auth.uid) RK.uid = auth.uid; // 保存済みのIDをすぐ使う（開き直したあとも自分の記録がわかるように）
   if (auth && auth.exp > Date.now() + 60e3) return auth.token;
   let r;
   if (auth && auth.refresh) {
@@ -1295,7 +1302,6 @@ function renderRanking(){
     const h = r.hills[RK.tab];
     const li = document.createElement('li'); if (r.id === RK.uid) li.className = 'me';
     const rank = document.createElement('span'); rank.className = 'rank'; rank.textContent = i + 1;
-    const img = document.createElement('img'); img.alt = ''; img.style.visibility = 'hidden';
     const mid = document.createElement('div'); mid.style.minWidth = '0';
     const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = nickOf(r.a, r.b) + (r.id === RK.uid ? '（あなた）' : '');
     const meta = document.createElement('div'); meta.className = 'meta';
@@ -1304,7 +1310,7 @@ function renderRanking(){
     mid.append(nm, meta);
     const d = document.createElement('span'); d.className = 'd'; d.textContent = Number(h.d).toFixed(1);
     const sm = document.createElement('small'); sm.textContent = 'm'; d.appendChild(sm);
-    li.append(rank, img, mid, d); rkEl.list.appendChild(li);
+    li.append(rank, mid, d); rkEl.list.appendChild(li);
   });
 }
 const GRADES = ['PERFECT','GREAT','GOOD','はやすぎ','おそすぎ'];
