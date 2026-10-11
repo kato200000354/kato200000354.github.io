@@ -353,30 +353,29 @@ input,select{user-select:text;-webkit-user-select:text}
     <div class="ver">ver 1.0 ・ CPU対戦</div>
   </section>
 
-  <!-- オンライン対戦 -->
+  <!-- チーム戦（CPU） -->
   <section id="s-online" class="screen menu" hidden>
     <div class="panel wide">
       <header class="phead">
         <button class="back" data-go="title" type="button" aria-label="戻る"><i class="ic" data-ic="back"></i></button>
-        <h2>オンライン対戦</h2>
-        <span class="net"><i class="dot"></i>快適</span>
+        <h2>チーム戦（CPU）</h2>
       </header>
       <div class="on-cards">
         <article class="on-card">
-          <div class="on-head"><span class="ring"><i class="ic" data-ic="globe"></i></span><div><h3>クイックマッチ</h3><p>自動でマッチングして<br>すぐに対戦できます。</p></div></div>
+          <div class="on-head"><span class="ring"><i class="ic" data-ic="swords"></i></span><div><h3>クイック対戦</h3><p>CPUのチームを集めて<br>すぐに対戦できます。</p></div></div>
           <canvas class="art" id="artQuick"></canvas>
           <button class="btn" id="quickBtn" type="button">参加する</button>
         </article>
         <article class="on-card teal">
-          <div class="on-head"><span class="ring"><i class="ic" data-ic="users"></i></span><div><h3>ルームに参加</h3><p>ルームIDを入力して<br>友達と対戦できます。</p></div></div>
+          <div class="on-head"><span class="ring"><i class="ic" data-ic="users"></i></span><div><h3>ルームで対戦</h3><p>ルールや人数を選んで<br>CPUと対戦できます。</p></div></div>
           <canvas class="art" id="artRoom"></canvas>
           <div class="on-actions">
-            <button class="btn" id="roomIdBtn" type="button">ルームIDを入力</button>
-            <button class="btn dark" id="roomListBtn" type="button">ルーム一覧</button>
+            <button class="btn" id="roomListBtn" type="button">ルームを選ぶ</button>
+            <button class="btn dark" id="roomIdBtn" type="button" hidden>ルームIDを入力</button>
           </div>
         </article>
       </div>
-      <p class="note">対戦相手と味方のタンクはCPUが操作します。</p>
+      <p class="note">対戦相手と味方のタンクは、すべてCPUが操作します（オンライン対戦ではありません）。</p>
     </div>
   </section>
 
@@ -621,7 +620,7 @@ const STAGES=[
   {name:'マグマ回廊',maze:'snake',g1:'#524649',g2:'#4a3f42',edge:'#3d3337',water:'#ff6b2c',water2:'#ffd26a',crate:['#94705a','#664b39','#3f2c21'],stone:['#8d6f7c','#67505b','#43323b'],deco:'#8a4331',deco2:'#5e2a1f',bridge:'#6b4a33'},
 ];
 const BOT_NAMES=['タロウ','Mika_07','ぽんず','Kaze','りんご飴','Ryu','ほのか','TankMaster','ユウキ','Sora88','ハヤテ','nekomata','こてつ','Hikari','ゲンブ','ZERO','もちもち','Kenta','あおぞら','Blitz','ささみ','Yuna','てつじん','Pilot_K'];
-const ROOM_NAMES=['たのしくバトルしよう！','初心者歓迎ルーム','ガチでやる人きて〜','フレンド対戦','まったり4vs4','夜の部 ランク','週末タンク部','ボルケーノ限定','誰でもOK!','練習試合おねがいします','連勝チャレンジ','のんびり勢あつまれ'];
+const ROOM_NAMES=['ビギナー戦','やさしいCPU戦','ガチバトル','フリーバトル','まったり4vs4','ナイトランク戦','週末タンク大会','ボルケーノ限定','ミックスバトル','練習試合','連勝チャレンジ','大乱戦'];
 const DIFF={easy:{err:.34,turn:3,react:.7},normal:{err:.16,turn:5,react:.35},hard:{err:.06,turn:8,react:.15}};
 
 /* ================= マップ ================= */
@@ -1402,7 +1401,7 @@ $('#createForm').addEventListener('submit',e=>{
 });
 $('#roomListBtn').onclick=()=>{RT='rec';go('rooms');};
 $('#roomIdBtn').onclick=()=>{
-  modal('ルームIDを入力',`<p>友達から聞いた6桁のルームIDを入力してください。</p><input id="ridInput" type="text" inputmode="numeric" maxlength="6" placeholder="例：${ROOMS[0]?ROOMS[0].id:'123456'}" autocomplete="off"><p class="err" id="ridErr"></p>`,
+  modal('ルームIDを入力',`<p>ルーム一覧に出ている6桁のルームIDを入力してください。</p><input id="ridInput" type="text" inputmode="numeric" maxlength="6" placeholder="例：${ROOMS[0]?ROOMS[0].id:'123456'}" autocomplete="off"><p class="err" id="ridErr"></p>`,
   [{label:'キャンセル',cls:'dark'},{label:'参加する',onClick:()=>{
     const v=$('#ridInput').value.trim();
     if(!/^\d{6}$/.test(v)){$('#ridErr').textContent='ルームIDは6桁の数字です。';return;}
@@ -1449,11 +1448,11 @@ function renderLobby(){
   $('#lbInfo').innerHTML=`<span class="tag ${modeCls(r.mode)}">${esc(r.mode)}</span><span class="tag">${half} vs ${half}</span><span class="tag">${esc(STAGES[r.stage].name)}</span>`;
   for(const tm of [0,1]){
     let h='';for(let i=0;i<half;i++){const m=LB.teams[tm][i];
-      h+=m?`<div class="slot${m.me?' me':''}"><span class="av">${ic(m.me?'user':'tank')}</span><b>${esc(m.name)}${m.me?'（あなた）':''}</b><small>Lv.${m.lv}</small></div>`:'<div class="slot empty">募集中…</div>';}
+      h+=m?`<div class="slot${m.me?' me':''}"><span class="av">${ic(m.me?'user':'tank')}</span><b>${esc(m.name)}${m.me?'（あなた）':'（CPU）'}</b><small>Lv.${m.lv}</small></div>`:'<div class="slot empty">CPUを待っています…</div>';}
     $(tm?'#lbRed':'#lbBlue').innerHTML=h;
   }
   const n=lobbyCount();
-  $('#lbStatus').textContent=LB.cd>0?`まもなく開始します… ${LB.cd}`:n<r.max?`プレイヤーを待っています（${n}/${r.max}）`:LB.host?'全員そろいました！スタートできます':'全員そろいました';
+  $('#lbStatus').textContent=LB.cd>0?`まもなく開始します… ${LB.cd}`:n<r.max?`CPUがあつまっています（${n}/${r.max}）`:LB.host?'全員そろいました！スタートできます':'全員そろいました';
   const sb=$('#lbStart');sb.hidden=!LB.host||LB.cd>0;sb.textContent=n<r.max?'CPUで埋めてスタート':'スタート';
 }
 $('#lbStart').onclick=()=>{if(LB){LB.cd=0;launchLobby();}};
