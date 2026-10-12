@@ -1163,7 +1163,7 @@ function updatePlayer(dt) {
   P.x += vx * dt; P.z += vz * dt; collide(P, 0.5);
   const moved = Math.hypot(P.x - ox, P.z - oz);
   P.stam = clamp(P.stam + (P.run && moved > 0 ? -21 : (mag > 0 ? 9 : 15)) * dt, 0, 100);
-  P.noise = moved < 0.001 ? 0 : P.run ? 12 : 4;
+  P.noise = moved < 0.001 ? 0 : P.run ? 9 : 3.5;
   P.stepAcc += moved; P.bob += moved * (P.run ? 2.1 : 2.6);
   if (P.stepAcc > (P.run ? 1.05 : 0.8)) { P.stepAcc = 0; SFX.step(P.run); if (followT > 0) SFX.fstep(); }
   if (P.stam < 30) { breathT -= dt; if (breathT <= 0) { breathT = 0.9; SFX.breath(); } }
@@ -1181,12 +1181,12 @@ function updateMonster(dt) {
   const los = d < 22 && lineOfSight(M.x, M.z, P.x, P.z);
   M.d = d; M.los = los;
   const lightOn = P.light && P.bat > 0;
-  let seen = los && ((lightOn && d < 16) || d < 3.2);
+  let seen = los && ((lightOn && d < 12) || d < 3.2);
   let heard = P.noise > 0 && d < P.noise;
   if (G.time < 25 && !E.powered) seen = heard = false;
   if (E.powered) seen = true;
   if (seen || heard) {
-    if (M.state !== 'hunt' && d < 16) { SFX.sting(); SFX.moan(0.3 * Math.max(0.3, 1 - d / 16), 0, true, los ? 5000 : 900); M.freeze = d < 4 ? 0.2 : 0.75; }
+    if (M.state !== 'hunt' && d < 16) { SFX.sting(); SFX.moan(0.3 * Math.max(0.3, 1 - d / 16), 0, true, los ? 5000 : 900); M.freeze = d < 4 ? 0.35 : 1.2; }
     M.state = 'hunt'; M.lastX = P.x; M.lastZ = P.z; M.lostT = 0;
   } else if (M.state === 'hunt') M.lostT += dt;
   M.calm = M.state === 'hunt' ? 0 : (M.calm || 0) + dt;
@@ -1198,14 +1198,14 @@ function updateMonster(dt) {
     if (!M.direct && M.repath <= 0) { M.repath = 0.35; M.path = findPath(mtx, mtz, tileOf(M.lastX), tileOf(M.lastZ)); }
     if (!M.direct && M.path.length === 0) {
       if (seen || heard) M.direct = true;
-      else if (M.lostT > 0.3) { M.state = 'search'; M.searchT = 7; }
+      else if (M.lostT > 0.3) { M.state = 'search'; M.searchT = 5; }
     }
   } else {
     M.direct = false;
     if (M.state === 'search') { M.searchT -= dt; if (M.searchT <= 0) M.state = 'wander'; }
     if (M.path.length === 0) {
       // 長く出会わないと、気配を嗅ぎつけてまっすぐ寄ってくる
-      const mode = M.state === 'search' ? 0 : G.time < 25 ? 2 : M.calm > 55 ? 3 : Math.random() < 0.55 ? 1 : 2;
+      const mode = M.state === 'search' ? 0 : G.time < 25 ? 2 : M.calm > 80 ? 3 : Math.random() < 0.55 ? 1 : 2;
       if (mode === 3) M.calm = 15;
       let tx, tz, tries = 0;
       do {
@@ -1218,7 +1218,7 @@ function updateMonster(dt) {
     }
   }
   const tot = E.inserted + P.fuses;
-  const want = M.state === 'hunt' ? (E.powered ? 3.15 : 3.2 + 0.22 * tot) : M.state === 'search' ? 1.8 : 1.3 + 0.15 * tot;
+  const want = M.state === 'hunt' ? (E.powered ? 2.95 : 2.9 + 0.15 * tot) : M.state === 'search' ? 1.8 : 1.3 + 0.15 * tot;
   M.speed = lerp(M.speed, want, 1 - Math.exp(-dt * 2));
   M.bp += dt; const burst = M.state === 'hunt' ? ((M.bp % 1.6) < 0.45 ? 1.4 : 0.85) : 1;
   if (M.freeze > 0) M.freeze -= dt;
