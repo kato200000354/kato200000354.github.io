@@ -134,7 +134,7 @@ const NIGHTS=[
   '#####-######.E.#######-#######',
   '##############################']}
 ];
-const ENDING=['玄関を出ると、朝だった。','ふりかえると、家はもう、なかった。','草むらの中に、古い仏壇の扉だけが落ちていた。','……','ところで。','あなたは今、目をあけていますか？'];
+const ENDING=['玄関を出ると、朝だった。','ふりかえると、家はもう、なかった。','にぎりしめたお札の裏に、祖母の字があった。','「まだ、目をあけてはいけないよ」','……','ところで。','あなたは今、目をあけていますか？'];
 const SOLID={'#':1,'T':1,'B':1};
 
 /* ===================== 画面 ===================== */
@@ -424,8 +424,7 @@ function drawWorld(){
   for(const it of G.items){if(it.got)continue;const px=ox+it.x*ts,py=oy+it.y*ts+Math.sin(G.t*2+it.ph)*2;
     const g=ctx.createRadialGradient(px,py,1,px,py,ts*.7);g.addColorStop(0,'rgba(240,200,110,'+(.28+.12*Math.sin(G.t*3+it.ph))+')');g.addColorStop(1,'rgba(240,200,110,0)');
     ctx.fillStyle=g;ctx.fillRect(px-ts,py-ts,ts*2,ts*2);
-    ctx.save();ctx.translate(px,py);ctx.rotate(.15*Math.sin(it.ph));ctx.fillStyle='#e6dcc0';ctx.fillRect(-ts*.13,-ts*.24,ts*.26,ts*.48);
-    ctx.fillStyle='#8a1a12';ctx.fillRect(-1.5,-ts*.18,3,ts*.36);ctx.fillRect(-ts*.07,-ts*.1,ts*.14,2);ctx.restore()}
+    ctx.save();ctx.translate(px,py);ctx.rotate(.15*Math.sin(it.ph));drawOfuda(ts);ctx.restore()}
   // 自分と、あれ（手前＝下にいる方をあとに描く）
   const P=G.p,ppx=ox+P.x*ts,ppy=oy+P.y*ts;
   if(G.mon.y<P.y){drawMon(ox,oy,ts);drawKid(ppx,ppy,ts)}else{drawKid(ppx,ppy,ts);drawMon(ox,oy,ts)}
@@ -436,6 +435,20 @@ function drawWorld(){
   ctx.fillStyle=dg;ctx.fillRect(0,0,W,H);
   // 近いと画面のふちが赤くなる
   const ed=Math.hypot(G.mon.x-P.x,G.mon.y-P.y);if(ed<5)vignette('rgba(120,0,0,'+(.45*(1-ed/5))+')');
+}
+// お札：和紙の縦長の札に、墨の文字と朱の印
+function drawOfuda(ts){
+  const w=ts*.28,h=ts*.56;
+  ctx.fillStyle='rgba(0,0,0,.45)';ctx.fillRect(-w/2+2,-h/2+3,w,h);
+  ctx.fillStyle='#efe5c8';ctx.fillRect(-w/2,-h/2,w,h);
+  ctx.strokeStyle='#8a6a3a';ctx.lineWidth=1;ctx.strokeRect(-w/2+2,-h/2+2,w-4,h-4);
+  // 上の朱色の帯と印
+  ctx.fillStyle='#b8281e';ctx.fillRect(-w/2,-h/2,w,h*.1);
+  ctx.fillRect(-w*.22,-h*.34,w*.44,w*.44);
+  ctx.fillStyle='#efe5c8';ctx.font='bold '+Math.round(w*.3)+'px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('封',0,-h*.34+w*.22);
+  // 墨の文字（縦書き）
+  ctx.fillStyle='#1c120c';ctx.font='bold '+Math.round(w*.5)+'px "Yu Mincho","Hiragino Mincho ProN","MS PMincho",serif';
+  ctx.fillText('護',0,h*.02);ctx.fillText('符',0,h*.24);
 }
 function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.fill()}
 function vignette(col){const g=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.3,W/2,H/2,Math.max(W,H)*.75);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,col);ctx.fillStyle=g;ctx.fillRect(0,0,W,H)}
