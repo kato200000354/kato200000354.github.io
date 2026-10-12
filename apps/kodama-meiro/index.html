@@ -35,6 +35,15 @@
   .card h1{font-size:34px;letter-spacing:.2em;color:var(--accent);text-shadow:0 0 18px rgba(127,231,255,.6);margin-bottom:6px}
   .card h2{font-size:24px;margin-bottom:8px}
   .card p{font-size:14px;opacity:.88}
+  .card{max-height:calc(100vh - 32px);overflow-y:auto}
+  .note{background:#d9d1c2;color:#2a2018;border-radius:4px;padding:18px 18px 14px;text-align:left;margin:10px 0 4px;
+    font-family:"Yu Mincho","Hiragino Mincho ProN","MS Mincho",serif;font-size:14.5px;line-height:1.9;
+    box-shadow:0 0 30px rgba(0,0,0,.6) inset, 0 4px 16px rgba(0,0,0,.5);transform:rotate(-.6deg)}
+  .note .nt{font-weight:700;border-bottom:1px solid rgba(60,40,20,.3);margin-bottom:8px;padding-bottom:4px;font-size:13px}
+  .note .stain{color:#7a1020}
+  .sub{margin-top:10px;font-size:14px;padding:8px 20px;border-radius:20px;cursor:pointer;
+    background:transparent;color:#d9d1c2;border:1px solid rgba(217,209,194,.35)}
+  .notelist .note{transform:none;font-size:13.5px}
   .card ul{list-style:none;text-align:left;font-size:13.5px;margin:14px 0;opacity:.9}
   .card li{padding:3px 0}
   .card li span{color:var(--accent)}
@@ -160,7 +169,8 @@ function noise(dur, vol, filt='lowpass', freq=600, pan=0){
   s.connect(f); f.connect(g); g.connect(out(pan, false)); s.start(t); s.stop(t + dur + 0.02);
 }
 const SFX = {
-  ping(fr){ tone(1500 - 400*fr, 650 - 200*fr, 0.22 + 0.25*fr, 0.12 + 0.18*fr, 'sine', 0, true); },
+  ping(fr, pan = 0, vs = 1){ tone(1500 - 400*fr, 650 - 200*fr, 0.22 + 0.25*fr, (0.12 + 0.18*fr) * vs, 'sine', pan, true); },
+  paper(){ noise(0.25, 0.12, 'bandpass', 2500); noise(0.18, 0.08, 'highpass', 4000); },
   step(){ noise(0.05, 0.035, 'lowpass', 500); },
   land(pan){ noise(0.08, 0.25, 'highpass', 1800, pan); tone(2300, 1700, 0.12, 0.08, 'triangle', pan, true); },
   enemyStep(pan, vol){ tone(95, 48, 0.14, vol, 'triangle', pan); },
@@ -279,6 +289,26 @@ function los(ax, ay, bx, by){
   return !castRay(ax, ay, Math.atan2(by - ay, bx - ax), d);
 }
 
+// ===== 物語（1層ごとに1枚ずつ見つかる記録） =====
+const NOTES = [
+  ['作業員のメモ', 'ここでは明かりを使うな、と言われた。\n理由は聞くな、とも。\n\nかわりに手を叩け、と。\n音が返ってくる方に、壁がある。'],
+  ['研究日誌 ― 第七反響施設', '被験者たちを完全な暗闇で生活させて、今日で四十日。\n全員が、手を叩くだけで部屋の形を言い当てるようになった。\n\n実験は順調だ。'],
+  ['研究日誌 ― 六十二日目', '被験者3番が「目はもういらない」と言った。\n検査すると、本当に光に反応しなくなっていた。\n\n本人は笑っていた。とても静かに。'],
+  ['走り書き', 'あいつら、明かりをつけると叫ぶ。\n音を立てると、こっちに来る。\n\n音を立てるな。音を立てるな。音を立て<span class="stain">るな</span>'],
+  ['子どもの字', 'おとうさんは ちかで おしごとしてる。\nくらいけど みんなのこえが きこえるって。\n\nいつ かえってくるの'],
+  ['研究日誌 ― 九十日目', '指が伸びている。長く、細く。\n「壁を探るためだ」と3番は言った。\n\n目の数が増えた者もいる。\n見えないはずのその目が、ずっとこちらを向いている。'],
+  ['警備員の手帳', '気をつけろ。やつらは真似をする。\n\nおれが手を叩く音で、おれを呼んだ。\n出口の明かりのふりをして、待っていた。\n\n<span class="stain">出口の字を、よく見ろ。</span>'],
+  ['避難指示書（破れている）', '地上への階段はすべて封鎖した。\n残った職員は、最下層の非常口から\n\n（ここから先は破れていて読めない）'],
+  ['研究主任のメモ', 'わたしも、目を閉じている時間が長くなった。\n暗闇の方が、よく聞こえる。\n\n手を叩くと、世界が見える。\nあれは、なんて美しいのだろう。'],
+  ['このメモを読んでいるあなたへ', 'あなたも、音で見ているでしょう。\n手を叩いて、壁の形を知って、ここまで降りてきた。\n\nそれがどういう意味か、もうわかるはず。\n\n<span class="stain">わたしたちは、あなたを待っている。</span>']
+];
+let foundNotes = (() => { try { return JSON.parse(store('kodama_notes') || '[]'); } catch(e){ return []; } })();
+let noteObj = null;
+function noteHtml(i){
+  const [t, b] = NOTES[i];
+  return `<div class="note"><div class="nt">記録 ${i + 1} ／ ${t}</div>${b.replace(/\n/g, '<br>')}</div>`;
+}
+
 // ===== 状態 =====
 let state = 'title', level = 1, stones = 3, best = +(store('kodama_best') || 0);
 let player, enemies, items, exitObj, pings, projectiles, memory, memKeys, now = 0, deathInfo = null;
@@ -309,15 +339,24 @@ function setupLevel(){
     const [x, y] = deadEnds.splice(rnd(deadEnds.length), 1)[0];
     items.push({ x: x + 0.5, y: y + 0.5, known: false, seenAt: -99 });
   }
-  // 敵はスタートから遠い場所に
+  // 記録：その層の1枚（まだ拾っていなければ）を、道のりの中ほどに置く
+  noteObj = null;
+  if (level <= NOTES.length && !foundNotes.includes(level - 1)){
+    const mid = cells.filter(c => c[2] >= maxD * 0.3 && c[2] <= maxD * 0.75 && !items.some(it => it.x === c[0] + 0.5 && it.y === c[1] + 0.5));
+    const pool = mid.length ? mid : cells;
+    const [x, y] = pool[rnd(pool.length)];
+    noteObj = { x: x + 0.5, y: y + 0.5, idx: level - 1, known: false, seenAt: -99 };
+  }
+  // 敵はスタートから遠い場所に（3層からは「まねるもの」がまざる）
   enemies = [];
+  const nMimic = level >= 5 ? 2 : level >= 3 ? 1 : 0;
   const nEnemy = Math.min(7, 1 + Math.floor(level / 2));
   const far = cells.filter(c => c[2] >= Math.max(9, maxD * 0.35));
   for (let i = 0; i < nEnemy && far.length; i++){
     const [x, y] = far.splice(rnd(far.length), 1)[0];
     enemies.push({ x: x + 0.5, y: y + 0.5, cx: x, cy: y, nx: x, ny: y, px: -1, py: -1, path: [],
       hunt: false, wait: 0, stepT: Math.random(), seenAt: -99, sx: 0, sy: 0, alertAt: -99,
-      seed: Math.random() * Math.PI * 2, stingAt: -99 });
+      seed: Math.random() * Math.PI * 2, stingAt: -99, mimic: i < nMimic, fakeT: 5 + Math.random() * 8 });
   }
   pings = []; projectiles = []; memory = []; memKeys = new Set();
   charging = false; pingCooldown = 0; deathInfo = null;
@@ -389,6 +428,17 @@ function arrive(e){
   [e.nx, e.ny] = opts[rnd(opts.length)];
 }
 function updateEnemy(e, dt){
+  if (e.mimic){ // プレイヤーと同じ音を鳴らして、出口のふりをする
+    e.fakeT -= dt;
+    if (e.fakeT <= 0){
+      e.fakeT = 9 + Math.random() * 9;
+      const d = Math.hypot(e.x - player.x, e.y - player.y);
+      if (d < 14 && !e.hunt){
+        makePing(e.x, e.y, 6, -1);
+        SFX.ping(0.3, enemyPan(e), Math.max(0.15, 1 - d / 14));
+      }
+    }
+  }
   if (e.wait > 0){ e.wait -= dt; return; }
   const sp = e.hunt ? Math.min(3.05, 2.3 + level * 0.08) : 1.25;
   let move = sp * dt, guard = 0;
@@ -402,7 +452,7 @@ function updateEnemy(e, dt){
   if (e.stepT <= 0){
     e.stepT = e.hunt ? 0.36 : 0.7;
     const d = Math.hypot(e.x - player.x, e.y - player.y);
-    if (d < 10) SFX.enemyStep(enemyPan(e), 0.35 * Math.pow(1 - d / 10, 2) + 0.01);
+    if (d < 10 && (!e.mimic || e.hunt)) SFX.enemyStep(enemyPan(e), 0.35 * Math.pow(1 - d / 10, 2) + 0.01);
   }
 }
 
@@ -540,10 +590,11 @@ function update(dt){
     if (p.ring){
       if (revealCheck(p, r, exitObj, exitObj.x, exitObj.y)) exitObj.known = true;
       for (const it of items) if (revealCheck(p, r, it, it.x, it.y)) it.known = true;
+      if (noteObj && revealCheck(p, r, noteObj, noteObj.x, noteObj.y)) noteObj.known = true;
       for (const e of enemies) if (revealCheck(p, r, e, e.x, e.y)){
         e.sx = e.x; e.sy = e.y;
         // 近くで姿を見てしまったときの不協和音
-        if (Math.hypot(e.x - player.x, e.y - player.y) < 4.5 && now - e.stingAt > 4){ e.stingAt = now; SFX.sting(enemyPan(e)); }
+        if (!disguised(e) && Math.hypot(e.x - player.x, e.y - player.y) < 4.5 && now - e.stingAt > 4){ e.stingAt = now; SFX.sting(enemyPan(e)); }
       }
     }
     p.prevR = r;
@@ -555,6 +606,7 @@ function update(dt){
   for (let i = items.length - 1; i >= 0; i--){
     if (Math.hypot(items[i].x - player.x, items[i].y - player.y) < 0.55){ items.splice(i, 1); stones++; updateHud(); SFX.pickup(); }
   }
+  if (noteObj && Math.hypot(noteObj.x - player.x, noteObj.y - player.y) < 0.55){ readNote(); return; }
   let nearest = 99;
   for (const e of enemies){
     const d = Math.hypot(e.x - player.x, e.y - player.y);
@@ -614,13 +666,17 @@ function draw(){
   const showAll = state === 'dead' || state === 'clear';
   if (exitObj.known || showAll){
     const f = Math.max(0, 1 - (now - exitObj.seenAt) / FADE);
-    const a = 0.35 + 0.65 * f, s = TS * 0.42;
-    ctx.fillStyle = `rgba(255,210,122,${a * 0.18})`;
-    ctx.beginPath(); ctx.arc(exitObj.x * TS, exitObj.y * TS, s * 1.6, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = `rgba(255,210,122,${a})`; ctx.lineWidth = 2.5;
-    ctx.strokeRect(exitObj.x * TS - s / 2, exitObj.y * TS - s * 0.6, s, s * 1.2);
-    ctx.fillStyle = `rgba(255,210,122,${a})`; ctx.font = `bold ${Math.round(TS * 0.24)}px sans-serif`;
-    ctx.textAlign = 'center'; ctx.fillText('出口', exitObj.x * TS, exitObj.y * TS - s * 0.8);
+    drawExit(exitObj.x * TS, exitObj.y * TS, 0.35 + 0.65 * f, '出口');
+  }
+  // 記録（紙切れ）
+  if (noteObj && (noteObj.known || showAll)){
+    const f = Math.max(0, 1 - (now - noteObj.seenAt) / FADE), a = 0.3 + 0.7 * f, s = TS * 0.2;
+    const x = noteObj.x * TS, y = noteObj.y * TS;
+    ctx.save(); ctx.translate(x, y); ctx.rotate(-0.2);
+    ctx.fillStyle = `rgba(217,209,194,${a})`; ctx.fillRect(-s * 0.8, -s, s * 1.6, s * 2);
+    ctx.strokeStyle = `rgba(90,70,50,${a})`; ctx.lineWidth = 1;
+    for (let i = 0; i < 4; i++){ ctx.beginPath(); ctx.moveTo(-s * 0.55, -s * 0.6 + i * s * 0.4); ctx.lineTo(s * 0.55, -s * 0.6 + i * s * 0.4); ctx.stroke(); }
+    ctx.restore();
   }
   // 石
   for (const it of items){
@@ -640,7 +696,8 @@ function draw(){
     if (showAll){ a = 1; x = e.x; y = e.y; }
     else { a = Math.max(0, 1 - (now - e.seenAt) / 1.6); x = e.sx; y = e.sy; }
     if (a <= 0) continue;
-    drawEnemy(e, x * TS, y * TS, a);
+    if (!showAll && disguised(e, x, y)) drawExit(x * TS, y * TS, a, '出ロ'); // よく見ると「ロ」
+    else drawEnemy(e, x * TS, y * TS, a);
   }
 
   // プレイヤー
@@ -691,6 +748,18 @@ function draw(){
     const dx = joy.x - joy.bx, dy = joy.y - joy.by, l = Math.hypot(dx, dy), m = Math.min(l, 50) / (l || 1);
     ctx.fillStyle = 'rgba(127,231,255,.3)'; ctx.beginPath(); ctx.arc(joy.bx + dx * m, joy.by + dy * m, 20, 0, Math.PI * 2); ctx.fill();
   }
+}
+function disguised(e, x = e.x, y = e.y){
+  return e.mimic && !e.hunt && Math.hypot(x - player.x, y - player.y) > 2.5;
+}
+function drawExit(x, y, a, label){
+  const s = TS * 0.42;
+  ctx.fillStyle = `rgba(255,210,122,${a * 0.18})`;
+  ctx.beginPath(); ctx.arc(x, y, s * 1.6, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = `rgba(255,210,122,${a})`; ctx.lineWidth = 2.5;
+  ctx.strokeRect(x - s / 2, y - s * 0.6, s, s * 1.2);
+  ctx.fillStyle = `rgba(255,210,122,${a})`; ctx.font = `bold ${Math.round(TS * 0.24)}px sans-serif`;
+  ctx.textAlign = 'center'; ctx.fillText(label, x, y - s * 0.8);
 }
 function drawEnemy(e, x, y, a){
   const s = TS * 0.42, t = now, hunt = e.hunt, sd = e.seed;
@@ -773,7 +842,25 @@ function title(){
     <ul>${controls}<li><span class="gold">出口</span>にたどり着けば、さらに奥へ。</li>
     <li>石が落ちた場所でも音が鳴る。おとりに使え。</li>
     <li>息は長くはもたない。限界がくると、大きく吐いてしまう。</li></ul>
-    <button class="go">はいる</button><p class="hint">足音・心音・ささやきは左右から聞こえます</p>`, start);
+    <button class="go">はいる</button><br>
+    ${foundNotes.length ? `<button class="sub" id="notesBtn">見つけた記録を読む（${foundNotes.length} / ${NOTES.length}）</button>` : ''}
+    <p class="hint">足音・心音・ささやきは左右から聞こえます</p>`, start);
+  const nb = document.getElementById('notesBtn');
+  if (nb) nb.addEventListener('click', showNotes);
+}
+function showNotes(){
+  const list = [...foundNotes].sort((a, b) => a - b).map(noteHtml).join('');
+  showCard(`<h2>見つけた記録</h2><p class="hint">${foundNotes.length} / ${NOTES.length}</p><div class="notelist">${list}</div>
+    <button class="go">もどる</button>`, title);
+}
+function readNote(){
+  const i = noteObj.idx; noteObj = null;
+  if (!foundNotes.includes(i)){ foundNotes.push(i); store('kodama_notes', JSON.stringify(foundNotes)); }
+  state = 'note'; charging = false; holdBreath = false; joy = null; keys.clear();
+  pingBtn.classList.remove('on'); breathBtn.classList.remove('on');
+  SFX.paper();
+  showCard(`${noteHtml(i)}<p class="hint">${foundNotes.length} / ${NOTES.length} 枚目の記録</p><button class="go">つづける</button>`,
+    () => { state = 'play'; });
 }
 function start(){ startDrone(); state = 'play'; }
 const deathLines = ['つかまった…', 'みつかった', 'うしろに、いた', 'もう、にげられない'];
@@ -789,7 +876,8 @@ function clearLevel(){
   state = 'clear'; SFX.clear(); charging = false; joy = null; holdBreath = false;
   if (level > best){ best = level; store('kodama_best', best); }
   updateHud();
-  setTimeout(() => showCard(`<h2 class="gold">地下 ${level} 層を抜けた</h2><p>……でも、出口はまだ下へ続いている。<br>奥ほど広く、やつらの数も増える。　石 +1</p>
+  const extra = level === 2 ? '<br><span class="danger">次の層から、なにかが「まね」をはじめる。</span>' : '';
+  setTimeout(() => showCard(`<h2 class="gold">地下 ${level} 層を抜けた</h2><p>……でも、出口はまだ下へ続いている。<br>奥ほど広く、やつらの数も増える。　石 +1${extra}</p>
     <button class="go">さらに下へ</button>`, () => { level++; stones++; setupLevel(); start(); }), 900);
 }
 
@@ -798,7 +886,7 @@ let last = performance.now();
 function loop(t){
   const dt = Math.min(0.05, (t - last) / 1000); last = t; now = t / 1000;
   if (state === 'play') update(dt);
-  else if (state !== 'title'){ // 終了演出中も音の輪は消えていく
+  else if (state !== 'title' && state !== 'note'){ // 終了演出中も音の輪は消えていく
     for (let i = pings.length - 1; i >= 0; i--){ const p = pings[i]; if (now > p.t0 + p.maxR / SPEED + FADE) pings.splice(i, 1); }
   }
   draw();
