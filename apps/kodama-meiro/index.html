@@ -39,18 +39,38 @@
   .card li{padding:3px 0}
   .card li span{color:var(--accent)}
   .card .go{margin-top:16px;font-size:18px;padding:12px 36px;border-radius:30px;border:none;cursor:pointer;
-    background:var(--accent);color:#03141c;font-weight:700;letter-spacing:.1em}
+    background:#a3122f;color:#f3e9e4;font-weight:700;letter-spacing:.1em;box-shadow:0 0 18px rgba(255,40,70,.35)}
   .hint{font-size:12px;opacity:.6;margin-top:10px}
-  .danger{color:var(--danger)} .gold{color:var(--gold)}
+  .danger{color:var(--danger)} .gold,.card li span.gold{color:var(--gold)}
+  #breathBtn{width:64px;height:64px;right:30px;bottom:calc(140px + env(safe-area-inset-bottom));font-size:16px;
+    border-color:rgba(180,160,255,.35);background:rgba(180,160,255,.06)}
+  #breathBtn.on{background:rgba(180,160,255,.28)}
+  #hBr{display:inline-block;width:56px;height:6px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden;vertical-align:middle}
+  #hBr i{display:block;height:100%;width:100%;background:#b4a0ff;transition:background .2s}
+  #hBr.low i{background:var(--danger)}
+  /* ホラー演出 */
+  .card h1.glitch{color:#e8e2dc;text-shadow:2px 0 rgba(255,40,70,.7),-2px 0 rgba(127,231,255,.5);
+    animation:glitch 3.2s infinite steps(1)}
+  @keyframes glitch{
+    0%,100%{transform:none;opacity:1} 41%{transform:translate(2px,-1px) skewX(-6deg);opacity:.85}
+    42%{transform:translate(-3px,1px);opacity:.4} 43%{transform:none;opacity:1}
+    77%{opacity:.2} 78%{opacity:1} 79%{transform:translate(1px,0) skewX(8deg)} 80%{transform:none}
+  }
+  .tagline{font-size:13px;opacity:.75;letter-spacing:.1em;margin-bottom:12px}
+  .warn{display:inline-block;font-size:12px;border:1px solid rgba(255,77,109,.5);color:#ff9aac;border-radius:12px;
+    padding:2px 10px;margin-bottom:10px}
+  h2.shake{animation:shake .12s infinite}
+  @keyframes shake{0%{transform:translate(1px,0)}50%{transform:translate(-1px,1px)}100%{transform:translate(0,-1px)}}
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
 <div id="hud">
-  <div class="l"><span>Lv <b id="hLv">1</b></span><span>石 ×<b id="hSt">3</b></span><span id="hBest" style="opacity:.6"></span></div>
+  <div class="l"><span>地下 <b id="hLv">1</b> 層</span><span>石 ×<b id="hSt">3</b></span><span>息 <span id="hBr"><i></i></span></span><span id="hBest" style="opacity:.6"></span></div>
   <button id="muteBtn">🔊 音あり</button>
 </div>
 <div id="stoneBtn" class="btn">石<small>なげる</small></div>
+<div id="breathBtn" class="btn">息<small>ひそめる</small></div>
 <div id="pingBtn" class="btn">音<small>長押しで大</small></div>
 <div id="overlay"><div class="card" id="card"></div></div>
 
@@ -93,6 +113,20 @@ function initAudio(){
     echoIn.connect(d); d.connect(lp); lp.connect(fb); fb.connect(d); lp.connect(master);
   }catch(e){ AC = null; }
 }
+// 低くうなり続ける環境音
+let drone = null;
+function startDrone(){
+  if (!AC || drone) return;
+  const g = AC.createGain(), lp = AC.createBiquadFilter(), lfo = AC.createOscillator(), lg = AC.createGain();
+  g.gain.value = 0; lp.type = 'lowpass'; lp.frequency.value = 180;
+  lfo.frequency.value = 0.08; lg.gain.value = 70; lfo.connect(lg); lg.connect(lp.frequency); lfo.start();
+  for (const [f, type] of [[43, 'sawtooth'], [43.6, 'sawtooth'], [64.5, 'triangle']]){
+    const o = AC.createOscillator(); o.type = type; o.frequency.value = f; o.connect(lp); o.start();
+  }
+  lp.connect(g); g.connect(master);
+  g.gain.linearRampToValueAtTime(0.09, AC.currentTime + 3);
+  drone = g;
+}
 function out(pan, echo){
   let node = master;
   if (AC.createStereoPanner && pan){
@@ -119,6 +153,7 @@ function noise(dur, vol, filt='lowpass', freq=600, pan=0){
     noiseBuf = AC.createBuffer(1, AC.sampleRate * 0.5, AC.sampleRate);
     const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   }
+  if (dur <= 0) return;
   const t = AC.currentTime, s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain();
   s.buffer = noiseBuf; f.type = filt; f.frequency.value = freq;
   g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
@@ -131,12 +166,26 @@ const SFX = {
   enemyStep(pan, vol){ tone(95, 48, 0.14, vol, 'triangle', pan); },
   growl(pan, vol){ tone(130, 60, 0.6, vol, 'sawtooth', pan); tone(97, 50, 0.6, vol*0.7, 'square', pan); },
   pickup(){ tone(880, 880, 0.12, 0.12, 'sine'); tone(1320, 1320, 0.18, 0.12, 'sine', 0, false, 0.09); },
-  clear(){ [523, 659, 784, 1046].forEach((f, i) => tone(f, f, 0.3, 0.13, 'sine', 0, true, i * 0.11)); },
+  clear(){ [392, 466, 554, 523].forEach((f, i) => tone(f, f * 0.98, 0.5, 0.1, 'triangle', 0, true, i * 0.16)); },
   dead(){ tone(320, 40, 1.1, 0.25, 'sawtooth'); noise(0.6, 0.3, 'lowpass', 300); },
   throw(){ noise(0.12, 0.06, 'bandpass', 900); },
   sting(pan){
     tone(220, 207, 0.9, 0.07, 'sawtooth', pan, true); tone(233, 247, 0.9, 0.07, 'sawtooth', pan, true);
     tone(1900, 1500, 0.7, 0.03, 'triangle', pan, true); noise(0.4, 0.05, 'bandpass', 3000, pan);
+  },
+  heart(vol){ tone(62, 40, 0.16, vol, 'sine'); tone(55, 38, 0.18, vol * 0.75, 'sine', 0, false, 0.17); },
+  drip(pan){ tone(1700 + Math.random() * 600, 700, 0.09, 0.05, 'sine', pan, true); },
+  gasp(){ noise(0.5, 0.22, 'bandpass', 1100); tone(380, 260, 0.35, 0.04, 'sawtooth'); },
+  whisper(pan){ // 帯域を揺らしたノイズで「ささやき」
+    if (!AC) return;
+    noise(0, 0); // バッファを用意
+    const t = AC.currentTime, s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain();
+    s.buffer = noiseBuf; s.loop = true; f.type = 'bandpass'; f.Q.value = 9;
+    f.frequency.setValueAtTime(900, t);
+    for (let i = 1; i <= 8; i++) f.frequency.linearRampToValueAtTime(700 + Math.random() * 1400, t + i * 0.18);
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.09, t + 0.3);
+    g.gain.linearRampToValueAtTime(0.05, t + 1.0); g.gain.linearRampToValueAtTime(0.0001, t + 1.5);
+    s.connect(f); f.connect(g); g.connect(out(pan, true)); s.start(t); s.stop(t + 1.6);
   }
 };
 const muteBtn = document.getElementById('muteBtn');
@@ -234,6 +283,7 @@ function los(ax, ay, bx, by){
 let state = 'title', level = 1, stones = 3, best = +(store('kodama_best') || 0);
 let player, enemies, items, exitObj, pings, projectiles, memory, memKeys, now = 0, deathInfo = null;
 let charging = false, chargeStart = 0, pingCooldown = 0, stepTimer = 0, dangerPulse = 0;
+let breath = 1, holdBreath = false, breathLocked = false, lastBeat = -99, nextBeat = 0, dripT = 3, whisperT = 15, deathAt = -99;
 
 function setupLevel(){
   const size = Math.min(16, 6 + level);
@@ -271,13 +321,14 @@ function setupLevel(){
   }
   pings = []; projectiles = []; memory = []; memKeys = new Set();
   charging = false; pingCooldown = 0; deathInfo = null;
+  breath = 1; breathLocked = false; holdBreath = false;
   updateHud();
 }
 
 function updateHud(){
   document.getElementById('hLv').textContent = level;
   document.getElementById('hSt').textContent = stones;
-  document.getElementById('hBest').textContent = best ? 'ベスト Lv' + best : '';
+  document.getElementById('hBest').textContent = best ? '最深 ' + best + ' 層' : '';
 }
 
 // ===== 音を出す =====
@@ -365,8 +416,13 @@ addEventListener('keydown', e => {
   keys.add(e.code);
   if (e.code === 'Space' && !e.repeat) startCharge();
   if ((e.code === 'KeyE' || e.code === 'KeyF') && !e.repeat) throwStone();
+  if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') holdBreath = true;
 });
-addEventListener('keyup', e => { keys.delete(e.code); if (e.code === 'Space') releaseCharge(); });
+addEventListener('keyup', e => {
+  keys.delete(e.code);
+  if (e.code === 'Space') releaseCharge();
+  if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') holdBreath = false;
+});
 function startCharge(){ if (state === 'play' && !charging){ charging = true; chargeStart = now; } }
 function releaseCharge(){ if (charging){ charging = false; if (state === 'play') doPing(); } }
 
@@ -383,6 +439,9 @@ const pingBtn = document.getElementById('pingBtn');
 pingBtn.addEventListener('pointerdown', e => { e.preventDefault(); initAudio(); pingBtn.classList.add('on'); startCharge(); });
 ['pointerup','pointercancel','pointerleave'].forEach(t => pingBtn.addEventListener(t, () => { pingBtn.classList.remove('on'); releaseCharge(); }));
 document.getElementById('stoneBtn').addEventListener('pointerdown', e => { e.preventDefault(); initAudio(); throwStone(); });
+const breathBtn = document.getElementById('breathBtn');
+breathBtn.addEventListener('pointerdown', e => { e.preventDefault(); initAudio(); holdBreath = true; breathBtn.classList.add('on'); });
+['pointerup','pointercancel','pointerleave'].forEach(t => breathBtn.addEventListener(t, () => { holdBreath = false; breathBtn.classList.remove('on'); }));
 
 function inputVec(){
   let x = 0, y = 0;
@@ -404,11 +463,12 @@ function blocked(x, y){
   return isWall(Math.floor(x - r), Math.floor(y - r)) || isWall(Math.floor(x + r), Math.floor(y - r)) ||
          isWall(Math.floor(x - r), Math.floor(y + r)) || isWall(Math.floor(x + r), Math.floor(y + r));
 }
-function movePlayer(dt){
+function movePlayer(dt, sneaking){
   const [ix, iy] = inputVec(), mag = Math.hypot(ix, iy);
   if (mag < 0.1) return false;
   player.fx = ix; player.fy = iy;
-  const vx = ix * PLAYER_SPEED * dt, vy = iy * PLAYER_SPEED * dt, p = player;
+  const sp = sneaking ? 1.5 : PLAYER_SPEED;
+  const vx = ix * sp * dt, vy = iy * sp * dt, p = player;
   const assist = (axis, amt) => { // 角でひっかからないよう中央へ寄せる
     const c = Math.floor(p[axis]) + 0.5, d = c - p[axis];
     p[axis] += Math.sign(d) * Math.min(Math.abs(d), amt);
@@ -426,8 +486,28 @@ function revealCheck(p, r, obj, x, y){
 
 function update(dt){
   pingCooldown = Math.max(0, pingCooldown - dt);
-  const moving = movePlayer(dt);
-  if (moving){
+  // 息をひそめる：足音が消えるが、長くは続かない
+  const sneaking = holdBreath && !breathLocked;
+  if (sneaking){
+    breath -= dt / 4;
+    if (breath <= 0){ // 限界で大きく息を吐いてしまう
+      breath = 0; breathLocked = true; SFX.gasp();
+      makePing(player.x, player.y, 2.5, 5.5, { bright: 0.6 });
+    }
+  } else {
+    breath = Math.min(1, breath + dt / 3);
+    if (breathLocked && breath > 0.4) breathLocked = false;
+  }
+  const brEl = document.getElementById('hBr');
+  brEl.firstChild.style.width = (breath * 100) + '%';
+  brEl.classList.toggle('low', breathLocked || breath < 0.25);
+  // 環境音
+  dripT -= dt; whisperT -= dt;
+  if (dripT <= 0){ dripT = 2.5 + Math.random() * 6; SFX.drip(Math.random() * 2 - 1); }
+  if (whisperT <= 0){ whisperT = 18 + Math.random() * 25; SFX.whisper(Math.random() < 0.5 ? -0.9 : 0.9); }
+
+  const moving = movePlayer(dt, sneaking);
+  if (moving && !sneaking){
     stepTimer += dt;
     if (stepTimer > 0.42){ // 足音で足元だけうっすら見える
       stepTimer = 0; SFX.step();
@@ -481,12 +561,23 @@ function update(dt){
     nearest = Math.min(nearest, d);
     if (d < 0.6){ die(e); return; }
   }
-  dangerPulse = Math.max(0, 1 - nearest / 3.5);
+  // 心臓の鼓動：近いほど速く強く
+  dangerPulse = Math.max(0, 1 - nearest / 8);
+  if (dangerPulse > 0 && now >= nextBeat){
+    nextBeat = now + 0.3 + 0.75 * (nearest / 8);
+    lastBeat = now; SFX.heart(0.08 + 0.3 * dangerPulse);
+  }
   if (Math.hypot(exitObj.x - player.x, exitObj.y - player.y) < 0.5) clearLevel();
 }
 
 // ===== 描画 =====
 function seg(s){ ctx.moveTo(s[0] * TS, s[1] * TS); ctx.lineTo(s[2] * TS, s[3] * TS); }
+const grainPat = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const g = c.getContext('2d'), img = g.createImageData(128, 128);
+  for (let i = 0; i < img.data.length; i += 4){ const v = Math.random() * 255; img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = 255; }
+  g.putImageData(img, 0, 0); return ctx.createPattern(c, 'repeat');
+})();
 function draw(){
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   ctx.fillStyle = '#030407'; ctx.fillRect(0, 0, W, H);
@@ -573,12 +664,25 @@ function draw(){
   }
 
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  // 敵が近いと画面のふちが赤く脈打つ
+  // 息をひそめている間は視界のふちが暗くなる
+  if (state === 'play' && holdBreath && !breathLocked){
+    const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.15, W / 2, H / 2, Math.max(W, H) * 0.6);
+    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.75)');
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+  }
+  // 鼓動にあわせて画面のふちが赤く脈打つ
   if (state === 'play' && dangerPulse > 0){
-    const a = dangerPulse * (0.25 + 0.2 * Math.sin(now * 9));
+    const a = dangerPulse * 0.55 * Math.exp(-(now - lastBeat) * 5) + dangerPulse * 0.08;
     const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.3, W / 2, H / 2, Math.max(W, H) * 0.7);
     vg.addColorStop(0, 'rgba(255,40,70,0)'); vg.addColorStop(1, `rgba(255,40,70,${a})`);
     ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+  }
+  // フィルムのようなざらつき（やられた直後は赤い砂嵐）
+  if (grainPat){
+    const dt = now - deathAt, dying = state === 'dead' && dt < 1.4;
+    if (dying){ ctx.fillStyle = `rgba(120,0,15,${0.55 * (1 - dt / 1.4)})`; ctx.fillRect(0, 0, W, H); }
+    ctx.save(); ctx.globalAlpha = dying ? 0.45 * (1 - dt / 1.4) + 0.08 : 0.07;
+    ctx.translate(-rnd(128), -rnd(128)); ctx.fillStyle = grainPat; ctx.fillRect(0, 0, W + 128, H + 128); ctx.restore();
   }
   // バーチャルスティック
   if (joy){
@@ -658,30 +762,35 @@ function showCard(html, action){
   card.querySelector('.go').addEventListener('click', overlayAction);
 }
 const controls = isTouch
-  ? '<li><span>左側をドラッグ</span>　移動</li><li><span>「音」ボタン</span>　音を出す（長押しで遠くまで）</li><li><span>「石」ボタン</span>　向いている方へ投げる</li>'
-  : '<li><span>WASD / 矢印</span>　移動</li><li><span>スペース</span>　音を出す（長押しで遠くまで）</li><li><span>E / F</span>　石を向いている方へ投げる</li>';
+  ? '<li><span>左側をドラッグ</span>　移動</li><li><span>「音」ボタン</span>　音を出す（長押しで遠くまで）</li><li><span>「息」ボタン</span>　押している間、足音を消して忍び歩き</li><li><span>「石」ボタン</span>　向いている方へ投げる</li>'
+  : '<li><span>WASD / 矢印</span>　移動</li><li><span>スペース</span>　音を出す（長押しで遠くまで）</li><li><span>Shift</span>　押している間、足音を消して忍び歩き</li><li><span>E / F</span>　石を向いている方へ投げる</li>';
 function title(){
   state = 'title'; level = 1; stones = 3; setupLevel();
-  showCard(`<h1>こだま迷路</h1><p>まっくらな迷路。音を出すと、その反響で壁が一瞬だけ見える。<br>
+  showCard(`<span class="warn">ホラー表現あり ・ 🎧 イヤホン推奨</span>
+    <h1 class="glitch">こだま迷路</h1><p class="tagline">── 音を出すな。けれど、出さなければ進めない。</p>
+    <p>ここは光の届かない地下。音を出すと、その反響で壁が一瞬だけ見える。<br>
     でも、<span class="danger">音は「やつら」にも聞こえている。</span></p>
-    <ul>${controls}<li><span class="gold">出口</span>にたどり着けばクリア。</li>
-    <li>石が落ちた場所でも音が鳴る。おとりに使おう。</li></ul>
-    <button class="go">はじめる</button><p class="hint">🎧 イヤホン推奨：敵の足音が左右から聞こえます</p>`, start);
+    <ul>${controls}<li><span class="gold">出口</span>にたどり着けば、さらに奥へ。</li>
+    <li>石が落ちた場所でも音が鳴る。おとりに使え。</li>
+    <li>息は長くはもたない。限界がくると、大きく吐いてしまう。</li></ul>
+    <button class="go">はいる</button><p class="hint">足音・心音・ささやきは左右から聞こえます</p>`, start);
 }
-function start(){ state = 'play'; }
+function start(){ startDrone(); state = 'play'; }
+const deathLines = ['つかまった…', 'みつかった', 'うしろに、いた', 'もう、にげられない'];
 function die(e){
-  state = 'dead'; SFX.dead(); charging = false; joy = null;
+  state = 'dead'; deathAt = now; SFX.dead(); charging = false; joy = null; holdBreath = false;
   if (level - 1 > best){ best = level - 1; store('kodama_best', best); }
   updateHud();
-  setTimeout(() => showCard(`<h2 class="danger">つかまった…</h2><p>Lv ${level} でやられた。<br>到達記録：Lv ${level - 1} クリア${best ? `（ベスト Lv${best}）` : ''}</p>
-    <button class="go">もう一度</button>`, () => { level = 1; stones = 3; setupLevel(); state = 'play'; }), 900);
+  const line = deathLines[rnd(deathLines.length)];
+  setTimeout(() => showCard(`<h2 class="danger shake">${line}</h2><p>地下 ${level} 層で、音が途絶えた。<br>到達記録：${level - 1} 層${best ? `（最深 ${best} 層）` : ''}</p>
+    <button class="go">もう一度はいる</button>`, () => { level = 1; stones = 3; setupLevel(); start(); }), 1400);
 }
 function clearLevel(){
-  state = 'clear'; SFX.clear(); charging = false; joy = null;
+  state = 'clear'; SFX.clear(); charging = false; joy = null; holdBreath = false;
   if (level > best){ best = level; store('kodama_best', best); }
   updateHud();
-  setTimeout(() => showCard(`<h2 class="gold">Lv ${level} クリア！</h2><p>次はもっと広く、やつらも増える。<br>石 +1</p>
-    <button class="go">次へ</button>`, () => { level++; stones++; setupLevel(); state = 'play'; }), 700);
+  setTimeout(() => showCard(`<h2 class="gold">地下 ${level} 層を抜けた</h2><p>……でも、出口はまだ下へ続いている。<br>奥ほど広く、やつらの数も増える。　石 +1</p>
+    <button class="go">さらに下へ</button>`, () => { level++; stones++; setupLevel(); start(); }), 900);
 }
 
 // ===== ループ =====
