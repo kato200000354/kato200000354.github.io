@@ -417,14 +417,9 @@ function drawWorld(){
     ctx.fillStyle=g;ctx.fillRect(px-ts,py-ts,ts*2,ts*2);
     ctx.save();ctx.translate(px,py);ctx.rotate(.15*Math.sin(it.ph));ctx.fillStyle='#e6dcc0';ctx.fillRect(-ts*.13,-ts*.24,ts*.26,ts*.48);
     ctx.fillStyle='#8a1a12';ctx.fillRect(-1.5,-ts*.18,3,ts*.36);ctx.fillRect(-ts*.07,-ts*.1,ts*.14,2);ctx.restore()}
-  // 自分
+  // 自分と、あれ（手前＝下にいる方をあとに描く）
   const P=G.p,ppx=ox+P.x*ts,ppy=oy+P.y*ts;
-  ctx.fillStyle='rgba(0,0,0,.4)';ctx.beginPath();ctx.ellipse(ppx,ppy+ts*.08,ts*.24,ts*.18,0,0,7);ctx.fill();
-  ctx.fillStyle='#5d6a80';ctx.beginPath();ctx.arc(ppx,ppy,ts*.22,0,7);ctx.fill();
-  ctx.fillStyle='#1c1612';ctx.beginPath();ctx.arc(ppx,ppy,ts*.13,0,7);ctx.fill();
-  ctx.fillStyle='#cdbfa6';ctx.beginPath();ctx.arc(ppx+Math.cos(P.dir)*ts*.12,ppy+Math.sin(P.dir)*ts*.12,ts*.05,0,7);ctx.fill();
-  // あれ
-  drawMon(ox,oy,ts);
+  if(G.mon.y<P.y){drawMon(ox,oy,ts);drawKid(ppx,ppy,ts)}else{drawKid(ppx,ppy,ts);drawMon(ox,oy,ts)}
   // 闇
   const fl=1+.03*Math.sin(G.t*11)+.02*Math.sin(G.t*23),R=3.4*ts*fl;
   const dg=ctx.createRadialGradient(ppx,ppy,ts*.3,ppx,ppy,R);
@@ -435,20 +430,94 @@ function drawWorld(){
 }
 function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.fill()}
 function vignette(col){const g=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.3,W/2,H/2,Math.max(W,H)*.75);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,col);ctx.fillStyle=g;ctx.fillRect(0,0,W,H)}
+// 向き（角度）を 上下左右 に
+function facing(a){const c=Math.cos(a),n=Math.sin(a);return Math.abs(c)>Math.abs(n)*1.1?(c>0?'r':'l'):(n>0?'d':'u')}
+function ell(x,y,rx,ry,col,rot){ctx.fillStyle=col;ctx.beginPath();ctx.ellipse(x,y,rx,ry,rot||0,0,7);ctx.fill()}
+// 自分：パジャマ姿の子ども（上から少しななめに見た立ち姿）
+function drawKid(x,y,ts){
+  const P=G.p,f=facing(P.dir),u=ts,t=G.t,walk=P.moving?Math.sin(t*13):0,bob=P.moving?Math.abs(walk)*u*.035:0;
+  const fy=y+u*.26;                       // 足もと
+  // 足もとの小さな明かり（自分の位置がひと目でわかるように）
+  const lg=ctx.createRadialGradient(x,fy,1,x,fy,u*.5);lg.addColorStop(0,'rgba(255,230,190,.28)');lg.addColorStop(1,'rgba(255,230,190,0)');
+  ctx.fillStyle=lg;ctx.fillRect(x-u*.5,fy-u*.5,u,u);
+  ell(x,fy,u*.2,u*.07,'rgba(0,0,0,.55)');
+  const out='rgba(10,6,4,.85)',lw=Math.max(1.2,u*.035);
+  ctx.lineWidth=lw;ctx.strokeStyle=out;ctx.lineJoin='round';
+  // 足
+  const side=(f==='l'||f==='r');
+  for(const s of [-1,1]){const lx=side?x+s*u*.035+walk*s*u*.06:x+s*u*.075,ly=fy-u*.07+(side?0:(s*walk>0?-u*.03:0));
+    ctx.fillStyle='#2a3550';ctx.beginPath();ctx.ellipse(lx,ly,u*.055,u*.075,0,0,7);ctx.fill();ctx.stroke()}
+  const by=fy-u*.12-bob;                  // 体の下端
+  // 腕（体の後ろ）
+  const armSw=walk*u*.05;
+  if(!side)for(const s of [-1,1]){ell(x+s*u*.19,by-u*.16+s*armSw,u*.055,u*.11,'#7fa9d6');ctx.stroke()}
+  // 体（水色のパジャマ）
+  ctx.fillStyle='#93bde6';ctx.beginPath();
+  ctx.moveTo(x-u*.16,by);ctx.lineTo(x-u*.14,by-u*.3);ctx.quadraticCurveTo(x,by-u*.36,x+u*.14,by-u*.3);ctx.lineTo(x+u*.16,by);ctx.closePath();ctx.fill();ctx.stroke();
+  if(f==='d'){ctx.fillStyle='#f2f2f2';[by-u*.22,by-u*.12].forEach(yy=>{ctx.beginPath();ctx.arc(x,yy,u*.018,0,7);ctx.fill()});
+    ctx.fillStyle='#e9eef5';ctx.beginPath();ctx.moveTo(x-u*.08,by-u*.31);ctx.lineTo(x,by-u*.24);ctx.lineTo(x+u*.08,by-u*.31);ctx.closePath();ctx.fill()}
+  if(side){const s=f==='r'?1:-1;ell(x+s*u*.03-armSw*s,by-u*.15,u*.055,u*.11,'#7fa9d6',walk*.5);ctx.stroke()}
+  // 頭
+  const hx=x,hy=by-u*.5,hr=u*.21;
+  ctx.fillStyle='#f3d5b8';ctx.beginPath();ctx.arc(hx,hy,hr,0,7);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#3b2416';
+  if(f==='u'){ctx.beginPath();ctx.arc(hx,hy,hr,0,7);ctx.fill();ctx.stroke()}
+  else if(f==='d'){ctx.beginPath();ctx.arc(hx,hy,hr,Math.PI*1.02,Math.PI*1.98);ctx.quadraticCurveTo(hx+hr*.5,hy-hr*.05,hx,hy-hr*.25);ctx.quadraticCurveTo(hx-hr*.5,hy-hr*.05,hx-hr,hy);ctx.fill();
+    ell(hx-hr*.38,hy+hr*.18,hr*.09,hr*.13,'#1a120c');ell(hx+hr*.38,hy+hr*.18,hr*.09,hr*.13,'#1a120c');
+    ell(hx-hr*.36,hy+hr*.13,hr*.035,hr*.04,'#fff');ell(hx+hr*.4,hy+hr*.13,hr*.035,hr*.04,'#fff');
+    ell(hx-hr*.62,hy+hr*.45,hr*.13,hr*.07,'rgba(230,120,110,.45)');ell(hx+hr*.62,hy+hr*.45,hr*.13,hr*.07,'rgba(230,120,110,.45)')}
+  else{const s=f==='r'?1:-1;ctx.beginPath();ctx.arc(hx,hy,hr,s>0?Math.PI*.45:-Math.PI*.6,s>0?Math.PI*1.6:Math.PI*.55);ctx.closePath();ctx.fill();
+    ctx.beginPath();ctx.arc(hx,hy,hr,Math.PI*1.05,Math.PI*1.95);ctx.quadraticCurveTo(hx+s*hr*.3,hy-hr*.45,hx-s*hr*.2,hy-hr*.35);ctx.fill();ctx.beginPath();ctx.arc(hx,hy,hr,0,7);ctx.stroke();
+    ell(hx+s*hr*.5,hy+hr*.18,hr*.09,hr*.13,'#1a120c');ell(hx+s*hr*.53,hy+hr*.13,hr*.035,hr*.04,'#fff')}
+}
+// あれ：白い着物の、背の高い女。長い黒髪が顔にかかり、両手をこちらへのばしている
 function drawMon(ox,oy,ts){
-  const M=G.mon,j=M.seen?(Math.random()-.5)*ts*.05:0,mx=ox+M.x*ts+j,my=oy+M.y*ts,f=M.face,bx=-Math.cos(f),by=-Math.sin(f);
-  ctx.fillStyle='rgba(0,0,0,.5)';ctx.beginPath();ctx.ellipse(mx,my+ts*.1,ts*.34,ts*.24,0,0,7);ctx.fill();
-  // 白い着物
-  ctx.fillStyle='#cfcabd';ctx.beginPath();ctx.ellipse(mx+bx*ts*.12,my+by*ts*.12,ts*.42,ts*.34,f,0,7);ctx.fill();
-  ctx.strokeStyle='rgba(90,80,70,.6)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(mx,my);ctx.lineTo(mx+bx*ts*.5,my+by*ts*.5);ctx.stroke();
-  // 長い髪
-  ctx.strokeStyle='#050404';ctx.lineCap='round';
-  for(let i=0;i<14;i++){const a=f+Math.PI+(i/13-.5)*1.6,len=ts*(.5+.25*hash(i,7)),sw=Math.sin(G.t*2+i)*ts*.04;
-    ctx.lineWidth=ts*.07;ctx.beginPath();ctx.moveTo(mx,my);ctx.quadraticCurveTo(mx+Math.cos(a)*len*.6+sw,my+Math.sin(a)*len*.6-sw,mx+Math.cos(a)*len,my+Math.sin(a)*len);ctx.stroke()}
-  ctx.fillStyle='#070505';ctx.beginPath();ctx.arc(mx,my,ts*.22,0,7);ctx.fill();
-  // 前にのびる白い手
-  ctx.fillStyle='#d8d2c4';const hx=Math.cos(f),hy=Math.sin(f),nx=-hy,ny=hx;
-  for(const s of [-1,1]){ctx.beginPath();ctx.ellipse(mx+hx*ts*.42+nx*s*ts*.15,my+hy*ts*.42+ny*s*ts*.15,ts*.13,ts*.045,f,0,7);ctx.fill()}
+  const M=G.mon,u=ts,t=G.t,j=M.seen?(Math.random()-.5)*u*.05:0,x=ox+M.x*u+j,y=oy+M.y*u,f=facing(M.face);
+  const fy=y+u*.28,fl=Math.sin(t*2.2)*u*.03;              // 足もと／ゆらゆら浮く
+  ell(x,fy,u*.3,u*.09,'rgba(0,0,0,.6)');
+  // 赤黒いけはい
+  const ag=ctx.createRadialGradient(x,fy-u*.6,u*.1,x,fy-u*.6,u*.9);ag.addColorStop(0,'rgba(120,0,0,.22)');ag.addColorStop(1,'rgba(120,0,0,0)');
+  ctx.fillStyle=ag;ctx.fillRect(x-u,fy-u*1.6,u*2,u*2);
+  const out='rgba(0,0,0,.9)';ctx.lineWidth=Math.max(1.2,u*.035);ctx.strokeStyle=out;ctx.lineJoin='round';
+  const top=fy-u*1.1+fl,hem=fy-u*.02+fl,hx=x,hy=top-u*.12,hr=u*.19;
+  const side=(f==='l'||f==='r'),s=f==='r'?1:-1;
+  // 後ろ髪（腰まで長い）
+  ctx.fillStyle='#060404';
+  if(f!=='d'){ctx.beginPath();ctx.moveTo(hx-hr*1.15,hy);ctx.quadraticCurveTo(hx-hr*1.5,hy+u*.55,hx-hr*1.0+Math.sin(t*2)*u*.03,hy+u*.85);
+    ctx.lineTo(hx+hr*1.0+Math.sin(t*2.3)*u*.03,hy+u*.85);ctx.quadraticCurveTo(hx+hr*1.5,hy+u*.55,hx+hr*1.15,hy);ctx.closePath();ctx.fill()}
+  // 着物（すそはぼやけて消える）
+  const kg=ctx.createLinearGradient(0,top,0,hem+u*.05);kg.addColorStop(0,'#ece8de');kg.addColorStop(.75,'#cfc9bb');kg.addColorStop(1,'rgba(200,195,185,0)');
+  ctx.fillStyle=kg;ctx.beginPath();ctx.moveTo(x-u*.2,top+u*.06);ctx.quadraticCurveTo(x,top-u*.02,x+u*.2,top+u*.06);
+  ctx.lineTo(x+u*.32,hem);for(let k=0;k<=6;k++){const xx=x+u*.32-k*u*.64/6;ctx.lineTo(xx,hem+(k%2?u*.06:0)+Math.sin(t*3+k)*u*.015)}
+  ctx.closePath();ctx.fill();
+  ctx.strokeStyle='rgba(0,0,0,.6)';ctx.beginPath();ctx.moveTo(x-u*.2,top+u*.06);ctx.lineTo(x-u*.31,hem-u*.08);ctx.moveTo(x+u*.2,top+u*.06);ctx.lineTo(x+u*.31,hem-u*.08);ctx.stroke();
+  if(f==='d'){ctx.strokeStyle='rgba(90,80,70,.8)';ctx.beginPath();ctx.moveTo(x-u*.1,top+u*.06);ctx.lineTo(x+u*.06,top+u*.42);ctx.moveTo(x+u*.1,top+u*.06);ctx.lineTo(x,top+u*.2);ctx.stroke()}
+  ctx.fillStyle='#8f897d';ctx.fillRect(x-u*.21,top+u*.4,u*.42,u*.07);    // 帯
+  ctx.strokeStyle=out;
+  // 頭（青白い顔）
+  ctx.fillStyle='#d9d4c8';ctx.beginPath();ctx.arc(hx,hy,hr,0,7);ctx.fill();
+  // 髪
+  ctx.fillStyle='#060404';
+  if(f==='u'){ctx.beginPath();ctx.arc(hx,hy,hr*1.08,0,7);ctx.fill()}
+  else if(f==='d'){
+    // 前髪が顔をおおい、すき間から赤い目がひとつ
+    ctx.beginPath();ctx.arc(hx,hy,hr*1.1,Math.PI,0);ctx.lineTo(hx+hr*1.15,hy+u*.62);ctx.lineTo(hx+hr*.45,hy+u*.5);ctx.lineTo(hx+hr*.1,hy+hr*.2);
+    ctx.lineTo(hx-hr*.45,hy+hr*.15);ctx.lineTo(hx-hr*.55,hy+u*.55);ctx.lineTo(hx-hr*1.15,hy+u*.62);ctx.closePath();ctx.fill();
+    ctx.strokeStyle='#060404';ctx.lineWidth=u*.025;for(let k=0;k<4;k++){const sx=hx+(k-1.5)*hr*.35;ctx.beginPath();ctx.moveTo(sx,hy-hr*.2);ctx.lineTo(sx+Math.sin(t*1.5+k)*u*.015,hy+hr*(.9+k%2*.4));ctx.stroke()}
+  }else{ctx.beginPath();ctx.arc(hx,hy,hr*1.1,s>0?Math.PI*.6:-Math.PI*.4,s>0?Math.PI*2.05:Math.PI*1.05);ctx.closePath();ctx.fill();
+    ctx.beginPath();ctx.moveTo(hx-s*hr*.4,hy);ctx.quadraticCurveTo(hx-s*hr*1.4,hy+u*.4,hx-s*hr*1.1,hy+u*.8);ctx.lineTo(hx-s*hr*.1,hy+u*.75);ctx.lineTo(hx,hy+hr*.3);ctx.fill()}
+  // 赤い目
+  if(f!=='u'){const ex=f==='d'?hx-hr*.18:hx+s*hr*.5,ey=hy+hr*.15,glow=.6+.4*Math.sin(t*6);
+    const eg=ctx.createRadialGradient(ex,ey,0,ex,ey,u*.12);eg.addColorStop(0,'rgba(255,40,30,'+(.7*glow)+')');eg.addColorStop(1,'rgba(255,0,0,0)');
+    ctx.fillStyle=eg;ctx.fillRect(ex-u*.12,ey-u*.12,u*.24,u*.24);ell(ex,ey,hr*.13,hr*.09,'#ff3a2a')}
+  // こちらへのびる白い手
+  ctx.fillStyle='#e0dbcf';ctx.strokeStyle=out;ctx.lineWidth=Math.max(1,u*.025);
+  const reach=u*(.12+.04*Math.sin(t*3));
+  if(f==='d')for(const k of [-1,1]){const ax=x+k*u*.17,ay=top+u*.12;ctx.beginPath();ctx.ellipse(ax,ay+u*.2+reach*.5,u*.045,u*.2+reach*.5,k*.15,0,7);ctx.fill();ctx.stroke();
+    for(let q=0;q<4;q++){ctx.beginPath();ctx.ellipse(ax+(q-1.5)*u*.022,ay+u*.42+reach,u*.012,u*.05,0,0,7);ctx.fill()}}
+  else if(side)for(const k of [0,1]){const ay=top+u*.18+k*u*.07,ax=x+s*u*.08;ctx.beginPath();ctx.ellipse(ax+s*(u*.18+reach*.5),ay,u*.2+reach*.5,u*.04,0,0,7);ctx.fill();ctx.stroke();
+    for(let q=0;q<4;q++){ctx.beginPath();ctx.ellipse(ax+s*(u*.42+reach),ay+(q-1.5)*u*.018,u*.05,u*.011,0,0,7);ctx.fill()}}
+  else for(const k of [-1,1]){ell(x+k*u*.23,top+u*.25,u*.05,u*.15,'#e8e4da');ctx.stroke()}
 }
 function drawClosed(){
   ctx.fillStyle='#040101';ctx.fillRect(0,0,W,H);
