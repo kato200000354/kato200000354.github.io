@@ -75,7 +75,7 @@
 /* ===================== 夜（ステージ）データ =====================
    # 壁 / . 畳 / - 板の間 / T 座卓 / B 仏壇 / O お札 / E 玄関 / P 自分 / M あれ */
 const NIGHTS=[
- {name:'一夜目',speed:1.2,fake:.2,fearRate:1/6,
+ {name:'一夜目',speed:1.2,fake:.2,err:.3,fearRate:1/6,
   story:['祖母の家に泊まった夜。','廊下の奥から、だれかが歩いてくる。','祖母は言っていた。','「あれは、見られているあいだしか動けない」','「目をとじていれば、だいじょうぶ」','お札を集めて、玄関から出なければ。'],
   map:[
   '########################',
@@ -91,7 +91,7 @@ const NIGHTS=[
   '#.....#-#.....#-#......#',
   '#..E..--#.....---......#',
   '########################']},
- {name:'二夜目',speed:1.5,fake:.35,fearRate:1/5.5,
+ {name:'二夜目',speed:1.5,fake:.35,err:.22,fearRate:1/5.5,
   story:['次の夜。','家が、すこし広くなっている気がする。','廊下が一本、増えている。','あれの足音は、昨日より速い。'],
   map:[
   '############################',
@@ -111,7 +111,7 @@ const NIGHTS=[
   '#.....-.....#-#.......#--#-#',
   '#..E........#---......#----#',
   '############################']},
- {name:'三夜目',speed:1.8,fake:.5,fearRate:1/5,
+ {name:'三夜目',speed:1.8,fake:.5,err:.15,fearRate:1/5,
   story:['最後の夜。','仏壇の写真が、こちらを向いていた。','「目をあけて」','──その声は、祖母の声によく似ていた。'],
   map:[
   '##############################',
@@ -343,10 +343,19 @@ function update(dt){
     if(mtx===Math.floor(P.x)&&mty===Math.floor(P.y)){M.tx=P.x;M.ty=P.y}
     else if(M.tx===null||Math.hypot(M.tx-M.x,M.ty-M.y)<.06){
       const cd=G.dist[mty*G.w+mtx];let best=null,bd=cd<0?9999:cd;
+      // 少しあほにする：遠いと見失ってうろつき、近くても時々道をまちがえる（3マス以内ではまちがえない）
+      const lost=cd<0||(cd>8&&Math.random()<.4),miss=cd>3&&Math.random()<G.N.err;
+      if(lost||miss){
+        const opts=[];for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=mtx+dx,ny=mty+dy;
+          if(walk(nx,ny)&&!(nx===M.px&&ny===M.py))opts.push([nx,ny])}
+        if(opts.length)best=opts[Math.random()*opts.length|0];
+        else if(M.px!=null)best=[M.px,M.py];
+      }else
       for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]){
         const nx=mtx+dx,ny=mty+dy;if(!walk(nx,ny))continue;
         if(dx&&dy&&(!walk(mtx+dx,mty)||!walk(mtx,mty+dy)))continue;
         const d=G.dist[ny*G.w+nx];if(d>=0&&(d<bd||(d===bd&&best&&dx&&dy))){bd=d;best=[nx,ny]}}
+      M.px=mtx;M.py=mty;
       if(best){M.tx=best[0]+.5;M.ty=best[1]+.5}else{M.tx=M.x;M.ty=M.y}
     }
     const dx=M.tx-M.x,dy=M.ty-M.y,dl=Math.hypot(dx,dy);
