@@ -342,7 +342,7 @@ function noteHtml(i){
 // ===== 状態 =====
 let state = 'title', level = 1, stones = 3, best = +(store('kodama_best') || 0);
 let floorStones = 3; // その層に入ったときの石の数（やりなおし用）
-let player, enemies, items, exitObj, pings, projectiles, memory, memKeys, now = 0, deathInfo = null;
+let exitFaces = [], player, enemies, items, exitObj, pings, projectiles, memory, memKeys, now = 0, deathInfo = null;
 let charging = false, chargeStart = 0, pingCooldown = 0, stepTimer = 0, dangerPulse = 0;
 let breath = 1, holdBreath = false, breathLocked = false, lastBeat = -99, nextBeat = 0, dripT = 3, whisperT = 15, deathAt = -99;
 
@@ -356,7 +356,11 @@ function setupLevel(){
   for (let y = 1; y < gh; y += 2) for (let x = 1; x < gw; x += 2){
     const d = dist[y * gw + x]; if (d > maxD){ maxD = d; ex = x; ey = y; }
   }
-  exitObj = { x: ex + 0.5, y: ey + 0.5, known: false, seenAt: -99 };
+  exitObj = { x: ex + 0.5, y: ey + 0.5, known: true, seenAt: -99 };
+  exitFaces = allFaces.filter(f => {
+    const mx = (f[0] + f[2]) / 2, my = (f[1] + f[3]) / 2;
+    return Math.hypot(mx - exitObj.x, my - exitObj.y) < 2.3 && los(exitObj.x, exitObj.y, mx + (exitObj.x - mx) * 0.02, my + (exitObj.y - my) * 0.02);
+  });
   // 石は行き止まりに置く
   const deadEnds = [], cells = [];
   for (let y = 1; y < gh; y += 2) for (let x = 1; x < gw; x += 2){
@@ -383,7 +387,10 @@ function setupLevel(){
   enemies = [];
   const nMimic = level >= 5 ? 2 : level >= 3 ? 1 : 0;
   const nEnemy = Math.min(7, 1 + Math.floor(level / 2));
-  const far = cells.filter(c => c[2] >= Math.max(9, maxD * 0.35));
+  // 道のりだけでなく直線距離でも離す（壁ごしに近いと、最初の音を聞かれてしまう）
+  const farEnough = c => c[2] >= Math.max(14, maxD * 0.5) && Math.hypot(c[0] - 1, c[1] - 1) >= 9;
+  let far = cells.filter(farEnough);
+  if (far.length < nEnemy) far = [...cells].sort((a, b) => (b[2] + Math.hypot(b[0] - 1, b[1] - 1)) - (a[2] + Math.hypot(a[0] - 1, a[1] - 1))).slice(0, nEnemy * 3);
   for (let i = 0; i < nEnemy && far.length; i++){
     const [x, y] = far.splice(rnd(far.length), 1)[0];
     enemies.push({ x: x + 0.5, y: y + 0.5, cx: x, cy: y, nx: x, ny: y, px: -1, py: -1, path: [],
@@ -700,9 +707,14 @@ function draw(){
 
   // 出口
   const showAll = state === 'dead' || state === 'clear';
-  if (exitObj.known || showAll){
+  { // 出口はいつも光っていて、まわりの壁をうっすら照らす
+    const ex = exitObj.x * TS, ey = exitObj.y * TS, pulse = 0.5 + 0.5 * Math.sin(now * 2.2);
     const f = Math.max(0, 1 - (now - exitObj.seenAt) / FADE);
-    drawExit(exitObj.x * TS, exitObj.y * TS, 0.35 + 0.65 * f, level === NOTES.length ? '非常口' : '出口');
+    const g = ctx.createRadialGradient(ex, ey, 0, ex, ey, TS * 2.6);
+    g.addColorStop(0, `rgba(255,210,122,${0.22 + 0.1 * pulse})`); g.addColorStop(1, 'rgba(255,210,122,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(ex, ey, TS * 2.6, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = `rgba(255,210,122,${0.25 + 0.15 * pulse})`; ctx.lineWidth = 2; ctx.beginPath(); exitFaces.forEach(seg); ctx.stroke();
+    drawExit(ex, ey, Math.min(1, 0.75 + 0.25 * pulse + f), level === NOTES.length ? '非常口' : '出口');
   }
   // 記録（紙切れ）
   if (noteObj && (noteObj.known || showAll)){
