@@ -18,6 +18,7 @@
   #danger{position:fixed;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center,transparent 30%,rgba(110,0,0,.6) 100%)}
   #flash{position:fixed;inset:0;pointer-events:none;opacity:0;background:#7a0000}
   #scare{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;background:#000}
+  @media (orientation:portrait){#scare{object-fit:contain}}
   #fade{position:fixed;inset:0;pointer-events:none;opacity:0;background:#000;transition:opacity .2s}
 
   #hud{position:fixed;inset:0;pointer-events:none}
@@ -70,6 +71,7 @@
   /* 画面 */
   #ov{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.6);overflow-y:auto;touch-action:pan-y}
   .sc{max-width:480px;width:100%;margin:auto;padding:28px 22px;background:var(--panel);border:1px solid #2e261d;text-align:center;box-shadow:0 0 60px rgba(0,0,0,.9)}
+  #scTitle{background:linear-gradient(rgba(6,4,3,.78),rgba(6,4,3,.9) 45%,rgba(6,4,3,.97)),url(title.jpg) center 20%/cover}
   .sc h1{font-size:46px;letter-spacing:.5em;margin-right:-.5em;font-weight:normal;color:#e9dcc0;text-shadow:0 0 18px rgba(200,80,40,.35)}
   .sc h2{font-size:28px;letter-spacing:.3em;margin-right:-.3em;font-weight:normal;margin-bottom:12px}
   .sub{font-size:13px;color:var(--rust);letter-spacing:.3em;margin:6px 0 20px}
@@ -159,6 +161,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script>
 'use strict';
 const $ = id => document.getElementById(id);
@@ -638,6 +641,14 @@ function makeFaceCanvas() {
   return c;
 }
 const faceCanvas = makeFaceCanvas();
+const scareImgs = ['scare1.jpg', 'scare2.jpg'].map(src => { const im = new Image(); im.src = src; return im; });
+function drawScare(i) {
+  const im = scareImgs[i], s = $('scare').getContext('2d');
+  if (!im.complete || !im.naturalWidth) return false;
+  s.globalCompositeOperation = 'source-over'; s.fillStyle = '#000'; s.fillRect(0, 0, 512, 512);
+  const k = Math.max(512 / im.naturalWidth, 512 / im.naturalHeight); s.drawImage(im, (512 - im.naturalWidth * k) / 2, (512 - im.naturalHeight * k) / 2, im.naturalWidth * k, im.naturalHeight * k);
+  return true;
+}
 (() => { const s = $('scare').getContext('2d'); s.fillStyle = '#000'; s.fillRect(0, 0, 512, 512); s.drawImage(faceCanvas, -40, -30, 592, 592);
   s.globalCompositeOperation = 'multiply'; s.fillStyle = '#ff9a8a'; s.fillRect(0, 0, 512, 512); })();
 const faceTex = new THREE.CanvasTexture(faceCanvas);
@@ -782,9 +793,54 @@ const hairMap = paintTex(64, 256, (g, w, h) => {
   g.visible = false;
 })();
 // 幻の「それ」（光源なしの複製）
-const ghost = M.g.clone();
-(() => { const ls = []; ghost.traverse(o => { if (o.isLight) ls.push(o); }); ls.forEach(l => l.parent.remove(l));
-  ghost.getObjectByName('head').rotation.set(0.25, 0, 0.9); ghost.visible = false; scene.add(ghost); })();
+// ---------- コンセプトアートから生成した3Dモデル ----------
+// 骨格のない1枚のメッシュなので、腕と脚の頂点を肩・股関節を軸に回して動かす
+function setupMonsterGLB(gltf) {
+  let src = null; gltf.scene.traverse(o => { if (o.isMesh && !src) src = o; });
+  if (!src) return;
+  const geo = src.geometry; if (!geo.attributes.normal) geo.computeVertexNormals();
+  const mat = new THREE.MeshPhongMaterial({ map: src.material.map, color: new THREE.Color(2.6, 2.45, 2.3), shininess: 45, specular: 0x2a2622 });
+  const base = geo.attributes.position.array.slice(), n = base.length / 3;
+  const wl = new Float32Array(n), wa = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const x = base[i * 3], y = base[i * 3 + 1];
+    if (x < -0.122 && y < 0.16) wa[i] = -clamp((0.16 - y) / 0.12, 0, 1);            // 左腕
+    else if (x > 0.116 && y < 0.17 && y > -0.17) wa[i] = clamp((0.17 - y) / 0.12, 0, 1); // 右腕
+    else if (y < -0.06 && Math.abs(x) < 0.125) wl[i] = Math.sign(x) * clamp((-0.06 - y) / 0.08, 0, 1); // 脚
+  }
+  const S = 2.3;
+  const mesh = new THREE.Mesh(geo, mat); mesh.scale.setScalar(S); mesh.position.y = 0.5 * S;
+  const pivot = new THREE.Group(); pivot.add(mesh); M.g.add(pivot);
+  // 赤いヘッドランプと、髪の隙間からのぞく片目
+  const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.022, 10, 8), new THREE.MeshBasicMaterial({ color: 0xff3018 }));
+  lamp.position.set(-0.077 * S, 0.5 * S + 0.425 * S, 0.17 * S); pivot.add(lamp);
+  const eye = new THREE.Mesh(new THREE.SphereGeometry(0.007, 6, 5), new THREE.MeshBasicMaterial({ color: 0xf6f2e0 }));
+  eye.position.set(-0.03 * S, 0.5 * S + 0.385 * S, 0.158 * S); pivot.add(eye);
+  pivot.add(M.light); M.light.position.set(-0.077 * S, 0.5 * S + 0.43 * S, 0.17 * S + 0.25);
+  M.torso.visible = false; M.legs.forEach(l => l.visible = false);
+  M.glb = { geo, base, wl, wa, pivot };
+  // 幻も新しい姿で作り直す
+  scene.remove(ghost); ghost = makeGhost();
+}
+function poseGLB(leg, armL, armR) {
+  const g = M.glb, pa = g.geo.attributes.position, p = pa.array, b = g.base, wl = g.wl, wa = g.wa;
+  const HY = -0.08, HZ = -0.08, SY = 0.2, SZ = -0.06;
+  for (let i = 0, n = wl.length; i < n; i++) {
+    let y = b[i * 3 + 1], z = b[i * 3 + 2];
+    const l = wl[i], w = wa[i];
+    if (l) { const a = l * leg, c = Math.cos(a), sn = Math.sin(a), dy = y - HY, dz = z - HZ; y = HY + dy * c - dz * sn; z = HZ + dy * sn + dz * c; }
+    else if (w) { const a = (w < 0 ? -w * armL : w * armR), c = Math.cos(a), sn = Math.sin(a), dy = y - SY, dz = z - SZ; y = SY + dy * c - dz * sn; z = SZ + dy * sn + dz * c; }
+    p[i * 3 + 1] = y; p[i * 3 + 2] = z;
+  }
+  pa.needsUpdate = true;
+}
+if (THREE.GLTFLoader) { try { new THREE.GLTFLoader().load('monster.glb', setupMonsterGLB, undefined, () => {}); } catch (e) {} }
+
+function makeGhost() {
+  const gh = M.g.clone(); const ls = []; gh.traverse(o => { if (o.isLight) ls.push(o); }); ls.forEach(l => l.parent.remove(l));
+  gh.getObjectByName('head').rotation.set(0.25, 0, 0.9); gh.visible = false; scene.add(gh); return gh;
+}
+let ghost = makeGhost();
 const GH = { t: 0, kind: null, st: 0, sub: 0 };
 
 // ================= 音 =================
@@ -920,7 +976,7 @@ function newGame() {
   const far = cands.filter(i => ds[i] >= maxD * 0.6 && i !== exitT.x + exitT.z * N);
   mx = far[Math.floor(Math.random() * far.length)] ?? cands[cands.length - 1];
   Object.assign(M, { x: tc(mx % N), z: tc((mx / N) | 0), path: [], state: 'wander', repath: 0, lostT: 0, searchT: 0, speed: 1.3, stepAcc: 0, animT: 0, headT: 2, direct: false, rot: 0, d: 99, los: false, calm: 0, freeze: 0, bp: 0, moanT: 8 });
-  M.g.visible = true; M.g.position.set(M.x, 0, M.z); M.arms.forEach(a => a.rotation.set(0, 0, 0)); M.head.rotation.set(0, 0, 0); M.torso.rotation.x = 0.35; M.neck.rotation.x = 0.5; M.crawl = 0;
+  M.g.visible = true; M.g.position.set(M.x, 0, M.z); M.arms.forEach(a => a.rotation.set(0, 0, 0)); M.head.rotation.set(0, 0, 0); M.torso.rotation.x = 0.35; M.neck.rotation.x = 0.5; M.crawl = 0; if (M.glb) M.glb.pivot.position.x = 0;
   ghost.visible = false; GH.t = 0; GH.kind = null; GH.sub = 0; scareT = 40 + Math.random() * 20; followT = 0; flickT = 0; $('scare').hidden = true;
   G.time = 0; shake = 0; flashA = 0; dripT = 3; knockT = 25 + Math.random() * 20; rumbleT = 45 + Math.random() * 30; mapOpen = false; $('mapWrap').hidden = true;
   updateFuseHud();
@@ -1197,6 +1253,20 @@ function updateMonster(dt) {
 }
 function animMonster(dt, spd) {
   M.animT += dt * spd * 2.7;
+  if (M.glb) {
+    const s = Math.sin(M.animT), a = Math.min(1, spd / 2), hunt = M.state === 'hunt';
+    const armL = hunt ? -1.0 + s * 0.25 : -s * 0.3 * a, armR = hunt ? -1.15 - s * 0.25 : s * 0.3 * a;
+    if (M.d < 30 || ghost.visible) poseGLB(s * 0.5 * a, armL, armR);
+    M.glb.pivot.rotation.x = lerp(M.glb.pivot.rotation.x, hunt ? 0.22 : 0.04, 1 - Math.exp(-dt * 4));
+    // ときどきビクッと引きつる
+    M.headT -= dt * (hunt ? 2.5 : 1);
+    if (M.headT < 0) { M.glb.pivot.rotation.z = (Math.random() - 0.5) * 0.25; if (M.headT < -0.15) M.headT = 0.8 + Math.random() * 2.5; }
+    else M.glb.pivot.rotation.z *= 1 - Math.min(1, dt * 8);
+    if (M.freeze > 0) M.glb.pivot.rotation.z = 0.18;
+    M.g.position.set(M.x, Math.abs(Math.sin(M.animT)) * 0.05 * a, M.z); M.g.rotation.y = M.rot;
+    M.light.intensity = 1.4 + Math.sin(G.time * 13) * 0.2 + (Math.random() < 0.03 ? -1 : 0);
+    return;
+  }
   const s = Math.sin(M.animT), a = Math.min(1, spd / 2);
   const hunt = M.state === 'hunt';
   // 追う時は四つん這いで這ってくる
@@ -1227,6 +1297,7 @@ function die() {
   P.yaw = Math.atan2(-dx / d, -dz / d); P.pitch = 0.08;
   G.ldx = dx / d; G.ldz = dz / d;
   M.x = P.x + G.ldx * 1.5; M.z = P.z + G.ldz * 1.5; M.rot = Math.atan2(-dx, -dz);
+  if (M.glb) { poseGLB(0, -0.8, -0.9); M.glb.pivot.rotation.set(0.05, 0, 0); M.glb.pivot.position.x = 0.16; }
   M.g.position.set(M.x, -0.4, M.z); M.g.rotation.y = M.rot; ghost.visible = false;
   if (A.ctx) { setG(A.chase.gain, 0, 0.05); setG(A.tin.gain, 0.05, 0.05); }
   M.arms[0].rotation.set(-1.0, 0, -1.25); M.arms[1].rotation.set(-1.1, 0, 1.25);
@@ -1408,11 +1479,13 @@ function frame(now) {
     flashA = G.dt < 0.15 ? 0.9 : Math.max(0, 0.7 - (G.dt - 0.15));
     const on = Math.random() < 0.3; spot.intensity = on ? 2.2 : 0; fill.intensity = on ? 0.5 : 0.05;
     M.head.rotation.z = 0.35 + Math.sin(G.dt * 40) * 0.15; M.lowJaw.rotation.x = -0.75 - Math.sin(G.dt * 35) * 0.15;
-    const ld = lerp(1.5, 0.52, clamp(G.dt / 0.12, 0, 1)); M.x = P.x + G.ldx * ld; M.z = P.z + G.ldz * ld;
-    M.g.position.set(M.x, -0.4 + Math.sin(G.dt * 50) * 0.02, M.z); M.light.intensity = 0.5;
+    const ld = lerp(1.5, M.glb ? 0.78 : 0.52, clamp(G.dt / 0.12, 0, 1)); M.x = P.x + G.ldx * ld; M.z = P.z + G.ldz * ld;
+    M.g.position.set(M.x, (M.glb ? -0.5 : -0.4) + Math.sin(G.dt * 50) * 0.02, M.z); M.light.intensity = 0.5;
+    if (M.glb) { M.glb.pivot.rotation.z = Math.sin(G.dt * 40) * 0.03; poseGLB(0, -0.8 + Math.sin(G.dt * 30) * 0.1, -0.9 - Math.sin(G.dt * 30) * 0.1); }
     const sc = $('scare'), son = (G.dt > 0.16 && G.dt < 0.25) || (G.dt > 0.62 && G.dt < 0.68) || (G.dt > 1.05 && G.dt < 1.1) || (G.dt > 1.3 && G.dt < 1.33);
     sc.hidden = !son;
-    if (son) { sc.style.transform = `scale(${1.05 + Math.random() * 0.35}) translate(${(Math.random() - 0.5) * 30}px,${(Math.random() - 0.5) * 30}px) rotate(${(Math.random() - 0.5) * 8}deg)`; sc.style.filter = G.dt > 1 ? 'invert(1) contrast(2.2)' : 'contrast(1.7) saturate(.7)'; }
+    if (son && sc.dataset.k !== String(G.dt > 0.5 && G.dt < 1 ? 1 : 0)) { const k = G.dt > 0.5 && G.dt < 1 ? 1 : 0; if (drawScare(k)) sc.dataset.k = k; }
+    if (son) { sc.style.transform = `scale(${1.05 + Math.random() * 0.35}) translate(${(Math.random() - 0.5) * 30}px,${(Math.random() - 0.5) * 30}px) rotate(${(Math.random() - 0.5) * 8}deg)`; sc.style.filter = G.dt > 1 ? 'invert(1) contrast(1.8)' : 'brightness(1.9) contrast(1.25)'; }
     if (G.dt > 1.5 && G.state === 'dying') {
       G.state = 'over'; $('fade').style.opacity = 1; flashA = 0; $('scare').hidden = true; if (A.ctx) setG(A.tin.gain, 0, 0.8);
       setTimeout(() => {
@@ -1455,6 +1528,7 @@ function updateEscape(dt) {
     M.arms[0].rotation.x = -2.2 + Math.sin(r * 9) * 0.1; M.arms[1].rotation.x = -2.3 - Math.sin(r * 9) * 0.1;
     M.head.rotation.x = -0.2 + Math.sin(r * 30) * 0.05; M.torso.rotation.x = 0.05; M.neck.rotation.x = 0.1; M.jaw.scale.y = 1.12; M.crawl = 0; M.hb.rotation.set(-0.85, 0, 0); M.legs.forEach(l => l.rotation.x = 0); M.lowJaw.rotation.x = -0.6 - Math.sin(r * 20) * 0.1;
     M.g.position.y = Math.min(0.15, Math.sin(r * 6) * 0.15);
+    if (M.glb) { poseGLB(0, -2.4 + Math.sin(r * 9) * 0.1, -2.5 - Math.sin(r * 9) * 0.1); M.glb.pivot.rotation.set(-0.12, 0, Math.sin(r * 5) * 0.05); }
     P.pitch = lerp(P.pitch, -0.55, dt * 1.2);
   }
   if (A.ctx) setG(A.ehG.gain, 0.2);

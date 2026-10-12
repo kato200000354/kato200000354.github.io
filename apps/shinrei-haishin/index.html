@@ -1,0 +1,1170 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>心霊配信 ―廃旅館から生配信―</title>
+<meta name="description" content="深夜の廃旅館からひとりで生配信。視聴者のリクエストを撮影して回る3Dホラー。コメントの「うしろ！」は本当？嘘？">
+<style>
+  :root{--fg:#f2f2f2;--dim:#9a9a9a;--red:#ff2e3e;--gold:#ffc84a}
+  [hidden]{display:none!important}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+  html,body{width:100%;height:100%;overflow:hidden;background:#000;color:var(--fg);
+    font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic UI","Meiryo",system-ui,sans-serif;touch-action:none}
+  canvas#c{position:fixed;inset:0;display:block;width:100%;height:100%;touch-action:none}
+  canvas#c.night{filter:grayscale(1) sepia(1) hue-rotate(58deg) saturate(3.4) brightness(1.05) contrast(1.25)}
+  #noise{position:fixed;inset:-50%;pointer-events:none;opacity:.11;animation:gr .35s steps(4) infinite}
+  @keyframes gr{0%{transform:translate(0,0)}25%{transform:translate(-6%,4%)}50%{transform:translate(5%,-5%)}75%{transform:translate(-3%,7%)}}
+  #scan{position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(to bottom,rgba(0,0,0,.18) 0 1px,transparent 1px 3px)}
+  #vig{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,.8) 100%)}
+  #glitch{position:fixed;inset:0;pointer-events:none;opacity:0;mix-blend-mode:screen}
+  #flash{position:fixed;inset:0;pointer-events:none;opacity:0;background:#fff}
+  #fade{position:fixed;inset:0;pointer-events:none;opacity:0;background:#000}
+
+  #hud{position:fixed;inset:0;pointer-events:none}
+  #bar{position:fixed;top:calc(10px + env(safe-area-inset-top));left:calc(12px + env(safe-area-inset-left));display:flex;gap:8px;align-items:center;font-size:12px;font-weight:bold}
+  .live{background:var(--red);color:#fff;padding:3px 8px;border-radius:4px;letter-spacing:.05em}
+  .live i{display:inline-block;width:7px;height:7px;border-radius:50%;background:#fff;margin-right:5px;vertical-align:1px;animation:bl 1s infinite}
+  @keyframes bl{50%{opacity:.2}}
+  .pill{background:rgba(0,0,0,.55);padding:3px 8px;border-radius:4px;white-space:nowrap}
+  #bat.low{color:var(--red)}
+  #stitle{position:fixed;top:calc(38px + env(safe-area-inset-top));left:calc(12px + env(safe-area-inset-left));font-size:11px;color:#ddd;text-shadow:0 0 4px #000;max-width:62vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #req{position:fixed;top:calc(58px + env(safe-area-inset-top));left:calc(12px + env(safe-area-inset-left));width:min(300px,64vw);border-radius:8px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.5);font-size:12px;transition:transform .3s}
+  #reqH{background:#e6a100;color:#1a1200;padding:4px 9px;font-weight:bold;display:flex;justify-content:space-between}
+  #reqB{background:rgba(255,190,40,.88);color:#1a1200;padding:5px 9px 6px;line-height:1.45}
+  #req.done #reqH{background:#3aa860;color:#fff}#req.done #reqB{background:rgba(70,180,110,.88);color:#fff}
+  #req.pop{transform:scale(1.06)}
+  #ret{position:fixed;left:50%;top:50%;width:120px;height:84px;margin:-42px 0 0 -60px;pointer-events:none}
+  #ret i{position:absolute;width:16px;height:16px;border:2px solid rgba(255,255,255,.75)}
+  #ret i:nth-child(1){left:0;top:0;border-right:0;border-bottom:0}#ret i:nth-child(2){right:0;top:0;border-left:0;border-bottom:0}
+  #ret i:nth-child(3){left:0;bottom:0;border-right:0;border-top:0}#ret i:nth-child(4){right:0;bottom:0;border-left:0;border-top:0}
+  #ret.on i{border-color:var(--gold)}#ret.gh i{border-color:var(--red)}
+  #ring{position:absolute;left:50%;top:50%;width:38px;height:38px;margin:-19px;transform:rotate(-90deg)}
+  #ring circle{fill:none;stroke-width:3}
+  #recLab{position:fixed;left:0;right:0;top:calc(50% + 50px);text-align:center;font-size:13px;font-weight:bold;color:var(--gold);text-shadow:0 0 6px #000}
+  #recLab.gh{color:var(--red)}
+  #chat{position:fixed;left:calc(10px + env(safe-area-inset-left));bottom:calc(14px + env(safe-area-inset-bottom));width:min(360px,74vw);display:flex;flex-direction:column;justify-content:flex-end;gap:3px;
+    -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 30%);mask-image:linear-gradient(to bottom,transparent 0,#000 30%)}
+  .cm{font-size:13px;line-height:1.35;text-shadow:0 0 3px #000,0 0 6px #000;animation:cin .25s ease-out;word-break:break-all}
+  @keyframes cin{from{transform:translateY(8px);opacity:0}}
+  .cm b{font-weight:bold;margin-right:6px;color:#aab}
+  .cm b.mem{color:#7fd4ff}.cm b.mem:after{content:"★";color:var(--gold);margin-left:1px}
+  .cm b.mod{color:#7fffa8}.cm b.mod:before{content:"🔧";margin-right:2px}
+  .cm.gh{color:#ff3a3a;letter-spacing:.2em;font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:15px}.cm.gh b{color:#ff3a3a}
+  .cm.sc{background:rgba(230,150,0,.85);border-radius:6px;padding:4px 8px;text-shadow:none;color:#1a1200}.cm.sc b{color:#1a1200}
+  .cm.sc em{font-style:normal;font-weight:bold;margin-right:6px}
+  #msg{position:fixed;left:16px;right:16px;top:calc(62% + 10px);text-align:center;font-size:16px;line-height:1.6;color:#fff;text-shadow:0 0 6px #000,0 0 2px #000;opacity:0;transition:opacity .4s}
+  body.touch #chat{bottom:calc(160px + env(safe-area-inset-bottom));width:66vw}
+  body.touch #msg{top:calc(56% + 10px)}
+
+  #touch{position:fixed;inset:0;pointer-events:none}
+  #joy{position:fixed;width:116px;height:116px;margin:-58px 0 0 -58px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.2);opacity:0;transition:opacity .15s}
+  #knob{position:absolute;left:50%;top:50%;width:48px;height:48px;margin:-24px;border-radius:50%;background:rgba(255,255,255,.28)}
+  .tb{position:fixed;pointer-events:auto;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.5);color:#fff;
+    font-family:inherit;font-size:12px;display:flex;align-items:center;justify-content:center;touch-action:none}
+  .tb.on{background:rgba(255,200,70,.45);border-color:var(--gold)}
+  #tLight{width:62px;height:62px;right:calc(22px + env(safe-area-inset-right));bottom:calc(98px + env(safe-area-inset-bottom))}
+  #tNight{width:54px;height:54px;right:calc(100px + env(safe-area-inset-right));bottom:calc(40px + env(safe-area-inset-bottom))}
+  #tRun{width:62px;height:62px;right:calc(22px + env(safe-area-inset-right));bottom:calc(22px + env(safe-area-inset-bottom))}
+  #tMap{width:44px;height:44px;right:calc(62px + env(safe-area-inset-right));top:calc(8px + env(safe-area-inset-top));border-radius:8px}
+  #tPause{width:44px;height:44px;right:calc(12px + env(safe-area-inset-right));top:calc(8px + env(safe-area-inset-top));border-radius:8px}
+
+  #mapWrap{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(0,0,0,.65)}
+  #map{box-shadow:0 6px 30px rgba(0,0,0,.9);border-radius:4px}
+  #mapCap{font-size:12px;color:#bbb}
+
+  .screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;background:rgba(0,0,0,.66);overflow:auto}
+  .ttl{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:clamp(48px,14vw,96px);letter-spacing:.15em;padding-left:.15em;color:#fff;text-shadow:3px 0 0 rgba(255,0,60,.6),-3px 0 0 rgba(0,220,255,.5)}
+  .tag{display:inline-block;background:var(--red);color:#fff;font-weight:bold;font-size:13px;padding:3px 10px;border-radius:4px;margin-bottom:12px}
+  .sub{font-size:15px;letter-spacing:.2em;color:#ccc;margin:6px 0 20px}
+  .lead{font-size:14px;line-height:1.95;color:#ddd;margin-bottom:22px;max-width:520px}
+  .lead b{color:var(--gold)}
+  .btn{font-family:inherit;font-size:16px;font-weight:bold;letter-spacing:.15em;padding:12px 30px;margin:6px;min-width:220px;background:var(--red);color:#fff;border:0;border-radius:8px;cursor:pointer}
+  .btn.s{font-size:14px;padding:9px 20px;min-width:180px;background:rgba(255,255,255,.12);color:#ddd;border:1px solid rgba(255,255,255,.25)}
+  .small{font-size:12px;color:var(--dim);margin-top:14px;line-height:1.8}
+  .h2{font-size:24px;font-weight:bold;margin-bottom:14px;letter-spacing:.1em}
+  .h2.red{color:var(--red)}
+  .how{max-width:540px;text-align:left;font-size:14px;line-height:1.9;color:#ddd;margin-bottom:18px}
+  .how b{color:var(--gold)}
+  .how h3{font-size:12px;color:var(--dim);letter-spacing:.2em;margin:12px 0 2px;border-bottom:1px solid #333}
+  #sens{width:200px;margin:6px 0 14px;accent-color:var(--red)}
+  .res{background:rgba(255,255,255,.07);border-radius:10px;padding:14px 22px;margin-bottom:16px;font-size:14px;line-height:2;min-width:240px}
+  .res .big{font-size:30px;font-weight:bold;color:var(--gold)}
+  #endChat{width:min(360px,90vw);max-height:30vh;overflow:hidden;text-align:left;margin-bottom:16px;display:flex;flex-direction:column;justify-content:flex-end;gap:3px}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<canvas id="glitch"></canvas>
+<div id="noise"></div>
+<div id="scan"></div>
+<div id="vig"></div>
+<div id="flash"></div>
+
+<div id="hud" hidden>
+  <div id="bar"><span class="live"><i></i>LIVE</span><span class="pill" id="vw">👁 0</span><span class="pill" id="tm">00:00</span><span class="pill" id="bat">🔋 100%</span></div>
+  <div id="stitle">【閲覧注意】廃旅館にひとりで凸してみた【心霊】</div>
+  <div id="req"><div id="reqH"><span id="reqWho"></span><span id="reqN"></span></div><div id="reqB"></div></div>
+  <div id="ret"><i></i><i></i><i></i><i></i>
+    <svg id="ring" viewBox="0 0 38 38"><circle cx="19" cy="19" r="16" stroke="rgba(255,255,255,.15)"/><circle id="ringC" cx="19" cy="19" r="16" stroke="#ffc84a" stroke-dasharray="100.5" stroke-dashoffset="100.5"/></svg>
+  </div>
+  <div id="recLab"></div>
+  <div id="msg"></div>
+  <div id="chat"></div>
+</div>
+
+<div id="touch" hidden>
+  <div id="joy"><div id="knob"></div></div>
+  <button class="tb on" id="tLight">ライト</button>
+  <button class="tb" id="tNight">暗視</button>
+  <button class="tb" id="tRun">走る</button>
+  <button class="tb" id="tMap">地図</button>
+  <button class="tb" id="tPause">Ⅱ</button>
+</div>
+
+<div id="mapWrap" hidden><canvas id="map"></canvas><div id="mapCap">館内図（★＝リクエストの場所）― タップ / M で閉じる</div></div>
+<div id="fade"></div>
+
+<div id="scTitle" class="screen">
+  <span class="tag">● LIVE</span>
+  <div class="ttl">心霊配信</div>
+  <div class="sub">― 廃旅館から生配信 ―</div>
+  <p class="lead">登録者を増やすため、深夜の廃旅館からひとりで生配信。<br>視聴者のリクエストにこたえて、館内を撮影して回ろう。<br>ただし、コメントの「うしろ！」が<b>ぜんぶ本当とは限らない</b>。</p>
+  <button class="btn" id="bStart">配信をはじめる</button>
+  <button class="btn s" id="bCont" hidden>つづきから</button>
+  <button class="btn s" id="bHow">あそびかた</button>
+  <div class="small" id="best"></div>
+  <div class="small">🎧 ヘッドホン推奨 ・ 音が出ます</div>
+</div>
+
+<div id="scHow" class="screen" hidden>
+  <div class="h2">あそびかた</div>
+  <div class="how">
+    <h3>目的</h3>
+    画面左上の<b>リクエスト</b>の場所へ行き、対象を画面中央の枠に入れて<b>撮影</b>（しばらく映し続ける）。全部撮ったら玄関から出て配信終了。
+    <h3>“女”が来たら</h3>
+    死角から近づいてくる。<b>コメント欄</b>が方向を教えてくれるが、荒らしの嘘も混ざる。<br>
+    <b>名前に★がついた常連さん</b>のコメントは信用できる。<br>
+    女を<b>枠の中に映し続ける</b>と、悲鳴をあげて消える。つかまったら配信終了。
+    <h3>パソコン</h3>
+    <b>WASD</b> 移動　<b>マウス</b> 見回す　<b>Shift</b> 走る　<b>F</b> ライト　<b>N</b> 暗視モード　<b>M</b> 館内図　<b>Esc</b> 一時停止
+    <h3>スマホ</h3>
+    左側をなぞって移動、右側をなぞって見回す。ライト・暗視・走る（切替）・地図ボタン。
+    <h3>バッテリー</h3>
+    スマホの電池が切れると配信終了。館内のモバイルバッテリーは近づくと拾える。
+  </div>
+  <button class="btn s" id="bHowBack">もどる</button>
+</div>
+
+<div id="scPause" class="screen" hidden>
+  <div class="h2">一時停止</div>
+  <button class="btn" id="bResume">つづける</button>
+  <div class="small">視点の感度</div>
+  <input type="range" id="sens" min="0.4" max="2.2" step="0.1" value="1">
+  <button class="btn s" id="bRestart">最初から</button>
+  <button class="btn s" id="bToTitle">タイトルへ</button>
+</div>
+
+<div id="scOver" class="screen" hidden>
+  <div class="h2 red" id="overH">配信が中断されました</div>
+  <div id="endChat"></div>
+  <div class="res" id="overRes"></div>
+  <button class="btn" id="bOverCont">つづきから</button>
+  <button class="btn s" id="bOverRe">最初から</button>
+  <button class="btn s" id="bOverTitle">タイトルへ</button>
+</div>
+
+<div id="scClear" class="screen" hidden>
+  <div class="h2">配信終了 ― おつかれさまでした</div>
+  <div class="res" id="clearRes"></div>
+  <div id="endChat2" style="width:min(360px,90vw);text-align:left;margin-bottom:16px;display:flex;flex-direction:column;gap:3px"></div>
+  <button class="btn" id="bClearRe">もう一度配信する</button>
+  <button class="btn s" id="bClearTitle">タイトルへ</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v, lerp = (a, b, t) => a + (b - a) * t, rand = (a, b) => a + Math.random() * (b - a);
+const pick = a => a[(Math.random() * a.length) | 0];
+const TOUCH = ('ontouchstart' in window) || matchMedia('(pointer:coarse)').matches;
+if (TOUCH) document.body.classList.add('touch');
+if (!window.THREE) { document.body.innerHTML = '<div style="color:#ddd;padding:40px;text-align:center;line-height:2">3D描画ライブラリを読み込めませんでした。<br>通信状態を確認して再読み込みしてください。</div>'; throw new Error('no three'); }
+
+// =====================================================================
+//  廃旅館の間取り（1マス = 1.2m）
+// =====================================================================
+const T = 1.2, H = 2.7, W = 36, D = 27, EYE = 1.5, PR = 0.28;
+const M = Array.from({ length: D }, () => Array(W).fill('#'));
+const RAT = Array.from({ length: D }, () => Array(W).fill(null));
+const fill = (x0, z0, x1, z1, c, room) => { for (let z = z0; z <= z1; z++) for (let x = x0; x <= x1; x++) { M[z][x] = c; if (room) RAT[z][x] = room; } };
+const ROOMS = [
+  { id: 'r11', n: '11号室', x0: 1, z0: 1, x1: 9, z1: 5, k: 'wa', door: [10, 3] },
+  { id: 'r12', n: '12号室', x0: 1, z0: 7, x1: 9, z1: 11, k: 'wa', door: [10, 9] },
+  { id: 'r13', n: '13号室', x0: 1, z0: 13, x1: 9, z1: 17, k: 'wa', door: [10, 15] },
+  { id: 'kit', n: '厨房', x0: 1, z0: 19, x1: 9, z1: 25, k: 'kit', door: [10, 22] },
+  { id: 'hall', n: '宴会場', x0: 14, z0: 1, x1: 21, z1: 6, k: 'hall', open: [[16, 7], [17, 7], [18, 7], [19, 7]] },
+  { id: 'bath', n: '大浴場', x0: 26, z0: 1, x1: 34, z1: 8, k: 'bath', door: [25, 5] },
+  { id: 'okami', n: '女将の部屋', x0: 26, z0: 10, x1: 34, z1: 15, k: 'okami', door: [25, 12] },
+  { id: 'r14', n: '14号室', x0: 26, z0: 17, x1: 34, z1: 25, k: 'wa', door: [25, 21] },
+  { id: 'yard', n: '中庭', x0: 14, z0: 11, x1: 21, z1: 15, k: 'yard', open: [[17, 10], [18, 10], [17, 16], [18, 16]] },
+  { id: 'lobby', n: 'ロビー', x0: 14, z0: 20, x1: 21, z1: 25, k: 'lobby', open: [[16, 19], [17, 19], [18, 19], [19, 19]] },
+];
+const RM = {}; ROOMS.forEach(r => RM[r.id] = r);
+const CORR = { id: 'corr', n: '廊下', k: 'corr' };
+fill(11, 1, 12, 25, '.', CORR); fill(23, 1, 24, 25, '.', CORR); fill(11, 8, 24, 9, '.', CORR); fill(11, 17, 24, 18, '.', CORR);
+for (let z = 10; z <= 16; z++) for (let x = 13; x <= 22; x++) if (x === 13 || x === 22 || z === 10 || z === 16) M[z][x] = 'g';
+for (const r of ROOMS) {
+  fill(r.x0, r.z0, r.x1, r.z1, r.k === 'yard' ? 'C' : '.', r);
+  if (r.door) { M[r.door[1]][r.door[0]] = 'd'; RAT[r.door[1]][r.door[0]] = r; }
+  if (r.open) for (const [x, z] of r.open) { M[z][x] = r.k === 'yard' ? 'C' : '.'; RAT[z][x] = r; }
+}
+fill(16, 26, 19, 26, 'E', RM.lobby);
+const tc = i => (i + 0.5) * T;
+
+// =====================================================================
+//  描画
+// =====================================================================
+const canvas = $('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2) * (TOUCH ? 0.62 : 0.75));
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x020306);
+scene.fog = new THREE.FogExp2(0x020306, 0.11);
+const camera = new THREE.PerspectiveCamera(70, 1, 0.05, 80); camera.rotation.order = 'YXZ'; scene.add(camera);
+function resize() { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); const g = $('glitch'); g.width = 160; g.height = 120; }
+addEventListener('resize', resize); resize();
+const amb = new THREE.AmbientLight(0x2a3044, 0.55); scene.add(amb);
+const spot = new THREE.SpotLight(0xf4f6ff, 0, 18, 0.62, 0.6, 1.4);
+spot.position.set(0.1, -0.08, 0.05); camera.add(spot); camera.add(spot.target); spot.target.position.set(0, -0.05, -4);
+spot.castShadow = true; spot.shadow.mapSize.set(TOUCH ? 512 : 1024, TOUCH ? 512 : 1024); spot.shadow.camera.near = 0.2; spot.shadow.camera.far = 18; spot.shadow.bias = -0.0015; spot.shadow.normalBias = 0.02;
+const moonL = new THREE.PointLight(0x7088b8, 0.9, 11, 1.6); moonL.position.set(tc(17.5), 4.5, tc(13)); scene.add(moonL);
+const candleL = new THREE.PointLight(0xff9a40, 0.8, 5, 2); scene.add(candleL);
+
+// ---------- テクスチャ ----------
+function cv(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return [c, c.getContext('2d')]; }
+function tex(c) { const t = new THREE.CanvasTexture(c); t.anisotropy = 4; return t; }
+function grime(g, w, h, n, a0, a1, r0, r1) { for (let i = 0; i < n; i++) { g.fillStyle = `rgba(${rand(20, 60) | 0},${rand(15, 45) | 0},${rand(8, 30) | 0},${rand(a0, a1)})`; g.beginPath(); g.ellipse(rand(0, w), rand(0, h), rand(r0, r1), rand(r0, r1), rand(0, 3), 0, 7); g.fill(); } }
+function noiseFill(g, w, h, amt) { const id = g.getImageData(0, 0, w, h), d = id.data; for (let i = 0; i < d.length; i += 4) { const n = (Math.random() - .5) * amt; d[i] += n; d[i + 1] += n; d[i + 2] += n; } g.putImageData(id, 0, 0); }
+function drips(g, n, h) { for (let i = 0; i < n; i++) { const x = rand(0, 256), len = rand(30, h); const gr = g.createLinearGradient(0, 0, 0, len); gr.addColorStop(0, 'rgba(60,40,20,.35)'); gr.addColorStop(1, 'rgba(60,40,20,0)'); g.fillStyle = gr; g.fillRect(x, 0, rand(2, 6), len); } }
+const BEAM = 46; // 長押の高さ（キャンバス上の y）
+function topBeam(g) { g.fillStyle = '#3a2618'; g.fillRect(0, BEAM, 256, 10); g.fillStyle = '#2a1a10'; g.fillRect(0, 246, 256, 10); }
+function cPlaster(pillar) {
+  const [c, g] = cv(256, 256); g.fillStyle = '#9c8f72'; g.fillRect(0, 0, 256, 256);
+  for (let i = 0; i < 2500; i++) { g.fillStyle = `rgba(${rand(60, 140) | 0},${rand(50, 120) | 0},${rand(30, 80) | 0},.25)`; g.fillRect(rand(0, 256), rand(0, 256), 2, 2); }
+  grime(g, 256, 256, 26, .04, .12, 10, 50); drips(g, 5, 150); topBeam(g);
+  if (pillar) { g.fillStyle = '#3e2a1a'; g.fillRect(0, 0, 18, 256); g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(14, 0, 4, 256); }
+  noiseFill(g, 256, 256, 14); return c;
+}
+function cFusuma() {
+  const [c, g] = cv(256, 256); g.fillStyle = '#9c8f72'; g.fillRect(0, 0, 256, BEAM); topBeam(g);
+  g.fillStyle = '#c8bc9c'; g.fillRect(6, BEAM + 10, 244, 190);
+  g.strokeStyle = 'rgba(60,60,70,.5)'; g.lineWidth = 3;
+  for (let k = 0; k < 3; k++) { g.beginPath(); g.moveTo(10, 200 - k * 20); for (let x = 10; x < 250; x += 20) g.lineTo(x, 200 - k * 20 - Math.abs(Math.sin(x * .03 + k)) * rand(20, 60)); g.stroke(); }
+  g.fillStyle = 'rgba(130,40,30,.6)'; g.beginPath(); g.arc(190, 90, 14, 0, 7); g.fill();
+  g.strokeStyle = '#2a1a10'; g.lineWidth = 8; g.strokeRect(4, BEAM + 10, 248, 192); g.beginPath(); g.moveTo(128, BEAM + 10); g.lineTo(128, 246); g.stroke();
+  g.fillStyle = '#1a120a'; g.beginPath(); g.arc(110, 160, 6, 0, 7); g.arc(146, 160, 6, 0, 7); g.fill();
+  grime(g, 256, 256, 18, .06, .18, 6, 30);
+  g.fillStyle = '#16100a'; g.beginPath(); g.moveTo(40, 150); g.lineTo(70, 170); g.lineTo(52, 210); g.lineTo(30, 180); g.fill();
+  noiseFill(g, 256, 256, 14); return c;
+}
+function cShoji(glow) {
+  const [c, g] = cv(256, 256); g.fillStyle = glow ? '#000' : '#9c8f72'; g.fillRect(0, 0, 256, 256);
+  if (!glow) topBeam(g);
+  const gr = g.createLinearGradient(0, BEAM + 10, 0, 246); gr.addColorStop(0, glow ? '#28324a' : '#cfc9b8'); gr.addColorStop(1, glow ? '#141a28' : '#bdb6a2');
+  g.fillStyle = gr; g.fillRect(8, BEAM + 10, 240, 186);
+  if (!glow) for (let i = 0; i < 4; i++) { g.fillStyle = `rgba(90,70,40,${rand(.1, .3)})`; g.beginPath(); g.ellipse(rand(20, 236), rand(70, 230), rand(6, 26), rand(6, 26), 0, 0, 7); g.fill(); }
+  g.fillStyle = glow ? '#000' : '#3a2618';
+  for (let x = 8; x <= 248; x += 48) g.fillRect(x - 3, BEAM + 10, 6, 186);
+  for (let y = BEAM + 10; y <= 246; y += 37) g.fillRect(8, y - 2, 240, 5);
+  if (glow) { g.fillStyle = '#000'; g.fillRect(150, 140, 36, 30); g.fillRect(60, 200, 30, 24); }
+  else { g.fillStyle = '#0a0806'; g.fillRect(150, 140, 36, 30); g.fillRect(60, 200, 30, 24); noiseFill(g, 256, 256, 12); }
+  return c;
+}
+function cGlass(glow) {
+  const [c, g] = cv(256, 256); g.fillStyle = glow ? '#000' : '#9c8f72'; g.fillRect(0, 0, 256, 256);
+  if (!glow) { topBeam(g); g.fillStyle = '#3a2618'; g.fillRect(6, BEAM + 10, 244, 190); }
+  for (const x of [14, 132]) { const gr = g.createLinearGradient(0, 64, 0, 236); gr.addColorStop(0, glow ? '#1e2a44' : '#0a0e16'); gr.addColorStop(1, glow ? '#0c1426' : '#06080c'); g.fillStyle = gr; g.fillRect(x, 64, 110, 174); }
+  if (glow) { g.strokeStyle = 'rgba(140,160,200,.5)'; g.beginPath(); g.moveTo(40, 80); g.lineTo(70, 120); g.lineTo(60, 170); g.moveTo(70, 120); g.lineTo(110, 110); g.stroke(); }
+  return c;
+}
+function cTile(col, line, sz, top) {
+  const [c, g] = cv(256, 256); g.fillStyle = line; g.fillRect(0, 0, 256, 256);
+  for (let y = 0; y < 256; y += sz) for (let x = 0; x < 256; x += sz) { const s = rand(.85, 1.05); const [r, gg, b] = col; g.fillStyle = `rgb(${r * s | 0},${gg * s | 0},${b * s | 0})`; g.fillRect(x + 1.5, y + 1.5, sz - 3, sz - 3); }
+  grime(g, 256, 256, 22, .05, .2, 6, 34); drips(g, 6, 200);
+  if (top) { g.fillStyle = '#9c9a90'; g.fillRect(0, 0, 256, BEAM + 8); }
+  noiseFill(g, 256, 256, 12); return c;
+}
+function cTatami() {
+  const [c, g] = cv(256, 256); g.fillStyle = '#7d7846'; g.fillRect(0, 0, 256, 256);
+  for (let y = 0; y < 256; y += 3) { g.fillStyle = `rgba(${rand(40, 70) | 0},${rand(40, 60) | 0},20,${rand(.1, .3)})`; g.fillRect(0, y, 256, 1); }
+  g.fillStyle = '#2a2a1e'; g.fillRect(0, 0, 256, 12); g.fillRect(0, 0, 12, 256);
+  grime(g, 256, 256, 18, .06, .2, 8, 40); noiseFill(g, 256, 256, 16); return c;
+}
+function cWoodF() {
+  const [c, g] = cv(256, 256);
+  for (let i = 0; i < 6; i++) { const s = rand(.7, 1); g.fillStyle = `rgb(${58 * s | 0},${38 * s | 0},${24 * s | 0})`; g.fillRect(0, i * 43, 256, 43); for (let k = 0; k < 8; k++) { g.strokeStyle = `rgba(20,10,4,${rand(.1, .3)})`; g.beginPath(); const y = i * 43 + rand(0, 43); g.moveTo(0, y); g.bezierCurveTo(80, y + rand(-4, 4), 170, y + rand(-4, 4), 256, y); g.stroke(); } g.fillStyle = 'rgba(0,0,0,.7)'; g.fillRect(0, i * 43, 256, 2); }
+  grime(g, 256, 256, 14, .05, .15, 6, 30); noiseFill(g, 256, 256, 12); return c;
+}
+function cCeil() {
+  const [c, g] = cv(256, 256); g.fillStyle = '#4e3a28'; g.fillRect(0, 0, 256, 256);
+  for (let k = 0; k < 30; k++) { g.strokeStyle = `rgba(20,10,4,${rand(.1, .3)})`; g.beginPath(); const x = rand(0, 256); g.moveTo(x, 0); g.lineTo(x + rand(-6, 6), 256); g.stroke(); }
+  g.fillStyle = '#2a1c10'; g.fillRect(0, 0, 10, 256); g.fillRect(128, 0, 10, 256);
+  for (let i = 0; i < 3; i++) { const x = rand(20, 236), y = rand(20, 236), r = rand(16, 50); const gr = g.createRadialGradient(x, y, r * .4, x, y, r); gr.addColorStop(0, 'rgba(20,14,6,.2)'); gr.addColorStop(.85, 'rgba(10,6,2,.4)'); gr.addColorStop(1, 'rgba(10,6,2,0)'); g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); }
+  noiseFill(g, 256, 256, 10); return c;
+}
+function cGravel() { const [c, g] = cv(256, 256); g.fillStyle = '#4a4a46'; g.fillRect(0, 0, 256, 256); for (let i = 0; i < 4000; i++) { const v = rand(40, 130) | 0; g.fillStyle = `rgb(${v},${v},${v - 6})`; g.beginPath(); g.arc(rand(0, 256), rand(0, 256), rand(1, 3), 0, 7); g.fill(); } return c; }
+function cPlate(t) { const [c, g] = cv(256, 80); g.fillStyle = '#c9b48a'; g.fillRect(0, 0, 256, 80); g.strokeStyle = '#3a2618'; g.lineWidth = 6; g.strokeRect(3, 3, 250, 74); g.fillStyle = '#1a0f06'; g.font = 'bold 40px "Hiragino Mincho ProN","Yu Mincho",serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(t, 128, 42, 230); grime(g, 256, 80, 10, .1, .3, 4, 18); noiseFill(g, 256, 80, 18); return c; }
+function cScroll() { const [c, g] = cv(64, 192); g.fillStyle = '#5a3a24'; g.fillRect(0, 0, 64, 192); g.fillStyle = '#d6ccb0'; g.fillRect(8, 16, 48, 160); g.fillStyle = '#1a1410'; g.font = 'bold 30px "Hiragino Mincho ProN","Yu Mincho",serif'; g.textAlign = 'center'; ['帰', 'ら', 'ず'].forEach((ch, i) => g.fillText(ch, 32, 60 + i * 40)); grime(g, 64, 192, 6, .1, .3, 4, 14); return c; }
+function cByobu() { const [c, g] = cv(128, 256); const gr = g.createLinearGradient(0, 0, 128, 256); gr.addColorStop(0, '#b08a36'); gr.addColorStop(.5, '#d8b860'); gr.addColorStop(1, '#8a6a26'); g.fillStyle = gr; g.fillRect(0, 0, 128, 256); for (let i = 0; i < 8; i++) { g.strokeStyle = 'rgba(80,50,10,.3)'; g.strokeRect(0, i * 32, 128, 32); } g.fillStyle = 'rgba(40,20,10,.5)'; g.beginPath(); g.ellipse(70, 170, 30, 60, .3, 0, 7); g.fill(); grime(g, 128, 256, 10, .1, .3, 6, 22); g.strokeStyle = '#1a0f06'; g.lineWidth = 6; g.strokeRect(0, 0, 128, 256); noiseFill(g, 128, 256, 16); return c; }
+function cClock() { const [c, g] = cv(128, 128); g.fillStyle = '#d8cfb4'; g.beginPath(); g.arc(64, 64, 58, 0, 7); g.fill(); g.strokeStyle = '#2a1a10'; g.lineWidth = 6; g.stroke(); g.fillStyle = '#1a1410'; g.font = 'bold 13px serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; for (let i = 1; i <= 12; i++) { const a = i / 12 * 6.283 - 1.5708; g.fillText(['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][i - 1], 64 + Math.cos(a) * 46, 64 + Math.sin(a) * 46); } g.lineWidth = 4; g.beginPath(); g.moveTo(64, 64); g.lineTo(64, 24); g.moveTo(64, 64); g.lineTo(64, 92); g.stroke(); return c; }
+function cFace() { const [c, g] = cv(128, 160); g.fillStyle = '#d9d2c6'; g.beginPath(); g.ellipse(64, 80, 54, 74, 0, 0, 7); g.fill(); g.fillStyle = '#000'; g.beginPath(); g.ellipse(42, 66, 14, 20, 0, 0, 7); g.ellipse(86, 66, 14, 20, 0, 0, 7); g.fill(); g.beginPath(); g.ellipse(64, 122, 18, 30, 0, 0, 7); g.fill(); g.fillStyle = 'rgba(120,0,0,.7)'; for (const x of [42, 86]) g.fillRect(x - 2, 84, 4, rand(30, 60)); return c; }
+function cPhoto() { const [c, g] = cv(96, 128); g.fillStyle = '#1a1410'; g.fillRect(0, 0, 96, 128); g.fillStyle = '#6a6458'; g.fillRect(8, 8, 80, 112); g.fillStyle = '#2a2620'; g.beginPath(); g.ellipse(48, 50, 18, 22, 0, 0, 7); g.fill(); g.fillRect(24, 76, 48, 44); g.fillStyle = '#000'; g.fillRect(28, 46, 40, 6); noiseFill(g, 96, 128, 30); return c; }
+function cGlint() { const [c, g] = cv(64, 64); const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(180,255,200,1)'); gr.addColorStop(.25, 'rgba(120,255,160,.5)'); gr.addColorStop(1, 'rgba(80,255,120,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return c; }
+function cVend() { const [c, g] = cv(128, 256); g.fillStyle = '#7a1a18'; g.fillRect(0, 0, 128, 256); g.fillStyle = '#1a1a1a'; g.fillRect(10, 14, 108, 120); for (let r = 0; r < 3; r++) for (let k = 0; k < 4; k++) { g.fillStyle = `hsl(${rand(0, 360) | 0},40%,40%)`; g.fillRect(16 + k * 26, 22 + r * 38, 18, 30); } g.fillStyle = '#0a0a0a'; g.fillRect(20, 190, 88, 30); grime(g, 128, 256, 14, .1, .3, 6, 22); return c; }
+
+const phong = o => new THREE.MeshPhongMaterial(Object.assign({ shininess: 6, specular: 0x111111 }, o));
+const MAT = {
+  pl: phong({ map: tex(cPlaster(false)) }), plP: phong({ map: tex(cPlaster(true)) }), fus: phong({ map: tex(cFusuma()) }),
+  shoji: phong({ map: tex(cShoji(false)), emissive: 0xffffff, emissiveMap: tex(cShoji(true)) }),
+  glass: phong({ map: tex(cGlass(false)), emissive: 0xffffff, emissiveMap: tex(cGlass(true)), shininess: 60 }),
+  tileW: phong({ map: tex(cTile([150, 175, 190], '#5a6066', 32, true)), shininess: 40 }), kitW: phong({ map: tex(cTile([190, 188, 178], '#6a6860', 42, true)), shininess: 30 }),
+  tatami: phong({ map: tex(cTatami()) }), woodF: phong({ map: tex(cWoodF()), shininess: 30, specular: 0x222222 }), tileF: phong({ map: tex(cTile([110, 116, 118], '#3a3c3c', 21, false)), shininess: 40 }),
+  kitF: phong({ map: tex(cTile([96, 94, 88], '#3a3830', 64, false)) }), gravel: phong({ map: tex(cGravel()) }), ceil: phong({ map: tex(cCeil()) }),
+  dark: phong({ color: 0x2a1a10, shininess: 20 }), wood: phong({ color: 0x5a3e28 }), lacq: phong({ color: 0x3a0e0a, shininess: 60, specular: 0x442222 }),
+  zab: phong({ color: 0x4a2a44 }), white: phong({ color: 0xb8b4a8 }), steel: phong({ color: 0x8a8e8e, shininess: 60, specular: 0x555555 }),
+  stone: phong({ color: 0x5a5a56 }), black: phong({ color: 0x0c0c0c, shininess: 50 }), brown: phong({ color: 0x3a2418 }),
+  gold: phong({ color: 0x9a7a30, shininess: 80, specular: 0x886622 }), yellow: phong({ color: 0xc8a020, shininess: 40 }),
+  mirror: phong({ color: 0x1e2629, emissive: 0x0b1012, shininess: 140, specular: 0x99aabb }), water: phong({ color: 0x0a0e0c, shininess: 120, specular: 0x556666 }),
+  vend: phong({ map: tex(cVend()), emissive: 0x220806 }),
+};
+
+// ---------- ジオメトリ結合 ----------
+const BATCH = {};
+const _m4 = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _s = new THREE.Vector3(), _p = new THREE.Vector3(), _v = new THREE.Vector3(), _n3 = new THREE.Matrix3();
+const BOXG = new THREE.BoxGeometry(1, 1, 1).toNonIndexed(), CYLG = new THREE.CylinderGeometry(0.5, 0.5, 1, 12).toNonIndexed();
+const bArr = k => BATCH[k] || (BATCH[k] = { p: [], n: [], u: [] });
+function addGeo(G0, k, w, h, d, x, y, z, ry = 0, rx = 0, rz = 0) {
+  const b = bArr(k); _e.set(rx, ry, rz, 'YXZ'); _q.setFromEuler(_e); _p.set(x, y, z); _s.set(w, h, d); _m4.compose(_p, _q, _s); _n3.getNormalMatrix(_m4);
+  const P = G0.attributes.position, N = G0.attributes.normal, U = G0.attributes.uv;
+  for (let i = 0; i < P.count; i++) { _v.fromBufferAttribute(P, i).applyMatrix4(_m4); b.p.push(_v.x, _v.y, _v.z); _v.fromBufferAttribute(N, i).applyMatrix3(_n3).normalize(); b.n.push(_v.x, _v.y, _v.z); b.u.push(U.getX(i), U.getY(i)); }
+}
+const addBox = (...a) => addGeo(BOXG, ...a), addCyl = (...a) => addGeo(CYLG, ...a);
+function addQuad(k, a, b2, c, d, n) { const b = bArr(k); for (const [p, u, v] of [[a, 0, 0], [b2, 1, 0], [c, 1, 1], [a, 0, 0], [c, 1, 1], [d, 0, 1]]) { b.p.push(p[0], p[1], p[2]); b.n.push(n[0], n[1], n[2]); b.u.push(u, v); } }
+const SHELL = new Set(['pl', 'plP', 'fus', 'shoji', 'glass', 'tileW', 'kitW', 'tatami', 'woodF', 'tileF', 'kitF', 'gravel', 'ceil']);
+function flushBatch() {
+  for (const k in BATCH) {
+    const b = BATCH[k], g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(b.p, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(b.n, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(b.u, 2));
+    const m = new THREE.Mesh(g, MAT[k]); m.receiveShadow = true; m.castShadow = !SHELL.has(k); m.matrixAutoUpdate = false; scene.add(m);
+  }
+}
+const COL = []; const addCol = (x0, z0, x1, z1) => COL.push([Math.min(x0, x1), Math.min(z0, z1), Math.max(x0, x1), Math.max(z0, z1)]);
+const solidC = c => c === '#' || c === 'g';
+
+function wallKey(x, z, nx, nz) {
+  const c = M[z][x], r = RAT[nz][nx], k = r ? r.k : 'corr', ext = x === 0 || z === 0 || x === W - 1 || z === D - 1;
+  if (c === 'g') return 'glass';
+  if (k === 'bath') return 'tileW'; if (k === 'kit') return 'kitW';
+  if (ext) return (k === 'wa' || k === 'okami' || k === 'hall') ? 'shoji' : 'glass';
+  const h = (x * 7 + z * 13 + nx * 3 + nz * 5) % 8;
+  if ((k === 'wa' || k === 'okami' || k === 'hall') && h < 2) return 'fus';
+  return h % 3 === 0 ? 'plP' : 'pl';
+}
+function buildShell() {
+  for (let z = 0; z < D; z++) for (let x = 0; x < W; x++) {
+    const c = M[z][x], X0 = x * T, X1 = X0 + T, Z0 = z * T, Z1 = Z0 + T;
+    if (solidC(c)) {
+      const open = (nx, nz) => nx >= 0 && nz >= 0 && nx < W && nz < D && !solidC(M[nz][nx]);
+      if (open(x, z + 1)) addQuad(wallKey(x, z, x, z + 1), [X0, 0, Z1], [X1, 0, Z1], [X1, H, Z1], [X0, H, Z1], [0, 0, 1]);
+      if (open(x, z - 1)) addQuad(wallKey(x, z, x, z - 1), [X1, 0, Z0], [X0, 0, Z0], [X0, H, Z0], [X1, H, Z0], [0, 0, -1]);
+      if (open(x + 1, z)) addQuad(wallKey(x, z, x + 1, z), [X1, 0, Z1], [X1, 0, Z0], [X1, H, Z0], [X1, H, Z1], [1, 0, 0]);
+      if (open(x - 1, z)) addQuad(wallKey(x, z, x - 1, z), [X0, 0, Z0], [X0, 0, Z1], [X0, H, Z1], [X0, H, Z0], [-1, 0, 0]);
+      continue;
+    }
+    const r = RAT[z][x], k = r ? r.k : 'corr';
+    const fm = c === 'C' ? 'gravel' : k === 'wa' || k === 'hall' || k === 'okami' ? 'tatami' : k === 'bath' ? 'tileF' : k === 'kit' ? 'kitF' : 'woodF';
+    addQuad(c === 'd' ? 'woodF' : fm, [X0, 0, Z1], [X1, 0, Z1], [X1, 0, Z0], [X0, 0, Z0], [0, 1, 0]);
+    if (c !== 'C') addQuad('ceil', [X0, H, Z0], [X1, H, Z0], [X1, H, Z1], [X0, H, Z1], [0, -1, 0]);
+    if (c === 'd' || c === 'E') addBox('dark', T, H - 1.92, T, X0 + T / 2, 1.92 + (H - 1.92) / 2, Z0 + T / 2);
+  }
+  // 軒（中庭の上の縁）
+  for (let x = 13; x <= 22; x++) for (const z of [10, 16]) addBox('dark', T, 0.12, 0.6, tc(x), H + 0.06, z === 10 ? 10 * T + 0.3 + T : 16 * T - 0.3 + 0);
+}
+
+// ---------- 家具・小物 ----------
+const RB = r => ({ X0: r.x0 * T, X1: (r.x1 + 1) * T, Z0: r.z0 * T, Z1: (r.z1 + 1) * T, xc: (r.x0 + r.x1 + 1) * T / 2, zc: (r.z0 + r.z1 + 1) * T / 2 });
+const SPOT = {}; let OSHI = null, DOLL = null, CLOCK = null, CANDLE = [], VEND = null;
+function plane(mat, w, h, x, y, z, ry, rx = 0) { const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat); p.position.set(x, y, z); p.rotation.set(rx, ry, 0, 'YXZ'); p.receiveShadow = true; scene.add(p); return p; }
+function zabuton(x, z, a = 0) { addBox('zab', 0.55, 0.07, 0.55, x, 0.035, z, a + rand(-.2, .2)); }
+function waRoom(r) {
+  const { X0, X1, Z0, Z1, xc, zc } = RB(r);
+  const west = r.door[0] === 10, farX = west ? X0 : X1, si = west ? 1 : -1, ry = west ? Math.PI / 2 : -Math.PI / 2;
+  // 床の間
+  const tz = Z0 + 1.0;
+  addBox('wood', 0.7, 0.14, 1.7, farX + si * 0.35, 0.07, tz); addCol(farX, tz - 0.85, farX + si * 0.7, tz + 0.85);
+  plane(new THREE.MeshPhongMaterial({ map: tex(cScroll()) }), 0.4, 1.2, farX + si * 0.03, 1.3, tz, ry);
+  addCyl('dark', 0.18, 0.3, 0.18, farX + si * 0.35, 0.29, tz + 0.5);
+  // 押入れ
+  const oz = Z1 - 1.0, fm = phong({ map: tex(cFusuma()) });
+  const p1 = plane(fm, 0.95, 1.75, farX + si * 0.03, 0.9, oz - 0.47, ry); const p2 = plane(fm, 0.95, 1.75, farX + si * 0.05, 0.9, oz + 0.47, ry);
+  addBox('black', 0.05, 1.75, 1.9, farX + si * 0.005, 0.9, oz);
+  if (r.id === 'r13') { OSHI = { p: p2, z0: oz + 0.47, t: 0.35, tgt: 0.35 }; p2.position.z = oz + 0.47 - 0.35; }
+  // ちゃぶ台・座布団
+  addBox('wood', 0.95, 0.04, 0.95, xc, 0.33, zc); addBox('dark', 0.8, 0.31, 0.8, xc, 0.155, zc); addCol(xc - 0.48, zc - 0.48, xc + 0.48, zc + 0.48);
+  zabuton(xc - 0.85, zc); zabuton(xc + 0.85, zc); zabuton(xc, zc - 0.85, 0.3);
+  if (Math.random() < 0.6) addBox('white', 0.08, 0.1, 0.08, xc + rand(-.3, .3), 0.4, zc + rand(-.3, .3));
+  // テレビ
+  const tvx = west ? X1 - 0.5 : X0 + 0.5; addBox('black', 0.5, 0.45, 0.6, tvx, 0.62, Z0 + 0.6); addBox('wood', 0.55, 0.4, 0.7, tvx, 0.2, Z0 + 0.6); addCol(tvx - 0.3, Z0 + 0.2, tvx + 0.3, Z0 + 1.0);
+  // 布団
+  if (r.id === 'r12' || r.id === 'r13' || r.id === 'r14') {
+    const fx = xc + si * 1.6, fz = Z1 - 1.6; addBox('white', 1.0, 0.12, 2.0, fx, 0.06, fz, rand(-.1, .1)); addBox('zab', 0.98, 0.1, 1.4, fx, 0.17, fz + 0.25, rand(-.1, .1), 0.03); addBox('white', 0.5, 0.1, 0.3, fx, 0.17, fz - 0.8);
+  }
+  if (r.id === 'r13') { const st = plane(new THREE.MeshBasicMaterial({ color: 0x2a0806, transparent: true, opacity: 0.75, depthWrite: false }), 1.4, 1.0, xc - 1.5, 0.006, zc + 0.4, 0, -Math.PI / 2); st.rotation.z = 0.6; }
+  // 札
+  const pm = phong({ map: tex(cPlate(r.n)), emissive: 0x100c08 });
+  const px = west ? 11 * T + 0.01 : 25 * T - 0.01; plane(pm, 0.6, 0.19, px, 2.25, tc(r.door[1]), west ? Math.PI / 2 : -Math.PI / 2);
+}
+function furnish() {
+  for (const r of ROOMS) {
+    const { X0, X1, Z0, Z1, xc, zc } = RB(r);
+    if (r.k === 'wa') waRoom(r);
+    if (r.id === 'hall') {
+      addBox('woodF', X1 - X0, 0.45, 1.6, xc, 0.225, Z0 + 0.8); addCol(X0, Z0, X1, Z0 + 1.6);
+      const bm = phong({ map: tex(cByobu()), shininess: 50, specular: 0x554422 });
+      for (let i = 0; i < 6; i++) { const p = plane(bm, 0.78, 1.5, xc - 1.95 + i * 0.78, 0.45 + 0.78, Z0 + 0.35 + (i % 2) * 0.18, (i % 2 ? -1 : 1) * 0.35); p.material.side = THREE.DoubleSide; }
+      SPOT.byobu = [xc, 1.25, Z0 + 0.4];
+      for (const sx of [-1.7, 1.7]) for (let z = Z0 + 2.4; z < Z1 - 0.7; z += 0.95) {
+        if (Math.random() < 0.15) { addBox('lacq', 0.42, 0.06, 0.42, xc + sx + rand(-.5, .5), 0.03, z + rand(-.3, .3), rand(0, 3)); continue; }
+        addBox('lacq', 0.42, 0.24, 0.42, xc + sx, 0.12, z); addBox('white', 0.12, 0.04, 0.12, xc + sx + 0.08, 0.26, z - 0.05); zabuton(xc + sx + (sx < 0 ? -0.5 : 0.5), z);
+      }
+    }
+    if (r.id === 'bath') {
+      const tx0 = xc - 2.6, tx1 = xc + 2.6, tz0 = Z0 + 3.6, tz1 = Z1 - 0.9;
+      addBox('tileF', tx1 - tx0, 0.55, 0.25, xc, 0.275, tz0); addBox('tileF', tx1 - tx0, 0.55, 0.25, xc, 0.275, tz1);
+      addBox('tileF', 0.25, 0.55, tz1 - tz0, tx0, 0.275, (tz0 + tz1) / 2); addBox('tileF', 0.25, 0.55, tz1 - tz0, tx1, 0.275, (tz0 + tz1) / 2);
+      plane(MAT.water, tx1 - tx0 - 0.25, tz1 - tz0 - 0.25, xc, 0.35, (tz0 + tz1) / 2, 0, -Math.PI / 2); addCol(tx0 - 0.13, tz0 - 0.13, tx1 + 0.13, tz1 + 0.13);
+      for (let i = 0; i < 5; i++) {
+        const mx = X0 + 1.4 + i * 1.6; plane(MAT.mirror, 0.62, 0.8, mx, 1.3, Z0 + 0.02, 0);
+        addBox('steel', 0.12, 0.08, 0.15, mx, 0.75, Z0 + 0.08); addBox('tileF', 0.32, 0.25, 0.3, mx, 0.125, Z0 + 0.7, rand(-.4, .4)); addCyl('yellow', 0.3, 0.18, 0.3, mx + 0.35, 0.09, Z0 + 0.65);
+        if (i === 2) SPOT.mirror = [mx, 1.3, Z0 + 0.05];
+      }
+    }
+    if (r.id === 'okami') {
+      addBox('black', 0.9, 1.6, 0.5, X0 + 4.2, 0.8, Z0 + 0.25); addBox('gold', 0.7, 0.9, 0.05, X0 + 4.2, 1.05, Z0 + 0.51);
+      for (const s of [-1, 1]) { addCyl('white', 0.04, 0.16, 0.04, X0 + 4.2 + s * 0.25, 0.69, Z0 + 0.62); CANDLE.push(new THREE.Vector3(X0 + 4.2 + s * 0.25, 0.8, Z0 + 0.62)); }
+      addBox('black', 0.9, 0.6, 0.35, X0 + 4.2, 0.3, Z0 + 0.7); addCol(X0 + 3.7, Z0, X0 + 4.7, Z0 + 0.9);
+      plane(new THREE.MeshPhongMaterial({ map: tex(cPhoto()) }), 0.35, 0.46, X0 + 5.3, 1.7, Z0 + 0.02, 0);
+      // 人形のケース
+      addBox('wood', 0.62, 0.8, 0.5, X1 - 0.3, 0.4, zc); addCol(X1 - 0.6, zc - 0.3, X1, zc + 0.3);
+      const gc = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.7, 0.48), new THREE.MeshPhongMaterial({ color: 0x8899aa, transparent: true, opacity: 0.18, shininess: 120, specular: 0xffffff, depthWrite: false })); gc.position.set(X1 - 0.3, 1.15, zc); scene.add(gc);
+      DOLL = buildDoll(); DOLL.g.position.set(X1 - 0.3, 0.8, zc); DOLL.g.rotation.y = -Math.PI / 2; scene.add(DOLL.g);
+      SPOT.doll = [X1 - 0.3, 1.1, zc];
+      addBox('dark', 1.2, 1.0, 0.45, xc, 0.5, Z1 - 0.23); addCol(xc - 0.6, Z1 - 0.46, xc + 0.6, Z1);
+      addBox('wood', 0.9, 0.04, 0.6, xc - 0.6, 0.33, zc); addBox('dark', 0.8, 0.31, 0.5, xc - 0.6, 0.155, zc); addCol(xc - 1.05, zc - 0.3, xc - 0.15, zc + 0.3); zabuton(xc - 0.6, zc + 0.7);
+      const pm = phong({ map: tex(cPlate('女将')), emissive: 0x100c08 }); plane(pm, 0.6, 0.19, 25 * T - 0.01, 2.25, tc(12), -Math.PI / 2);
+    }
+    if (r.id === 'yard') {
+      const wx = xc, wz = zc + 0.3;
+      const wg = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.6, 0.72, 16, 1, true), MAT.stone); wg.position.set(wx, 0.36, wz); wg.material.side = THREE.DoubleSide; wg.castShadow = true; scene.add(wg);
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.06, 6, 16), MAT.stone); ring.rotation.x = Math.PI / 2; ring.position.set(wx, 0.72, wz); scene.add(ring);
+      plane(new THREE.MeshBasicMaterial({ color: 0x000000 }), 1.05, 1.05, wx, 0.5, wz, 0, -Math.PI / 2);
+      for (const s of [-1, 1]) addBox('wood', 0.08, 1.8, 0.08, wx + s * 0.62, 0.9, wz); addBox('wood', 1.4, 0.08, 0.1, wx, 1.8, wz); addCyl('dark', 0.16, 0.06, 0.16, wx, 1.72, wz, 0, 0, Math.PI / 2);
+      addCyl('wood', 0.22, 0.2, 0.22, wx + 0.3, 0.82, wz - 0.3); addCol(wx - 0.62, wz - 0.62, wx + 0.62, wz + 0.62);
+      SPOT.well = [wx, 0.6, wz];
+      addBox('stone', 0.5, 0.3, 0.5, X0 + 0.8, 0.15, Z0 + 0.8); addBox('stone', 0.18, 0.5, 0.18, X0 + 0.8, 0.55, Z0 + 0.8); addBox('stone', 0.4, 0.3, 0.4, X0 + 0.8, 0.95, Z0 + 0.8); addBox('stone', 0.6, 0.12, 0.6, X0 + 0.8, 1.16, Z0 + 0.8); addCol(X0 + 0.5, Z0 + 0.5, X0 + 1.1, Z0 + 1.1);
+      addCyl('dark', 0.25, 2.6, 0.25, X1 - 1.0, 1.3, Z1 - 1.0); for (let i = 0; i < 4; i++) addCyl('dark', 0.07, 1.3, 0.07, X1 - 1.0 + Math.cos(i * 1.6) * 0.4, 2.2 + i * 0.15, Z1 - 1.0 + Math.sin(i * 1.6) * 0.4, i * 1.6, 0.8); addCol(X1 - 1.2, Z1 - 1.2, X1 - 0.8, Z1 - 0.8);
+      const moon = new THREE.Mesh(new THREE.CircleGeometry(1.0, 24), new THREE.MeshBasicMaterial({ color: 0xaab6cc, fog: false })); moon.position.set(xc + 4, 16, zc - 14); moon.lookAt(xc, 0, zc); scene.add(moon);
+    }
+    if (r.id === 'lobby') {
+      addBox('wood', 0.6, 1.05, 3.4, X0 + 1.2, 0.525, Z0 + 2.4); addBox('dark', 0.7, 0.05, 3.5, X0 + 1.2, 1.07, Z0 + 2.4); addCol(X0 + 0.9, Z0 + 0.7, X0 + 1.5, Z0 + 4.1);
+      addBox('dark', 0.05, 1.0, 1.6, X0 + 0.03, 1.6, Z0 + 2.4);
+      for (let i = 0; i < 12; i++) addBox('gold', 0.04, 0.08, 0.03, X0 + 0.07, 1.35 + (i % 3) * 0.3, Z0 + 1.8 + Math.floor(i / 3) * 0.38);
+      addBox('dark', 0.5, 1.7, 0.3, X0 + 0.7, 0.85, Z0 + 0.17); const cl = plane(phong({ map: tex(cClock()), emissive: 0x0c0a08 }), 0.36, 0.36, X0 + 0.7, 1.35, Z0 + 0.33, 0); CLOCK = cl;
+      addBox('gold', 0.04, 0.4, 0.02, X0 + 0.7, 0.75, Z0 + 0.33); addCol(X0 + 0.45, Z0, X0 + 0.95, Z0 + 0.35);
+      SPOT.clock = [X0 + 0.7, 1.3, Z0 + 0.34];
+      for (const s of [-1, 1]) { addBox('brown', 1.8, 0.42, 0.75, xc + 1.3, 0.21, zc + s * 1.0); addBox('brown', 1.8, 0.4, 0.18, xc + 1.3, 0.6, zc + s * 1.3); addCol(xc + 0.4, zc + s * 1.0 - 0.38, xc + 2.2, zc + s * 1.0 + 0.38); }
+      addBox('wood', 0.9, 0.4, 0.6, xc + 1.3, 0.2, zc); addCol(xc + 0.85, zc - 0.3, xc + 1.75, zc + 0.3);
+      addBox('wood', 0.45, 0.9, 1.8, X1 - 0.25, 0.45, Z1 - 1.3); addCol(X1 - 0.48, Z1 - 2.2, X1, Z1 - 0.4);
+      for (let i = 0; i < 6; i++) addBox('zab', 0.12, 0.05, 0.25, X1 - 0.3 + rand(-.1, .1), 0.25 + (i % 3) * 0.3, Z1 - 1.9 + Math.floor(i / 3) * 0.9);
+    }
+    if (r.id === 'kit') {
+      addBox('steel', 0.7, 0.9, Z1 - Z0 - 1.2, X0 + 0.35, 0.45, zc + 0.3); addCol(X0, Z0 + 0.9, X0 + 0.7, Z1);
+      addBox('steel', X1 - X0 - 2.2, 0.9, 0.7, xc - 0.5, 0.45, Z0 + 0.35); addCol(X0, Z0, X1 - 1.6, Z0 + 0.7);
+      for (let i = 0; i < 3; i++) addCyl('steel', 0.42, 0.35, 0.42, X0 + 1.4 + i * 0.9, 1.08, Z0 + 0.35);
+      addBox('steel', 1.6, 0.9, 0.9, xc + 0.6, 0.45, zc + 0.6); addCol(xc - 0.2, zc + 0.15, xc + 1.4, zc + 1.05);
+      for (let i = 0; i < 5; i++) addBox('white', 0.2, 0.03, 0.2, xc + 0.6 + rand(-.6, .6), 0.92, zc + 0.6 + rand(-.3, .3));
+      for (let i = 0; i < 4; i++) addBox('steel', 0.03, 0.28, 0.05, X0 + 0.03, 1.45, Z0 + 2.4 + i * 0.12);
+      addBox('white', 0.8, 1.8, 0.7, X1 - 0.5, 0.9, Z1 - 0.4); addCol(X1 - 0.9, Z1 - 0.75, X1, Z1);
+      for (let i = 0; i < 6; i++) addBox('white', 0.18, 0.03, 0.18, rand(X0 + 1.5, X1 - 1.5), 0.015, rand(Z0 + 1.5, Z1 - 1.5), rand(0, 3));
+    }
+  }
+  // 廊下：自販機・行灯・扉の札
+  VEND = { x: tc(24) + 0.2, z: tc(19) };
+  const vm = new THREE.Mesh(new THREE.BoxGeometry(0.75, 1.8, 0.85), [MAT.dark, MAT.vend, MAT.dark, MAT.dark, MAT.dark, MAT.dark]); vm.position.set(25 * T - 0.4, 0.9, tc(20)); vm.castShadow = true; scene.add(vm); addCol(25 * T - 0.8, tc(20) - 0.43, 25 * T, tc(20) + 0.43);
+  for (const [x, z] of [[11.2, 4.5], [24.8, 15.5], [11.2, 20.5], [20.5, 8.2], [15, 18.8]]) { addBox('white', 0.3, 0.5, 0.3, x * T, 0.45, z * T); addBox('dark', 0.34, 0.2, 0.34, x * T, 0.1, z * T); }
+  for (let i = 0; i < 6; i++) { const z = rand(2, 24) * T, x = (Math.random() < 0.5 ? rand(11.3, 12.7) : rand(23.3, 24.7)) * T; zabuton(x, z, rand(0, 3)); }
+  // 玄関
+  const gm = new THREE.MeshPhongMaterial({ color: 0x0c1420, emissive: 0x0a1424, shininess: 100, specular: 0x8899aa, transparent: true, opacity: 0.7 });
+  EXIT.panels = [];
+  for (const s of [-1, 1]) {
+    const pg = new THREE.Group(); pg.position.set(18 * T + s * T, 0, 26.5 * T);
+    const fr = new THREE.Mesh(new THREE.BoxGeometry(2 * T, 1.9, 0.06), MAT.dark); fr.position.y = 0.95; pg.add(fr);
+    const gl = new THREE.Mesh(new THREE.PlaneGeometry(2 * T - 0.2, 1.7), gm); gl.position.set(0, 0.97, 0.035); pg.add(gl); const g2 = gl.clone(); g2.position.z = -0.035; g2.rotation.y = Math.PI; pg.add(g2);
+    scene.add(pg); EXIT.panels.push(pg);
+  }
+  const og = new THREE.Mesh(new THREE.PlaneGeometry(60, 30), phong({ color: 0x0c100c })); og.rotation.x = -Math.PI / 2; og.position.set(20, -0.01, 27 * T + 15); scene.add(og);
+}
+const EXIT = { open: false, t: 0, panels: [] };
+function buildDoll() {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.28, 10), phong({ color: 0x8a1a1e, shininess: 30 })); body.position.y = 0.14; g.add(body);
+  const head = new THREE.Group(); head.position.y = 0.33; g.add(head);
+  head.add(new THREE.Mesh(new THREE.SphereGeometry(0.055, 12, 10), phong({ color: 0xe8e2d8, shininess: 40 })));
+  const hair = new THREE.Mesh(new THREE.SphereGeometry(0.062, 12, 10, 0, Math.PI * 2, 0, Math.PI * 0.55), new THREE.MeshBasicMaterial({ color: 0x050505 })); hair.position.y = 0.006; hair.rotation.x = 0.35; head.add(hair);
+  const bk = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.06, 0.05), new THREE.MeshBasicMaterial({ color: 0x050505 })); bk.position.set(0, -0.02, -0.035); head.add(bk);
+  for (const s of [-1, 1]) { const e = new THREE.Mesh(new THREE.SphereGeometry(0.008, 6, 4), new THREE.MeshBasicMaterial({ color: 0x000000 })); e.position.set(s * 0.02, 0.0, 0.051); head.add(e); }
+  return { g, head };
+}
+
+// ---------- 女（ゴースト） ----------
+function buildGhost() {
+  const g = new THREE.Group();
+  const kim = phong({ color: 0xd2cec2, emissive: 0x262624, shininess: 10 }), hairM = new THREE.MeshBasicMaterial({ color: 0x030303 }), skin = phong({ color: 0xcfc8bc, emissive: 0x1a1a18 });
+  const add = (geo, m, x, y, z, par = g) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; par.add(o); return o; };
+  add(new THREE.CylinderGeometry(0.15, 0.3, 1.3, 14), kim, 0, 0.65, 0); add(new THREE.CylinderGeometry(0.17, 0.18, 0.16, 14), phong({ color: 0x7a6a5a }), 0, 0.98, 0);
+  for (const s of [-1, 1]) { add(new THREE.BoxGeometry(0.14, 0.48, 0.22), kim, s * 0.2, 1.02, 0.02).rotation.z = s * 0.08; add(new THREE.BoxGeometry(0.05, 0.12, 0.04), skin, s * 0.21, 0.74, 0.06); }
+  const head = new THREE.Group(); head.position.y = 1.46; g.add(head);
+  add(new THREE.SphereGeometry(0.1, 14, 12), skin, 0, 0, 0, head);
+  add(new THREE.SphereGeometry(0.115, 14, 12), hairM, 0, 0.02, -0.02, head);
+  add(new THREE.BoxGeometry(0.25, 0.8, 0.08), hairM, 0, -0.32, -0.07, head);
+  const front = add(new THREE.BoxGeometry(0.21, 0.52, 0.025), hairM, 0, -0.17, 0.105, head);
+  const face = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.25), new THREE.MeshBasicMaterial({ map: tex(cFace()) })); face.position.set(0, -0.02, 0.101); face.visible = false; head.add(face);
+  g.visible = false; scene.add(g);
+  return { g, head, front, face, mats: [kim, skin] };
+}
+const GH = buildGhost();
+
+// ---------- 拾える物（モバイルバッテリー） ----------
+const ITEMS = [];
+const glintMat = new THREE.SpriteMaterial({ map: tex(cGlint()), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: .6 });
+function addBattery(x, y, z) {
+  const g = new THREE.Group(); g.position.set(x, y, z);
+  const b = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.03, 0.07), phong({ color: 0x1a1a1e, shininess: 60 })); b.position.y = 0.015; g.add(b);
+  const led = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.01, 0.01), new THREE.MeshBasicMaterial({ color: 0x30ff60 })); led.position.set(0.05, 0.032, 0.03); g.add(led);
+  const gl = new THREE.Sprite(glintMat.clone()); gl.scale.set(0.3, 0.3, 1); gl.position.y = 0.05; g.add(gl);
+  scene.add(g); ITEMS.push({ g, gl, x, y, z, taken: false, ph: rand(0, 6) });
+}
+
+buildShell(); furnish();
+{ const r = RM.r11, b = RB(r); addBattery(b.xc + 0.2, 0.35, b.zc - 0.1); }
+{ const r = RM.r12, b = RB(r); addBattery(b.X0 + 0.4, 0.15, b.Z0 + 1.0); }
+{ const b = RB(RM.kit); addBattery(b.xc + 0.9, 0.92, b.zc + 0.4); }
+{ const b = RB(RM.r14); addBattery(b.xc - 0.2, 0.35, b.zc + 0.1); }
+{ const b = RB(RM.lobby); addBattery(b.X0 + 1.2, 1.1, b.Z0 + 3.3); }
+{ const b = RB(RM.hall); addBattery(b.X1 - 0.6, 0.48, b.Z0 + 1.2); }
+flushBatch();
+
+// =====================================================================
+//  音
+// =====================================================================
+const A = { ctx: null };
+function initAudio() {
+  if (A.ctx) { if (A.ctx.state === 'suspended') A.ctx.resume(); return; }
+  const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+  const C = A.ctx = new AC();
+  A.master = C.createGain(); A.master.gain.value = 0.9; const comp = C.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 4; A.master.connect(comp); comp.connect(C.destination);
+  A.rev = C.createConvolver(); const len = C.sampleRate * 2.6, ib = C.createBuffer(2, len, C.sampleRate);
+  for (let ch = 0; ch < 2; ch++) { const d = ib.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.8); }
+  A.rev.buffer = ib; const rg = C.createGain(); rg.gain.value = 0.5; A.rev.connect(rg); rg.connect(A.master);
+  A.nb = C.createBuffer(1, C.sampleRate * 2, C.sampleRate); const nd = A.nb.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+  A.droneG = C.createGain(); A.droneG.gain.value = 0; A.droneG.connect(A.master);
+  const lp = C.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 150; lp.connect(A.droneG);
+  for (const fr of [36.7, 38.9, 55]) { const o = C.createOscillator(); o.type = 'sawtooth'; o.frequency.value = fr; const g = C.createGain(); g.gain.value = 0.05; o.connect(g); g.connect(lp); o.start(); }
+  const ns = C.createBufferSource(); ns.buffer = A.nb; ns.loop = true; const bp = C.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 380; bp.Q.value = 0.8; const wg = C.createGain(); wg.gain.value = 0.04; ns.connect(bp); bp.connect(wg); wg.connect(A.droneG); ns.start();
+  const lfo = C.createOscillator(); lfo.frequency.value = 0.05; const lg = C.createGain(); lg.gain.value = 240; lfo.connect(lg); lg.connect(bp.frequency); lfo.start();
+  // 女が近いときのノイズ
+  const ns2 = C.createBufferSource(); ns2.buffer = A.nb; ns2.loop = true; const hp = C.createBiquadFilter(); hp.type = 'bandpass'; hp.frequency.value = 2400; hp.Q.value = 0.5;
+  A.statG = C.createGain(); A.statG.gain.value = 0; ns2.connect(hp); hp.connect(A.statG); A.statG.connect(A.master); ns2.start();
+  A.humG = C.createGain(); A.humG.gain.value = 0; A.humG.connect(A.master);
+  for (const fr of [233, 247, 466]) { const o = C.createOscillator(); o.frequency.value = fr; const g = C.createGain(); g.gain.value = 0.02; o.connect(g); g.connect(A.humG); o.start(); }
+  setG(A.droneG.gain, 1, 2);
+}
+function setG(p, v, tcn = 0.3) { if (A.ctx) p.setTargetAtTime(v, A.ctx.currentTime, tcn); }
+function outNode(pan, rev) { const C = A.ctx; const g = C.createGain(); let last = g; if (C.createStereoPanner) { const p = C.createStereoPanner(); p.pan.value = clamp(pan || 0, -1, 1); g.connect(p); last = p; } last.connect(A.master); if (rev > 0) { const s = C.createGain(); s.gain.value = rev; last.connect(s); s.connect(A.rev); } return g; }
+function tone(freq, dur, type, vol, o = {}) {
+  if (!A.ctx || vol < 0.002) return; const C = A.ctx, t = C.currentTime + (o.delay || 0);
+  const os = C.createOscillator(); os.type = type || 'sine'; os.frequency.setValueAtTime(freq, t); if (o.to) os.frequency.exponentialRampToValueAtTime(o.to, t + dur); if (o.detune) os.detune.value = o.detune;
+  const g = C.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + (o.atk || 0.006)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  let n = os; if (o.lp) { const f = C.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = o.lp; os.connect(f); n = f; }
+  n.connect(g); g.connect(outNode(o.pan, o.rev || 0)); os.start(t); os.stop(t + dur + 0.05);
+}
+function noise(dur, ft, freq, q, vol, o = {}) {
+  if (!A.ctx || vol < 0.002) return; const C = A.ctx, t = C.currentTime + (o.delay || 0);
+  const s = C.createBufferSource(); s.buffer = A.nb; const f = C.createBiquadFilter(); f.type = ft; f.frequency.value = freq; f.Q.value = q;
+  const g = C.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + (o.atk || 0.005)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  s.connect(f); f.connect(g); g.connect(outNode(o.pan, o.rev || 0)); s.start(t, Math.random() * 1.5, dur + 0.1);
+}
+function spatial(x, z, maxD = 22) { const dx = x - P.x, dz = z - P.z, d = Math.hypot(dx, dz); const v = Math.pow(clamp(1 - d / maxD, 0, 1), 1.5); const rx = Math.cos(P.yaw), rz = -Math.sin(P.yaw); return { v, pan: d > 0.01 ? (dx * rx + dz * rz) / d * 0.85 : 0 }; }
+const SFX = {
+  step(run, tat) { noise(0.07, 'lowpass', tat ? 300 : run ? 700 : 480, 1, run ? 0.14 : 0.08, { rev: 0.1 }); if (!tat && Math.random() < 0.15) tone(rand(180, 260), 0.25, 'sawtooth', 0.02, { to: 140, lp: 700 }); },
+  bong(i) { tone(196, 3, 'sine', 0.16, { delay: i * 1.4, rev: 0.7, detune: -i * 6 }); tone(392, 2, 'sine', 0.05, { delay: i * 1.4, rev: 0.7 }); tone(98, 3, 'triangle', 0.08, { delay: i * 1.4, rev: 0.5 }); },
+  sc() { tone(1320, 0.12, 'sine', 0.06); tone(1760, 0.2, 'sine', 0.05, { delay: 0.1 }); },
+  pick() { tone(880, 0.12, 'square', 0.04, { lp: 2400 }); tone(1320, 0.18, 'square', 0.04, { lp: 2400, delay: 0.1 }); },
+  rec() { tone(1500, 0.05, 'sine', 0.05); },
+  shutter() { noise(0.05, 'highpass', 3000, 1, 0.25); noise(0.06, 'bandpass', 1500, 2, 0.2, { delay: 0.07 }); },
+  whisper(x, z) { const { v, pan } = spatial(x, z, 20); noise(1.4, 'bandpass', rand(2500, 3800), 5, 0.13 * Math.max(v, 0.3), { pan, rev: 0.7, atk: 0.4 }); },
+  glide(x, z) { const { v, pan } = spatial(x, z, 16); noise(0.5, 'bandpass', 220, 1.5, 0.25 * v, { pan, rev: 0.3, atk: 0.15 }); },
+  shriek(x, z) { const { pan } = spatial(x, z, 20); for (let k = 0; k < 3; k++) tone(rand(900, 1300), 1.2, 'sawtooth', 0.09, { to: rand(1800, 2400), detune: k * 25, lp: 4000, pan, rev: 0.6 }); noise(1, 'bandpass', 2600, 1, 0.3, { pan, rev: 0.5 }); },
+  scream() { for (let k = 0; k < 3; k++) tone(rand(700, 950), 1.5, 'sawtooth', 0.17, { to: rand(240, 320), detune: k * 30, lp: 3500 }); noise(1.3, 'bandpass', 1700, 1, 0.55); tone(60, 1.2, 'square', 0.25, { lp: 300 }); },
+  sting() { for (const f of [92.5, 98, 138.6, 196, 207.7]) tone(f, 2.8, 'sawtooth', 0.04, { atk: 0.04, lp: 1300, rev: 0.6 }); noise(1.4, 'bandpass', 900, 0.8, 0.12, { atk: 0.3, rev: 0.6 }); },
+  heart(v) { tone(55, 0.15, 'sine', 0.55 * v); tone(50, 0.15, 'sine', 0.42 * v, { delay: 0.2 }); },
+  slide() { noise(0.7, 'bandpass', 520, 1.2, 0.25, { rev: 0.4, atk: 0.1 }); },
+  splash() { noise(0.8, 'lowpass', 900, 0.7, 0.5, { rev: 0.7 }); for (let i = 0; i < 6; i++) tone(rand(600, 1400), 0.12, 'sine', 0.05, { delay: 0.3 + i * rand(.1, .25), rev: 0.6, to: rand(300, 500) }); },
+  drip() { tone(rand(1200, 1800), 0.12, 'sine', 0.05, { to: 600, rev: 0.8 }); },
+  knock() { for (let i = 0; i < 3; i++) noise(0.07, 'bandpass', 260, 2.5, 0.5, { delay: i * 0.4, rev: 0.5, pan: rand(-.8, .8) }); },
+  giggle() { for (let i = 0; i < 6; i++) tone(880 - i * 40 + rand(-30, 30), 0.12, 'sine', 0.05, { delay: i * 0.13, rev: 0.9, pan: rand(-1, 1) }); },
+  click() { noise(0.025, 'highpass', 3000, 1, 0.16); },
+  dead() { noise(0.8, 'bandpass', 2000, 0.5, 0.4); tone(1000, 0.8, 'square', 0.05, { lp: 2000 }); },
+};
+
+// =====================================================================
+//  コメント
+// =====================================================================
+const MEMBERS = [['オカルト部長', 'mem'], ['夜ふかしたぬき', 'mem'], ['まめだいふく', 'mem'], ['ねこまんま', 'mem']];
+const MOD = 'しじみ汁';
+const NAMES = ['名無しさん', 'ゆうき', '通りすがり', '7743', 'ぽてと', '暇人です', 'ああああ', 'もぶ', 'ねむい', 'カズ', 'りな', '初見です', 'ゲスト0921', 'ホラー苦手', 'たけし', 'kk', 'ちくわ', 'うどん県民', 'とおる', 'みかん'];
+const CHAT = {
+  gen: ['こんばんは', '初見です', '画質w', '雰囲気やば', '音こわ', 'ここガチのとこじゃん', '8888', 'がんばれー', 'ひとりで行くのすご', 'きた', 'wwww', 'こわいこわい', 'いいぞ', '今北', '床きしんでる', '寒そう', 'なんか聞こえない？', '空気重そう', '心霊スポット巡り好き', 'おつ', '帰ったほうがいいって', 'これガチ？', '同接ふえてるw', '手ぶれすごい'],
+  dark: ['暗っ', '見えねえ', 'ライトつけて', '真っ暗で草', '何も見えん'], night: ['暗視きた', '緑w', 'ナイトモードこわ', '暗視のほうがこわい'],
+  run: ['走るなw', '逃げてて草', '息切れてる', 'はやいはやい'], still: ['止まった？', '固まってる', 'どうした？', 'フリーズ？'],
+  hall: ['宴会場ひろ', '膳そのままじゃん', '舞台ある'], bath: ['お風呂こわ', '水残ってる？', '鏡みたくない', 'ケロリンだ'], r13: ['13号室って噂の…', 'ここで何かあったんでしょ', 'この部屋だけ空気ちがう'],
+  okami: ['仏壇あるじゃん', '人形こわすぎ', '女将の部屋…'], yard: ['井戸あるの!?', '月きれい', '中庭ひろい'], kit: ['包丁…', '厨房きたない'], lobby: ['フロントだ', '時計止まってる', 'スリッパ並んでる'], wa: ['和室こわ', '布団しいてある…', '押入れ開けないで'],
+};
+const chatEl = $('chat'); const CQ = []; let chatT = 3, stillT = 0;
+function pushCmt(name, text, cls = '', nmCls = '', yen = 0) {
+  const d = document.createElement('div'); d.className = 'cm ' + cls;
+  d.innerHTML = (yen ? `<em>¥${yen.toLocaleString()}</em>` : '') + `<b class="${nmCls}">${name}</b><span></span>`; d.lastChild.textContent = text;
+  chatEl.appendChild(d); while (chatEl.children.length > (TOUCH ? 7 : 9)) chatEl.removeChild(chatEl.firstChild);
+  G.log.push({ name, text, cls, nmCls }); if (G.log.length > 40) G.log.shift();
+  if (cls === 'gh') setTimeout(() => { d.style.opacity = '0'; d.style.transition = 'opacity .3s'; }, 1600);
+}
+function cmt(delay, name, text, cls, nmCls, yen) { CQ.push({ t: G.time + delay, name, text, cls, nmCls, yen }); }
+const mem = () => pick(MEMBERS)[0], anon = () => pick(NAMES);
+function dirOf(gx, gz) {
+  const dx = gx - P.x, dz = gz - P.z, fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw), rx = Math.cos(P.yaw), rz = -Math.sin(P.yaw);
+  const a = Math.atan2(dx * rx + dz * rz, dx * fx + dz * fz);
+  if (Math.abs(a) < 0.55) return 'F'; if (Math.abs(a) > 2.0) return 'B'; return a > 0 ? 'R' : 'L';
+}
+const DTXT = { F: ['前！奥にいる！！', '正面！！', 'まえまえまえ', '前から来てる'], B: ['うしろ！！', 'うしろうしろ！！', '振り向いて！！', '後ろにいる！！'], R: ['右！！', '右から来てる！', '右みて右！', 'みぎ！！'], L: ['左！！', '左から来てる！', '左みて！', 'ひだり！！'] };
+function dirTalk(real, truth) {
+  let d = real;
+  if (!truth) { const opts = ['F', 'B', 'R', 'L'].filter(x => x !== real); d = Math.random() < 0.2 ? real : pick(opts); }
+  return pick(DTXT[d]);
+}
+
+// =====================================================================
+//  リクエスト（撮影ポイント）
+// =====================================================================
+const REQS = [
+  { id: 'clock', room: 'lobby', n: '柱時計', who: 'オカルト部長', yen: 500, txt: 'まずはロビーの柱時計を映してみて', gain: 30 },
+  { id: 'byobu', room: 'hall', n: '金屏風', who: '夜ふかしたぬき', yen: 1000, txt: '宴会場の舞台の金屏風、見せて！', gain: 45 },
+  { id: 'oshi', room: 'r13', n: '押入れ', who: 'まめだいふく', yen: 2000, txt: '噂の13号室……押入れの中を映してほしい', gain: 60 },
+  { id: 'mirror', room: 'bath', n: '鏡', who: 'ねこまんま', yen: 1500, txt: '大浴場の鏡、まんなかのやつ映して…', gain: 70 },
+  { id: 'well', room: 'yard', n: '井戸', who: 'オカルト部長', yen: 3000, txt: '中庭の井戸の中、のぞいて', gain: 90 },
+  { id: 'doll', room: 'okami', n: '日本人形', who: MOD, yen: 10000, txt: '最後に、女将の部屋の日本人形を', gain: 150 },
+];
+const spotPos = id => SPOT[id === 'oshi' ? 'oshi' : id];
+SPOT.oshi = OSHI ? [OSHI.p.position.x, 0.9, OSHI.z0] : [0, 0, 0];
+
+// =====================================================================
+//  状態
+// =====================================================================
+const P = { x: 0, z: 0, yaw: 0, pitch: 0, vx: 0, vz: 0, stam: 100, tired: false, bat: 100, light: true, night: false, bob: 0, stepPh: 0 };
+const G = { state: 'title', time: 0, req: 0, V: 0, Vmax: 0, film: 0, ghFilmed: 0, lastEv: 0, room: null, log: [], cp: null, flick: 0, shake: 0, hbT: 0, sc: [], dripT: 3, ambT: 30, exitNag: 0 };
+let SENS = 1; try { SENS = +localStorage.getItem('shinrei-sens') || 1; } catch (e) { } $('sens').value = SENS;
+let msgT = 0; const msgQ = [];
+function say(t, d = 2.8) { msgQ.push([t, d]); if (msgT <= 0) nextMsg(); }
+function nextMsg() { const m = msgQ.shift(), el = $('msg'); if (!m) { el.style.opacity = 0; msgT = 0; return; } el.textContent = m[0]; el.style.opacity = 1; msgT = m[1]; }
+function later(sec, fn) { G.sc.push({ t: G.time + sec, fn }); }
+function addV(n) { G.V += n; G.lastEv = G.time; }
+
+function showReq() {
+  const r = REQS[G.req], el = $('req');
+  el.classList.remove('done');
+  if (!r) { el.classList.add('done'); $('reqWho').textContent = 'リクエスト完了'; $('reqN').textContent = '6/6'; $('reqB').textContent = '玄関（ロビーの南）から外に出て配信を終えよう'; }
+  else { $('reqWho').textContent = `¥${r.yen.toLocaleString()} ${r.who}${r.who === MOD ? '' : '★'}`; $('reqN').textContent = `撮影 ${G.req}/6`; $('reqB').textContent = r.txt; }
+  el.classList.add('pop'); setTimeout(() => el.classList.remove('pop'), 300);
+}
+function newRequest(delay) {
+  const r = REQS[G.req]; if (!r) { showReq(); return; }
+  later(delay, () => { SFX.sc(); pushCmt(r.who, r.txt, 'sc', r.who === MOD ? 'mod' : 'mem', r.yen); addV(rand(4, 10)); showReq(); });
+}
+
+// =====================================================================
+//  当たり判定・視線
+// =====================================================================
+function solidP(x, z) { if (x < 0 || z < 0 || x >= W || z >= D) return true; const c = M[z][x]; if (solidC(c)) return true; if (c === 'E') return !(EXIT.open && EXIT.t > 0.7); return false; }
+function pushBox(p, x0, z0, x1, z1) {
+  const cx = clamp(p.x, x0, x1), cz = clamp(p.z, z0, z1), dx = p.x - cx, dz = p.z - cz, d2 = dx * dx + dz * dz; if (d2 >= PR * PR) return;
+  if (d2 > 1e-9) { const d = Math.sqrt(d2), k = (PR - d) / d; p.x += dx * k; p.z += dz * k; }
+  else { const l = p.x - x0, r = x1 - p.x, u = p.z - z0, dn = z1 - p.z, m = Math.min(l, r, u, dn); if (m === l) p.x = x0 - PR; else if (m === r) p.x = x1 + PR; else if (m === u) p.z = z0 - PR; else p.z = z1 + PR; }
+}
+function collide(p) {
+  for (let it = 0; it < 2; it++) {
+    const tx = Math.floor(p.x / T), tz = Math.floor(p.z / T);
+    for (let z = tz - 1; z <= tz + 1; z++) for (let x = tx - 1; x <= tx + 1; x++) if (solidP(x, z)) pushBox(p, x * T, z * T, (x + 1) * T, (z + 1) * T);
+    for (const b of COL) { if (p.x < b[0] - 0.5 || p.x > b[2] + 0.5 || p.z < b[1] - 0.5 || p.z > b[3] + 0.5) continue; pushBox(p, b[0], b[1], b[2], b[3]); }
+  }
+}
+function losClear(ax, az, bx, bz) {
+  const dx = bx - ax, dz = bz - az, d = Math.hypot(dx, dz), n = Math.ceil(d / 0.25);
+  for (let i = 1; i < n; i++) { const tx = Math.floor((ax + dx * i / n) / T), tz = Math.floor((az + dz * i / n) / T); if (tx < 0 || tz < 0 || tx >= W || tz >= D || solidC(M[tz][tx])) return false; }
+  return true;
+}
+function inFrame(x, y, z, maxD, cosT) {
+  const ex = camera.position.x, ey = camera.position.y, ez = camera.position.z, dx = x - ex, dy = y - ey, dz = z - ez, d = Math.hypot(dx, dy, dz);
+  if (d > maxD || d < 0.05) return false;
+  const cp = Math.cos(P.pitch), fx = -Math.sin(P.yaw) * cp, fy = Math.sin(P.pitch), fz = -Math.cos(P.yaw) * cp;
+  if ((dx * fx + dy * fy + dz * fz) / d < cosT) return false;
+  return losClear(ex, ez, x - dx / d * 0.15, z - dz / d * 0.15);
+}
+
+// =====================================================================
+//  女の動き
+// =====================================================================
+const NN = W * D, prev = new Int32Array(NN), QQ = new Int32Array(NN);
+const passG = (x, z) => x >= 0 && z >= 0 && x < W && z < D && !solidC(M[z][x]) && M[z][x] !== 'E';
+const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+function bfs(s, g) {
+  prev.fill(-2); let h = 0, t = 0; prev[s] = -1; QQ[t++] = s;
+  while (h < t) {
+    const n = QQ[h++]; if (n === g) break; const z = (n / W) | 0, x = n % W;
+    for (const [dx, dz] of DIRS) { const nx = x + dx, nz = z + dz; if (!passG(nx, nz)) continue; if (dx && dz && (!passG(x + dx, z) || !passG(x, z + dz) || M[nz][nx] === 'd' || M[z][x] === 'd')) continue; const m = nz * W + nx; if (prev[m] !== -2) continue; prev[m] = n; QQ[t++] = m; }
+  }
+  if (g < 0) return null; if (prev[g] === -2) return null; const path = []; for (let n = g; n !== -1; n = prev[n]) path.push(n); return path.reverse();
+}
+const tid = (x, z) => clamp(Math.floor(z / T), 0, D - 1) * W + clamp(Math.floor(x / T), 0, W - 1);
+const GS = { st: 'off', t: 0, x: 0, z: 0, path: null, pi: 0, rep: 0, film: 0, life: 0, talkT: 0, bob: 0, warned: false, show: 0 };
+function idleTime() { return G.req >= 6 ? rand(5, 8) : rand(30, 42) - G.req * 3.5; }
+function ghostSpeed() { return 1.45 + G.req * 0.09 + (G.req >= 6 ? 0.2 : 0); }
+function spawnGhost(minD, maxD, hidden) {
+  bfs(tid(P.x, P.z), -1);
+  const cand = [];
+  for (let z = 0; z < D; z++) for (let x = 0; x < W; x++) {
+    if (!passG(x, z) || prev[z * W + x] === -2) continue; const wx = tc(x), wz = tc(z), d = Math.hypot(wx - P.x, wz - P.z);
+    if (d < minD || d > maxD) continue; if (hidden && dirOf(wx, wz) === 'F') continue;
+    let steps = 0; for (let n = z * W + x; n !== -1 && steps < 60; n = prev[n]) steps++; if (steps * T > d * 1.9 + 2) continue;
+    cand.push([wx, wz]);
+  }
+  if (!cand.length) return false;
+  const [x, z] = pick(cand); Object.assign(GS, { st: 'approach', x, z, path: null, pi: 0, rep: 0, film: 0, life: 0, talkT: 0, warned: false });
+  GH.g.visible = true; GH.face.visible = false; GH.front.visible = true; GH.mats.forEach(m => { m.transparent = false; m.opacity = 1; });
+  SFX.whisper(x, z); approachTalk(true); return true;
+}
+function approachTalk(first) {
+  const real = dirOf(GS.x, GS.z);
+  if (first) { cmt(rand(.6, 1.1), mem(), dirTalk(real, true), '', 'mem'); for (let i = 0, n = 1 + (Math.random() * 2 | 0); i < n; i++) cmt(rand(.4, 1.8), anon(), dirTalk(real, false)); if (Math.random() < 0.5) cmt(rand(1.5, 2.5), anon(), pick(['え？', '何もいなくね？', 'どこ？', 'こわ', 'なんか映った？'])); }
+  else { cmt(rand(.2, .7), mem(), dirTalk(real, true), '', 'mem'); if (Math.random() < 0.7) cmt(rand(.1, 1), anon(), dirTalk(real, false)); }
+}
+function ghostOff() { GS.st = 'idle'; GS.t = idleTime(); GH.g.visible = false; }
+function banish() {
+  SFX.shriek(GS.x, GS.z); SFX.shutter(); G.ghFilmed++; addV(rand(40, 70)); $('flash').style.opacity = 0.6; G.shake = 0.3;
+  GS.st = 'fade'; GS.t = 0.6;
+  pushCmt(mem(), pick(['撮ったああああ', '映った！！！！', 'ガチで映ってる', '今のなに！？']), '', 'mem');
+  cmt(0.3, anon(), pick(['ぎゃあああ', 'え、本物？', 'CGでしょ', 'うわああ', '今の声なに']));
+  cmt(0.6, anon(), pick(['ふりむいて正解', '神回', 'クリップ確定', '心臓とまる']));
+  if (Math.random() < 0.5) cmt(1.0, '■■■', pick(['いたい', 'まぶしい', 'まだ　いるよ']), 'gh');
+}
+function updateGhost(dt) {
+  if (GS.st === 'off') return;
+  if (GS.st === 'show') { GS.show -= dt; GH.g.position.y = 0.05 + Math.sin(G.time * 2) * 0.03; if (GS.show <= 0 || (GS.show < 1.6 && Math.random() < dt * 4)) { GH.g.visible = false; ghostOff(); GS.t = 14; } return; }
+  if (GS.st === 'fade') { GS.t -= dt; const o = clamp(GS.t / 0.6, 0, 1); GH.mats.forEach(m => { m.transparent = true; m.opacity = o; }); GH.g.position.y += dt * 0.3; GH.head.rotation.z = Math.sin(G.time * 50) * 0.3; if (GS.t <= 0) { GH.head.rotation.z = 0; ghostOff(); } return; }
+  if (GS.st === 'idle') { GS.t -= dt; if (GS.t <= 0 && G.state === 'play') { if (!spawnGhost(6, 11, true) && !spawnGhost(4, 13, false)) GS.t = 3; } return; }
+  // 接近
+  GS.life += dt; GS.rep -= dt; GS.talkT += dt;
+  const dP = Math.hypot(P.x - GS.x, P.z - GS.z);
+  // 撮影されている？（映されている間はひるんで遅くなる）
+  const filmed = inFrame(GS.x, 1.2, GS.z, P.night ? 13 : (P.light && P.bat > 0 ? 11 : 5), 0.955);
+  if (filmed) { GS.film += dt * (dP < 3 ? 1 + (3 - dP) * 0.5 : 1); if (GS.film > 1.0) { banish(); return; } }
+  else GS.film = Math.max(0, GS.film - dt * 0.6);
+  const sp = ghostSpeed() * (dP < 3 ? 1.15 : 1) * (filmed ? 0.35 : 1);
+  if (dP < 3.5 && losClear(GS.x, GS.z, P.x, P.z)) { GS.x += (P.x - GS.x) / dP * sp * dt; GS.z += (P.z - GS.z) / dP * sp * dt; }
+  else {
+    if (GS.rep <= 0 || !GS.path) { GS.path = bfs(tid(GS.x, GS.z), tid(P.x, P.z)); GS.pi = 1; GS.rep = 0.4; }
+    if (GS.path && GS.pi < GS.path.length) { const n = GS.path[GS.pi], tx = tc(n % W), tz = tc((n / W) | 0), dx = tx - GS.x, dz = tz - GS.z, d = Math.hypot(dx, dz), st = sp * dt; if (d <= st) { GS.x = tx; GS.z = tz; GS.pi++; } else { GS.x += dx / d * st; GS.z += dz / d * st; } }
+  }
+  GH.g.position.set(GS.x + (filmed ? rand(-.03, .03) : 0), 0.06 + Math.sin(G.time * 2.2) * 0.04, GS.z); GH.g.rotation.y = Math.atan2(P.x - GS.x, P.z - GS.z);
+  GH.head.rotation.z = Math.sin(G.time * 1.3) * 0.15 + (Math.random() < 0.02 ? rand(-.3, .3) : 0);
+  if (Math.random() < dt * 0.8) SFX.glide(GS.x, GS.z);
+  if (GS.talkT > 3.2) { GS.talkT = 0; approachTalk(false); if (dP < 5) cmt(rand(0, .5), anon(), pick(['ちかいちかい', 'やばいやばいやばい', 'にげて', 'すぐそこ'])); }
+  if (dP < 5 && !GS.warned) { GS.warned = true; cmt(0.2, '■■■', pick(['みつけた', 'いらっしゃいませ', 'おきゃくさま', 'ずっと　いっしょ', 'どこへ　いくの']), 'gh'); SFX.whisper(GS.x, GS.z); }
+  if (dP < 0.7) { caught(); return; }
+  if (GS.life > 32) { GH.g.visible = false; ghostOff(); cmt(0.3, anon(), pick(['消えた…？', 'いなくなった', '今のなんだったの'])); }
+}
+
+// =====================================================================
+//  撮影・イベント
+// =====================================================================
+function spotDone(r) {
+  SFX.shutter(); $('flash').style.opacity = 0.45; G.film = 0;
+  addV(r.gain + rand(0, 15)); G.req++;
+  pushCmt(r.who, pick(['ありがとう！！', '撮れ高きた', 'うわ…ありがと', 'ほんとに映してくれた']), '', r.who === MOD ? 'mod' : 'mem');
+  cmt(0.4, anon(), pick(['8888', 'えらい', '勇者', 'こわすぎ']));
+  saveCP();
+  const sp = spotPos(r.id);
+  if (r.id === 'clock') {
+    for (let i = 0; i < 13; i++) SFX.bong(i);
+    later(1, () => say('え……動いてないのに、鳴った？'));
+    later(5, () => pushCmt(anon(), '何回鳴った？'));
+    later(9, () => pushCmt(MEMBERS[0][0], '……12回じゃなくて13回なんだけど', '', 'mem'));
+    later(13, () => pushCmt(MOD, '【モデ】名前に★がついてるのは常連さんです。荒らしの嘘コメントに気をつけて！', '', 'mod'));
+    later(16, () => pushCmt(anon(), 'うしろ！！'));
+    later(17.5, () => pushCmt(MEMBERS[1][0], '↑うそ。何もいないよ', '', 'mem'));
+    newRequest(20);
+  } else if (r.id === 'byobu') {
+    later(1.2, () => { const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw); GS.st = 'show'; GS.show = 2.4; GS.x = sp[0] + 1.2; GS.z = sp[2] + 0.9; GH.g.position.set(GS.x, 0.5, GS.z); GH.g.rotation.y = Math.atan2(P.x - GS.x, P.z - GS.z); GH.g.visible = true; GH.face.visible = false; GH.front.visible = true; GH.mats.forEach(m => { m.transparent = false; m.opacity = 1; }); SFX.sting(); void fx; void fz; });
+    later(2.2, () => say('……っ！？　今、舞台の上に……'));
+    later(2.6, () => { pushCmt(mem(), '舞台！！！いた！！', '', 'mem'); pushCmt(anon(), 'え？え？'); });
+    later(3.4, () => { pushCmt(anon(), '女の人いなかった？'); pushCmt(anon(), '見えなかった'); addV(25); });
+    later(6, () => say('ちょっと……ヤバいかも。でも、続けます'));
+    later(7, () => pushCmt(MEMBERS[0][0], 'あれが来たらカメラ向けて！映し続けたら消えるって噂', '', 'mem'));
+    newRequest(9);
+  } else if (r.id === 'oshi') {
+    OSHI.tgt = 0.95; SFX.slide();
+    later(0.8, () => { say('ひっ……ふすまが勝手に……'); SFX.whisper(sp[0], sp[2]); });
+    later(2.0, () => pushCmt('■■■', 'あけないで', 'gh'));
+    later(3.0, () => { if (GS.st === 'idle' || GS.st === 'off') { GS.st = 'idle'; GS.t = 0.01; } });
+    newRequest(10);
+  } else if (r.id === 'mirror') {
+    later(0.4, () => { pushCmt(mem(), '鏡！！！うしろうつってる！！', '', 'mem'); pushCmt(anon(), '右にいる！'); });
+    later(0.3, () => { if (GS.st === 'idle' || GS.st === 'off') { if (!spawnGhost(4, 7, true)) spawnGhost(3, 10, false); } });
+    newRequest(9);
+  } else if (r.id === 'well') {
+    SFX.splash(); later(1.0, () => say('水の音……？　枯れてるはずなのに'));
+    later(2.5, () => pushCmt('■■■', 'さむい　さむい', 'gh'));
+    later(4, () => { if (GS.st === 'idle' || GS.st === 'off') { GS.st = 'idle'; GS.t = 0.01; } });
+    newRequest(9);
+  } else if (r.id === 'doll') {
+    later(0.8, () => { DOLL.turn = 1; SFX.sting(); pushCmt(mem(), '人形こっち向いた！？', '', 'mem'); });
+    later(2, () => { G.flick = 2.5; say('……もう出よう。玄関はロビーの奥だ'); });
+    later(2.5, () => { pushCmt(MEMBERS[0][0], '全部撮れた！！早く出て！！', '', 'mem'); pushCmt('■■■', 'かえさない', 'gh'); });
+    later(3, () => { if (GS.st !== 'approach') { GS.st = 'idle'; GS.t = 3; } showReq(); });
+  }
+}
+function ambientChat(dt) {
+  chatT -= dt; if (chatT > 0) return;
+  chatT = rand(1.6, 4.2) * (G.V > 150 ? 0.7 : 1);
+  const r = G.room, moving = Math.hypot(P.vx, P.vz);
+  let pool = CHAT.gen;
+  const k = Math.random();
+  if (!P.light && !P.night && k < 0.5) pool = CHAT.dark;
+  else if (P.night && k < 0.25) pool = CHAT.night;
+  else if (moving > 3.3 && k < 0.4) pool = CHAT.run;
+  else if (stillT > 12 && k < 0.5) pool = CHAT.still;
+  else if (r && k < 0.55) pool = CHAT[r.id] || CHAT[r.k] || CHAT.gen;
+  pushCmt(Math.random() < 0.15 ? mem() : anon(), pick(pool), '', Math.random() < 0.15 ? '' : '');
+  // 荒らしの嘘
+  if (GS.st === 'idle' && G.req >= 1 && Math.random() < 0.09) { const nm = anon(); pushCmt(nm, pick(['うしろ！！', '右に誰かいる！', '左！！', 'いま後ろ通った'])); if (Math.random() < 0.6) cmt(rand(1, 2), mem(), pick([`↑荒らし。何もいない`, '今は何もいないよ', 'だまされないで']), '', 'mem'); }
+}
+function onEnterRoom(r) {
+  if (!r) return;
+  G.ev = G.ev || {};
+  if (!G.ev[r.id]) {
+    G.ev[r.id] = 1;
+    const lines = { hall: '宴会場です……膳がそのまま残ってる', bath: '大浴場……水の音がする', r13: 'ここが噂の13号室です', okami: '女将さんの部屋……？　お線香の匂いがする', yard: '中庭に出ました。月が出てる', kit: '厨房です', r11: '11号室。客室ですね', r12: '12号室……布団、しきっぱなし', r14: '14号室' };
+    if (lines[r.id]) say(lines[r.id]);
+  }
+}
+
+// =====================================================================
+//  更新
+// =====================================================================
+const K = {}; const J = { id: null, ox: 0, oy: 0, x: 0, y: 0 }, LKT = { id: null, lx: 0, ly: 0 }; let runToggle = false;
+function update(dt) {
+  G.time += dt;
+  if (msgT > 0) { msgT -= dt; if (msgT <= 0) nextMsg(); }
+  for (let i = G.sc.length - 1; i >= 0; i--) if (G.time >= G.sc[i].t) { const s = G.sc[i]; G.sc.splice(i, 1); s.fn(); if (G.state !== 'play') return; }
+  for (let i = CQ.length - 1; i >= 0; i--) if (G.time >= CQ[i].t) { const c = CQ.splice(i, 1)[0]; pushCmt(c.name, c.text, c.cls, c.nmCls, c.yen); }
+  // 移動
+  let mx = 0, mz = 0;
+  if (K.KeyW || K.ArrowUp) mz += 1; if (K.KeyS || K.ArrowDown) mz -= 1; if (K.KeyA || K.ArrowLeft) mx -= 1; if (K.KeyD || K.ArrowRight) mx += 1;
+  if (J.id !== null) { mx += J.x; mz -= J.y; }
+  const ml = Math.hypot(mx, mz); if (ml > 1) { mx /= ml; mz /= ml; }
+  const run = (K.ShiftLeft || K.ShiftRight || runToggle) && ml > 0.2 && !P.tired && P.stam > 0;
+  if (run) P.stam -= 20 * dt; else P.stam += (ml > 0.2 ? 9 : 15) * dt; P.stam = clamp(P.stam, 0, 100);
+  if (P.stam <= 0) P.tired = true; if (P.tired && P.stam > 35) P.tired = false;
+  if (runToggle && ml < 0.1) { runToggle = false; $('tRun').classList.remove('on'); }
+  const spd = run ? 4.0 : P.tired ? 1.8 : 2.3;
+  const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw), rx = Math.cos(P.yaw), rz = -Math.sin(P.yaw);
+  const a = Math.min(1, dt * 10); P.vx = lerp(P.vx, (fx * mz + rx * mx) * spd, a); P.vz = lerp(P.vz, (fz * mz + rz * mx) * spd, a);
+  const p = { x: P.x + P.vx * dt, z: P.z + P.vz * dt }; collide(p); P.x = p.x; P.z = p.z;
+  const hs = Math.hypot(P.vx, P.vz);
+  if (hs > 0.3) { stillT = 0; const pr = Math.sin(P.stepPh); P.stepPh += dt * hs * 2.6; if (Math.sign(pr) !== Math.sign(Math.sin(P.stepPh)) && Math.sin(P.stepPh) < 0) { const r = G.room; SFX.step(hs > 3, r && (r.k === 'wa' || r.k === 'hall' || r.k === 'okami')); } P.bob = Math.sin(P.stepPh) * 0.05 * Math.min(1, hs / 2.3); }
+  else { stillT += dt; P.bob = lerp(P.bob, 0, dt * 6); }
+  // 電池
+  P.bat = Math.max(0, P.bat - dt * (0.17 + (P.light ? 0.12 : 0) + (P.night ? 0.09 : 0)));
+  if (P.bat <= 0) { batteryDead(); return; }
+  for (const it of ITEMS) if (!it.taken && Math.hypot(it.x - P.x, it.z - P.z) < 1.0) { it.taken = true; it.g.visible = false; P.bat = Math.min(100, P.bat + 40); SFX.pick(); say('モバイルバッテリー発見！　充電しとこう'); pushCmt(anon(), pick(['ナイス', '電池だいじ', '用意いいな'])); }
+  // ライト・暗視
+  let li = P.light && !P.night ? 2.2 : 0; if (P.bat < 12 && li && Math.random() < 0.08) li *= 0.15;
+  if (G.flick > 0) { G.flick -= dt; if (Math.random() < 0.4) li *= 0.05; }
+  spot.intensity = li; amb.intensity = P.night ? 2.6 : 0.55; scene.fog.density = P.night ? 0.075 : 0.11;
+  // カメラ
+  if (G.shake > 0) G.shake = Math.max(0, G.shake - dt);
+  const sh = G.shake * 0.25 + 0.004;
+  camera.position.set(P.x + rand(-sh, sh), EYE + P.bob, P.z + rand(-sh, sh));
+  camera.rotation.set(P.pitch + Math.sin(G.time * 1.3) * 0.004, P.yaw + Math.sin(G.time * 0.9) * 0.004, Math.sin(G.time * 0.7) * 0.006);
+  // 部屋
+  const tr = RAT[clamp(Math.floor(P.z / T), 0, D - 1)][clamp(Math.floor(P.x / T), 0, W - 1)];
+  if (tr !== G.room) { G.room = tr; onEnterRoom(tr); }
+  // 撮影
+  const rq = REQS[G.req]; let filming = false;
+  if (rq && GS.st !== 'approach') { const sp = spotPos(rq.id); if (sp && inFrame(sp[0], sp[1], sp[2], rq.id === 'well' ? 3.6 : 4.6, 0.972)) { filming = true; G.film += dt; if (Math.floor(G.film * 4) !== Math.floor((G.film - dt) * 4)) SFX.rec(); if (G.film >= 1.6) spotDone(rq); } }
+  if (!filming) G.film = Math.max(0, G.film - dt * 1.5);
+  const ret = $('ret'), lab = $('recLab'), ring = $('ringC');
+  if (GS.st === 'approach' && GS.film > 0.05) { ret.className = 'gh'; lab.className = 'gh'; lab.textContent = '● REC'; ring.style.stroke = '#ff2e3e'; ring.style.strokeDashoffset = (100.5 * (1 - GS.film / 1.0)).toFixed(1); }
+  else if (G.film > 0.02) { ret.className = 'on'; lab.className = ''; lab.textContent = '● REC  ' + rq.n; ring.style.stroke = '#ffc84a'; ring.style.strokeDashoffset = (100.5 * (1 - G.film / 1.6)).toFixed(1); }
+  else { ret.className = ''; lab.textContent = ''; ring.style.strokeDashoffset = 100.5; }
+  updateGhost(dt); if (G.state !== 'play') return;
+  if (OSHI) { OSHI.t = lerp(OSHI.t, OSHI.tgt, dt * 2); OSHI.p.position.z = OSHI.z0 - OSHI.t; }
+  if (DOLL && DOLL.turn) DOLL.head.rotation.y = lerp(DOLL.head.rotation.y, -1.2, dt * 1.5);
+  // 出口
+  if (P.z > 25.0 * T && P.x > 15.5 * T && P.x < 20.5 * T) {
+    if (G.req >= 6) { startEscape(); return; }
+    else if (G.time > G.exitNag) { G.exitNag = G.time + 15; pushCmt(mem(), 'まだリクエスト残ってるよ〜', '', 'mem'); pushCmt(anon(), '帰るの？w'); }
+  }
+  // 同接
+  if (G.time - G.lastEv > 40) G.V = Math.max(8, G.V - dt * 0.35); else G.V += dt * rand(-0.2, 0.5) * 0.4;
+  if (GS.st === 'approach') G.V += dt * 1.2;
+  G.Vmax = Math.max(G.Vmax, G.V);
+  ambientChat(dt);
+  // 雰囲気
+  if (G.room && G.room.id === 'bath') { G.dripT -= dt; if (G.dripT <= 0) { G.dripT = rand(1.5, 4); SFX.drip(); } }
+  G.ambT -= dt; if (G.ambT <= 0) { G.ambT = rand(30, 55); pick([SFX.knock, SFX.giggle, () => SFX.whisper(P.x + rand(-8, 8), P.z + rand(-8, 8))])(); if (Math.random() < 0.6) cmt(1, anon(), pick(['今の音なに', 'なんか聞こえた', '笑い声しなかった？'])); }
+  candleL.intensity = 0.6 + Math.random() * 0.4; if (CANDLE.length) candleL.position.copy(CANDLE[0]);
+  if (DOLL && DOLL.turn && G.flick > 0) candleL.intensity = 0;
+  // 気配
+  const gd = GS.st === 'approach' ? Math.hypot(P.x - GS.x, P.z - GS.z) : 99, danger = clamp(1 - gd / 9, 0, 1);
+  G.glitch = Math.max(danger * 0.9, G.flick > 0 ? 0.5 : 0, GS.st === 'show' ? 0.4 : 0);
+  if (A.ctx) { setG(A.statG.gain, danger * 0.12, 0.2); setG(A.humG.gain, danger * 0.6, 0.4); }
+  if (danger > 0.15) { G.hbT -= dt; if (G.hbT <= 0) { SFX.heart(danger); G.hbT = lerp(1.0, 0.4, danger); } }
+  // HUD
+  $('vw').textContent = '👁 ' + Math.round(G.V); const s = Math.floor(G.time);
+  $('tm').textContent = `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+  const be = $('bat'); be.textContent = '🔋 ' + Math.ceil(P.bat) + '%'; be.classList.toggle('low', P.bat < 20);
+}
+function drawGlitch(t) {
+  const g = $('glitch'), x = g.getContext('2d'), k = G.glitch || 0;
+  g.style.opacity = k > 0.02 ? Math.min(1, k * 1.2) : 0;
+  if (k < 0.02) { canvas.style.transform = ''; return; }
+  x.clearRect(0, 0, 160, 120);
+  for (let i = 0; i < 6 + k * 20; i++) { const y = Math.random() * 120, h = rand(1, 4 + k * 8); x.fillStyle = pick(['rgba(255,0,60,.5)', 'rgba(0,255,220,.4)', 'rgba(255,255,255,.35)', 'rgba(0,0,0,.8)']); x.fillRect(rand(-40, 80), y, rand(40, 200), h); }
+  canvas.style.transform = Math.random() < k * 0.5 ? `translateX(${rand(-12, 12) * k}px)` : '';
+}
+
+// =====================================================================
+//  終わり方
+// =====================================================================
+function caught() {
+  if (G.state !== 'play') return;
+  G.state = 'caught'; G.ct = 0; SFX.scream(); $('flash').style.opacity = 0.5; $('recLab').textContent = '';
+  GH.g.visible = true; GH.front.visible = false; GH.face.visible = true; GH.mats.forEach(m => { m.transparent = false; m.opacity = 1; });
+  if (document.pointerLockElement) document.exitPointerLock();
+}
+function updateCaught(dt) {
+  G.ct += dt; const k = G.ct, fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw), d = Math.max(0.32, 0.9 - k * 1.2);
+  GH.g.position.set(P.x + fx * d, EYE - 1.47 + Math.sin(k * 40) * 0.01, P.z + fz * d); GH.g.rotation.y = Math.atan2(-fx, -fz);
+  GH.head.rotation.set(-0.05, 0, Math.sin(k * 25) * 0.2);
+  P.pitch = lerp(P.pitch, 0, Math.min(1, dt * 8));
+  camera.position.set(P.x + rand(-.03, .03), EYE + rand(-.03, .03), P.z + rand(-.03, .03)); camera.rotation.set(P.pitch, P.yaw, rand(-.08, .08));
+  spot.intensity = Math.random() < 0.3 ? 0.3 : 2.2; G.glitch = 1;
+  $('flash').style.opacity = Math.max(0, 0.5 - k).toFixed(2);
+  if (k > 1.6) { endStream('caught'); }
+}
+function batteryDead() { if (G.state !== 'play') return; G.state = 'dying'; SFX.dead(); G.glitch = 1; setTimeout(() => endStream('bat'), 900); }
+function endStream(why) {
+  G.state = 'over'; G.glitch = 0; drawGlitch(); $('hud').hidden = true; $('touch').hidden = true; GH.g.visible = false;
+  if (A.ctx) { setG(A.statG.gain, 0, 0.1); setG(A.humG.gain, 0, 0.1); }
+  $('overH').textContent = why === 'bat' ? 'バッテリー切れ ― 配信が終了しました' : '配信が中断されました';
+  const ec = $('endChat'); ec.innerHTML = '';
+  const lines = why === 'bat' ? [[anon(), 'え、切れた？'], [mem(), '電池切れかな…無事でいて', 'mem'], [anon(), '最後なんか映ってなかった？'], ['■■■', 'まっくら　だね', 'gh']]
+    : [[anon(), 'え'], [anon(), 'おい'], [mem(), '大丈夫！？返事して！！', 'mem'], [anon(), '通報した方がいい？'], [MOD, '【モデ】配信者さんと連絡が取れません', 'mod'], ['■■■', 'ようこそ　おこしくださいました', 'gh']];
+  lines.forEach(([n, t, c]) => { const d = document.createElement('div'); d.className = 'cm' + (c === 'gh' ? ' gh' : ''); d.innerHTML = `<b class="${c && c !== 'gh' ? c : ''}">${n}</b><span></span>`; d.lastChild.textContent = t; ec.appendChild(d); });
+  $('overRes').innerHTML = `撮影 ${G.req}/6　・　最大同接 <b>${Math.round(G.Vmax)}</b>人`;
+  $('bOverCont').hidden = !G.cp || G.cp.req === 0;
+  showScreen('scOver');
+}
+function startEscape() {
+  G.state = 'escape'; G.et = 0; G.ex0 = { x: P.x, z: P.z, yaw: P.yaw }; EXIT.open = true; GH.g.visible = false; GS.st = 'off';
+  SFX.slide(); if (A.ctx) { setG(A.statG.gain, 0, 0.2); setG(A.humG.gain, 0, 0.2); }
+  pushCmt(mem(), 'でたあああ！！', '', 'mem'); cmt(0, anon(), '生還！！'); cmt(0, anon(), 'おつかれ！');
+  if (document.pointerLockElement) document.exitPointerLock();
+}
+function updateEscape(dt) {
+  G.et += dt; G.time += dt; const e = G.et;
+  for (let i = CQ.length - 1; i >= 0; i--) if (G.time >= CQ[i].t) { const c = CQ.splice(i, 1)[0]; pushCmt(c.name, c.text, c.cls, c.nmCls, c.yen); }
+  const k = clamp(e / 3.5, 0, 1); P.x = lerp(G.ex0.x, tc(17.5), Math.min(1, k * 2)); P.z = G.ex0.z + k * 6;
+  let dy = Math.PI - G.ex0.yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); P.yaw = G.ex0.yaw + dy * Math.min(1, e / 1.0);
+  if (e > 3.2 && !G.lookBack) { G.lookBack = 1; }
+  if (G.lookBack) P.yaw = lerp(P.yaw, 0, dt * 2.5);
+  if (e > 4.2 && !G.lastC) { G.lastC = 1; pushCmt('■■■', 'またの　おこしを　おまちしております', 'gh'); SFX.giggle(); G.glitch = 0.6; GH.g.visible = true; GH.g.position.set(tc(17.5), 0.05, 24.6 * T); GH.g.rotation.y = 0; GH.front.visible = true; GH.face.visible = false; }
+  camera.position.set(P.x, EYE + Math.sin(G.time * 8) * 0.03, P.z); camera.rotation.set(0, P.yaw, 0); spot.intensity = 2.2;
+  $('fade').style.opacity = clamp((e - 5.4) / 1.2, 0, 1).toFixed(2);
+  if (e > 6.8 && G.state === 'escape') {
+    G.state = 'clear'; G.glitch = 0; drawGlitch(); $('hud').hidden = true; $('touch').hidden = true; $('fade').style.opacity = 0; GH.g.visible = false;
+    let best = null; try { best = +localStorage.getItem('shinrei-best') || 0; if (G.Vmax > best) localStorage.setItem('shinrei-best', Math.round(G.Vmax)); localStorage.removeItem('shinrei-cp'); } catch (er) { }
+    const vm = Math.round(G.Vmax), rank = vm >= 600 ? '伝説の心霊配信者' : vm >= 420 ? '人気配信者' : vm >= 280 ? '中堅配信者' : '駆け出し配信者';
+    const s = Math.floor(G.time);
+    $('clearRes').innerHTML = `最大同接<br><span class="big">${vm}人</span><br>配信時間 ${Math.floor(s / 60)}分${String(s % 60).padStart(2, '0')}秒　・　“女”を撮影 ${G.ghFilmed}回<br>称号：<b>${rank}</b>` + (best && vm <= best ? `<br><small>自己ベスト ${best}人</small>` : '<br><small>自己ベスト更新！</small>');
+    const ec = $('endChat2'); ec.innerHTML = '';
+    [[MEMBERS[0][0], 'おつかれさま！神回だった', 'mem'], [anon(), 'アーカイブ残して'], [MEMBERS[2][0], 'ねえ、最後の配信画面、玄関に誰か立ってなかった…？', 'mem'], [anon(), '女将の写真と同じ顔だった']].forEach(([n, t, c]) => { const d = document.createElement('div'); d.className = 'cm'; d.innerHTML = `<b class="${c || ''}">${n}</b><span></span>`; d.lastChild.textContent = t; ec.appendChild(d); });
+    showScreen('scClear'); showBest();
+  }
+}
+
+// =====================================================================
+//  開始・リセット
+// =====================================================================
+function saveCP() { G.cp = { req: G.req, V: G.V, Vmax: G.Vmax, time: G.time, gh: G.ghFilmed, items: ITEMS.map(i => i.taken) }; try { localStorage.setItem('shinrei-cp', JSON.stringify(G.cp)); } catch (e) { } }
+function loadCP() { try { return JSON.parse(localStorage.getItem('shinrei-cp') || 'null'); } catch (e) { return null; } }
+function newGame(cont) {
+  initAudio();
+  const cp = cont ? (G.cp || loadCP()) : null;
+  Object.assign(G, { state: 'play', time: 0, req: 0, V: rand(18, 26), Vmax: 0, film: 0, ghFilmed: 0, lastEv: 0, room: null, ev: {}, sc: [], flick: 0, shake: 0, glitch: 0, ambT: rand(25, 40), exitNag: 0, lookBack: 0, lastC: 0 });
+  CQ.length = 0; chatEl.innerHTML = ''; G.log = []; msgQ.length = 0; msgT = 0; $('msg').style.opacity = 0;
+  ITEMS.forEach(i => { i.taken = false; i.g.visible = true; });
+  if (cp) { Object.assign(G, { req: cp.req, V: cp.V, Vmax: cp.Vmax, time: cp.time, ghFilmed: cp.gh }); ITEMS.forEach((it, i) => { it.taken = !!cp.items[i]; it.g.visible = !it.taken; }); G.cp = cp; } else G.cp = null;
+  Object.assign(P, { x: tc(17.5), z: tc(24) + 0.2, yaw: 0, pitch: 0, vx: 0, vz: 0, stam: 100, tired: false, bat: cp ? 85 : 100, light: true, night: false, bob: 0 });
+  EXIT.open = false; EXIT.t = 0;
+  if (OSHI) { OSHI.tgt = OSHI.t = G.req > 2 ? 0.95 : 0.35; }
+  if (DOLL) { DOLL.turn = G.req > 5 ? 1 : 0; DOLL.head.rotation.y = DOLL.turn ? -1.2 : 0; }
+  Object.assign(GS, { st: G.req >= 2 ? 'idle' : 'off', t: G.req >= 2 ? 18 : 0 }); GH.g.visible = false;
+  $('c').classList.remove('night'); $('tNight').classList.remove('on'); $('tLight').classList.add('on'); runToggle = false; $('tRun').classList.remove('on');
+  showScreen(null); $('hud').hidden = false; $('touch').hidden = !TOUCH; $('fade').style.opacity = 0;
+  showReq();
+  if (!cp) {
+    say('こんばんは〜、聞こえてますか？', 2.6); say('今日は、地元で有名な廃旅館に来てます', 3); say('リクエストあったら、投げ銭で教えてください！', 3);
+    later(1.5, () => pushCmt(anon(), 'きた')); later(2.5, () => pushCmt(MEMBERS[0][0], 'こんばんは！待ってた', '', 'mem')); later(4, () => pushCmt(anon(), 'ここガチでヤバいとこじゃん'));
+    later(5.5, () => pushCmt(MOD, '【モデ】荒らし・暴言は禁止です。楽しく見ましょう', '', 'mod'));
+    $('reqWho').textContent = 'リクエスト待ち'; $('reqN').textContent = '撮影 0/6'; $('reqB').textContent = '視聴者からの投げ銭を待っています…';
+    newRequest(9);
+    if (!TOUCH) later(10, () => say('［クリックで視点操作／映したい物を画面中央の枠に入れよう］', 4));
+  } else { say('……配信、再開します', 2.4); pushCmt(MEMBERS[0][0], 'おかえり！大丈夫だった？', '', 'mem'); showReq(); }
+  relock();
+}
+function relock() { if (!TOUCH && G.state === 'play' && !document.pointerLockElement) { try { const r = canvas.requestPointerLock(); if (r && r.catch) r.catch(() => { }); } catch (e) { } } }
+function showScreen(id) { for (const s of ['scTitle', 'scHow', 'scPause', 'scOver', 'scClear']) $(s).hidden = s !== id; }
+function pauseGame() { if (G.state !== 'play') return; G.state = 'pause'; showScreen('scPause'); if (A.ctx) A.ctx.suspend(); }
+function resumeGame() { if (G.state !== 'pause') return; showScreen(null); G.state = 'play'; if (A.ctx) A.ctx.resume(); relock(); }
+function toTitle() { G.state = 'title'; showScreen('scTitle'); $('hud').hidden = true; $('touch').hidden = true; GH.g.visible = false; G.glitch = 0; if (A.ctx) { A.ctx.resume(); setG(A.statG.gain, 0, .1); setG(A.humG.gain, 0, .1); } if (document.pointerLockElement) document.exitPointerLock(); showBest(); }
+function showBest() { let b = 0; try { b = +localStorage.getItem('shinrei-best') || 0; } catch (e) { } $('best').textContent = b ? `最高同接　${b}人` : ''; const cp = loadCP(); $('bCont').hidden = !(cp && cp.req > 0); }
+function toggleLight() { if (G.state !== 'play') return; P.light = !P.light; if (P.light) P.night = false; SFX.click(); syncCam(); }
+function toggleNight() { if (G.state !== 'play') return; P.night = !P.night; if (P.night) P.light = false; else P.light = true; SFX.click(); syncCam(); }
+function syncCam() { $('c').classList.toggle('night', P.night); $('tNight').classList.toggle('on', P.night); $('tLight').classList.toggle('on', P.light); }
+
+// ---------- 館内図 ----------
+function openMap() { if (G.state !== 'play') return; G.state = 'map'; $('mapWrap').hidden = false; drawMap(); }
+function closeMap() { $('mapWrap').hidden = true; G.state = 'play'; relock(); }
+function drawMap() {
+  const cvs = $('map'), dpr = Math.min(2, devicePixelRatio || 1);
+  const s = Math.max(6, Math.floor(Math.min((innerWidth - 24) / W, (innerHeight * 0.78) / D)));
+  const cw = W * s, ch = D * s; cvs.width = cw * dpr; cvs.height = ch * dpr; cvs.style.width = cw + 'px'; cvs.style.height = ch + 'px';
+  const g = cvs.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.fillStyle = '#1a1814'; g.fillRect(0, 0, cw, ch);
+  for (let z = 0; z < D; z++) for (let x = 0; x < W; x++) {
+    const c = M[z][x]; if (c === '#') continue; const r = RAT[z][x];
+    g.fillStyle = c === 'g' ? '#3a4a5a' : c === 'E' ? '#c03030' : c === 'C' ? '#5a5a54' : c === 'd' ? '#8a6a3a' : !r || r.k === 'corr' ? '#8a7a60' : r.k === 'bath' ? '#6a8090' : r.k === 'kit' ? '#7a7a74' : r.k === 'lobby' ? '#8a7a60' : '#9a9466';
+    g.fillRect(x * s, z * s, s + 0.5, s + 0.5);
+  }
+  g.fillStyle = '#fff'; g.font = `bold ${Math.max(10, s * 0.8)}px sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+  for (const r of ROOMS) { g.fillStyle = 'rgba(0,0,0,.6)'; g.fillText(r.n, (r.x0 + r.x1 + 1) / 2 * s + 1, (r.z0 + r.z1 + 1) / 2 * s + 1); g.fillStyle = '#fff'; g.fillText(r.n, (r.x0 + r.x1 + 1) / 2 * s, (r.z0 + r.z1 + 1) / 2 * s); }
+  g.fillStyle = '#ff5050'; g.fillText('玄関', 18 * s, 26.5 * s);
+  const rq = REQS[G.req];
+  if (rq) { const sp = spotPos(rq.id); g.fillStyle = '#ffc84a'; g.font = `bold ${s * 1.6}px sans-serif`; g.fillText('★', sp[0] / T * s, sp[2] / T * s); }
+  const px = P.x / T * s, pz = P.z / T * s, a = P.yaw, rr = Math.max(6, s * 0.9);
+  g.fillStyle = '#ff2e3e'; g.beginPath(); g.moveTo(px - Math.sin(a) * rr, pz - Math.cos(a) * rr); g.lineTo(px - Math.sin(a + 2.5) * rr * .7, pz - Math.cos(a + 2.5) * rr * .7); g.lineTo(px - Math.sin(a - 2.5) * rr * .7, pz - Math.cos(a - 2.5) * rr * .7); g.fill();
+}
+
+// =====================================================================
+//  入力
+// =====================================================================
+addEventListener('keydown', e => {
+  K[e.code] = true;
+  if (G.state === 'play') {
+    if (e.code === 'KeyF') toggleLight(); else if (e.code === 'KeyN') toggleNight();
+    else if (e.code === 'KeyM' || e.code === 'Tab') { openMap(); e.preventDefault(); } else if (e.code === 'Escape' || e.code === 'KeyP') pauseGame();
+  } else if (G.state === 'map') { if (['KeyM', 'Escape', 'Tab'].includes(e.code)) { closeMap(); e.preventDefault(); } }
+  else if (G.state === 'pause' && e.code === 'Escape') resumeGame();
+});
+addEventListener('keyup', e => { K[e.code] = false; });
+addEventListener('blur', () => { for (const k in K) K[k] = false; });
+document.addEventListener('mousemove', e => { if (document.pointerLockElement !== canvas || G.state !== 'play') return; P.yaw -= e.movementX * 0.0022 * SENS; P.pitch = clamp(P.pitch - e.movementY * 0.0022 * SENS, -1.3, 1.3); });
+canvas.addEventListener('mousedown', () => { if (TOUCH) return; if (G.state === 'play' && document.pointerLockElement !== canvas) relock(); });
+document.addEventListener('pointerlockchange', () => { if (!document.pointerLockElement && G.state === 'play' && !TOUCH) pauseGame(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
+$('mapWrap').addEventListener('click', () => { if (G.state === 'map') closeMap(); });
+const isBtn = t => t && t.closest && t.closest('.tb');
+addEventListener('touchstart', e => {
+  if (G.state !== 'play') return;
+  for (const t of e.changedTouches) {
+    if (isBtn(t.target)) continue;
+    if (t.clientX < innerWidth * 0.45 && J.id === null) { J.id = t.identifier; J.ox = t.clientX; J.oy = t.clientY; J.x = J.y = 0; const j = $('joy'); j.style.left = J.ox + 'px'; j.style.top = J.oy + 'px'; j.style.opacity = 1; $('knob').style.transform = ''; }
+    else if (LKT.id === null) { LKT.id = t.identifier; LKT.lx = t.clientX; LKT.ly = t.clientY; }
+  }
+  e.preventDefault();
+}, { passive: false });
+addEventListener('touchmove', e => {
+  if (G.state !== 'play') return;
+  for (const t of e.changedTouches) {
+    if (t.identifier === J.id) { let dx = t.clientX - J.ox, dy = t.clientY - J.oy; const l = Math.hypot(dx, dy), m = 50; if (l > m) { dx = dx / l * m; dy = dy / l * m; } J.x = dx / m; J.y = dy / m; $('knob').style.transform = `translate(${dx}px,${dy}px)`; }
+    else if (t.identifier === LKT.id) { const dx = t.clientX - LKT.lx, dy = t.clientY - LKT.ly; LKT.lx = t.clientX; LKT.ly = t.clientY; P.yaw -= dx * 0.0058 * SENS; P.pitch = clamp(P.pitch - dy * 0.0058 * SENS, -1.3, 1.3); }
+  }
+  e.preventDefault();
+}, { passive: false });
+const tEnd = e => { for (const t of e.changedTouches) { if (t.identifier === J.id) { J.id = null; J.x = J.y = 0; $('joy').style.opacity = 0; } if (t.identifier === LKT.id) LKT.id = null; } };
+addEventListener('touchend', tEnd); addEventListener('touchcancel', tEnd);
+const tb = (id, fn) => $(id).addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); initAudio(); fn(); });
+tb('tLight', toggleLight); tb('tNight', toggleNight); tb('tMap', openMap); tb('tPause', pauseGame);
+tb('tRun', () => { if (G.state !== 'play') return; runToggle = !runToggle; $('tRun').classList.toggle('on', runToggle); });
+$('bStart').addEventListener('click', () => newGame(false));
+$('bCont').addEventListener('click', () => newGame(true));
+$('bHow').addEventListener('click', () => showScreen('scHow'));
+$('bHowBack').addEventListener('click', () => showScreen('scTitle'));
+$('bResume').addEventListener('click', resumeGame);
+$('bRestart').addEventListener('click', () => { if (A.ctx) A.ctx.resume(); newGame(false); });
+$('bToTitle').addEventListener('click', toTitle);
+$('bOverCont').addEventListener('click', () => newGame(true));
+$('bOverRe').addEventListener('click', () => newGame(false));
+$('bOverTitle').addEventListener('click', toTitle);
+$('bClearRe').addEventListener('click', () => newGame(false));
+$('bClearTitle').addEventListener('click', toTitle);
+$('sens').addEventListener('input', e => { SENS = +e.target.value; try { localStorage.setItem('shinrei-sens', SENS); } catch (er) { } });
+{ const [c, g] = cv(160, 160), id = g.createImageData(160, 160); for (let i = 0; i < id.data.length; i += 4) { const v = Math.random() * 255; id.data[i] = id.data[i + 1] = id.data[i + 2] = v; id.data[i + 3] = 255; } g.putImageData(id, 0, 0); $('noise').style.backgroundImage = `url(${c.toDataURL()})`; }
+
+// =====================================================================
+//  ループ
+// =====================================================================
+let last = 0;
+function frame(t) {
+  requestAnimationFrame(frame);
+  const now = t / 1000, dt = Math.min(0.05, now - (last || now)); last = now;
+  if (G.state === 'play') update(dt);
+  else if (G.state === 'caught') updateCaught(dt);
+  else if (G.state === 'escape') updateEscape(dt);
+  else if (G.state === 'title') { const k = now * 0.06; camera.position.set(tc(11.5) + 0.3, EYE, tc(14) - Math.sin(k) * 5); camera.rotation.set(-0.04, Math.sin(now * 0.12) * 0.3, 0); spot.intensity = Math.random() < 0.03 ? 0.3 : 2; G.glitch = Math.random() < 0.01 ? 0.6 : Math.max(0, (G.glitch || 0) - 0.05); }
+  EXIT.t = clamp(EXIT.t + (EXIT.open ? 1 : -1) * dt * 1.5, 0, 1);
+  if (EXIT.panels.length) { EXIT.panels[0].position.x = 17 * T - EXIT.t * T * 1.8; EXIT.panels[1].position.x = 19 * T + EXIT.t * T * 1.8; }
+  for (const it of ITEMS) if (!it.taken) it.gl.material.opacity = 0.3 + Math.sin(now * 3 + it.ph) * 0.25;
+  if ($('flash').style.opacity > 0 && G.state !== 'caught') $('flash').style.opacity = Math.max(0, +$('flash').style.opacity - dt * 2).toFixed(2);
+  drawGlitch(now);
+  renderer.render(scene, camera);
+}
+showBest();
+window.__game = { G, P, GS, REQS, SPOT, tc, T, spawnGhost, caught, newGame, ITEMS, inFrame, camera };
+requestAnimationFrame(frame);
+</script>
+<script src="../../playtime.js" defer></script>
+</body>
+</html>
