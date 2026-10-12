@@ -427,7 +427,7 @@ function makePing(x, y, maxR, hearing, opt = {}){
   pings.push({ x, y, t0: now, maxR, hits, idx: 0, prevR: 0, bright: opt.bright ?? 1,
     color: opt.color || '127,231,255', ring: opt.ring !== false });
   for (const e of enemies){
-    if (Math.hypot(e.x - x, e.y - y) <= hearing) hear(e, x, y);
+    if (Math.hypot(e.x - x, e.y - y) <= hearing) hear(e, x, y, hearing);
   }
 }
 function doPing(){
@@ -447,19 +447,44 @@ function throwStone(){
 
 // ===== 敵 =====
 const enemyPan = e => Math.max(-1, Math.min(1, (e.x - player.x) / 7));
-function hear(e, x, y){
-  const tx = Math.floor(x), ty = Math.floor(y);
-  e.path = bfsPath(e.nx, e.ny, tx, ty);
+function hear(e, x, y, range){
+  const d = Math.hypot(e.x - x, e.y - y);
+  // 遠い音は聞き逃すことがある
+  if (d > range * 0.45 && Math.random() < (d - range * 0.45) / (range * 0.55) * 0.6) return;
+  // どこで鳴ったかは、遠いほどあいまい（深い層ほど正確になる）
+  const err = d * Math.max(0.15, 0.42 - level * 0.02);
+  let tx = Math.floor(x), ty = Math.floor(y);
+  for (let k = 0; k < 12; k++){
+    const a = Math.random() * Math.PI * 2, rr = Math.random() * err;
+    const cx = Math.floor(x + Math.cos(a) * rr), cy = Math.floor(y + Math.sin(a) * rr);
+    if (!isWall(cx, cy)){ tx = cx; ty = cy; break; }
+  }
+  const path = bfsPath(e.nx, e.ny, tx, ty);
+  if (path.length > range * 2.2) return; // 壁ごしにぐるっと遠回りになる音は、こもって届かない
+  e.path = path; e.goal = [tx, ty];
   if (!e.hunt || now - e.alertAt > 2){
     e.alertAt = now; e.seenAt = now; e.sx = e.x; e.sy = e.y;
-    const d = Math.hypot(e.x - player.x, e.y - player.y);
-    if (d < 14) SFX.growl(enemyPan(e), 0.12 * Math.max(0.15, 1 - d / 14));
+    const pd = Math.hypot(e.x - player.x, e.y - player.y);
+    if (pd < 14) SFX.growl(enemyPan(e), 0.12 * Math.max(0.15, 1 - pd / 14));
+    if (!e.hunt) e.wait = 0.4 + Math.random() * 0.7; // 耳をすましてから動き出す
   }
-  e.hunt = true; e.wait = 0;
+  e.hunt = true;
 }
 function arrive(e){
   e.px = e.cx; e.py = e.cy; e.cx = e.nx; e.cy = e.ny;
-  if (e.path.length){ [e.nx, e.ny] = e.path.shift(); return; }
+  if (e.path.length){
+    // 追いかける途中で、ときどき曲がる道をまちがえる
+    if (e.hunt && e.path.length > 2 && Math.random() < 0.15){
+      const [px, py] = e.path[0];
+      const wrong = DIRS.map(([dx, dy]) => [e.cx + dx, e.cy + dy]).filter(([x, y]) => !isWall(x, y) && (x !== px || y !== py) && (x !== e.px || y !== e.py));
+      if (wrong.length){
+        [e.nx, e.ny] = wrong[rnd(wrong.length)];
+        e.path = bfsPath(e.nx, e.ny, e.goal[0], e.goal[1]);
+        return;
+      }
+    }
+    [e.nx, e.ny] = e.path.shift(); return;
+  }
   if (e.hunt){ e.hunt = false; e.wait = 1.2; return; } // 音のした場所で耳をすます
   let opts = DIRS.map(([dx, dy]) => [e.cx + dx, e.cy + dy]).filter(([x, y]) => !isWall(x, y));
   const fwd = opts.filter(([x, y]) => x !== e.px || y !== e.py);
@@ -479,7 +504,7 @@ function updateEnemy(e, dt){
     }
   }
   if (e.wait > 0){ e.wait -= dt; return; }
-  const sp = e.hunt ? Math.min(3.05, 2.3 + level * 0.08) : 1.25;
+  const sp = e.hunt ? Math.min(2.85, 2.05 + level * 0.07) : 1.25;
   let move = sp * dt, guard = 0;
   while (move > 0 && guard++ < 8){
     const gx = e.nx + 0.5, gy = e.ny + 0.5, dx = gx - e.x, dy = gy - e.y, d = Math.hypot(dx, dy);
