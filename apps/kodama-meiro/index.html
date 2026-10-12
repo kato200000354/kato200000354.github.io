@@ -341,11 +341,13 @@ function noteHtml(i){
 
 // ===== 状態 =====
 let state = 'title', level = 1, stones = 3, best = +(store('kodama_best') || 0);
+let floorStones = 3; // その層に入ったときの石の数（やりなおし用）
 let player, enemies, items, exitObj, pings, projectiles, memory, memKeys, now = 0, deathInfo = null;
 let charging = false, chargeStart = 0, pingCooldown = 0, stepTimer = 0, dangerPulse = 0;
 let breath = 1, holdBreath = false, breathLocked = false, lastBeat = -99, nextBeat = 0, dripT = 3, whisperT = 15, deathAt = -99;
 
 function setupLevel(){
+  floorStones = stones;
   const size = Math.min(16, 6 + level);
   genMaze(size, size);
   player = { x: 1.5, y: 1.5, fx: 1, fy: 0 };
@@ -873,6 +875,7 @@ const controls = isTouch
   : '<li><span>WASD / 矢印</span>　移動</li><li><span>スペース</span>　音を出す（長押しで遠くまで）</li><li><span>Shift</span>　押している間、足音を消して忍び歩き</li><li><span>E / F</span>　石を向いている方へ投げる</li>';
 function title(){
   state = 'title'; level = 1; stones = 3; setupLevel();
+  const cp = loadCheckpoint();
   showCard(`<span class="warn">ホラー表現あり ・ 🎧 イヤホン推奨</span>
     <h1 class="glitch">こだま迷路</h1><p class="tagline">── 音を出すな。けれど、出さなければ進めない。</p>
     <p>ここは光の届かない地下。音を出すと、その反響で壁が一瞬だけ見える。<br>
@@ -881,11 +884,14 @@ function title(){
     <li>石が落ちた場所でも音が鳴る。おとりに使え。</li>
     <li>息は長くはもたない。限界がくると、大きく吐いてしまう。</li></ul>
     <button class="go">はいる</button><br>
+    ${cp ? `<button class="sub" id="contBtn">つづきから（地下 ${cp.level} 層）</button><br>` : ''}
     ${foundNotes.length ? `<button class="sub" id="notesBtn">見つけた記録を読む（${foundNotes.length} / ${NOTES.length}）</button>` : ''}
     ${endings.length ? `<p class="hint">到達した結末：${endings.map(t => END_TEXT[t].title).join('　')}</p>` : ''}
     <p class="hint">足音・心音・ささやきは左右から聞こえます</p>`, start);
   const nb = document.getElementById('notesBtn');
   if (nb) nb.addEventListener('click', showNotes);
+  const cb = document.getElementById('contBtn');
+  if (cb) cb.addEventListener('click', () => { initAudio(); overlay.classList.add('hide'); overlayAction = () => {}; level = cp.level; stones = cp.stones; setupLevel(); start(); });
 }
 function showNotes(){
   const list = [...foundNotes].sort((a, b) => a - b).map(noteHtml).join('');
@@ -901,15 +907,22 @@ function readNote(){
   showCard(`${noteHtml(i)}<p class="hint">${foundNotes.length} / ${NOTES.length} 枚目の記録</p><button class="go">つづける</button>`,
     () => { state = 'play'; });
 }
-function start(){ startDrone(); fadeDrone(0.09, 2); state = 'play'; }
+function start(){
+  store('kodama_cp', JSON.stringify({ level, stones: floorStones })); // ここから再開できるように
+  startDrone(); fadeDrone(0.09, 2); state = 'play';
+}
+function loadCheckpoint(){ try { const c = JSON.parse(store('kodama_cp') || 'null'); return c && c.level > 1 ? c : null; } catch(e){ return null; } }
+function retryFloor(){ stones = floorStones; setupLevel(); start(); }
 const deathLines = ['つかまった…', 'みつかった', 'うしろに、いた', 'もう、にげられない'];
 function die(e){
   state = 'dead'; deathAt = now; SFX.dead(); charging = false; joy = null; holdBreath = false;
   if (level - 1 > best){ best = level - 1; store('kodama_best', best); }
   updateHud();
   const line = deathLines[rnd(deathLines.length)];
-  setTimeout(() => showCard(`<h2 class="danger shake">${line}</h2><p>地下 ${level} 層で、音が途絶えた。<br>到達記録：${level - 1} 層${best ? `（最深 ${best} 層）` : ''}</p>
-    <button class="go">もう一度はいる</button>`, () => { level = 1; stones = 3; setupLevel(); start(); }), 1400);
+  setTimeout(() => { showCard(`<h2 class="danger shake">${line}</h2><p>地下 ${level} 層で、音が途絶えた。<br>到達記録：${level - 1} 層${best ? `（最深 ${best} 層）` : ''}</p>
+    <button class="go">この層からやりなおす</button><br><button class="sub" id="restartBtn">1層からはいりなおす</button>`, retryFloor);
+    document.getElementById('restartBtn').addEventListener('click', () => { initAudio(); overlay.classList.add('hide'); overlayAction = () => {}; level = 1; stones = 3; setupLevel(); start(); });
+  }, 1400);
 }
 // ===== エンディング =====
 let endings = (() => { try { return JSON.parse(store('kodama_endings') || '[]'); } catch(e){ return []; } })();
