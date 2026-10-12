@@ -654,6 +654,14 @@ function paintSkin(g, w, h) {
   g.strokeStyle = 'rgba(70,5,3,.8)';
   for (let i = 0; i < 10; i++) { g.lineWidth = 1 + R() * 3; const x = R() * w, y = R() * h; g.beginPath(); g.moveTo(x, y); g.lineTo(x + (R() - 0.5) * 6, y + 20 + R() * 60); g.stroke(); } // 血の筋
   for (let i = 0; i < 30; i++) { g.fillStyle = `rgba(15,10,8,${R() * 0.35})`; g.fillRect(R() * w, R() * h, 2 + R() * 10, 1 + R() * 4); } // 煤
+  for (let i = 0; i < 6; i++) { // 裂けた傷口
+    const x = R() * w, y = R() * h, l = 14 + R() * 26, a = R() * 3;
+    g.save(); g.translate(x, y); g.rotate(a);
+    g.fillStyle = 'rgba(40,3,2,.95)'; g.beginPath(); g.ellipse(0, 0, l, 4 + R() * 3, 0, 0, 7); g.fill();
+    g.fillStyle = 'rgba(150,50,45,.8)'; g.beginPath(); g.ellipse(0, 0, l * 0.7, 1.5, 0, 0, 7); g.fill();
+    g.strokeStyle = 'rgba(60,4,2,.8)'; g.lineWidth = 2; g.beginPath(); g.moveTo(l * 0.2, 3); g.lineTo(l * 0.25, 18 + R() * 25); g.stroke();
+    g.restore();
+  }
 }
 const skinMap = paintTex(256, 256, paintSkin);
 const ribMap = paintTex(256, 256, (g, w, h) => {
@@ -689,6 +697,10 @@ const hairMap = paintTex(64, 256, (g, w, h) => {
   const pants = new THREE.MeshPhongMaterial({ map: ragMap, color: 0x8a8070, shininess: 3 });
   const hair = new THREE.MeshPhongMaterial({ map: hairMap, transparent: true, alphaTest: 0.3, side: THREE.DoubleSide, color: 0x222222, shininess: 60, specular: 0x333333 });
   const claw = new THREE.MeshPhongMaterial({ color: 0x15100c, shininess: 50, specular: 0x333333 });
+  const bone = new THREE.MeshPhongMaterial({ color: 0xb8ae94, shininess: 30, specular: 0x222222 });
+  const gore = new THREE.MeshPhongMaterial({ color: 0x3a0605, shininess: 80, specular: 0x552222 });
+  const voidM = new THREE.MeshBasicMaterial({ color: 0x030101 });
+  const teeth = new THREE.MeshPhongMaterial({ color: 0xc4bb98, shininess: 40 });
   const cyl = (rt, rb, len, mat, parent, y, seg = 8) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, len, seg), mat); m.position.y = y; parent.add(m); return m; };
   const sph = (r, mat, parent, x, y, z) => { const m = new THREE.Mesh(new THREE.SphereGeometry(r, 8, 6), mat); m.position.set(x, y, z); parent.add(m); return m; };
   const grp = (parent, x, y, z, rx = 0) => { const o = new THREE.Group(); o.position.set(x, y, z); o.rotation.x = rx; parent.add(o); return o; };
@@ -710,6 +722,12 @@ const hairMap = paintTex(64, 256, (g, w, h) => {
   const lp = [[0.1, 0], [0.165, 0.07], [0.195, 0.19], [0.19, 0.31], [0.15, 0.41], [0.06, 0.46]].map(([x, y]) => new THREE.Vector2(x, y));
   const cage = new THREE.Mesh(new THREE.LatheGeometry(lp, 16), ribs); cage.position.y = 0.27; cage.scale.z = 0.75; torso.add(cage);
   for (let i = 0; i < 7; i++) sph(0.024, skin, torso, 0, 0.3 + i * 0.065, -0.135 - Math.sin(i / 6 * Math.PI) * 0.01);
+  for (const [x, y, z, rx, rz, len] of [[-0.1, 0.56, -0.12, -1.0, 0.5, 0.2], [0.11, 0.6, -0.12, -1.1, -0.6, 0.16], [0, 0.42, -0.14, -1.3, 0.1, 0.12], [0.02, 0.66, -0.13, -0.8, -0.2, 0.1],
+    [-0.18, 0.44, 0.04, 0.3, 1.3, 0.12], [0.18, 0.5, 0.02, 0.2, -1.4, 0.1]]) {
+    const b = grp(torso, x, y, z, rx); b.rotation.z = rz;
+    const c = new THREE.Mesh(new THREE.ConeGeometry(0.018, len, 6), bone); c.position.y = len / 2; b.add(c);
+    const w = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), gore); w.scale.set(1, 0.4, 1); b.add(w);
+  }
   const shirt = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.17, 0.5, 14, 1, true, 0.75, Math.PI * 2 - 1.5), rag); shirt.position.y = 0.42; shirt.scale.z = 0.8; torso.add(shirt);
   for (const [a, len] of [[2.2, 0.38], [3.0, 0.3], [3.9, 0.42], [4.6, 0.26]]) { const st = new THREE.Mesh(new THREE.PlaneGeometry(0.07, len), rag); st.position.set(Math.sin(a) * 0.17, 0.17 - len / 2 + 0.02, Math.cos(a) * 0.13); st.rotation.y = a; st.rotation.x = 0.1; torso.add(st); }
   for (const s of [-0.2, 0.2]) sph(0.055, skin, torso, s, 0.67, 0);
@@ -718,13 +736,18 @@ const hairMap = paintTex(64, 256, (g, w, h) => {
   cyl(0.042, 0.05, 0.24, skin, neck, 0.11);
   for (const s of [-0.03, 0.03]) { const t = cyl(0.012, 0.012, 0.22, skin, neck, 0.1, 5); t.position.set(s, 0.1, 0.03); t.rotation.z = -s * 3; }
   // 頭
-  const hb = grp(neck, 0, 0.3, 0.02, -0.85); const head = grp(hb, 0, 0, 0); head.name = 'head'; M.head = head;
+  const hb = grp(neck, 0, 0.3, 0.02, -0.85); M.hb = hb; const head = grp(hb, 0, 0, 0); head.name = 'head'; M.head = head;
   const hs = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 12), face); hs.scale.set(0.78, 1.25, 0.72); head.add(hs);
   const mg = new THREE.PlaneGeometry(0.25, 0.32, 10, 10); const mp = mg.attributes.position;
   for (let i = 0; i < mp.count; i++) { const x = mp.getX(i), y = mp.getY(i); mp.setZ(i, -x * x * 4.2 - y * y * 1.4); }
   mg.computeVertexNormals();
   const mask = new THREE.Mesh(mg, new THREE.MeshPhongMaterial({ map: faceTex, transparent: true, alphaTest: 0.05, shininess: 6, specular: 0x0c0c0c }));
   mask.position.set(0, -0.015, 0.15); head.add(mask); M.jaw = mask;
+  const lj = grp(head, 0, -0.13, 0.075); M.lowJaw = lj;
+  const jp = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.22, 0.03), skin); jp.position.y = -0.11; lj.add(jp);
+  const ji = new THREE.Mesh(new THREE.BoxGeometry(0.085, 0.19, 0.012), voidM); ji.position.set(0, -0.1, 0.02); lj.add(ji);
+  for (let i = 0; i < 6; i++) { const t = new THREE.Mesh(new THREE.ConeGeometry(0.0075, 0.03 + Math.random() * 0.02, 5), teeth); t.position.set(-0.035 + i * 0.014, -0.185, 0.026); t.rotation.z = (Math.random() - 0.5) * 0.4; lj.add(t); }
+  for (const [x, len] of [[-0.03, 0.22], [0.01, 0.12], [0.035, 0.3]]) { const d = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.002, len, 4), gore); d.position.set(x, -0.22 - len / 2, 0.02); lj.add(d); }
   const eyeM = new THREE.MeshBasicMaterial({ color: 0xf4f0dc });
   for (const [ex, ey] of [[-0.039, 0.021], [0.038, 0.039]]) { const e = new THREE.Mesh(new THREE.SphereGeometry(0.0045, 6, 5), eyeM); e.position.set(ex, ey - 0.015, 0.15 - ex * ex * 4.2 - ey * ey * 1.4 + 0.004); head.add(e); }
   const helmM = new THREE.MeshPhongMaterial({ color: 0x4a3c1c, shininess: 30 });
@@ -739,13 +762,14 @@ const hairMap = paintTex(64, 256, (g, w, h) => {
     const hm = new THREE.Mesh(new THREE.PlaneGeometry(w, len), hair); hm.position.set(Math.sin(a) * 0.13, 0.06 - len / 2, Math.cos(a) * 0.11); hm.rotation.y = a; head.add(hm);
   }
   // 腕：ひじで曲がった長い腕と、爪の伸びた長い指
-  M.arms = [];
+  M.arms = []; M.elbows = [];
   for (const s of [-0.22, 0.22]) {
+    const fl = s > 0 ? 0.68 : 0.56;
     const p = grp(torso, s, 0.66, 0); p.name = 'arm';
     cyl(0.04, 0.03, 0.5, skin, p, -0.25);
-    const el = grp(p, 0, -0.5, 0, -0.45); sph(0.036, skin, el, 0, 0, 0);
-    cyl(0.032, 0.022, 0.56, skin, el, -0.28);
-    const hand = grp(el, 0, -0.56, 0); const palm = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.1, 0.03), skin); palm.position.y = -0.05; hand.add(palm);
+    const el = grp(p, 0, -0.5, 0, -0.45); sph(0.036, skin, el, 0, 0, 0); M.elbows.push(el);
+    cyl(0.032, 0.022, fl, skin, el, -fl / 2);
+    const hand = grp(el, 0, -fl, 0); const palm = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.1, 0.03), skin); palm.position.y = -0.05; hand.add(palm);
     for (let f = 0; f < 4; f++) {
       const fx = -0.03 + f * 0.02, f1 = grp(hand, fx, -0.1, 0, 0.45); f1.rotation.z = (f - 1.5) * 0.12;
       cyl(0.009, 0.008, 0.13, skin, f1, -0.065, 5);
@@ -896,7 +920,7 @@ function newGame() {
   const far = cands.filter(i => ds[i] >= maxD * 0.6 && i !== exitT.x + exitT.z * N);
   mx = far[Math.floor(Math.random() * far.length)] ?? cands[cands.length - 1];
   Object.assign(M, { x: tc(mx % N), z: tc((mx / N) | 0), path: [], state: 'wander', repath: 0, lostT: 0, searchT: 0, speed: 1.3, stepAcc: 0, animT: 0, headT: 2, direct: false, rot: 0, d: 99, los: false, calm: 0, freeze: 0, bp: 0, moanT: 8 });
-  M.g.visible = true; M.g.position.set(M.x, 0, M.z); M.arms.forEach(a => a.rotation.set(0, 0, 0)); M.head.rotation.set(0, 0, 0); M.torso.rotation.x = 0.35; M.neck.rotation.x = 0.5;
+  M.g.visible = true; M.g.position.set(M.x, 0, M.z); M.arms.forEach(a => a.rotation.set(0, 0, 0)); M.head.rotation.set(0, 0, 0); M.torso.rotation.x = 0.35; M.neck.rotation.x = 0.5; M.crawl = 0;
   ghost.visible = false; GH.t = 0; GH.kind = null; GH.sub = 0; scareT = 40 + Math.random() * 20; followT = 0; flickT = 0; $('scare').hidden = true;
   G.time = 0; shake = 0; flashA = 0; dripT = 3; knockT = 25 + Math.random() * 20; rumbleT = 45 + Math.random() * 30; mapOpen = false; $('mapWrap').hidden = true;
   updateFuseHud();
@@ -1174,12 +1198,18 @@ function updateMonster(dt) {
 function animMonster(dt, spd) {
   M.animT += dt * spd * 2.7;
   const s = Math.sin(M.animT), a = Math.min(1, spd / 2);
-  M.legs[0].rotation.x = s * 0.6 * a; M.legs[1].rotation.x = -s * 0.6 * a;
   const hunt = M.state === 'hunt';
-  M.arms[0].rotation.x = hunt ? -1.15 + s * 0.15 : -s * 0.35 * a;
-  M.arms[1].rotation.x = hunt ? -1.05 - s * 0.15 : s * 0.35 * a;
-  M.torso.rotation.x = hunt ? 0.55 : 0.35;
-  M.neck.rotation.x = hunt ? 0.65 : 0.5;
+  // 追う時は四つん這いで這ってくる
+  M.crawl = lerp(M.crawl || 0, hunt && M.freeze <= 0 ? 1 : 0, 1 - Math.exp(-dt * 4)); const c = M.crawl;
+  M.legs[0].rotation.x = s * 0.6 * a - c * 1.0; M.legs[1].rotation.x = -s * 0.6 * a - c * 1.0;
+  const sa0 = hunt ? -1.15 + s * 0.15 : -s * 0.35 * a, sa1 = hunt ? -1.05 - s * 0.15 : s * 0.35 * a;
+  M.arms[0].rotation.x = lerp(sa0, -2.1 + s * 0.5 * a, c);
+  M.arms[1].rotation.x = lerp(sa1, -2.1 - s * 0.5 * a, c);
+  M.elbows.forEach(e => e.rotation.x = -0.45 - c * 0.55);
+  M.torso.rotation.x = lerp(hunt ? 0.55 : 0.35, 1.45, c);
+  M.neck.rotation.x = lerp(hunt ? 0.65 : 0.5, -0.3, c);
+  M.hb.rotation.x = -0.85 - 0.75 * c; M.hb.rotation.z = 0.9 * c;
+  M.lowJaw.rotation.x = -(hunt ? 0.45 + Math.sin(G.time * 17) * 0.12 : 0.12);
   if (hunt && Math.random() < 0.08) { M.arms[Math.random() < 0.5 ? 0 : 1].rotation.z = (Math.random() - 0.5) * 0.7; M.torso.rotation.z = (Math.random() - 0.5) * 0.25; }
   else { M.arms[0].rotation.z *= 0.9; M.arms[1].rotation.z *= 0.9; M.torso.rotation.z *= 0.9; }
   M.headT -= dt * (hunt ? 2.5 : 1);
@@ -1187,7 +1217,7 @@ function animMonster(dt, spd) {
   else { M.head.rotation.z *= 1 - Math.min(1, dt * 6); M.head.rotation.x *= 1 - Math.min(1, dt * 6); }
   if (M.freeze > 0) { M.head.rotation.z = 0.85; M.head.rotation.x = -0.2; }
   M.jaw.scale.y = hunt ? 1.06 + Math.sin(G.time * 20) * 0.03 : 1;
-  M.g.position.set(M.x, Math.abs(Math.sin(M.animT)) * 0.04 * a, M.z); M.g.rotation.y = M.rot;
+  M.g.position.set(M.x, Math.abs(Math.sin(M.animT)) * 0.04 * a - 0.32 * c, M.z); M.g.rotation.y = M.rot;
   M.light.intensity = 1.4 + Math.sin(G.time * 13) * 0.2 + (Math.random() < 0.03 ? -1 : 0);
 }
 
@@ -1201,6 +1231,7 @@ function die() {
   if (A.ctx) { setG(A.chase.gain, 0, 0.05); setG(A.tin.gain, 0.05, 0.05); }
   M.arms[0].rotation.set(-1.0, 0, -1.25); M.arms[1].rotation.set(-1.1, 0, 1.25);
   M.head.rotation.set(0.55, 0, 0.35); M.jaw.scale.y = 1.14; M.torso.rotation.x = 0.1; M.neck.rotation.x = 0.15;
+  M.crawl = 0; M.hb.rotation.set(-0.85, 0, 0); M.elbows.forEach(e => e.rotation.x = -0.3); M.legs.forEach(l => l.rotation.x = 0); M.lowJaw.rotation.x = -0.75;
   P.light = true; if (A.ctx) { setG(A.mbG.gain, 0); setG(A.mgG.gain, 0); setG(A.ehG.gain, 0); }
   $('prompt').textContent = ''; mapOpen = false; $('mapWrap').hidden = true; clearTimeout(msg.t); $('msg').style.opacity = 0;
 }
@@ -1376,7 +1407,7 @@ function frame(now) {
     shake = Math.max(shake * 0.97, 0.25);
     flashA = G.dt < 0.15 ? 0.9 : Math.max(0, 0.7 - (G.dt - 0.15));
     const on = Math.random() < 0.3; spot.intensity = on ? 2.2 : 0; fill.intensity = on ? 0.5 : 0.05;
-    M.head.rotation.z = 0.35 + Math.sin(G.dt * 40) * 0.15;
+    M.head.rotation.z = 0.35 + Math.sin(G.dt * 40) * 0.15; M.lowJaw.rotation.x = -0.75 - Math.sin(G.dt * 35) * 0.15;
     const ld = lerp(1.5, 0.52, clamp(G.dt / 0.12, 0, 1)); M.x = P.x + G.ldx * ld; M.z = P.z + G.ldz * ld;
     M.g.position.set(M.x, -0.4 + Math.sin(G.dt * 50) * 0.02, M.z); M.light.intensity = 0.5;
     const sc = $('scare'), son = (G.dt > 0.16 && G.dt < 0.25) || (G.dt > 0.62 && G.dt < 0.68) || (G.dt > 1.05 && G.dt < 1.1) || (G.dt > 1.3 && G.dt < 1.33);
@@ -1422,7 +1453,7 @@ function updateEscape(dt) {
   }
   if (E.mon) {
     M.arms[0].rotation.x = -2.2 + Math.sin(r * 9) * 0.1; M.arms[1].rotation.x = -2.3 - Math.sin(r * 9) * 0.1;
-    M.head.rotation.x = -0.2 + Math.sin(r * 30) * 0.05; M.torso.rotation.x = 0.05; M.neck.rotation.x = 0.1; M.jaw.scale.y = 1.12;
+    M.head.rotation.x = -0.2 + Math.sin(r * 30) * 0.05; M.torso.rotation.x = 0.05; M.neck.rotation.x = 0.1; M.jaw.scale.y = 1.12; M.crawl = 0; M.hb.rotation.set(-0.85, 0, 0); M.legs.forEach(l => l.rotation.x = 0); M.lowJaw.rotation.x = -0.6 - Math.sin(r * 20) * 0.1;
     M.g.position.y = Math.min(0.15, Math.sin(r * 6) * 0.15);
     P.pitch = lerp(P.pitch, -0.55, dt * 1.2);
   }
