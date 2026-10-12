@@ -44,10 +44,24 @@
   .sub{margin-top:10px;font-size:14px;padding:8px 20px;border-radius:20px;cursor:pointer;
     background:transparent;color:#d9d1c2;border:1px solid rgba(217,209,194,.35)}
   .notelist .note{transform:none;font-size:13.5px}
+  #whiteout{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:4;transition:opacity 7s ease-in}
+  #whiteout.on{opacity:1}
+  #ending{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+    padding:16px;text-align:center;z-index:5;pointer-events:none;
+    font-family:"Yu Mincho","Hiragino Mincho ProN","MS Mincho",serif}
+  #ending.on{display:flex}
+  #ending p{opacity:0;transition:opacity 1.8s;font-size:18px;letter-spacing:.08em;line-height:1.7;max-width:520px}
+  #ending p.show{opacity:1}
+  #ending.light{color:#2a2622} #ending.dark{color:#e8e2dc;justify-content:flex-end;padding-bottom:calc(8vh + env(safe-area-inset-bottom))}
+  #ending .etitle{font-size:24px;font-weight:700;margin-top:18px}
+  #ending .ehint{font-size:13px;opacity:.7}
+  #ending .ebtns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;opacity:0;transition:opacity 1.5s}
+  #ending .ebtns.show{opacity:1;pointer-events:auto}
+  #ending.light .sub{color:#2a2622;border-color:rgba(40,30,20,.4)}
   .card ul{list-style:none;text-align:left;font-size:13.5px;margin:14px 0;opacity:.9}
   .card li{padding:3px 0}
   .card li span{color:var(--accent)}
-  .card .go{margin-top:16px;font-size:18px;padding:12px 36px;border-radius:30px;border:none;cursor:pointer;
+  .card .go,#ending .go{margin-top:16px;font-size:18px;padding:12px 36px;border-radius:30px;border:none;cursor:pointer;
     background:#a3122f;color:#f3e9e4;font-weight:700;letter-spacing:.1em;box-shadow:0 0 18px rgba(255,40,70,.35)}
   .hint{font-size:12px;opacity:.6;margin-top:10px}
   .danger{color:var(--danger)} .gold,.card li span.gold{color:var(--gold)}
@@ -82,6 +96,8 @@
 <div id="breathBtn" class="btn">息<small>ひそめる</small></div>
 <div id="pingBtn" class="btn">音<small>長押しで大</small></div>
 <div id="overlay"><div class="card" id="card"></div></div>
+<div id="whiteout"></div>
+<div id="ending"></div>
 
 <script>
 (() => {
@@ -136,6 +152,11 @@ function startDrone(){
   g.gain.linearRampToValueAtTime(0.09, AC.currentTime + 3);
   drone = g;
 }
+function fadeDrone(to, sec){
+  if (!drone) return;
+  const t = AC.currentTime; drone.gain.cancelScheduledValues(t);
+  drone.gain.setValueAtTime(drone.gain.value, t); drone.gain.linearRampToValueAtTime(to, t + sec);
+}
 function out(pan, echo){
   let node = master;
   if (AC.createStereoPanner && pan){
@@ -170,6 +191,15 @@ function noise(dur, vol, filt='lowpass', freq=600, pan=0){
 }
 const SFX = {
   ping(fr, pan = 0, vs = 1){ tone(1500 - 400*fr, 650 - 200*fr, 0.22 + 0.25*fr, (0.12 + 0.18*fr) * vs, 'sine', pan, true); },
+  light(){ // 光の和音（ゆっくり立ち上がる）
+    if (!AC) return;
+    [523, 659, 784, 1046, 1318].forEach((f, i) => {
+      const t = AC.currentTime + i * 0.6, o = AC.createOscillator(), g = AC.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.045, t + 3); g.gain.linearRampToValueAtTime(0.0001, t + 10);
+      o.connect(g); g.connect(out(0, true)); o.start(t); o.stop(t + 10.1);
+    });
+  },
   paper(){ noise(0.25, 0.12, 'bandpass', 2500); noise(0.18, 0.08, 'highpass', 4000); },
   step(){ noise(0.05, 0.035, 'lowpass', 500); },
   land(pan){ noise(0.08, 0.25, 'highpass', 1800, pan); tone(2300, 1700, 0.12, 0.08, 'triangle', pan, true); },
@@ -534,6 +564,29 @@ function revealCheck(p, r, obj, x, y){
   return false;
 }
 
+function processPings(){
+  // 音の輪
+  for (let i = pings.length - 1; i >= 0; i--){
+    const p = pings[i], r = Math.min((now - p.t0) * SPEED, p.maxR + 0.5);
+    while (p.idx < p.hits.length && p.hits[p.idx].d <= r){
+      const h = p.hits[p.idx++];
+      if (!memKeys.has(h.key)){ memKeys.add(h.key); memory.push(h.seg); }
+    }
+    if (p.ring){
+      if (revealCheck(p, r, exitObj, exitObj.x, exitObj.y)) exitObj.known = true;
+      for (const it of items) if (revealCheck(p, r, it, it.x, it.y)) it.known = true;
+      if (noteObj && revealCheck(p, r, noteObj, noteObj.x, noteObj.y)) noteObj.known = true;
+      for (const e of enemies) if (revealCheck(p, r, e, e.x, e.y)){
+        e.sx = e.x; e.sy = e.y;
+        // 近くで姿を見てしまったときの不協和音
+        if (!disguised(e) && Math.hypot(e.x - player.x, e.y - player.y) < 4.5 && now - e.stingAt > 4){ e.stingAt = now; SFX.sting(enemyPan(e)); }
+      }
+    }
+    p.prevR = r;
+    if (now > p.t0 + p.maxR / SPEED + FADE) pings.splice(i, 1);
+  }
+}
+
 function update(dt){
   pingCooldown = Math.max(0, pingCooldown - dt);
   // 息をひそめる：足音が消えるが、長くは続かない
@@ -580,26 +633,7 @@ function update(dt){
       SFX.land(Math.max(-1, Math.min(1, (s.x - player.x) / 7)));
     }
   }
-  // 音の輪
-  for (let i = pings.length - 1; i >= 0; i--){
-    const p = pings[i], r = Math.min((now - p.t0) * SPEED, p.maxR + 0.5);
-    while (p.idx < p.hits.length && p.hits[p.idx].d <= r){
-      const h = p.hits[p.idx++];
-      if (!memKeys.has(h.key)){ memKeys.add(h.key); memory.push(h.seg); }
-    }
-    if (p.ring){
-      if (revealCheck(p, r, exitObj, exitObj.x, exitObj.y)) exitObj.known = true;
-      for (const it of items) if (revealCheck(p, r, it, it.x, it.y)) it.known = true;
-      if (noteObj && revealCheck(p, r, noteObj, noteObj.x, noteObj.y)) noteObj.known = true;
-      for (const e of enemies) if (revealCheck(p, r, e, e.x, e.y)){
-        e.sx = e.x; e.sy = e.y;
-        // 近くで姿を見てしまったときの不協和音
-        if (!disguised(e) && Math.hypot(e.x - player.x, e.y - player.y) < 4.5 && now - e.stingAt > 4){ e.stingAt = now; SFX.sting(enemyPan(e)); }
-      }
-    }
-    p.prevR = r;
-    if (now > p.t0 + p.maxR / SPEED + FADE) pings.splice(i, 1);
-  }
+  processPings();
   for (const e of enemies) updateEnemy(e, dt);
 
   // 拾う・ゴール・やられ
@@ -666,7 +700,7 @@ function draw(){
   const showAll = state === 'dead' || state === 'clear';
   if (exitObj.known || showAll){
     const f = Math.max(0, 1 - (now - exitObj.seenAt) / FADE);
-    drawExit(exitObj.x * TS, exitObj.y * TS, 0.35 + 0.65 * f, '出口');
+    drawExit(exitObj.x * TS, exitObj.y * TS, 0.35 + 0.65 * f, level === NOTES.length ? '非常口' : '出口');
   }
   // 記録（紙切れ）
   if (noteObj && (noteObj.known || showAll)){
@@ -702,6 +736,9 @@ function draw(){
 
   // プレイヤー
   const px = player.x * TS, py = player.y * TS;
+  const morph = state === 'ending' ? ending.morph : 0;
+  if (morph > 0) drawEnemy({ seed: 0.3, hunt: false, x: player.x, y: player.y + 1 }, px, py, morph);
+  ctx.globalAlpha = 1 - morph;
   const g = ctx.createRadialGradient(px, py, 0, px, py, TS * 0.7);
   g.addColorStop(0, 'rgba(200,245,255,.35)'); g.addColorStop(1, 'rgba(200,245,255,0)');
   ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px, py, TS * 0.7, 0, Math.PI * 2); ctx.fill();
@@ -711,6 +748,7 @@ function draw(){
   const fl = Math.hypot(player.fx, player.fy) || 1;
   ctx.fillStyle = 'rgba(234,252,255,.6)';
   ctx.beginPath(); ctx.arc(px + player.fx / fl * TS * 0.3, py + player.fy / fl * TS * 0.3, TS * 0.05, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 1;
   // ため
   if (charging){
     const fr = Math.min(1, (now - chargeStart) / 1.0), R = (4 + 9 * fr) * TS;
@@ -844,6 +882,7 @@ function title(){
     <li>息は長くはもたない。限界がくると、大きく吐いてしまう。</li></ul>
     <button class="go">はいる</button><br>
     ${foundNotes.length ? `<button class="sub" id="notesBtn">見つけた記録を読む（${foundNotes.length} / ${NOTES.length}）</button>` : ''}
+    ${endings.length ? `<p class="hint">到達した結末：${endings.map(t => END_TEXT[t].title).join('　')}</p>` : ''}
     <p class="hint">足音・心音・ささやきは左右から聞こえます</p>`, start);
   const nb = document.getElementById('notesBtn');
   if (nb) nb.addEventListener('click', showNotes);
@@ -862,7 +901,7 @@ function readNote(){
   showCard(`${noteHtml(i)}<p class="hint">${foundNotes.length} / ${NOTES.length} 枚目の記録</p><button class="go">つづける</button>`,
     () => { state = 'play'; });
 }
-function start(){ startDrone(); state = 'play'; }
+function start(){ startDrone(); fadeDrone(0.09, 2); state = 'play'; }
 const deathLines = ['つかまった…', 'みつかった', 'うしろに、いた', 'もう、にげられない'];
 function die(e){
   state = 'dead'; deathAt = now; SFX.dead(); charging = false; joy = null; holdBreath = false;
@@ -872,7 +911,85 @@ function die(e){
   setTimeout(() => showCard(`<h2 class="danger shake">${line}</h2><p>地下 ${level} 層で、音が途絶えた。<br>到達記録：${level - 1} 層${best ? `（最深 ${best} 層）` : ''}</p>
     <button class="go">もう一度はいる</button>`, () => { level = 1; stones = 3; setupLevel(); start(); }), 1400);
 }
+// ===== エンディング =====
+let endings = (() => { try { return JSON.parse(store('kodama_endings') || '[]'); } catch(e){ return []; } })();
+const ending = { type: '', t: 0, morph: 0, morphAt: 1e9, pingT: 0 };
+const endEl = document.getElementById('ending'), whiteEl = document.getElementById('whiteout');
+const END_TEXT = {
+  normal: {
+    lines: ['非常口の扉を押すと、上へ続く階段があった。', '階段の上から、光が差している。', 'まぶしい。', '……まぶしすぎる。目を開けていられない。',
+      '光の中で、思わず手を叩いた。', '音が、返ってこない。', '壁の形が、わからない。'],
+    title: 'ノーマルエンド「光の下へ」'
+  },
+  true: {
+    lines: ['非常口の扉は、内側から塗り固められていた。', '扉の向こうで、だれかが手を叩いた。', '音が返ってきて、形が見えた。\n扉の向こうも、同じ迷路だった。',
+      'まわりで、いくつもの手を叩く音がする。', '気づけば、指が伸びていた。長く、細く。', '目は、もういらない。', '「おかえり」'],
+    title: '真エンド「こだま」'
+  }
+};
+function startEnding(type){
+  state = 'ending'; charging = false; joy = null; holdBreath = false; keys.clear();
+  pingBtn.classList.remove('on'); breathBtn.classList.remove('on');
+  Object.assign(ending, { type, t: 0, morph: 0, morphAt: 1e9, pingT: 1.5 });
+  if (!endings.includes(type)){ endings.push(type); store('kodama_endings', JSON.stringify(endings)); }
+  fadeDrone(0, 4);
+  endEl.innerHTML = ''; endEl.className = 'on ' + (type === 'normal' ? 'light' : 'dark');
+  const T = END_TEXT[type], gap = 3200, first = type === 'normal' ? 3500 : 2000;
+  if (type === 'normal'){ SFX.light(); requestAnimationFrame(() => whiteEl.classList.add('on')); }
+  else {
+    // やつらが集まってくる
+    const { dist } = bfs(Math.floor(player.x), Math.floor(player.y)), spots = [];
+    for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++){ const d = dist[y * gw + x]; if (d >= 3 && d <= 7) spots.push([x, y]); }
+    enemies = [];
+    for (let i = 0; i < 7 && spots.length; i++){
+      const [x, y] = spots.splice(rnd(spots.length), 1)[0];
+      enemies.push({ x: x + 0.5, y: y + 0.5, sx: 0, sy: 0, seenAt: -99, stingAt: 1e9, hunt: false, mimic: false, seed: Math.random() * 6.28 });
+    }
+  }
+  T.lines.forEach((ln, i) => setTimeout(() => {
+    const el = document.createElement('p'); el.innerHTML = ln.replace(/\n/g, '<br>');
+    if (type === 'true') endEl.querySelectorAll('p').forEach(o => o.remove()); // 闇の中では、ことばは1行ずつ
+    endEl.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('show'));
+    if (type === 'true' && i === 4) ending.morphAt = ending.t;
+    if (type === 'true' && i === T.lines.length - 1) SFX.whisper(0);
+  }, first + i * gap));
+  setTimeout(() => {
+    const hint = type === 'normal'
+      ? `<p class="ehint">見つけた記録 ${foundNotes.length} / ${NOTES.length}<br>すべての記録を集めて非常口へ向かうと、別の結末が待っている。</p>`
+      : `<p class="ehint">これで、あなたも「やつら」のひとり。<br>音を出す者を、暗闇で待とう。</p>`;
+    if (type === 'true') endEl.querySelectorAll('p').forEach(o => o.remove());
+    const el = document.createElement('div');
+    el.innerHTML = `<p class="etitle">${T.title}</p>${hint}<div class="ebtns"><button class="go" id="eTitle">タイトルへ</button><button class="sub" id="eDeeper">さらに深く潜る</button></div>`;
+    endEl.appendChild(el);
+    requestAnimationFrame(() => { el.querySelectorAll('p').forEach(p => p.classList.add('show')); el.querySelector('.ebtns').classList.add('show'); });
+    const close = () => { endEl.className = ''; endEl.innerHTML = ''; whiteEl.classList.remove('on'); };
+    document.getElementById('eTitle').onclick = () => { initAudio(); close(); title(); };
+    document.getElementById('eDeeper').onclick = () => { initAudio(); close(); level++; stones++; setupLevel(); start(); };
+  }, first + T.lines.length * gap + 1200);
+}
+function endingTick(dt){
+  ending.t += dt;
+  ending.morph = Math.max(0, Math.min(1, (ending.t - ending.morphAt) / 3));
+  if (ending.type === 'true' && enemies.length){
+    ending.pingT -= dt;
+    if (ending.pingT <= 0){ // 闇の中で、やつらが手を叩く
+      ending.pingT = 0.8 + Math.random() * 0.9;
+      const e = enemies[rnd(enemies.length)];
+      makePing(e.x, e.y, 6, -1, { color: '255,90,110', bright: 0.8 });
+      SFX.ping(0.2, enemyPan(e), 0.5);
+    }
+  }
+  processPings();
+}
 function clearLevel(){
+  if (level === NOTES.length){ // 地下10層の非常口
+    SFX.clear();
+    if (level > best){ best = level; store('kodama_best', best); }
+    updateHud();
+    startEnding(foundNotes.length >= NOTES.length ? 'true' : 'normal');
+    return;
+  }
   state = 'clear'; SFX.clear(); charging = false; joy = null; holdBreath = false;
   if (level > best){ best = level; store('kodama_best', best); }
   updateHud();
@@ -886,7 +1003,8 @@ let last = performance.now();
 function loop(t){
   const dt = Math.min(0.05, (t - last) / 1000); last = t; now = t / 1000;
   if (state === 'play') update(dt);
-  else if (state !== 'title' && state !== 'note'){ // 終了演出中も音の輪は消えていく
+  else if (state === 'ending') endingTick(dt);
+  else if (state !== 'title' && state !== 'note' && state !== 'ending'){ // 終了演出中も音の輪は消えていく
     for (let i = pings.length - 1; i >= 0; i--){ const p = pings[i]; if (now > p.t0 + p.maxR / SPEED + FADE) pings.splice(i, 1); }
   }
   draw();
