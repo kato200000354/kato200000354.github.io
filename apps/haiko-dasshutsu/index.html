@@ -642,23 +642,84 @@ const faceCanvas = makeFaceCanvas();
   s.globalCompositeOperation = 'multiply'; s.fillStyle = '#ff9a8a'; s.fillRect(0, 0, 512, 512); })();
 const faceTex = new THREE.CanvasTexture(faceCanvas);
 const M = { g: new THREE.Group() };
+// 肌・肋骨・ぼろ布・髪のテクスチャ
+function paintTex(w, h, fn) { const c = document.createElement('canvas'); c.width = w; c.height = h; fn(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; }
+function paintSkin(g, w, h) {
+  const R = Math.random;
+  g.fillStyle = '#8d887b'; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 260; i++) { g.fillStyle = `rgba(${30 + R() * 40},${25 + R() * 30},${20 + R() * 20},${R() * 0.18})`; g.beginPath(); g.arc(R() * w, R() * h, 2 + R() * 16, 0, 7); g.fill(); }
+  for (let i = 0; i < 40; i++) { g.fillStyle = `rgba(70,50,80,${R() * 0.15})`; g.beginPath(); g.arc(R() * w, R() * h, 6 + R() * 20, 0, 7); g.fill(); } // あざ
+  g.strokeStyle = 'rgba(50,30,70,.45)'; g.lineWidth = 1.2;
+  for (let i = 0; i < 40; i++) { let x = R() * w, y = R() * h; g.beginPath(); g.moveTo(x, y); for (let j = 0; j < 8; j++) { x += (R() - 0.5) * 22; y += R() * 18; g.lineTo(x, y); } g.stroke(); } // 血管
+  g.strokeStyle = 'rgba(70,5,3,.8)';
+  for (let i = 0; i < 10; i++) { g.lineWidth = 1 + R() * 3; const x = R() * w, y = R() * h; g.beginPath(); g.moveTo(x, y); g.lineTo(x + (R() - 0.5) * 6, y + 20 + R() * 60); g.stroke(); } // 血の筋
+  for (let i = 0; i < 30; i++) { g.fillStyle = `rgba(15,10,8,${R() * 0.35})`; g.fillRect(R() * w, R() * h, 2 + R() * 10, 1 + R() * 4); } // 煤
+}
+const skinMap = paintTex(256, 256, paintSkin);
+const ribMap = paintTex(256, 256, (g, w, h) => {
+  paintSkin(g, w, h);
+  for (let i = 0; i < 8; i++) { // 浮き出た肋骨（影と骨の明るい筋）
+    const y = 40 + i * 24, sag = 10 + i * 1.5;
+    for (const [col, off, lw] of [['rgba(10,6,4,.6)', 7, 7], ['rgba(190,182,165,.28)', 0, 4]]) {
+      g.strokeStyle = col; g.lineWidth = lw; g.beginPath();
+      g.moveTo(0, y + off + sag); g.quadraticCurveTo(w * 0.25, y + off - sag, w * 0.5, y + off + sag * 0.3); g.quadraticCurveTo(w * 0.75, y + off - sag, w, y + off + sag); g.stroke();
+    }
+  }
+  const sp = g.createLinearGradient(w * 0.5 - 14, 0, w * 0.5 + 14, 0); sp.addColorStop(0, 'rgba(0,0,0,0)'); sp.addColorStop(0.5, 'rgba(10,5,3,.6)'); sp.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = sp; g.fillRect(w * 0.5 - 14, 0, 28, h); // 胸骨のくぼみ
+});
+const ragMap = paintTex(256, 256, (g, w, h) => {
+  const R = Math.random;
+  g.fillStyle = '#2f2920'; g.fillRect(0, 0, w, h);
+  for (let y = 0; y < h; y += 3) { g.fillStyle = `rgba(0,0,0,${R() * 0.25})`; g.fillRect(0, y, w, 1); }
+  for (let i = 0; i < 18; i++) { g.fillStyle = `rgba(${60 + R() * 30},6,4,${0.3 + R() * 0.4})`; g.beginPath(); g.ellipse(R() * w, R() * h, 8 + R() * 30, 6 + R() * 22, R() * 3, 0, 7); g.fill(); }
+  g.globalCompositeOperation = 'destination-out';
+  g.beginPath(); g.moveTo(0, h); for (let x = 0; x <= w; x += 8) g.lineTo(x, h - 20 - R() * 90); g.lineTo(w, h); g.closePath(); g.fill(); // ぎざぎざの裾
+  for (let i = 0; i < 14; i++) { g.beginPath(); g.ellipse(R() * w, R() * h * 0.8, 4 + R() * 14, 3 + R() * 10, R() * 3, 0, 7); g.fill(); } // 穴
+});
+const hairMap = paintTex(64, 256, (g, w, h) => {
+  const R = Math.random;
+  for (let i = 0; i < 70; i++) { g.strokeStyle = `rgba(4,3,2,${0.5 + R() * 0.5})`; g.lineWidth = 0.6 + R() * 1.6; const x = R() * w; g.beginPath(); g.moveTo(x, 0); g.bezierCurveTo(x + (R() - 0.5) * 14, h * 0.3, x + (R() - 0.5) * 18, h * 0.6, x + (R() - 0.5) * 20, h * (0.55 + R() * 0.45)); g.stroke(); }
+});
 (() => {
-  const skin = new THREE.MeshPhongMaterial({ color: 0x46433f, shininess: 12 });
-  const face = new THREE.MeshPhongMaterial({ color: 0x6a665c, shininess: 25, specular: 0x222222 });
-  const cloth = new THREE.MeshPhongMaterial({ color: 0x221e19, shininess: 3 });
-  const black = new THREE.MeshBasicMaterial({ color: 0x030101 });
+  const skin = new THREE.MeshPhongMaterial({ map: skinMap, color: 0x726d64, shininess: 40, specular: 0x2a2a26 }); // 湿った肌
+  const ribs = new THREE.MeshPhongMaterial({ map: ribMap, color: 0x726d64, shininess: 40, specular: 0x2a2a26 });
+  const face = new THREE.MeshPhongMaterial({ map: skinMap, color: 0x9a9486, shininess: 25, specular: 0x222222 });
+  const rag = new THREE.MeshPhongMaterial({ map: ragMap, transparent: true, alphaTest: 0.4, side: THREE.DoubleSide, shininess: 3 });
+  const pants = new THREE.MeshPhongMaterial({ map: ragMap, color: 0x8a8070, shininess: 3 });
+  const hair = new THREE.MeshPhongMaterial({ map: hairMap, transparent: true, alphaTest: 0.3, side: THREE.DoubleSide, color: 0x222222, shininess: 60, specular: 0x333333 });
+  const claw = new THREE.MeshPhongMaterial({ color: 0x15100c, shininess: 50, specular: 0x333333 });
+  const cyl = (rt, rb, len, mat, parent, y, seg = 8) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, len, seg), mat); m.position.y = y; parent.add(m); return m; };
+  const sph = (r, mat, parent, x, y, z) => { const m = new THREE.Mesh(new THREE.SphereGeometry(r, 8, 6), mat); m.position.set(x, y, z); parent.add(m); return m; };
+  const grp = (parent, x, y, z, rx = 0) => { const o = new THREE.Group(); o.position.set(x, y, z); o.rotation.x = rx; parent.add(o); return o; };
   const g = M.g; scene.add(g);
+
+  // 脚：細い腿と、骨ばった裸のすね
   M.legs = [];
-  for (const s of [-0.12, 0.12]) {
-    const p = new THREE.Group(); p.position.set(s, 1.02, 0); g.add(p);
-    const l = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.05, 1.02, 7), cloth); l.position.y = -0.51; p.add(l);
-    const f = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.07, 0.24), darkMat); f.position.set(0, -1.0, 0.05); p.add(f);
+  for (const s of [-0.11, 0.11]) {
+    const p = grp(g, s, 1.05, 0); const th = grp(p, 0, 0, 0, -0.25);
+    cyl(0.07, 0.05, 0.52, pants, th, -0.26);
+    const knee = grp(th, 0, -0.52, 0, 0.45); sph(0.045, skin, knee, 0, 0, 0.01);
+    cyl(0.04, 0.028, 0.56, skin, knee, -0.28);
+    const ft = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.035, 0.24), skin); ft.position.set(0, -0.56, 0.07); ft.rotation.x = -0.2; knee.add(ft);
     M.legs.push(p);
   }
-  const torso = new THREE.Group(); torso.position.y = 1.02; torso.rotation.x = 0.28; g.add(torso); M.torso = torso;
-  const tb = new THREE.Mesh(new THREE.CylinderGeometry(0.21, 0.15, 0.85, 9), cloth); tb.position.y = 0.42; torso.add(tb);
-  const head = new THREE.Group(); head.name = 'head'; head.position.set(0, 0.98, 0.04); torso.add(head); M.head = head;
-  const hs = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 12), face); hs.scale.set(0.8, 1.25, 0.72); head.add(hs);
+  // 胴：くびれた腹、肋骨の浮いた胸、背骨、裂けた作業着
+  const torso = grp(g, 0, 1.05, 0, 0.35); M.torso = torso;
+  cyl(0.085, 0.1, 0.32, skin, torso, 0.15);
+  const lp = [[0.1, 0], [0.165, 0.07], [0.195, 0.19], [0.19, 0.31], [0.15, 0.41], [0.06, 0.46]].map(([x, y]) => new THREE.Vector2(x, y));
+  const cage = new THREE.Mesh(new THREE.LatheGeometry(lp, 16), ribs); cage.position.y = 0.27; cage.scale.z = 0.75; torso.add(cage);
+  for (let i = 0; i < 7; i++) sph(0.024, skin, torso, 0, 0.3 + i * 0.065, -0.135 - Math.sin(i / 6 * Math.PI) * 0.01);
+  const shirt = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.17, 0.5, 14, 1, true, 0.75, Math.PI * 2 - 1.5), rag); shirt.position.y = 0.42; shirt.scale.z = 0.8; torso.add(shirt);
+  for (const [a, len] of [[2.2, 0.38], [3.0, 0.3], [3.9, 0.42], [4.6, 0.26]]) { const st = new THREE.Mesh(new THREE.PlaneGeometry(0.07, len), rag); st.position.set(Math.sin(a) * 0.17, 0.17 - len / 2 + 0.02, Math.cos(a) * 0.13); st.rotation.y = a; st.rotation.x = 0.1; torso.add(st); }
+  for (const s of [-0.2, 0.2]) sph(0.055, skin, torso, s, 0.67, 0);
+  // 前へ突き出た首
+  const neck = grp(torso, 0, 0.71, 0.03, 0.5); M.neck = neck;
+  cyl(0.042, 0.05, 0.24, skin, neck, 0.11);
+  for (const s of [-0.03, 0.03]) { const t = cyl(0.012, 0.012, 0.22, skin, neck, 0.1, 5); t.position.set(s, 0.1, 0.03); t.rotation.z = -s * 3; }
+  // 頭
+  const hb = grp(neck, 0, 0.3, 0.02, -0.85); const head = grp(hb, 0, 0, 0); head.name = 'head'; M.head = head;
+  const hs = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 12), face); hs.scale.set(0.78, 1.25, 0.72); head.add(hs);
   const mg = new THREE.PlaneGeometry(0.25, 0.32, 10, 10); const mp = mg.attributes.position;
   for (let i = 0; i < mp.count; i++) { const x = mp.getX(i), y = mp.getY(i); mp.setZ(i, -x * x * 4.2 - y * y * 1.4); }
   mg.computeVertexNormals();
@@ -666,18 +727,32 @@ const M = { g: new THREE.Group() };
   mask.position.set(0, -0.015, 0.15); head.add(mask); M.jaw = mask;
   const eyeM = new THREE.MeshBasicMaterial({ color: 0xf4f0dc });
   for (const [ex, ey] of [[-0.039, 0.021], [0.038, 0.039]]) { const e = new THREE.Mesh(new THREE.SphereGeometry(0.0045, 6, 5), eyeM); e.position.set(ex, ey - 0.015, 0.15 - ex * ex * 4.2 - ey * ey * 1.4 + 0.004); head.add(e); }
-  const helm = new THREE.Mesh(new THREE.SphereGeometry(0.19, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshPhongMaterial({ color: 0x4a3c1c, shininess: 30 }));
-  helm.position.y = 0.07; head.add(helm);
-  const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.02, 14), helm.material); brim.position.y = 0.07; head.add(brim);
+  const helmM = new THREE.MeshPhongMaterial({ color: 0x4a3c1c, shininess: 30 });
+  const helm = new THREE.Mesh(new THREE.SphereGeometry(0.19, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), helmM); helm.position.y = 0.07; helm.rotation.z = 0.12; head.add(helm);
+  const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.02, 14), helmM); brim.position.y = 0.07; brim.rotation.z = 0.12; head.add(brim);
+  const crack = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.13, 0.012), claw); crack.position.set(-0.08, 0.17, 0.1); crack.rotation.set(0.6, 0, 0.7); head.add(crack);
   const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.05, 10), new THREE.MeshBasicMaterial({ color: 0xff2a10 }));
   lamp.rotation.x = Math.PI / 2; lamp.position.set(0, 0.16, 0.17); head.add(lamp);
   M.light = new THREE.PointLight(0xff2010, 1.6, 7, 1.6); M.light.position.set(0, 0.2, 0.55); head.add(M.light);
+  // ヘルメットの下から垂れる濡れた黒髪（顔の両脇と後ろ）
+  for (const [a, len, w] of [[-1.15, 0.42, 0.13], [1.2, 0.36, 0.12], [-2.2, 0.5, 0.18], [2.3, 0.46, 0.18], [3.14, 0.55, 0.22], [-0.6, 0.3, 0.08]]) {
+    const hm = new THREE.Mesh(new THREE.PlaneGeometry(w, len), hair); hm.position.set(Math.sin(a) * 0.13, 0.06 - len / 2, Math.cos(a) * 0.11); hm.rotation.y = a; head.add(hm);
+  }
+  // 腕：ひじで曲がった長い腕と、爪の伸びた長い指
   M.arms = [];
-  for (const s of [-0.26, 0.26]) {
-    const p = new THREE.Group(); p.name = 'arm'; p.position.set(s, 0.78, 0); torso.add(p);
-    const a = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.035, 1.15, 7), skin); a.position.y = -0.57; p.add(a);
-    const h = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.22, 0.05), skin); h.position.y = -1.22; p.add(h);
-    for (const f of [-0.025, 0, 0.025]) { const fi = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.16, 0.012), skin); fi.position.set(f, -1.4, 0); p.add(fi); }
+  for (const s of [-0.22, 0.22]) {
+    const p = grp(torso, s, 0.66, 0); p.name = 'arm';
+    cyl(0.04, 0.03, 0.5, skin, p, -0.25);
+    const el = grp(p, 0, -0.5, 0, -0.45); sph(0.036, skin, el, 0, 0, 0);
+    cyl(0.032, 0.022, 0.56, skin, el, -0.28);
+    const hand = grp(el, 0, -0.56, 0); const palm = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.1, 0.03), skin); palm.position.y = -0.05; hand.add(palm);
+    for (let f = 0; f < 4; f++) {
+      const fx = -0.03 + f * 0.02, f1 = grp(hand, fx, -0.1, 0, 0.45); f1.rotation.z = (f - 1.5) * 0.12;
+      cyl(0.009, 0.008, 0.13, skin, f1, -0.065, 5);
+      const f2 = grp(f1, 0, -0.13, 0, 0.8); cyl(0.008, 0.006, 0.12, skin, f2, -0.06, 5);
+      const c = new THREE.Mesh(new THREE.ConeGeometry(0.007, 0.07, 5), claw); c.position.y = -0.15; c.rotation.x = Math.PI; f2.add(c);
+    }
+    const th = grp(hand, s > 0 ? -0.045 : 0.045, -0.04, 0.01, 0.5); th.rotation.z = s > 0 ? -0.6 : 0.6; cyl(0.01, 0.008, 0.11, skin, th, -0.055, 5);
     M.arms.push(p);
   }
   g.visible = false;
@@ -821,7 +896,7 @@ function newGame() {
   const far = cands.filter(i => ds[i] >= maxD * 0.6 && i !== exitT.x + exitT.z * N);
   mx = far[Math.floor(Math.random() * far.length)] ?? cands[cands.length - 1];
   Object.assign(M, { x: tc(mx % N), z: tc((mx / N) | 0), path: [], state: 'wander', repath: 0, lostT: 0, searchT: 0, speed: 1.3, stepAcc: 0, animT: 0, headT: 2, direct: false, rot: 0, d: 99, los: false, calm: 0, freeze: 0, bp: 0, moanT: 8 });
-  M.g.visible = true; M.g.position.set(M.x, 0, M.z); M.arms.forEach(a => a.rotation.set(0, 0, 0)); M.head.rotation.set(0, 0, 0); M.torso.rotation.x = 0.28;
+  M.g.visible = true; M.g.position.set(M.x, 0, M.z); M.arms.forEach(a => a.rotation.set(0, 0, 0)); M.head.rotation.set(0, 0, 0); M.torso.rotation.x = 0.35; M.neck.rotation.x = 0.5;
   ghost.visible = false; GH.t = 0; GH.kind = null; GH.sub = 0; scareT = 40 + Math.random() * 20; followT = 0; flickT = 0; $('scare').hidden = true;
   G.time = 0; shake = 0; flashA = 0; dripT = 3; knockT = 25 + Math.random() * 20; rumbleT = 45 + Math.random() * 30; mapOpen = false; $('mapWrap').hidden = true;
   updateFuseHud();
@@ -1103,7 +1178,10 @@ function animMonster(dt, spd) {
   const hunt = M.state === 'hunt';
   M.arms[0].rotation.x = hunt ? -1.15 + s * 0.15 : -s * 0.35 * a;
   M.arms[1].rotation.x = hunt ? -1.05 - s * 0.15 : s * 0.35 * a;
-  M.torso.rotation.x = hunt ? 0.45 : 0.28;
+  M.torso.rotation.x = hunt ? 0.55 : 0.35;
+  M.neck.rotation.x = hunt ? 0.65 : 0.5;
+  if (hunt && Math.random() < 0.08) { M.arms[Math.random() < 0.5 ? 0 : 1].rotation.z = (Math.random() - 0.5) * 0.7; M.torso.rotation.z = (Math.random() - 0.5) * 0.25; }
+  else { M.arms[0].rotation.z *= 0.9; M.arms[1].rotation.z *= 0.9; M.torso.rotation.z *= 0.9; }
   M.headT -= dt * (hunt ? 2.5 : 1);
   if (M.headT < 0) { M.head.rotation.z = (Math.random() - 0.5) * 1.3; M.head.rotation.x = (Math.random() - 0.5) * 0.5; if (M.headT < -0.18) M.headT = 1 + Math.random() * 3; }
   else { M.head.rotation.z *= 1 - Math.min(1, dt * 6); M.head.rotation.x *= 1 - Math.min(1, dt * 6); }
@@ -1122,7 +1200,7 @@ function die() {
   M.g.position.set(M.x, -0.4, M.z); M.g.rotation.y = M.rot; ghost.visible = false;
   if (A.ctx) { setG(A.chase.gain, 0, 0.05); setG(A.tin.gain, 0.05, 0.05); }
   M.arms[0].rotation.set(-1.0, 0, -1.25); M.arms[1].rotation.set(-1.1, 0, 1.25);
-  M.head.rotation.set(-0.15, 0, 0.35); M.jaw.scale.y = 1.14; M.torso.rotation.x = 0.1;
+  M.head.rotation.set(0.55, 0, 0.35); M.jaw.scale.y = 1.14; M.torso.rotation.x = 0.1; M.neck.rotation.x = 0.15;
   P.light = true; if (A.ctx) { setG(A.mbG.gain, 0); setG(A.mgG.gain, 0); setG(A.ehG.gain, 0); }
   $('prompt').textContent = ''; mapOpen = false; $('mapWrap').hidden = true; clearTimeout(msg.t); $('msg').style.opacity = 0;
 }
@@ -1344,7 +1422,7 @@ function updateEscape(dt) {
   }
   if (E.mon) {
     M.arms[0].rotation.x = -2.2 + Math.sin(r * 9) * 0.1; M.arms[1].rotation.x = -2.3 - Math.sin(r * 9) * 0.1;
-    M.head.rotation.x = -0.6 + Math.sin(r * 30) * 0.05; M.torso.rotation.x = 0.05; M.jaw.scale.y = 1.12;
+    M.head.rotation.x = -0.2 + Math.sin(r * 30) * 0.05; M.torso.rotation.x = 0.05; M.neck.rotation.x = 0.1; M.jaw.scale.y = 1.12;
     M.g.position.y = Math.min(0.15, Math.sin(r * 6) * 0.15);
     P.pitch = lerp(P.pitch, -0.55, dt * 1.2);
   }
