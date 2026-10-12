@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>目をあけるな</title>
+<style>
+  :root{--fg:#d9d2c3;--dim:#8a8070;--red:#c8322a;--gold:#e7c46a;--panel:rgba(0,0,0,.9)}
+  [hidden]{display:none!important}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+  html,body{width:100%;height:100%;overflow:hidden;background:#000;color:var(--fg);
+    font-family:"Hiragino Mincho ProN","Yu Mincho","YuMincho","Noto Serif JP","MS PMincho",serif;touch-action:none}
+  canvas{display:block;position:fixed;inset:0;touch-action:none}
+  #hud{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;
+    padding:calc(10px + env(safe-area-inset-top)) 16px 0;pointer-events:none;font-size:14px;letter-spacing:.08em;text-shadow:0 0 6px #000}
+  #hud .l{display:flex;flex-direction:column;gap:6px}
+  #hud .row{display:flex;gap:14px;align-items:center}
+  #night{color:var(--fg);font-size:16px}
+  #items b{color:var(--gold)}
+  #fearWrap{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dim)}
+  #fearBar{width:110px;height:6px;border:1px solid #4a3a34;background:#120807;overflow:hidden}
+  #fearFill{height:100%;width:0;background:linear-gradient(90deg,#6a1c16,#d0362c)}
+  #muteBtn{pointer-events:auto;background:rgba(255,255,255,.05);border:1px solid #3a332c;color:var(--dim);
+    border-radius:16px;padding:5px 12px;font-size:12px;font-family:inherit;cursor:pointer}
+  #eyeBtn{position:fixed;right:calc(20px + env(safe-area-inset-right));bottom:calc(28px + env(safe-area-inset-bottom));
+    width:104px;height:104px;border-radius:50%;border:2px solid #5a4a40;background:rgba(30,20,16,.55);color:var(--fg);
+    font-family:inherit;font-size:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+    touch-action:none;cursor:pointer;letter-spacing:.06em}
+  #eyeBtn .ic{font-size:28px;line-height:1}
+  #eyeBtn.on{background:rgba(90,16,12,.6);border-color:#a0342a}
+  #eyeBtn.lock{opacity:.35}
+  #msg{position:fixed;left:16px;right:16px;bottom:calc(150px + env(safe-area-inset-bottom));text-align:center;font-size:15px;
+    line-height:1.7;pointer-events:none;text-shadow:0 0 8px #000,0 0 3px #000;transition:opacity .6s;opacity:0}
+  #voice{position:fixed;left:0;right:0;top:38%;text-align:center;font-size:26px;color:#e8d8d0;letter-spacing:.3em;
+    pointer-events:none;opacity:0;transition:opacity .4s;text-shadow:0 0 14px #a02018,0 0 4px #000}
+  #ov{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;background:var(--panel);
+    overflow-y:auto;touch-action:pan-y}
+  .card{max-width:440px;width:100%;text-align:center;padding:24px 4px}
+  .card h1{font-size:40px;letter-spacing:.25em;font-weight:600;color:#e6ddcc;text-shadow:0 0 18px #6a0e0a;margin-bottom:4px}
+  .card h2{font-size:24px;letter-spacing:.2em;font-weight:500;margin-bottom:18px}
+  .sub{font-size:11px;letter-spacing:.5em;color:var(--dim);margin-bottom:22px}
+  .rules{text-align:left;font-size:14px;line-height:1.85;color:#cfc6b4;margin:0 auto 18px;max-width:380px}
+  .rules li{list-style:none;padding-left:1em;text-indent:-1em;margin-bottom:4px}
+  .rules b{color:#f0e4c8;font-weight:600}
+  .rules .r{color:#e0645a}
+  .ctrl{font-size:12px;color:var(--dim);line-height:1.8;margin-bottom:20px}
+  .story{font-size:16px;line-height:2.2;color:#d8d0c0;margin:0 auto 26px;max-width:360px;text-align:left;white-space:pre-line}
+  .story .ln{opacity:0;animation:fin 1.4s forwards}
+  @keyframes fin{to{opacity:1}}
+  .btns{display:flex;flex-direction:column;gap:12px;align-items:center}
+  .bt{min-width:220px;padding:13px 22px;font-size:16px;font-family:inherit;letter-spacing:.15em;color:#eee3cf;
+    background:#1b1210;border:1px solid #6a4a3c;border-radius:4px;cursor:pointer}
+  .bt:active{background:#3a1a14}
+  .bt.sec{color:var(--dim);border-color:#3a302a;background:transparent;font-size:14px}
+  .note{font-size:12px;color:#7a6e60;margin-top:16px}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud" hidden>
+  <div class="l">
+    <div class="row"><span id="night">一夜目</span><span id="items">お札 <b>0</b>/3</span></div>
+    <div id="fearWrap">こわさ<div id="fearBar"><div id="fearFill"></div></div></div>
+  </div>
+  <button id="muteBtn">音 ON</button>
+</div>
+<button id="eyeBtn" hidden><span class="ic">◉</span><span id="eyeTxt">目をとじる</span></button>
+<div id="msg"></div>
+<div id="voice"></div>
+<div id="ov"></div>
+
+<script>
+'use strict';
+/* ===================== 夜（ステージ）データ =====================
+   # 壁 / . 畳 / - 板の間 / T 座卓 / B 仏壇 / O お札 / E 玄関 / P 自分 / M あれ */
+const NIGHTS=[
+ {name:'一夜目',speed:1.2,fake:.2,fearRate:1/6,
+  story:['祖母の家に泊まった夜。','廊下の奥から、だれかが歩いてくる。','祖母は言っていた。','「あれは、見られているあいだしか動けない」','「目をとじていれば、だいじょうぶ」','お札を集めて、玄関から出なければ。'],
+  map:[
+  '########################',
+  '#.....#.....P....#.....#',
+  '#..O..#..........#..T..#',
+  '#.....#....TT....#.....#',
+  '#.....#..........#..O..#',
+  '##-######-####-####-####',
+  '#----------------------#',
+  '##-####-#######-####-###',
+  '#.....#-#.....#-#......#',
+  '#..T..#-#..O..#-#..M...#',
+  '#.....#-#.....#-#......#',
+  '#..E..--#.....---......#',
+  '########################']},
+ {name:'二夜目',speed:1.5,fake:.35,fearRate:1/5.5,
+  story:['次の夜。','家が、すこし広くなっている気がする。','廊下が一本、増えている。','あれの足音は、昨日より速い。'],
+  map:[
+  '############################',
+  '#......#--------#..........#',
+  '#..O...#-######-#...TT.....#',
+  '#......#-#....#-#..........#',
+  '#......--#.B..#-#.......O..#',
+  '####-###-#....#-######-#####',
+  '#P------------#--------....#',
+  '#-####-######-#-#####-#....#',
+  '#-#..#-#....#-#-#...#-#..M.#',
+  '#-#O.#-#.TT.#---#.O.#-######',
+  '#-#..#-#....#-#-#...#------#',
+  '#-##-#-##-###-#-##-##-####-#',
+  '#------------------------#-#',
+  '######-######-#######-##-#-#',
+  '#.....-.....#-#.......#--#-#',
+  '#..E........#---......#----#',
+  '############################']},
+ {name:'三夜目',speed:1.8,fake:.5,fearRate:1/5,
+  story:['最後の夜。','仏壇の写真が、こちらを向いていた。','「目をあけて」','──その声は、祖母の声によく似ていた。'],
+  map:[
+  '##############################',
+  '#P---#........#.....#........#',
+  '#-##-#...TT...#..O..#...B....#',
+  '#-##-#........#.....#........#',
+  '#----.........--....--...O...#',
+  '####-#####-####-###-####-#####',
+  '#.......#----------------#...#',
+  '#..O....-#-####-######-#-#.M.#',
+  '#.......#-#..#-#....#--#-#...#',
+  '###-#####-#..#-#.TT.#-##-##-##',
+  '#--------------#....#--------#',
+  '#-#####-######-###-##-######-#',
+  '#-#...#-#....#-#.......#...#-#',
+  '#-#.O.#-#.B..#-#...O...#.T.#-#',
+  '#-#...--#....--#.......--..#-#',
+  '#-##-##########-####-#######-#',
+  '#----------------------------#',
+  '#####-######.E.#######-#######',
+  '##############################']}
+];
+const ENDING=['玄関を出ると、朝だった。','ふりかえると、家はもう、なかった。','草むらの中に、古い仏壇の扉だけが落ちていた。','……','ところで。','あなたは今、目をあけていますか？'];
+const SOLID={'#':1,'T':1,'B':1};
+
+/* ===================== 画面 ===================== */
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const aiCv=document.createElement('canvas'),aiCtx=aiCv.getContext('2d');
+let W=0,H=0,DPR=1,TS=40;
+function resize(){
+  DPR=Math.min(2,window.devicePixelRatio||1);W=innerWidth;H=innerHeight;
+  cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);cv.style.width=W+'px';cv.style.height=H+'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  TS=Math.max(34,Math.min(W,H)/8.2);
+  aiCv.width=Math.ceil(W/5);aiCv.height=Math.ceil(H/5);
+}
+addEventListener('resize',resize);resize();
+
+// フィルムノイズ
+const grain=[];
+for(let k=0;k<3;k++){const g=document.createElement('canvas');g.width=g.height=128;const gc=g.getContext('2d');const id=gc.createImageData(128,128);
+  for(let i=0;i<id.data.length;i+=4){const v=Math.random()*255|0;id.data[i]=id.data[i+1]=id.data[i+2]=v;id.data[i+3]=Math.random()<.5?40:0}
+  gc.putImageData(id,0,0);grain.push(g)}
+
+const $=id=>document.getElementById(id);
+const hud=$('hud'),eyeBtn=$('eyeBtn'),ovEl=$('ov'),msgEl=$('msg'),voiceEl=$('voice');
+function hash(x,y){let h=(x*374761393+y*668265263)|0;h=(h^(h>>>13))*1274126177|0;return ((h^(h>>>16))>>>0)/4294967296}
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+
+/* ===================== 音（WebAudioで生成） ===================== */
+let AC=null,master=null,noiseBuf=null,ambGain=null,muted=false;
+try{muted=localStorage.getItem('meakeruna_mute')==='1'}catch(e){}
+function initAudio(){
+  if(AC){if(AC.state==='suspended')AC.resume();return}
+  try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){return}
+  master=AC.createGain();master.gain.value=muted?0:1;master.connect(AC.destination);
+  noiseBuf=AC.createBuffer(1,AC.sampleRate*2,AC.sampleRate);
+  const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+  // 環境音：低いうなりと風
+  ambGain=AC.createGain();ambGain.gain.value=0;ambGain.connect(master);
+  const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=180;lp.connect(ambGain);
+  [49,49.7,73.4].forEach((f,i)=>{const o=AC.createOscillator();o.type='triangle';o.frequency.value=f;const g=AC.createGain();g.gain.value=i==2?.25:.5;o.connect(g);g.connect(lp);o.start()});
+  const n=noiseSrc(),bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=380;bp.Q.value=.8;
+  const ng=AC.createGain();ng.gain.value=.35;n.connect(bp);bp.connect(ng);ng.connect(ambGain);n.start();
+  const lfo=AC.createOscillator();lfo.frequency.value=.07;const lg=AC.createGain();lg.gain.value=160;lfo.connect(lg);lg.connect(bp.frequency);lfo.start();
+}
+function noiseSrc(){const s=AC.createBufferSource();s.buffer=noiseBuf;s.loop=true;s.loopStart=Math.random();return s}
+function out(pan){
+  if(AC.createStereoPanner){const p=AC.createStereoPanner();p.pan.value=clamp(pan||0,-1,1);p.connect(master);return p}
+  const g=AC.createGain();g.connect(master);return g;
+}
+function env(g,t,a,peak,d){g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(Math.max(.0002,peak),t+a);g.gain.exponentialRampToValueAtTime(.0001,t+a+d)}
+function setAmb(v,tc){if(AC&&ambGain)ambGain.gain.setTargetAtTime(v,AC.currentTime,tc||.4)}
+const sfx={
+  step(wood){if(!AC)return;const t=AC.currentTime,n=noiseSrc(),f=AC.createBiquadFilter(),g=AC.createGain();
+    f.type='lowpass';f.frequency.value=wood?650:420;n.connect(f);f.connect(g);g.connect(out(0));env(g,t,.005,wood?.09:.06,.09);n.start(t);n.stop(t+.15);
+    if(wood&&Math.random()<.12){const o=AC.createOscillator(),b=AC.createBiquadFilter(),g2=AC.createGain();o.type='sawtooth';
+      o.frequency.setValueAtTime(140,t);o.frequency.linearRampToValueAtTime(95,t+.35);b.type='bandpass';b.frequency.value=700;b.Q.value=4;
+      o.connect(b);b.connect(g2);g2.connect(out(0));env(g2,t,.05,.05,.3);o.start(t);o.stop(t+.4)}},
+  bump(){if(!AC)return;const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.frequency.setValueAtTime(110,t);o.frequency.exponentialRampToValueAtTime(45,t+.15);
+    o.connect(g);g.connect(out(0));env(g,t,.005,.35,.18);o.start(t);o.stop(t+.25)},
+  bell(pan,vol){if(!AC)return;const t=AC.currentTime,o1=out(pan);
+    [[1568,1],[3136,.35],[4699,.15],[2093,.2]].forEach(([f,a])=>{const o=AC.createOscillator(),g=AC.createGain();o.frequency.value=f;o.connect(g);g.connect(o1);env(g,t,.004,vol*a,1.3);o.start(t);o.stop(t+1.5)})},
+  whisper(pan,vol){if(!AC)return;const t=AC.currentTime,o1=out(pan),dur=.5+Math.random()*.5;
+    for(let k=0;k<2;k++){const n=noiseSrc(),b=AC.createBiquadFilter(),g=AC.createGain(),tr=AC.createGain(),l=AC.createOscillator(),lg=AC.createGain();
+      b.type='bandpass';b.frequency.value=1400+Math.random()*2400;b.Q.value=5;l.frequency.value=8+Math.random()*7;lg.gain.value=.5;tr.gain.value=.5;
+      l.connect(lg);lg.connect(tr.gain);n.connect(b);b.connect(tr);tr.connect(g);g.connect(o1);env(g,t+k*.05,.08,vol,dur);n.start(t);n.stop(t+dur+.3);l.start(t);l.stop(t+dur+.3)}},
+  heart(vol){if(!AC)return;const t=AC.currentTime,o1=out(0);
+    [0,.17].forEach((dt,i)=>{const o=AC.createOscillator(),g=AC.createGain();o.frequency.setValueAtTime(62,t+dt);o.frequency.exponentialRampToValueAtTime(38,t+dt+.12);
+      o.connect(g);g.connect(o1);env(g,t+dt,.01,vol*(i?.6:1),.14);o.start(t+dt);o.stop(t+dt+.2)})},
+  pick(){if(!AC)return;sfx.bell(0,.18);setTimeout(()=>sfx.bell(0,.12),180)},
+  unlock(){if(!AC)return;const t=AC.currentTime;[0,.22].forEach(dt=>{const n=noiseSrc(),f=AC.createBiquadFilter(),g=AC.createGain();f.type='highpass';f.frequency.value=1800;
+    n.connect(f);f.connect(g);g.connect(out(0));env(g,t+dt,.002,.25,.06);n.start(t+dt);n.stop(t+dt+.1)})},
+  lid(){if(!AC)return;const t=AC.currentTime,n=noiseSrc(),f=AC.createBiquadFilter(),g=AC.createGain();f.type='lowpass';f.frequency.value=260;
+    n.connect(f);f.connect(g);g.connect(out(0));env(g,t,.03,.06,.14);n.start(t);n.stop(t+.25)},
+  sting(){if(!AC)return;const t=AC.currentTime,lp=AC.createBiquadFilter(),g=AC.createGain();lp.type='lowpass';lp.frequency.setValueAtTime(500,t);lp.frequency.linearRampToValueAtTime(1800,t+.4);
+    lp.connect(g);g.connect(out(0));env(g,t,.02,.13,1.6);
+    [220,233,247,262,349].forEach(f=>{const o=AC.createOscillator();o.type='sawtooth';o.frequency.value=f;o.detune.value=Math.random()*20-10;o.connect(lp);o.start(t);o.stop(t+1.8)})},
+  groan(pan,vol){if(!AC)return;const t=AC.currentTime,o=AC.createOscillator(),b=AC.createBiquadFilter(),g=AC.createGain();o.type='sawtooth';
+    o.frequency.setValueAtTime(95,t);o.frequency.linearRampToValueAtTime(70,t+1.2);b.type='bandpass';b.frequency.value=420;b.Q.value=3;
+    o.connect(b);b.connect(g);g.connect(out(pan));env(g,t,.3,vol,1);o.start(t);o.stop(t+1.4)},
+  voice(){if(!AC)return;const t0=AC.currentTime+.05,o1=out(0);
+    // 「め・を・あ・け・て」っぽい母音の並び（少しだけ音程がおかしい）
+    const syl=[[500,1900],[500,850],[800,1200],[500,1900],[500,1900]];
+    const dly=AC.createDelay();dly.delayTime.value=.23;const fb=AC.createGain();fb.gain.value=.38;dly.connect(fb);fb.connect(dly);dly.connect(o1);
+    syl.forEach(([f1,f2],i)=>{const t=t0+i*.3+(i>=2?.35:0);
+      [1,.5].forEach(mul=>{const o=AC.createOscillator();o.type='sawtooth';o.frequency.setValueAtTime(215*mul-i*6,t);o.frequency.linearRampToValueAtTime(190*mul-i*6,t+.26);
+        const v=AC.createOscillator(),vg=AC.createGain();v.frequency.value=6;vg.gain.value=4;v.connect(vg);vg.connect(o.frequency);
+        [f1,f2].forEach((ff,j)=>{const b=AC.createBiquadFilter(),g=AC.createGain();b.type='bandpass';b.frequency.value=ff;b.Q.value=9;
+          o.connect(b);b.connect(g);g.connect(o1);g.connect(dly);env(g,t,.05,(j?.09:.16)*(mul<1?.5:1),.22)});
+        o.start(t);o.stop(t+.35);v.start(t);v.stop(t+.35)})})},
+  scare(){if(!AC)return;const t=AC.currentTime,o1=out(0),n=noiseSrc(),g=AC.createGain();n.connect(g);g.connect(o1);env(g,t,.01,.45,1.1);n.start(t);n.stop(t+1.3);
+    const lp=AC.createBiquadFilter(),g2=AC.createGain();lp.type='lowpass';lp.frequency.setValueAtTime(900,t);lp.frequency.linearRampToValueAtTime(3200,t+.6);lp.connect(g2);g2.connect(o1);env(g2,t,.01,.4,1.2);
+    [311,330,466,622].forEach(f=>{const o=AC.createOscillator();o.type='sawtooth';o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(f*1.9,t+1.1);o.connect(lp);o.start(t);o.stop(t+1.3)})},
+};
+
+/* ===================== ゲーム状態 ===================== */
+let state='title',nightIdx=0,G=null,saved=0;
+try{saved=+localStorage.getItem('meakeruna_night')||0}catch(e){}
+const input={up:0,down:0,left:0,right:0,keyEye:false,btnEye:false,jx:0,jy:0,joy:null};
+
+function loadNight(i){
+  nightIdx=i;const N=NIGHTS[i],rows=N.map,h=rows.length,w=Math.max(...rows.map(r=>r.length));
+  const grid=[],items=[];let p={x:1.5,y:1.5},m={x:1.5,y:1.5},exit={x:1,y:1};
+  for(let y=0;y<h;y++){const row=[];for(let x=0;x<w;x++){let ch=rows[y][x]||'#';
+    if(ch==='P'){p={x:x+.5,y:y+.5};ch='-'}
+    else if(ch==='M'){m={x:x+.5,y:y+.5};ch='.'}
+    else if(ch==='O'){items.push({x:x+.5,y:y+.5,got:false,ph:Math.random()*6});ch='.'}
+    else if(ch==='E'){exit={x,y}}
+    row.push(ch)}grid.push(row)}
+  G={N,grid,w,h,items,exit,exitOpen:false,
+    p:{x:p.x,y:p.y,dir:0,moving:false},mon:{x:m.x,y:m.y,tx:null,ty:null,face:0,seen:false},
+    cam:{x:p.x,y:p.y},closed:false,eye:0,fear:0,lock:false,
+    after:{t:99,cx:0,cy:0},dist:null,distT:0,distTile:-1,
+    grace:4,t:0,stepT:0,bumpT:0,hbT:1,bellT:.6,whT:.9,groanT:6,stingCool:0,
+    fakeAt:-1,fakeWin:0,firstClose:i===0,exitMsgT:0,hintTrap:i===0};
+  computeDist();
+}
+const walk=(x,y)=>x>=0&&y>=0&&x<G.w&&y<G.h&&!SOLID[G.grid[y][x]];
+function computeDist(){
+  const {w,h}=G,d=new Int16Array(w*h).fill(-1),q=new Int32Array(w*h);
+  const sx=Math.floor(G.p.x),sy=Math.floor(G.p.y);let qh=0,qt=0;d[sy*w+sx]=0;q[qt++]=sy*w+sx;
+  while(qh<qt){const c=q[qh++],cx=c%w,cy=(c/w)|0;
+    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=cx+dx,ny=cy+dy;if(walk(nx,ny)&&d[ny*w+nx]<0){d[ny*w+nx]=d[c]+1;q[qt++]=ny*w+nx}}}
+  G.dist=d;G.distTile=sy*w+sx;
+}
+const distAt=(x,y)=>G.dist[Math.floor(y)*G.w+Math.floor(x)];
+
+function collide(x,y,r){
+  return !walk(Math.floor(x-r),Math.floor(y-r))||!walk(Math.floor(x+r),Math.floor(y-r))||!walk(Math.floor(x-r),Math.floor(y+r))||!walk(Math.floor(x+r),Math.floor(y+r));
+}
+
+/* ===================== メッセージ ===================== */
+let msgTimer=null;
+function msg(t,dur){msgEl.innerHTML=t;msgEl.style.opacity=1;clearTimeout(msgTimer);msgTimer=setTimeout(()=>msgEl.style.opacity=0,(dur||3.2)*1000)}
+function voiceShow(t,dur){voiceEl.textContent=t;voiceEl.style.opacity=1;setTimeout(()=>voiceEl.style.opacity=0,(dur||2)*1000)}
+
+/* ===================== 目の開け閉め ===================== */
+function captureAfter(){
+  aiCtx.globalCompositeOperation='source-over';aiCtx.clearRect(0,0,aiCv.width,aiCv.height);
+  aiCtx.drawImage(cv,0,0,aiCv.width,aiCv.height);
+  aiCtx.globalCompositeOperation='multiply';aiCtx.fillStyle='#ff7a52';aiCtx.fillRect(0,0,aiCv.width,aiCv.height);
+  aiCtx.globalCompositeOperation='lighter';aiCtx.drawImage(aiCv,0,0);aiCtx.drawImage(aiCv,0,0);
+  aiCtx.globalCompositeOperation='source-over';
+  G.after={t:0,cx:G.cam.x,cy:G.cam.y};
+}
+function onClose(){
+  captureAfter();G.closed=true;sfx.lid();setAmb(.025);
+  G.bellT=.35;G.whT=.6;
+  G.fakeAt=(Math.random()<G.N.fake)?1+Math.random()*2.4:-1;
+  if(G.firstClose){G.firstClose=false;msg('目をとじているあいだ、あれは動けない。<br><span style="color:#e7c46a">鈴の音</span>がお札、<span style="color:#e0645a">ささやき</span>があれの方向。',5.5)}
+}
+function onOpen(forced){
+  G.closed=false;sfx.lid();setAmb(.06);G.fakeAt=-1;
+  if(G.fakeWin>0&&!forced){G.fakeWin=0;trap()}
+}
+function trap(){
+  // 「目をあけて」に応えてしまった → すぐそばに現れる
+  const c=[];for(let y=0;y<G.h;y++)for(let x=0;x<G.w;x++){const d=G.dist[y*G.w+x];if(d===3)c.push([x,y])}
+  if(!c.length)for(let y=0;y<G.h;y++)for(let x=0;x<G.w;x++){if(G.dist[y*G.w+x]===2)c.push([x,y])}
+  const md=distAt(G.mon.x,G.mon.y);
+  if(c.length&&(md<0||md>3)){const [x,y]=c[Math.random()*c.length|0];G.mon.x=x+.5;G.mon.y=y+.5;G.mon.tx=null}
+  sfx.sting();G.stingCool=6;G.mon.seen=true;
+  msg(G.hintTrap?'……ちがう。祖母の声じゃない。<br>「目をあけて」と言われても、すぐにあけてはいけない。':'……ちがう。',G.hintTrap?5.5:2.5);G.hintTrap=false;
+}
+
+/* ===================== 更新 ===================== */
+function update(dt){
+  G.t+=dt;
+  // 目
+  const want=(input.keyEye||input.btnEye)&&!G.lock;
+  if(want&&!G.closed)onClose();else if(!want&&G.closed)onOpen(false);
+  G.eye=clamp(G.eye+(G.closed?1:-1)*dt/.14,0,1);
+  if(G.closed){G.fear+=G.N.fearRate*dt;G.after.t+=dt;
+    if(G.fear>=1){G.fear=1;G.lock=true;onOpen(true);msg('こわくて、目をあけてしまった。',2.5)}}
+  else{G.fear=Math.max(0,G.fear-dt/7);if(G.lock&&G.fear<.45)G.lock=false}
+
+  // 移動
+  let mx=(input.right-input.left)+input.jx,my=(input.down-input.up)+input.jy;const ml=Math.hypot(mx,my);
+  const P=G.p;P.moving=ml>.15;
+  if(P.moving){if(ml>1){mx/=ml;my/=ml}
+    const sp=(G.closed?1.8:2.7)*dt;P.dir=Math.atan2(my,mx);let bumped=false;
+    const nx=P.x+mx*sp;if(!collide(nx,P.y,.28))P.x=nx;else if(Math.abs(mx)>.3)bumped=true;
+    const ny=P.y+my*sp;if(!collide(P.x,ny,.28))P.y=ny;else if(Math.abs(my)>.3)bumped=true;
+    G.stepT-=dt;if(G.stepT<=0){G.stepT=G.closed?.5:.36;sfx.step(G.grid[Math.floor(P.y)][Math.floor(P.x)]==='-')}
+    G.bumpT-=dt;if(bumped&&G.bumpT<=0){G.bumpT=.45;sfx.bump();if(G.closed)shake=.15}
+  }
+  G.cam.x+=(P.x-G.cam.x)*Math.min(1,dt*8);G.cam.y+=(P.y-G.cam.y)*Math.min(1,dt*8);
+
+  // 距離マップ
+  G.distT-=dt;const pt=Math.floor(P.y)*G.w+Math.floor(P.x);if(G.distT<=0||pt!==G.distTile){G.distT=.25;computeDist()}
+
+  // お札・玄関
+  for(const it of G.items){if(!it.got&&Math.hypot(it.x-P.x,it.y-P.y)<.55){it.got=true;sfx.pick();
+    const left=G.items.filter(i=>!i.got).length;
+    if(left===0){G.exitOpen=true;setTimeout(()=>{sfx.unlock();msg('玄関の鍵が、あいた音がした。',3.5)},700)}
+    else msg('お札をひろった。（のこり '+left+'）',2)}}
+  if(Math.floor(P.x)===G.exit.x&&Math.floor(P.y)===G.exit.y){
+    if(G.exitOpen){clearNight();return}
+    G.exitMsgT-=dt;if(G.exitMsgT<=0){G.exitMsgT=3;msg('玄関は、まだあかない。お札が足りない。',2.5)}
+  }
+
+  // あれ
+  const M=G.mon;if(G.grace>0)G.grace-=dt;
+  const canMove=!G.closed&&G.grace<=0;
+  if(canMove){
+    const sp=G.N.speed*dt;
+    const mtx=Math.floor(M.x),mty=Math.floor(M.y);
+    if(mtx===Math.floor(P.x)&&mty===Math.floor(P.y)){M.tx=P.x;M.ty=P.y}
+    else if(M.tx===null||Math.hypot(M.tx-M.x,M.ty-M.y)<.06){
+      const cd=G.dist[mty*G.w+mtx];let best=null,bd=cd<0?9999:cd;
+      for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]){
+        const nx=mtx+dx,ny=mty+dy;if(!walk(nx,ny))continue;
+        if(dx&&dy&&(!walk(mtx+dx,mty)||!walk(mtx,mty+dy)))continue;
+        const d=G.dist[ny*G.w+nx];if(d>=0&&(d<bd||(d===bd&&best&&dx&&dy))){bd=d;best=[nx,ny]}}
+      if(best){M.tx=best[0]+.5;M.ty=best[1]+.5}else{M.tx=M.x;M.ty=M.y}
+    }
+    const dx=M.tx-M.x,dy=M.ty-M.y,dl=Math.hypot(dx,dy);
+    if(dl>.001){const s=Math.min(dl,sp);M.x+=dx/dl*s;M.y+=dy/dl*s;M.face=Math.atan2(dy,dx)}
+  }
+  const ed=Math.hypot(M.x-P.x,M.y-P.y);
+  if(ed<.5){caught();return}
+
+  // 見えた瞬間
+  G.stingCool-=dt;
+  const vis=!G.closed&&ed<3.1;
+  if(vis&&!M.seen&&G.stingCool<=0){sfx.sting();G.stingCool=7}
+  M.seen=vis;
+
+  // 心音
+  const bd=distAt(M.x,M.y);G.hbT-=dt;
+  if(G.hbT<=0){if(bd<0||bd>14){G.hbT=1}else{const k=1-bd/14;sfx.heart(.12+.5*k);G.hbT=1.15-.7*k}}
+  // うめき（目をあけている時、近いと）
+  G.groanT-=dt;if(!G.closed&&G.groanT<=0){G.groanT=5+Math.random()*6;if(ed<9)sfx.groan(clamp((M.x-P.x)/5,-1,1),.05+.1*(1-ed/9))}
+
+  // 目をとじている時の「音」
+  if(G.closed){
+    const tg=target();
+    G.bellT-=dt;if(G.bellT<=0){G.bellT=1.5;if(tg){const d=Math.hypot(tg.x-P.x,tg.y-P.y);sfx.bell(clamp((tg.x-P.x)/5,-1,1),clamp(.16-d*.008,.025,.16))}}
+    G.whT-=dt;if(G.whT<=0){G.whT=.9+Math.random()*.7;sfx.whisper(clamp((M.x-P.x)/5,-1,1),clamp(.22-ed*.012,.02,.22))}
+    if(G.fakeAt>0){G.fakeAt-=dt;if(G.fakeAt<=0){G.fakeWin=2.6;sfx.voice();voiceShow('「……目を、あけて」',2.4)}}
+  }
+  if(G.fakeWin>0)G.fakeWin-=dt;
+}
+function target(){const it=G.items.filter(i=>!i.got);
+  if(!it.length)return{x:G.exit.x+.5,y:G.exit.y+.5,exit:true};
+  let b=null,bd=1e9;for(const i of it){const d=Math.hypot(i.x-G.p.x,i.y-G.p.y);if(d<bd){bd=d;b=i}}return b}
+
+/* ===================== 描画 ===================== */
+let shake=0;
+function tileColor(ch){return ch==='-'?'#3b2a1b':ch==='E'?'#2c2b2d':'#3c3a24'}
+function drawWorld(){
+  const ts=TS,sx=(shake>0?(Math.random()-.5)*8:0),sy=(shake>0?(Math.random()-.5)*8:0);
+  const ox=W/2-G.cam.x*ts+sx,oy=H/2-G.cam.y*ts+sy;
+  ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+  const x0=Math.max(0,Math.floor(-ox/ts)),x1=Math.min(G.w-1,Math.ceil((W-ox)/ts)),y0=Math.max(0,Math.floor(-oy/ts)),y1=Math.min(G.h-1,Math.ceil((H-oy)/ts));
+  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
+    const ch=G.grid[y][x],px=Math.floor(ox+x*ts),py=Math.floor(oy+y*ts),s=Math.ceil(ts)+1;
+    if(ch==='#'){ctx.fillStyle='#0b0908';ctx.fillRect(px,py,s,s);
+      if(y+1<G.h&&G.grid[y+1][x]!=='#'){ctx.fillStyle='#231b15';ctx.fillRect(px,py+ts*.7,s,ts*.3+1);ctx.fillStyle='#2e241c';ctx.fillRect(px,py+ts*.7,s,2)}
+      continue}
+    const base=(ch==='T'||ch==='B')?'.':ch;
+    ctx.fillStyle=tileColor(base);ctx.fillRect(px,py,s,s);
+    const r=hash(x,y);
+    if(base==='.'){ctx.fillStyle='rgba(20,22,8,.45)';
+      if((x+y)&1)ctx.fillRect(px,py+ts*.48,s,2);else ctx.fillRect(px+ts*.48,py,2,s);
+      ctx.fillStyle='rgba(0,0,0,'+(.05+r*.12)+')';ctx.fillRect(px,py,s,s)}
+    else if(base==='-'){ctx.fillStyle='rgba(0,0,0,.35)';for(let k=1;k<4;k++)ctx.fillRect(px,py+ts*k/4,s,1);
+      ctx.fillRect(px+ts*(r*.8+.1),py+ts*Math.floor(r*4)/4,1,ts/4)}
+    else if(ch==='E'){ctx.strokeStyle='rgba(0,0,0,.5)';ctx.lineWidth=1;ctx.strokeRect(px+3,py+3,ts-6,ts-6);
+      ctx.fillStyle=G.exitOpen?'rgba(200,210,230,'+(.16+.08*Math.sin(G.t*2))+')':'rgba(120,20,16,.35)';ctx.fillRect(px,py,s,ts*.22);
+      if(!G.exitOpen){ctx.strokeStyle='#5a1610';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(px+4,py+4);ctx.lineTo(px+ts-4,py+ts*.2);ctx.moveTo(px+ts-4,py+4);ctx.lineTo(px+4,py+ts*.2);ctx.stroke()}
+      ctx.fillStyle='rgba(220,210,190,.55)';ctx.font=Math.round(ts*.28)+'px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('玄関',px+ts/2,py+ts*.6)}
+    if(ch==='T'){ctx.fillStyle='#24170e';rr(px+ts*.08,py+ts*.12,ts*.84,ts*.76,ts*.1);ctx.fillStyle='rgba(255,220,180,.06)';ctx.fillRect(px+ts*.14,py+ts*.18,ts*.72,2)}
+    if(ch==='B'){ctx.fillStyle='#0d0806';ctx.fillRect(px+ts*.1,py+ts*.05,ts*.8,ts*.8);ctx.strokeStyle='#6b5426';ctx.lineWidth=1.5;ctx.strokeRect(px+ts*.16,py+ts*.11,ts*.68,ts*.68);
+      const fl=.6+.4*Math.sin(G.t*13+r*9)*Math.sin(G.t*7.3);const g=ctx.createRadialGradient(px+ts*.5,py+ts*.5,1,px+ts*.5,py+ts*.5,ts*.9);
+      g.addColorStop(0,'rgba(255,160,70,'+(.35*fl)+')');g.addColorStop(1,'rgba(255,120,40,0)');ctx.fillStyle=g;ctx.fillRect(px-ts*.4,py-ts*.4,ts*1.8,ts*1.8);
+      ctx.fillStyle='#ffcf80';ctx.fillRect(px+ts*.48,py+ts*.4,2,3)}
+  }
+  // お札
+  for(const it of G.items){if(it.got)continue;const px=ox+it.x*ts,py=oy+it.y*ts+Math.sin(G.t*2+it.ph)*2;
+    const g=ctx.createRadialGradient(px,py,1,px,py,ts*.7);g.addColorStop(0,'rgba(240,200,110,'+(.28+.12*Math.sin(G.t*3+it.ph))+')');g.addColorStop(1,'rgba(240,200,110,0)');
+    ctx.fillStyle=g;ctx.fillRect(px-ts,py-ts,ts*2,ts*2);
+    ctx.save();ctx.translate(px,py);ctx.rotate(.15*Math.sin(it.ph));ctx.fillStyle='#e6dcc0';ctx.fillRect(-ts*.13,-ts*.24,ts*.26,ts*.48);
+    ctx.fillStyle='#8a1a12';ctx.fillRect(-1.5,-ts*.18,3,ts*.36);ctx.fillRect(-ts*.07,-ts*.1,ts*.14,2);ctx.restore()}
+  // 自分
+  const P=G.p,ppx=ox+P.x*ts,ppy=oy+P.y*ts;
+  ctx.fillStyle='rgba(0,0,0,.4)';ctx.beginPath();ctx.ellipse(ppx,ppy+ts*.08,ts*.24,ts*.18,0,0,7);ctx.fill();
+  ctx.fillStyle='#5d6a80';ctx.beginPath();ctx.arc(ppx,ppy,ts*.22,0,7);ctx.fill();
+  ctx.fillStyle='#1c1612';ctx.beginPath();ctx.arc(ppx,ppy,ts*.13,0,7);ctx.fill();
+  ctx.fillStyle='#cdbfa6';ctx.beginPath();ctx.arc(ppx+Math.cos(P.dir)*ts*.12,ppy+Math.sin(P.dir)*ts*.12,ts*.05,0,7);ctx.fill();
+  // あれ
+  drawMon(ox,oy,ts);
+  // 闇
+  const fl=1+.03*Math.sin(G.t*11)+.02*Math.sin(G.t*23),R=3.4*ts*fl;
+  const dg=ctx.createRadialGradient(ppx,ppy,ts*.3,ppx,ppy,R);
+  dg.addColorStop(0,'rgba(0,0,0,0)');dg.addColorStop(.5,'rgba(0,0,0,.2)');dg.addColorStop(.82,'rgba(0,0,0,.78)');dg.addColorStop(1,'rgba(0,0,0,.985)');
+  ctx.fillStyle=dg;ctx.fillRect(0,0,W,H);
+  // 近いと画面のふちが赤くなる
+  const ed=Math.hypot(G.mon.x-P.x,G.mon.y-P.y);if(ed<5)vignette('rgba(120,0,0,'+(.45*(1-ed/5))+')');
+}
+function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.fill()}
+function vignette(col){const g=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.3,W/2,H/2,Math.max(W,H)*.75);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,col);ctx.fillStyle=g;ctx.fillRect(0,0,W,H)}
+function drawMon(ox,oy,ts){
+  const M=G.mon,j=M.seen?(Math.random()-.5)*ts*.05:0,mx=ox+M.x*ts+j,my=oy+M.y*ts,f=M.face,bx=-Math.cos(f),by=-Math.sin(f);
+  ctx.fillStyle='rgba(0,0,0,.5)';ctx.beginPath();ctx.ellipse(mx,my+ts*.1,ts*.34,ts*.24,0,0,7);ctx.fill();
+  // 白い着物
+  ctx.fillStyle='#cfcabd';ctx.beginPath();ctx.ellipse(mx+bx*ts*.12,my+by*ts*.12,ts*.42,ts*.34,f,0,7);ctx.fill();
+  ctx.strokeStyle='rgba(90,80,70,.6)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(mx,my);ctx.lineTo(mx+bx*ts*.5,my+by*ts*.5);ctx.stroke();
+  // 長い髪
+  ctx.strokeStyle='#050404';ctx.lineCap='round';
+  for(let i=0;i<14;i++){const a=f+Math.PI+(i/13-.5)*1.6,len=ts*(.5+.25*hash(i,7)),sw=Math.sin(G.t*2+i)*ts*.04;
+    ctx.lineWidth=ts*.07;ctx.beginPath();ctx.moveTo(mx,my);ctx.quadraticCurveTo(mx+Math.cos(a)*len*.6+sw,my+Math.sin(a)*len*.6-sw,mx+Math.cos(a)*len,my+Math.sin(a)*len);ctx.stroke()}
+  ctx.fillStyle='#070505';ctx.beginPath();ctx.arc(mx,my,ts*.22,0,7);ctx.fill();
+  // 前にのびる白い手
+  ctx.fillStyle='#d8d2c4';const hx=Math.cos(f),hy=Math.sin(f),nx=-hy,ny=hx;
+  for(const s of [-1,1]){ctx.beginPath();ctx.ellipse(mx+hx*ts*.42+nx*s*ts*.15,my+hy*ts*.42+ny*s*ts*.15,ts*.13,ts*.045,f,0,7);ctx.fill()}
+}
+function drawClosed(){
+  ctx.fillStyle='#040101';ctx.fillRect(0,0,W,H);
+  // 残像（とじる直前に見た景色が、まぶたの裏に焼きついている）
+  const A=G.after,a=.85*Math.max(0,1-A.t/4.5);
+  if(a>0){ctx.globalAlpha=a*(.9+.1*Math.sin(G.t*9));ctx.imageSmoothingEnabled=true;
+    ctx.drawImage(aiCv,(A.cx-G.cam.x)*TS,(A.cy-G.cam.y)*TS,W,H);ctx.globalAlpha=1}
+  // まぶたの裏の血の色
+  const beat=.5+.5*Math.sin(G.t*5);const g=ctx.createRadialGradient(W/2,H/2,10,W/2,H/2,Math.max(W,H)*.7);
+  g.addColorStop(0,'rgba(60,8,6,'+(.18+.08*beat)+')');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  const P=G.p,ppx=W/2+(P.x-G.cam.x)*TS,ppy=H/2+(P.y-G.cam.y)*TS;
+  // 気配
+  const M=G.mon,ed=Math.hypot(M.x-P.x,M.y-P.y),ms=clamp(1-ed/10,0,1);
+  if(ms>0)arcCue(ppx,ppy,Math.atan2(M.y-P.y,M.x-P.x),ms,'200,40,30',.25+.6*ms);
+  const tg=target();if(tg){const d=Math.hypot(tg.x-P.x,tg.y-P.y),s=clamp(1-d/16,.2,1),pulse=Math.max(0,1-(1.5-G.bellT)/1.2);
+    arcCue(ppx,ppy,Math.atan2(tg.y-P.y,tg.x-P.x),s,tg.exit?'190,200,230':'231,196,106',(.12+.35*s)*(.35+.65*pulse))}
+  // からだの感覚
+  ctx.fillStyle='rgba(210,190,170,.25)';ctx.beginPath();ctx.arc(ppx,ppy,TS*.12,0,7);ctx.fill();
+  if(G.fear>.55)vignette('rgba(140,10,8,'+(G.fear-.55)*1.3+')');
+}
+function arcCue(x,y,ang,s,rgb,alpha){
+  const r=TS*(2.6-1.0*s),span=.35+.7*s;
+  for(let k=0;k<4;k++){ctx.strokeStyle='rgba('+rgb+','+(alpha*(1-k*.22))+')';ctx.lineWidth=TS*.08*(1+k*.9);ctx.beginPath();ctx.arc(x,y,r+k*TS*.07,ang-span/2,ang+span/2);ctx.stroke()}
+}
+function drawLids(e){
+  const k=e*e*(3-2*e),yE=H/2*k,bulge=H*.16*k;ctx.fillStyle='#000';
+  ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(W,0);ctx.lineTo(W,yE-bulge*.6);ctx.quadraticCurveTo(W/2,yE+bulge,0,yE-bulge*.6);ctx.fill();
+  ctx.beginPath();ctx.moveTo(0,H);ctx.lineTo(W,H);ctx.lineTo(W,H-yE+bulge*.6);ctx.quadraticCurveTo(W/2,H-yE-bulge,0,H-yE+bulge*.6);ctx.fill();
+}
+function drawJoy(){if(!input.joy)return;const j=input.joy;ctx.strokeStyle='rgba(220,200,180,.18)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(j.ox,j.oy,56,0,7);ctx.stroke();
+  ctx.fillStyle='rgba(220,200,180,.15)';ctx.beginPath();ctx.arc(j.ox+input.jx*56,j.oy+input.jy*56,22,0,7);ctx.fill()}
+function drawGrain(){ctx.globalAlpha=.5;const g=grain[(Math.random()*3)|0],o=Math.random()*128;ctx.fillStyle=ctx.createPattern(g,'repeat');ctx.save();ctx.translate(-o,-o);ctx.fillRect(0,0,W+128,H+128);ctx.restore();ctx.globalAlpha=1}
+
+// タイトル背景：闇の中でまばたきする目
+const titleEyes=[];
+function drawTitle(dt){
+  ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+  if(Math.random()<dt*.5&&titleEyes.length<3)titleEyes.push({x:Math.random()*W,y:Math.random()*H,t:0,life:3+Math.random()*3,s:10+Math.random()*16});
+  for(let i=titleEyes.length-1;i>=0;i--){const e=titleEyes[i];e.t+=dt;if(e.t>e.life){titleEyes.splice(i,1);continue}
+    const a=Math.sin(Math.PI*e.t/e.life)*.5,blink=(e.t%2.3<.12)?.1:1;
+    for(const s of [-1,1]){ctx.fillStyle='rgba(200,190,170,'+a+')';ctx.beginPath();ctx.ellipse(e.x+s*e.s*1.6,e.y,e.s,e.s*.42*blink,0,0,7);ctx.fill();
+      ctx.fillStyle='rgba(0,0,0,'+Math.min(1,a*2)+')';ctx.beginPath();ctx.arc(e.x+s*e.s*1.6,e.y,e.s*.28*blink,0,7);ctx.fill()}}
+  drawGrain();
+}
+// 見つかった瞬間
+let scareT=0;
+function drawScare(dt){
+  scareT+=dt;const k=Math.min(1,scareT/.18),sc=.55+.65*k,shx=(Math.random()-.5)*30,shy=(Math.random()-.5)*30;
+  ctx.fillStyle=scareT<.06?'#fff':'#000';ctx.fillRect(0,0,W,H);
+  const cx=W/2+shx,cy=H/2+shy,R=Math.min(W,H)*.42*sc;
+  ctx.fillStyle='#160606';ctx.fillRect(0,0,W,H);
+  // 後ろ髪
+  ctx.fillStyle='#030202';ctx.beginPath();ctx.ellipse(cx,cy-R*.1,R*.95,R*1.05,0,0,7);ctx.fill();ctx.fillRect(cx-R*.95,cy-R*.1,R*1.9,H);
+  // 顔（すこし傾いている）
+  ctx.save();ctx.translate(cx,cy);ctx.rotate(-.12);
+  ctx.fillStyle='#d6d0c2';ctx.beginPath();ctx.ellipse(0,R*.05,R*.55,R*.8,0,0,7);ctx.fill();
+  const sh=ctx.createRadialGradient(0,0,R*.2,0,R*.05,R*.85);sh.addColorStop(0,'rgba(0,0,0,0)');sh.addColorStop(1,'rgba(30,20,15,.55)');ctx.fillStyle=sh;ctx.fill();
+  // 目（左右で大きさがちがう）
+  [[-1,.17,.2],[1,.12,.15]].forEach(([s,rw,rh])=>{ctx.fillStyle='#000';ctx.beginPath();ctx.ellipse(s*R*.22,-R*.08,R*rw,R*rh,0,0,7);ctx.fill();
+    ctx.fillStyle='#efe6d4';ctx.beginPath();ctx.arc(s*R*.2+(Math.random()-.5)*2,-R*.06,R*.022,0,7);ctx.fill();
+    ctx.strokeStyle='rgba(110,8,6,.75)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(s*R*.23,-R*.08+R*rh);ctx.lineTo(s*R*.25,R*.42);ctx.stroke()});
+  // 口
+  ctx.fillStyle='#080202';ctx.beginPath();ctx.ellipse(R*.03,R*.45,R*.12,R*.26*Math.min(1,scareT*4),.08,0,7);ctx.fill();
+  // 顔にかかる前髪
+  ctx.strokeStyle='#030202';ctx.lineCap='round';
+  for(let i=0;i<34;i++){const u=i/33,x0=(u-.5)*R*1.2,len=R*(.55+hash(i,5)*.9),wob=(hash(i,9)-.5)*R*.25;
+    ctx.lineWidth=R*(.025+hash(i,2)*.05);ctx.beginPath();ctx.moveTo(x0*.6,-R*.85);
+    ctx.quadraticCurveTo(x0+wob,-R*.3,x0*1.05+wob*1.6,-R*.75+len);ctx.stroke()}
+  ctx.fillStyle='#030202';ctx.beginPath();ctx.ellipse(0,-R*.72,R*.6,R*.25,0,0,7);ctx.fill();
+  ctx.restore();
+  drawGrain();vignette('rgba(90,0,0,.7)');
+  if(scareT>1.4){state='over';showOver()}
+}
+
+/* ===================== 画面遷移 ===================== */
+function ov(html){ovEl.innerHTML=html;ovEl.hidden=false;ovEl.scrollTop=0}
+function hideOv(){ovEl.hidden=true;ovEl.innerHTML=''}
+function setPlayUI(on){hud.hidden=!on;eyeBtn.hidden=!on;if(!on){msgEl.style.opacity=0;voiceEl.style.opacity=0}}
+function showTitle(){
+  state='title';setPlayUI(false);setAmb(0);
+  const cont=saved>0&&saved<NIGHTS.length?'<button class="bt sec" id="bCont">つづきから（'+NIGHTS[saved].name+'）</button>':'';
+  ov('<div class="card"><h1>目をあけるな</h1><div class="sub">ME WO AKERUNA</div>'+
+    '<ul class="rules">'+
+    '<li>・<b>あれ</b>は、あなたが<b class="r">目をあけているあいだ</b>だけ動く。</li>'+
+    '<li>・目をとじれば、あれは止まる。でも、何も見えない。<br>　とじる直前の景色が、まぶたの裏に少しだけ残る。</li>'+
+    '<li>・目をとじると<b>鈴の音</b>（お札）と<b>ささやき</b>（あれ）が聞こえる。</li>'+
+    '<li>・ずっとはとじていられない。<b>こわさ</b>が限界になると、目があいてしまう。</li>'+
+    '<li>・<b class="r">「目をあけて」</b>と声がしても、すぐにあけてはいけない。</li>'+
+    '<li>・お札をすべて集めて、玄関から出よう。全三夜。</li></ul>'+
+    '<div class="ctrl">スマホ：画面をドラッグで移動／右下ボタンを押しているあいだ目をとじる<br>PC：WASD・矢印で移動／スペース長押しで目をとじる<br>イヤホン推奨</div>'+
+    '<div class="btns"><button class="bt" id="bNew">はじめから</button>'+cont+'</div></div>');
+  $('bNew').onclick=()=>{initAudio();startNight(0)};
+  if($('bCont'))$('bCont').onclick=()=>{initAudio();startNight(saved)};
+}
+function startNight(i){
+  loadNight(i);state='story';setPlayUI(false);setAmb(.03);
+  const lines=NIGHTS[i].story.map((l,k)=>'<span class="ln" style="animation-delay:'+(k*.9)+'s">'+l+'</span>').join('\n');
+  ov('<div class="card"><h2>'+NIGHTS[i].name+'</h2><div class="story">'+lines+'</div><div class="btns"><button class="bt" id="bGo">はじめる</button></div></div>');
+  $('bGo').onclick=()=>{initAudio();beginPlay()};
+}
+function beginPlay(){
+  hideOv();state='play';setPlayUI(true);setAmb(.06);input.btnEye=input.keyEye=false;
+  $('night').textContent=G.N.name;
+  if(nightIdx===0)msg('右下のボタン（PCはスペース）を<br>押しているあいだ、<b>目をとじる</b>。',5.5);
+  else msg('お札：'+G.items.length+'枚',2.5);
+}
+function caught(){state='scare';scareT=0;setPlayUI(false);setAmb(0,.05);sfx.scare();try{navigator.vibrate&&navigator.vibrate([250,80,400])}catch(e){}}
+function showOver(){
+  ov('<div class="card"><h2 style="color:#d04a3e">見つかった</h2><div class="story" style="text-align:center">'+
+    (G.closed?'目をとじたまま、あれにぶつかってしまった。':'あれは、ずっとこちらを見ていた。')+'</div>'+
+    '<div class="btns"><button class="bt" id="bRe">'+G.N.name+'をやりなおす</button><button class="bt sec" id="bT">タイトルへ</button></div></div>');
+  $('bRe').onclick=()=>{initAudio();loadNight(nightIdx);beginPlay()};$('bT').onclick=showTitle;
+}
+function clearNight(){
+  state='clear';setPlayUI(false);setAmb(.02);
+  const next=nightIdx+1;
+  try{if(next>saved){saved=Math.min(next,NIGHTS.length-1);localStorage.setItem('meakeruna_night',String(saved))}}catch(e){}
+  if(next>=NIGHTS.length){showEnd();return}
+  ov('<div class="card"><h2>'+G.N.name+'を、こえた。</h2><div class="story" style="text-align:center">外は、まだ暗い。<br>玄関を出たはずなのに、<br>気がつくと布団の中にいた。</div>'+
+    '<div class="btns"><button class="bt" id="bNx">つぎの夜へ</button><button class="bt sec" id="bT">タイトルへ</button></div></div>');
+  $('bNx').onclick=()=>startNight(next);$('bT').onclick=showTitle;
+}
+function showEnd(){
+  state='end';
+  const lines=ENDING.map((l,k)=>'<span class="ln" style="animation-delay:'+(k*1.2)+'s">'+l+'</span>').join('\n');
+  ov('<div class="card"><h2>夜明け</h2><div class="story">'+lines+'</div><div class="btns"><button class="bt" id="bT">タイトルへ</button></div><div class="note">― おわり ―</div></div>');
+  $('bT').onclick=showTitle;
+}
+
+/* ===================== 入力 ===================== */
+const KEYS={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
+addEventListener('keydown',e=>{if(KEYS[e.code]){input[KEYS[e.code]]=1;e.preventDefault()}
+  if(e.code==='Space'||e.code==='ShiftLeft'||e.code==='ShiftRight'){if(state==='play'){input.keyEye=true;e.preventDefault()}}
+  if((e.code==='Enter')&&!ovEl.hidden){const b=ovEl.querySelector('.bt');if(b){b.click();e.preventDefault()}}});
+addEventListener('keyup',e=>{if(KEYS[e.code])input[KEYS[e.code]]=0;if(e.code==='Space'||e.code.startsWith('Shift'))input.keyEye=false});
+addEventListener('blur',()=>{input.up=input.down=input.left=input.right=0;input.keyEye=input.btnEye=false;input.joy=null;input.jx=input.jy=0});
+
+cv.addEventListener('pointerdown',e=>{initAudio();if(state!=='play'||input.joy)return;
+  input.joy={id:e.pointerId,ox:e.clientX,oy:e.clientY};try{cv.setPointerCapture(e.pointerId)}catch(_){}});
+cv.addEventListener('pointermove',e=>{const j=input.joy;if(!j||j.id!==e.pointerId)return;
+  let dx=(e.clientX-j.ox)/56,dy=(e.clientY-j.oy)/56;const l=Math.hypot(dx,dy);if(l>1){dx/=l;dy/=l}
+  if(l>1.5){j.ox=e.clientX-dx*56;j.oy=e.clientY-dy*56}
+  input.jx=dx;input.jy=dy});
+function endJoy(e){if(input.joy&&input.joy.id===e.pointerId){input.joy=null;input.jx=input.jy=0}}
+cv.addEventListener('pointerup',endJoy);cv.addEventListener('pointercancel',endJoy);
+
+eyeBtn.addEventListener('pointerdown',e=>{e.preventDefault();initAudio();input.btnEye=true;try{eyeBtn.setPointerCapture(e.pointerId)}catch(_){}});
+['pointerup','pointercancel','lostpointercapture'].forEach(t=>eyeBtn.addEventListener(t,()=>{input.btnEye=false}));
+eyeBtn.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('contextmenu',e=>{if(state==='play')e.preventDefault()});
+
+const muteBtn=$('muteBtn');
+function updMute(){muteBtn.textContent=muted?'音 OFF':'音 ON';if(master)master.gain.value=muted?0:1}
+muteBtn.onclick=()=>{initAudio();muted=!muted;try{localStorage.setItem('meakeruna_mute',muted?'1':'0')}catch(e){}updMute()};updMute();
+
+/* ===================== HUD ===================== */
+let hudCache='';
+function updHud(){
+  const got=G.items.filter(i=>i.got).length,eyeTxt=G.lock?'……':G.closed?'とじている':'目をとじる';
+  const key=got+'|'+eyeTxt+'|'+Math.round(G.fear*50);if(key===hudCache)return;hudCache=key;
+  $('items').innerHTML='お札 <b>'+got+'</b>/'+G.items.length;
+  $('fearFill').style.width=(G.fear*100)+'%';
+  $('eyeTxt').textContent=eyeTxt;eyeBtn.classList.toggle('on',G.closed);eyeBtn.classList.toggle('lock',G.lock);
+  eyeBtn.querySelector('.ic').textContent=G.closed?'―':'◉';
+}
+
+/* ===================== ループ ===================== */
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(.05,(now-last)/1000);last=now;
+  if(shake>0)shake-=dt;
+  if(state==='play'){
+    update(dt);
+    if(state==='play'){
+      if(G.eye>=1)drawClosed();else{drawWorld();if(G.eye>0)drawLids(G.eye)}
+      drawJoy();drawGrain();updHud();
+    }
+  }else if(state==='scare')drawScare(dt);
+  else if(state==='title')drawTitle(dt);
+  else if(G&&(state==='story'||state==='clear'||state==='over'||state==='end')){ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);drawGrain()}
+  else{ctx.fillStyle='#000';ctx.fillRect(0,0,W,H)}
+  requestAnimationFrame(frame);
+}
+showTitle();requestAnimationFrame(frame);
+</script>
+<script src="../../playtime.js" defer></script>
+</body>
+</html>
