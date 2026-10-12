@@ -107,7 +107,7 @@ h2{margin:0 0 6px;font-size:22px;font-weight:900;text-align:center}
     <ul>
       <li>B5（魔王の間）から<b>上り階段</b>を目指して、B1の階段から外へ出たらクリア。</li>
       <li>1歩（または「待つ」）ごとに<b>時の砂⏳</b>が1減る。0になると時の狭間に消えてしまう。</li>
-      <li>敵は過去の動きを<b>逆再生</b>しているだけ。<b>赤いマス</b>は次のターンに敵が来る場所、目のマークの見張りは視線の先が危ない。</li>
+      <li>敵は過去の動きを<b>逆再生</b>しているだけ。HPを1払えば敵を<b>飛びこえ</b>られる。<b>赤いマス</b>は次のターンに敵が来る場所、目のマークの見張りは視線の先が危ない。</li>
       <li>倒れた敵（<b>亡骸</b>）は数字が0になると生き返る。魔王も…。</li>
       <li>持ち物は行きに拾った宝。<b>同じ絵の宝箱</b>に入ると返却して砂が回復する。タップ2回で使うこともできるが、使うと返せない。</li>
       <li>階段をのぼるたびに強化を1つ選べる。</li>
@@ -141,7 +141,7 @@ h2{margin:0 0 6px;font-size:22px;font-weight:900;text-align:center}
 (() => {
 'use strict';
 const COLS = 11, ROWS = 13, TS = 32, W = COLS * TS, H = ROWS * TS;
-const FLOORS = 5, START_SAND = 50, RETURN_SAND = 12;
+const FLOORS = 5, START_SAND = 60, RETURN_SAND = 15;
 const DIRS = [[0,-1],[1,0],[0,1],[-1,0]];
 const FLOOR_NAMES = ['B5 魔王の間', 'B4', 'B3', 'B2', 'B1'];
 
@@ -376,8 +376,18 @@ function act(dx, dy){
     if (dx) run.face = dx;
     if (blocks(c, r)) { sfx.bump(); return; }
     const e = enemyAt(c, r);
-    if (e) { sfx.bump(); setTip(e.corpse ? '亡骸がじゃまで通れない。' : '敵がいて進めない。'); return; }
-    run.pc = c; run.pr = r;
+    if (e) {
+      const c2 = c + dx, r2 = r + dy;
+      if (e.corpse || e.kind === 'watch' || blocks(c2, r2) || enemyAt(c2, r2)) {
+        sfx.bump(); setTip(e.corpse ? '亡骸がじゃまで通れない。' : e.kind === 'watch' ? '見張りの像は動かせない。' : 'その先に着地できない。');
+        return;
+      }
+      run.pc = c2; run.pr = r2;
+      hurt('敵を飛びこえた！（ダメージ1）');
+      if (run.over) { updateUI(); return; }
+    } else {
+      run.pc = c; run.pr = r;
+    }
     sfx.step();
   }
   run.turns++; run.steps++;
