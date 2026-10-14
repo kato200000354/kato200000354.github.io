@@ -1,7 +1,10 @@
-<title>すきーじゃんぷ</title>
+<!doctype html>
+<html lang="ja">
 <meta charset="utf-8">
+<script src="../../audio-pause.js"></script>
+<title>すきーじゃんぷ</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="description" content="タイミングよく飛び出して、風を読んで遠くまで。全国ランキングで飛距離を競うスキージャンプゲーム。">
+<meta name="description" content="踏切のタイミングと空中のバランスで、どこまでも遠くへ。全国ランキングで飛距離を競うスキージャンプゲーム。">
 <meta name="theme-color" content="#75CCFD">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
@@ -85,6 +88,13 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
 .stabwrap .bar{height:18px}
 .stabwrap .bar > div{background:linear-gradient(90deg,#ef4f5f,#ffd34d 40%,#3ee07a 75%)}
 .stabwrap .lbl{background:var(--navy-glass);color:#fff;font-weight:800;font-size:13px;padding:4px 10px;border-radius:10px;display:inline-block;margin-bottom:4px}
+#balBox{position:absolute;left:50%;top:calc(env(safe-area-inset-top,0px) + 124px);transform:translateX(-50%);width:min(340px,64vw);pointer-events:none;display:flex;flex-direction:column;gap:4px;align-items:stretch}
+#balBox .bal-lbl{align-self:center;background:var(--navy-glass);color:#fff;font-weight:800;font-size:13px;padding:3px 12px;border-radius:999px;white-space:nowrap}
+#balBox .bal-lbl small{opacity:.8;font-size:11px;margin-left:4px}
+.bal{position:relative;height:22px;border-radius:12px;border:3px solid rgba(255,255,255,.9);background:linear-gradient(90deg,#ef4f5f 0%,#ffd34d 22%,#3ee07a 39%,#3ee07a 61%,#ffd34d 78%,#ef4f5f 100%);box-shadow:0 2px 10px rgba(4,25,70,.35)}
+.bal::before{content:"";position:absolute;left:39%;right:39%;top:-3px;bottom:-3px;border-left:2px solid #fff;border-right:2px solid #fff}
+#balMark{position:absolute;top:50%;left:50%;width:22px;height:30px;margin:-15px 0 0 -11px;border-radius:8px;background:#fff;border:3px solid var(--navy);box-shadow:0 2px 6px rgba(0,0,0,.3)}
+.bal-ends{display:flex;justify-content:space-between;font-size:11px;font-weight:800;color:#fff;text-shadow:0 1px 3px rgba(0,20,60,.8);padding:0 2px}
 #hint{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 86px);transform:translateX(-50%);display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.93);color:var(--navy);font-weight:900;font-size:clamp(16px,3.2vw,22px);padding:10px 22px;border-radius:999px;box-shadow:0 6px 18px rgba(4,25,70,.3);white-space:nowrap;pointer-events:none;animation:bob 1.2s ease-in-out infinite}
 @keyframes bob{50%{transform:translate(-50%,-6px)}}
 #judge{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%) scale(1);font-size:clamp(38px,9vw,78px);font-weight:900;color:#fff;-webkit-text-stroke:8px var(--navy);paint-order:stroke fill;pointer-events:none;opacity:0;white-space:nowrap}
@@ -181,6 +191,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
   .round{width:42px;height:42px}
   .big-chip b{font-size:24px}
   #speedBox,#distBox{top:calc(env(safe-area-inset-top,0px) + 112px)}
+  #balBox{top:calc(env(safe-area-inset-top,0px) + 230px);width:min(300px,84vw)}
   .start-btn{padding:14px 34px}
 }
 @media (prefers-reduced-motion:reduce){.start-btn,#hint{animation:none}}
@@ -225,9 +236,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
     <div class="side" id="distBox" hidden>
       <div class="chip big-chip"><small>飛距離</small><b id="hDist">0.0<i>m</i></b><small style="margin-top:4px">高度</small><b id="hHeight" style="font-size:18px">0.0<i>m</i></b></div>
     </div>
-    <div class="powerwrap" id="powerBox"><span class="lbl">ジャンプパワー</span><div class="bar"><div id="hPower"></div></div></div>
-    <div class="stabwrap" id="stabBox" hidden><span class="lbl">姿勢の安定 <small style="opacity:.8">長押しでキープ</small></span><div class="bar"><div id="hStab"></div></div></div>
-    <div id="hint"><svg width="26" height="30" viewBox="0 0 26 30"><path d="M9 14V4.5a2.5 2.5 0 0 1 5 0V12l6.5 1.4a3 3 0 0 1 2.3 3.3L21.5 27H9.5L4 19.5a2.3 2.3 0 0 1 3.4-3L9 18" fill="#fff" stroke="#0d2f63" stroke-width="2" stroke-linejoin="round"/></svg><span id="hintTxt">画面を押してスタート！</span></div>
+    <div id="balBox" hidden><div class="bal-lbl">姿勢バランス<small>押す＝前へ・離す＝起きる</small></div><div class="bal"><div id="balMark"></div></div><div class="bal-ends"><span>◀ 起きすぎ</span><span>前すぎ ▶</span></div></div>
+    <div id="hint"><svg width="26" height="30" viewBox="0 0 26 30"><path d="M9 14V4.5a2.5 2.5 0 0 1 5 0V12l6.5 1.4a3 3 0 0 1 2.3 3.3L21.5 27H9.5L4 19.5a2.3 2.3 0 0 1 3.4-3L9 18" fill="#fff" stroke="#0d2f63" stroke-width="2" stroke-linejoin="round"/></svg><span id="hintTxt">タップでスタート！</span></div>
     <div id="judge"></div>
   </div>
 
@@ -243,8 +253,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
       </div>
       <div class="stats">
         <div>飛距離<b id="rS1"></b></div>
-        <div>最高高度<b id="rS2"></b></div>
-        <div>踏切速度<b id="rS3"></b></div>
+        <div>着地<b id="rS2"></b></div>
+        <div>空中バランス<b id="rS3"></b></div>
         <div>風<b id="rS4"></b></div>
         <div>天気<b id="rS5"></b></div>
       </div>
@@ -260,8 +270,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
   <!-- PAUSE -->
   <div id="pause" class="modal" hidden>
     <div class="panel" style="width:min(340px,100%)">
-      <header>
-<script src="../../audio-pause.js"></script><h2>一時停止</h2></header>
+      <header><h2>一時停止</h2></header>
       <div class="body menu-list">
         <button class="primary" id="pResume">つづける</button>
         <button class="ghost" id="pRetry">やり直す</button>
@@ -286,7 +295,7 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
         <section><h3>キャラクター</h3><div class="picks c4 chars" id="pickChara"></div></section>
         <section><h3>スキージャンプ台</h3><div class="picks c4" id="pickHill"></div></section>
         <section><h3>ステージ（時間・景色）</h3><div class="picks c4" id="pickStage"></div></section>
-        <section><h3>このゲームについて</h3><p style="font-size:13px;line-height:1.7;margin:0">ジャンプの自己ベストは、全国ランキングに自動で登録されます（名前は自動で付くニックネームで、個人情報は送りません）。<a href="privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a></p></section>
+        <section><h3>このゲームについて</h3><p style="font-size:13px;line-height:1.7;margin:0">ジャンプの自己ベストは、全国ランキング（シーズン2）に自動で登録されます（名前は自動で付くニックネームで、個人情報は送りません）。<a href="privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a></p></section>
       </div>
     </div>
   </div>
@@ -309,21 +318,21 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-o
       <header><h2>あそびかた</h2><button class="x" id="hClose" aria-label="閉じる">×</button></header>
       <div class="body">
         <div class="steps">
-          <div class="step"><h4><span>1</span>押しはじめてスタート</h4><div class="ill"><svg width="90" height="60" viewBox="0 0 90 60"><circle cx="40" cy="26" r="16" fill="#9fd0ff" opacity=".6"/><circle cx="40" cy="26" r="8" fill="#1e7cff"/><path d="M36 30V14a4 4 0 0 1 8 0v12l10 2a4 4 0 0 1 3 4.5L55 56H38l-9-12a3.5 3.5 0 0 1 5.5-4.4L36 42" fill="#fff" stroke="#0d2f63" stroke-width="2.4" stroke-linejoin="round"/></svg></div><p>画面を押しはじめた瞬間がスタートのタイミングです。</p></div>
-          <div class="step"><h4><span>2</span>押し続けてパワーをためる</h4><div class="ill"><svg width="120" height="40" viewBox="0 0 120 40"><rect x="4" y="14" width="112" height="14" rx="7" fill="#0d2f63"/><rect x="6" y="16" width="84" height="10" rx="5" fill="url(#pg)"/><defs><linearGradient id="pg"><stop offset="0" stop-color="#1e7cff"/><stop offset=".6" stop-color="#ffe14d"/><stop offset="1" stop-color="#3ee07a"/></linearGradient></defs></svg></div><p>押し続けるとパワーがたまり、助走のスピードが上がります。</p></div>
-          <div class="step"><h4><span>3</span>タイミングよく指をはなす</h4><div class="ill"><svg width="120" height="60" viewBox="0 0 120 60"><path d="M12 50 A48 48 0 0 1 108 50" fill="none" stroke="#ef4f5f" stroke-width="10"/><path d="M52 7 A48 48 0 0 1 72 6" fill="none" stroke="#27b863" stroke-width="12"/><path d="M72 6 A48 48 0 0 1 108 50" fill="none" stroke="#3a7ff0" stroke-width="10"/><path d="M60 50 L62 12" stroke="#0d2f63" stroke-width="3"/></svg></div><p>ゲージの針が緑の「PERFECT」に来た瞬間に指をはなすと大ジャンプ！</p></div>
+          <div class="step"><h4><span>1</span>タップで踏切</h4><div class="ill"><svg width="90" height="60" viewBox="0 0 90 60"><circle cx="40" cy="26" r="16" fill="#9fd0ff" opacity=".6"/><circle cx="40" cy="26" r="8" fill="#1e7cff"/><path d="M36 30V14a4 4 0 0 1 8 0v12l10 2a4 4 0 0 1 3 4.5L55 56H38l-9-12a3.5 3.5 0 0 1 5.5-4.4L36 42" fill="#fff" stroke="#0d2f63" stroke-width="2.4" stroke-linejoin="round"/></svg></div><p>タップでスタート。助走は自動です。ゲージの針が緑の「PERFECT」に来た瞬間にもう一度タップ！</p></div>
+          <div class="step"><h4><span>2</span>空中はバランス勝負</h4><div class="ill"><svg width="120" height="40" viewBox="0 0 120 40"><rect x="4" y="14" width="112" height="14" rx="7" fill="#0d2f63"/><rect x="6" y="16" width="84" height="10" rx="5" fill="url(#pg)"/><defs><linearGradient id="pg"><stop offset="0" stop-color="#1e7cff"/><stop offset=".6" stop-color="#ffe14d"/><stop offset="1" stop-color="#3ee07a"/></linearGradient></defs></svg></div><p>押すと前に倒れ、離すと体が起きます。押したり離したりして、目盛りを緑の中に保つほど遠くへ飛べます。</p></div>
+          <div class="step"><h4><span>3</span>着地でテレマーク</h4><div class="ill"><svg width="120" height="60" viewBox="0 0 120 60"><path d="M12 50 A48 48 0 0 1 108 50" fill="none" stroke="#ef4f5f" stroke-width="10"/><path d="M52 7 A48 48 0 0 1 72 6" fill="none" stroke="#27b863" stroke-width="12"/><path d="M72 6 A48 48 0 0 1 108 50" fill="none" stroke="#3a7ff0" stroke-width="10"/><path d="M60 50 L62 12" stroke="#0d2f63" stroke-width="3"/></svg></div><p>雪面が近づいて「着地でタップ！」が出たらタップ。ギリギリほど記録にボーナス！姿勢が崩れたまま着地すると転倒します。</p></div>
         </div>
         <section>
-          <h3>ジャンプのタイミング</h3>
+          <h3>踏切のタイミング</h3>
           <div class="timing">
-            <div><b style="background:var(--early)">はやすぎ</b><p>体が起きてしまい、ほとんど飛べない…</p></div>
+            <div><b style="background:var(--early)">はやすぎ</b><p>勢いが足りず、あまり伸びない…</p></div>
             <div><b style="background:var(--perfect)">ちょうどいい</b><p>大ジャンプ！</p></div>
-            <div><b style="background:var(--late)">おそすぎ</b><p>踏み切れずに落ちてしまう…</p></div>
+            <div><b style="background:var(--late)">おそすぎ</b><p>踏み切れずに落ちる。空中のバランスで少しは取り返せる</p></div>
           </div>
         </section>
         <section>
           <h3>天候・風の変化</h3>
-          <p style="margin:0;font-size:13px;line-height:1.7;color:#33507a">一定時間ごとに天気と風がランダムに変わります。<b>向かい風</b>は揚力が増えて遠くへ、<b>追い風</b>は伸びにくくなります。雪の日は助走が遅く、雨の日は滑りやすくなります。PERFECTの位置も毎回少しずつ変わります。空中では長押しで姿勢をキープしましょう。</p>
+          <p style="margin:0;font-size:13px;line-height:1.7;color:#33507a">一定時間ごとに天気と風がランダムに変わります。<b>向かい風</b>は揚力が増えて遠くへ、<b>追い風</b>は伸びにくくなります。雪の日は助走が遅く、雨の日は滑りやすくなります。PERFECTの位置も毎回少しずつ変わります。強風の日は空中で姿勢が揺さぶられやすくなります。</p>
         </section>
       </div>
     </div>
@@ -354,10 +363,10 @@ const STAGES = [
   { id:'night', name:'夜（星空）', sky:['#030720','#0f1e55','#2a4789'], far:'#34497a', mid:'#26396a', near:'#1b2c55', cap:'#b3c3e6', forest:'#0b1633', snow:['#c3d0ec','#7486b8'], sun:'moon', stars:true, town:true, lake:'#1a3264', night:true, lights:true },
 ];
 const HILLS = [
-  { id:'normal', name:'ノーマル', L:170, inrun:80, K:120, trees:1 },
-  { id:'alps', name:'アルプス', L:198, inrun:86, K:140, trees:1.2, tall:true },
-  { id:'niagara', name:'ナイアガラ', L:226, inrun:90, K:160, trees:0.8, falls:true },
-  { id:'field', name:'雪原', L:184, inrun:83, K:130, trees:0.35 },
+  { id:'normal', name:'ノーマル', L:260, inrun:80, K:300, trees:1 },
+  { id:'alps', name:'アルプス', L:320, inrun:86, K:400, trees:1.2, tall:true },
+  { id:'niagara', name:'ナイアガラ', L:360, inrun:90, K:450, trees:0.8, falls:true },
+  { id:'field', name:'雪原', L:290, inrun:83, K:350, trees:0.35 },
 ];
 const WX = {
   sunny: { name:'晴れ', mu:0.020, wind:[0.2,3], cl:1, cd:1 },
@@ -384,6 +393,8 @@ const CHARAS = [
 const SAVE_KEY = 'sukijanpu-v1';
 const S = { bgm:60, se:80, chara:0, hill:'normal', stage:'day', best:{} };
 try { Object.assign(S, JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); } catch (e) {}
+// シーズン2（操作と飛距離の出方を変更）からベスト記録を別に持つ
+if (!S.best2 || typeof S.best2 !== 'object') S.best2 = {};
 function save(){ try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
 
 /* ---------- audio ---------- */
@@ -570,7 +581,7 @@ function drawBackground(g, w, h, st, hill, px, py, t){
 /* ---------- hill geometry ---------- */
 let HILL = null;
 function buildHill(def){
-  const dx = 0.5, n = 2800, ys = new Float32Array(n); let y = -2.5; ys[0] = y;
+  const dx = 0.5, n = 4000, ys = new Float32Array(n); let y = -2.5; ys[0] = y;
   for (let i = 1; i < n; i++) { const x = i * dx; let s = Math.min(0.18 + x / 45 * 0.52, 0.70); if (x > 45) s = 0.70 * Math.exp(-(x - 45) / def.L); y -= s * dx; ys[i] = y; }
   const table = 7, trans = 14, total = table + trans + def.inrun, ds = 0.25, pts = [];
   let x = 0, yy = 0;
@@ -582,7 +593,7 @@ function buildHill(def){
   pts.reverse();
   const r = seeded(42 + def.L), trees = [];
   let tx = -170;
-  while (tx < 1300) { tx += (3 + r() * 6) / def.trees; if (tx > -6 && tx < 8) continue; trees.push({ x: tx, d: r(), h: 5 + r() * 7, k: r() }); }
+  while (tx < 2000) { tx += (3 + r() * 6) / def.trees; if (tx > -6 && tx < 8) continue; trees.push({ x: tx, d: r(), h: 5 + r() * 7, k: r() }); }
   HILL = { ...def, ys, dx, n, pts, S: pts.length - 1, len: (pts.length - 1) * ds, ds, trees };
 }
 function hillY(x){
@@ -603,6 +614,7 @@ const POSES = {
   jump:   { knee:[0.3,0.55], hip:[0.35,1.0], sh:[0.95,1.38], head:[1.3,1.58], elb:[0.4,1.1], hand:[-0.05,0.95], skiA:0.15, skiV:0.06 },
   fly:    { knee:[0.42,0.2], hip:[0.82,0.38], sh:[1.42,0.6], head:[1.82,0.76], elb:[0.98,0.34], hand:[0.56,0.2], skiA:0.2, skiV:0.24 },
   flail:  { knee:[0.2,0.5], hip:[0.1,0.95], sh:[0.35,1.5], head:[0.55,1.92], elb:[0.75,1.75], hand:[1.0,2.1], skiA:0.3, skiV:0.15 },
+  tele:   { knee:[0.62,0.3], hip:[0.05,0.72], sh:[0.28,1.3], head:[0.5,1.72], elb:[0.7,1.45], hand:[1.05,1.62], skiA:0, skiV:0 },
   land:   { knee:[0.36,0.46], hip:[0.02,0.86], sh:[0.3,1.38], head:[0.5,1.8], elb:[0.65,1.35], hand:[0.95,1.4], skiA:0, skiV:0 },
 };
 function copyPose(p){ return { knee:[...p.knee], hip:[...p.hip], sh:[...p.sh], head:[...p.head], elb:[...p.elb], hand:[...p.hand], skiA:p.skiA, skiV:p.skiV }; }
@@ -656,7 +668,11 @@ const G = {
   state:'title', paused:false, time:0, weather:'sunny', wind:1.5, gust:0, wxTimer:60, wxPending:false,
   cam:{ x:20, y:5, vis:140 }, parts:[], flakes:[], holding:false, perfectC:0.3, flash:0, confetti:[], lightning:0,
 };
-const P = { s:0, v:0, x:0, y:0, vx:0, vy:0, ang:0, power:0, released:false, e:null, q:0, qq:0, grade:'', stab:1, pose:'stand', J:copyPose(POSES.stand), maxH:0, dist:0, t:0, takeoffV:0, gaugeT:0, landT:0, kickT:1 };
+const P = { s:0, v:0, x:0, y:0, vx:0, vy:0, ang:0, released:false, e:null, q:0, qq:0, grade:'', pose:'stand', J:copyPose(POSES.stand), maxH:0, dist:0, t:0, takeoffV:0, gaugeT:0, landT:0, kickT:1,
+  lean:0, lv:0, balSum:0, balT:0, tele:'', bonus:0, fell:false, rec:0, tti:Infinity };
+const FLIGHT_SPEED = 2.2; // 空中の時間の流れ（見ていて間延びしないように速める）
+const BAL_ZONE = 0.22;    // 緑（安定）の範囲：lean が ±0.22 以内
+function balanceQ(lean){ return clamp(1 - Math.max(0, Math.abs(lean) - BAL_ZONE) / 0.55, 0, 1); }
 
 function stage(){ return STAGES.find(s => s.id === S.stage) || STAGES[0]; }
 function newPerfect(){ G.perfectC = rand(0.17, 0.42); }
@@ -677,7 +693,8 @@ function initFlakes(){
 function resetRun(){
   buildHill(HILLS.find(h => h.id === S.hill) || HILLS[0]);
   const p = inrunAt(0);
-  Object.assign(P, { s:0, v:0, x:p.x, y:p.y, vx:0, vy:0, ang:p.a, power:0, released:false, e:null, q:0, qq:0, grade:'', stab:1, pose:'stand', maxH:0, dist:0, t:0, takeoffV:0, gaugeT:0, landT:0, kickT:1 });
+  Object.assign(P, { s:0, v:0, x:p.x, y:p.y, vx:0, vy:0, ang:p.a, released:false, e:null, q:0, qq:0, grade:'', pose:'stand', maxH:0, dist:0, t:0, takeoffV:0, gaugeT:0, landT:0, kickT:1,
+    lean:0, lv:0, balSum:0, balT:0, tele:'', bonus:0, fell:false, rec:0, tti:Infinity });
   P.J = copyPose(POSES.stand);
   G.parts = []; G.confetti = []; G.holding = false;
   if (G.wxPending) { G.wxPending = false; rollWeather(false); }
@@ -688,14 +705,14 @@ function resetRun(){
 const ui = {
   title:$('#title'), hud:$('#hud'), result:$('#result'), pause:$('#pause'), settings:$('#settings'), howto:$('#howto'),
   hint:$('#hint'), hintTxt:$('#hintTxt'), judge:$('#judge'), toast:$('#toast'),
-  speed:$('#hSpeed'), dist:$('#hDist'), height:$('#hHeight'), power:$('#hPower'), stab:$('#hStab'),
-  powerBox:$('#powerBox'), stabBox:$('#stabBox'), distBox:$('#distBox'), speedBox:$('#speedBox'),
+  speed:$('#hSpeed'), dist:$('#hDist'), height:$('#hHeight'), balBox:$('#balBox'), balMark:$('#balMark'),
+  distBox:$('#distBox'), speedBox:$('#speedBox'),
   wind:$('#hWind'), windKind:$('#hWindKind'), windArrow:$('#hWindArrow'), wx:$('#hWx'), wxIcon:$('#hWxIcon'), timer:$('#hTimer'),
 };
 let toastTimer = 0;
 function toast(msg){ ui.toast.textContent = msg; ui.toast.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => ui.toast.classList.remove('show'), 2600); }
 function showJudge(text, color){ ui.judge.textContent = text; ui.judge.style.color = color; ui.judge.classList.remove('show'); void ui.judge.offsetWidth; ui.judge.classList.add('show'); }
-function bestOf(){ return S.best[S.hill] || 0; }
+function bestOf(){ return S.best2[S.hill] || 0; }
 function refreshTitle(){
   $('#tBest').innerHTML = `${bestOf().toFixed(1)}<i>m</i>`;
   $('#tCur').textContent = `ステージ：${stage().name} ／ ジャンプ台：${(HILLS.find(h => h.id === S.hill) || HILLS[0]).name}`;
@@ -705,9 +722,8 @@ function setState(s){
   ui.title.hidden = s !== 'title';
   ui.hud.hidden = s === 'title' || s === 'result';
   ui.result.hidden = s !== 'result';
-  ui.hint.hidden = s !== 'ready';
-  ui.powerBox.hidden = !(s === 'ready' || s === 'inrun');
-  ui.stabBox.hidden = s !== 'flight';
+  ui.hint.hidden = !(s === 'ready' || s === 'inrun' || s === 'flight');
+  ui.balBox.hidden = s !== 'flight';
   ui.distBox.hidden = !(s === 'flight' || s === 'landed');
   if (s === 'title') refreshTitle();
 }
@@ -727,23 +743,30 @@ function updateHud(){
     setText(ui.dist, 'd', `${(G.state === 'landed' ? P.dist : Math.max(0, P.x)).toFixed(1)}<i>m</i>`);
     setText(ui.height, 'h', `${Math.max(0, P.y - hillY(P.x)).toFixed(1)}<i>m</i>`);
   }
-  ui.power.style.width = (P.power * 100).toFixed(1) + '%';
-  ui.stab.style.width = (P.stab * 100).toFixed(1) + '%';
+  if (G.state === 'flight') { ui.balMark.style.left = ((P.lean + 1) / 2 * 100).toFixed(1) + '%'; ui.balMark.style.background = balanceQ(P.lean) >= 1 ? '#fff' : balanceQ(P.lean) > 0.4 ? '#ffe9a6' : '#ffc2c8'; }
+  // ヒントは場面ごとに出し分ける（親指で隠れない位置の表示が主役）
+  let hint = '';
+  if (G.state === 'ready') hint = 'タップでスタート！';
+  else if (G.state === 'inrun' && !P.released && (HILL.len - P.s) / Math.max(P.v, 1) > 1.3) hint = 'ゲージが出たら、踏切でタップ！';
+  else if (G.state === 'flight' && P.t < 1.6 * FLIGHT_SPEED && P.tti > 0.9) hint = '押す・離すでバランス！';
+  ui.hint.hidden = !hint; if (hint) setText(ui.hintTxt, 'hint', hint);
 }
 
 /* ---------- input ---------- */
 function press(){
   AU.init();
   if (G.paused) return;
+  G.holding = true;
   if (G.state === 'ready') {
-    G.holding = true; setState('inrun'); P.v = 1.8; P.pose = 'crouch'; AU.play('go');
-  } else if (G.state === 'inrun') { if (!P.released) G.holding = true; }
-  else if (G.state === 'flight') G.holding = true;
+    setState('inrun'); P.v = 1.8; P.pose = 'crouch'; AU.play('go');
+  } else if (G.state === 'inrun') {
+    // ゲージが出る前のタップは無視（うっかりタップでミスにしない）
+    if (!P.released && (HILL.len - P.s) / Math.max(P.v, 1) <= 1.3) doRelease();
+  } else if (G.state === 'flight') {
+    if (!P.tele && P.tti < 0.6) doTelemark();
+  }
 }
-function release(){
-  if (G.state === 'inrun' && G.holding && !P.released) doRelease();
-  G.holding = false;
-}
+function release(){ G.holding = false; }
 cv.addEventListener('pointerdown', e => { e.preventDefault(); if (G.state === 'title') { goReady(); return; } press(); });
 window.addEventListener('pointerup', release);
 window.addEventListener('pointercancel', release);
@@ -768,19 +791,24 @@ function doRelease(){
   const ae = Math.abs(e);
   P.q = clamp(1 - Math.max(0, ae - 0.035) / 0.45, 0, 1);
   if (ae <= 0.035) P.grade = 'PERFECT'; else if (ae <= 0.1) P.grade = 'GREAT'; else if (ae <= 0.2) P.grade = 'GOOD'; else P.grade = e > 0 ? 'はやすぎ' : 'おそすぎ';
-  if (e > 0.2) { P.pose = 'stand'; showJudge('はやすぎ…', '#ffd0d4'); AU.play('bad'); }
+}
+function doTelemark(){
+  // 雪面に着くまでの残り時間がギリギリなほど高評価
+  if (P.tti <= 0.28) { P.tele = 'PERFECT'; P.bonus = 0.06; showJudge('テレマーク！', '#7dffb0'); AU.play('perfect'); }
+  else { P.tele = 'GOOD'; P.bonus = 0.03; showJudge('テレマーク', '#fff3a6'); AU.play('good'); }
+  P.pose = 'tele';
 }
 function takeoff(){
   if (!P.released) { P.q = 0; P.e = -1; P.grade = 'おそすぎ'; }
-  P.qq = P.q <= 0 ? 0.03 : 0.35 + 0.65 * P.q;
-  const a = -10.5 * D2R, pop = 3 * P.q;
+  P.qq = 0.62 + 0.38 * P.q;
+  const a = -10.5 * D2R, pop = 3.2 * P.q;
   P.vx = P.v * Math.cos(a) - Math.sin(a) * pop; P.vy = P.v * Math.sin(a) + Math.cos(a) * pop;
-  P.takeoffV = P.v; P.x = 0; P.y = 0; P.t = 0; P.stab = 0.5 + 0.5 * P.q; P.kickT = rand(0.6, 1.2);
+  P.takeoffV = P.v; P.x = 0; P.y = 0; P.t = 0; P.lean = 0; P.lv = -0.12; P.balSum = 0; P.balT = 0; P.kickT = rand(0.5, 1.0); P.tti = Infinity;
   P.pose = P.q <= 0.05 ? 'flail' : 'jump';
   setState('flight');
   AU.play('jump');
   const gc = { PERFECT:'#7dffb0', GREAT:'#bff5ff', GOOD:'#fff3a6', 'はやすぎ':'#ffc2c8', 'おそすぎ':'#b9d0ff' }[P.grade];
-  if (P.grade !== 'はやすぎ' || P.e <= 0.2) showJudge(P.grade === 'PERFECT' ? 'PERFECT!' : P.grade === 'おそすぎ' ? 'おそすぎ…' : P.grade + '!', gc);
+  showJudge(P.grade === 'PERFECT' ? 'PERFECT!' : P.grade === 'おそすぎ' ? 'おそすぎ…' : P.grade + '!', gc);
   AU.play(P.grade === 'PERFECT' ? 'perfect' : (P.grade === 'GREAT' || P.grade === 'GOOD') ? 'good' : 'bad');
   for (let i = 0; i < 26; i++) G.parts.push({ x: rand(-1.5, 0), y: 0.3, vx: P.vx * rand(0.2, 0.6), vy: rand(0, 3), life: 0, max: rand(0.4, 0.9), r: rand(0.08, 0.22), c: '#ffffff' });
 }
@@ -798,20 +826,23 @@ function update(dt){
   G.lightning = Math.max(0, G.lightning - dt * 2.5);
 
   const wx = WX[G.weather];
-  const steps = Math.ceil(dt / (1 / 240)), h = dt / steps;
+  if (G.state === 'flight') updateBalance(dt);
+  const simDt = G.state === 'flight' ? dt * FLIGHT_SPEED : dt;
+  const steps = Math.ceil(simDt / (1 / 240)), h = simDt / steps;
+  const bq = balanceQ(P.lean);
   for (let k = 0; k < steps; k++) {
     if (G.state === 'inrun') {
-      if (G.holding && !P.released) P.power = Math.min(1, P.power + h / 2.6);
       const p = inrunAt(P.s);
-      const kd = (P.released && P.pose === 'stand') ? 0.0085 : 0.004 * (2.2 - 1.2 * P.power);
+      const kd = 0.004;
       const acc = 9.8 * Math.sin(-p.a) - wx.mu * 9.8 * Math.cos(p.a) - kd * P.v * P.v;
       P.v = Math.max(0.5, P.v + acc * h); P.s += P.v * h;
       if (P.s >= HILL.len) { takeoff(); break; }
     } else if (G.state === 'flight') {
       const wh = G.wind + G.gust * 0.35;
       const rx = P.vx + wh, ry = P.vy, va = Math.hypot(rx, ry);
-      const CL = 0.0118 * P.qq * (1 + 0.03 * wh) * (0.82 + 0.18 * P.stab) * wx.cl;
-      const CD = 0.0118 / 3 * (1 + (1 - P.q) * 0.6) * wx.cd;
+      // 揚力：踏切の質(qq) × 空中のバランス(bq) × 風。起きすぎは失速して抵抗も増える
+      const CL = 0.0125 * P.qq * (0.62 + 0.5 * bq) * (1 + 0.03 * wh) * wx.cl;
+      const CD = 0.0125 / 3.3 * (1 + (1 - P.q) * 0.4) * (1 + (P.lean < 0 ? 0.8 : 0.4) * (1 - bq)) * wx.cd;
       P.vx += (-CL * va * ry - CD * va * rx) * h;
       P.vy += (CL * va * rx - CD * va * ry - 9.8) * h;
       P.x += P.vx * h; P.y += P.vy * h; P.t += h;
@@ -827,17 +858,13 @@ function update(dt){
   if (G.state === 'inrun') { const p = inrunAt(P.s); P.x = p.x; P.y = p.y; P.ang = p.a; }
   if (G.state === 'inrun' && P.v > 5 && Math.random() < dt * 30) G.parts.push({ x: P.x - 1, y: P.y + 0.1, vx: -P.v * rand(0.05, 0.25), vy: rand(0.5, 2), life: 0, max: rand(0.3, 0.7), r: rand(0.05, 0.16), c: '#ffffff' });
   if (G.state === 'flight') {
-    // posture
-    P.kickT -= dt;
-    if (P.kickT <= 0) { const windy = 0.5 + Math.abs(G.wind) / 6; P.stab -= rand(0.06, 0.2) * windy; P.kickT = rand(0.5, 1.3) / windy; }
-    P.stab -= dt * 0.04;
-    if (G.holding) P.stab += dt * 0.45;
-    P.stab = clamp(P.stab, 0, 1);
-    if (P.t > 0.28 && P.pose === 'jump') P.pose = 'fly';
+    if (P.t > 0.5 && P.pose === 'jump') P.pose = 'fly';
+    if (P.pose === 'flail' && P.t > 1.4) P.pose = 'fly';
     const va = Math.atan2(P.vy, P.vx);
-    const wobble = (1 - P.stab) * Math.sin(G.time * 9) * 0.12;
-    P.ang = P.pose === 'flail' ? va + Math.sin(G.time * 7) * 0.3 : va + (P.pose === 'fly' ? 0.08 : 0.12) + wobble;
-    if (P.pose === 'flail' && P.t > 0.7) P.pose = 'fly';
+    P.ang = P.pose === 'flail' ? va + Math.sin(G.time * 7) * 0.3 : va + (P.pose === 'jump' ? 0.12 : 0.08) + P.lean * 0.5;
+    // 着地までの残り時間（実時間）。テレマークの受付に使う
+    const gap = P.y - hillY(P.x), slope = Math.tan(hillAng(P.x)), closing = -(P.vy - slope * P.vx);
+    P.tti = closing > 0.1 ? gap / (closing * FLIGHT_SPEED) : Infinity;
   }
   if (G.state === 'landed') {
     P.landT += dt; P.ang = hillAng(P.x);
@@ -858,29 +885,50 @@ function update(dt){
 
   updateCamera(dt);
 }
+/* 空中のバランス：押す＝前へ倒れる、離す＝起きる。突風で揺さぶられる */
+function updateBalance(dt){
+  const push = 1.5;
+  P.lv += (G.holding ? push : -push) * dt;
+  P.lv *= Math.exp(-2.2 * dt);
+  P.kickT -= dt;
+  if (P.kickT <= 0) {
+    const windy = 0.5 + Math.abs(G.wind) / 5 + (G.weather === 'gale' ? 0.5 : 0);
+    P.lv += rand(-1, 1) * 0.45 * windy;
+    P.kickT = rand(0.45, 1.1);
+  }
+  P.lean += P.lv * dt;
+  if (P.lean > 1) { P.lean = 1; P.lv = Math.min(0, P.lv); }
+  if (P.lean < -1) { P.lean = -1; P.lv = Math.max(0, P.lv); }
+  P.balSum += balanceQ(P.lean) * dt; P.balT += dt;
+}
 function land(){
   P.dist = Math.max(0, P.x); P.y = hillY(P.x);
+  // 姿勢が大きく崩れたままだと転倒。テレマークは記録にボーナス
+  if (Math.abs(P.lean) > 0.75) { P.fell = true; P.bonus = -0.1; P.tele = ''; }
+  else if (!P.tele) P.bonus = 0;
+  P.rec = Math.round(P.dist * (1 + P.bonus) * 10) / 10;
   const sa = hillAng(P.x);
   P.vx = Math.hypot(P.vx, P.vy) * Math.max(0.3, Math.cos(Math.atan2(P.vy, P.vx) - sa)) * Math.cos(sa);
-  P.pose = 'land'; P.landT = 0;
+  P.pose = P.fell ? 'flail' : P.tele ? 'tele' : 'land'; P.landT = 0;
   setState('landed');
   AU.play('land');
+  if (P.fell) { showJudge('転倒…', '#ffc2c8'); AU.play('bad'); }
   for (let i = 0; i < 40; i++) G.parts.push({ x: P.x + rand(-1, 1), y: P.y + 0.2, vx: rand(-4, 6), vy: rand(1, 6), life: 0, max: rand(0.5, 1.1), r: rand(0.08, 0.28), c: '#ffffff' });
 }
 function showResult(){
-  const prev = bestOf(), rec = P.dist > prev;
-  if (rec) { S.best[S.hill] = +P.dist.toFixed(1); save(); }
+  const prev = bestOf(), rec = P.rec > prev;
+  if (rec) { S.best2[S.hill] = P.rec; save(); }
   $('#rNew').hidden = !rec;
-  $('#rDist').innerHTML = `${P.dist.toFixed(1)}<small>m</small>`;
+  $('#rDist').innerHTML = `${P.rec.toFixed(1)}<small>m</small>`;
   const gcol = { PERFECT:'#1fa65a', GREAT:'#1e88d8', GOOD:'#c99612', 'はやすぎ':'#d63e4e', 'おそすぎ':'#3a6fe0' }[P.grade];
   const g = $('#rGrade'); g.textContent = `踏切：${P.grade}`; g.style.background = gcol;
   $('#rS1').textContent = `${P.dist.toFixed(1)} m`;
-  $('#rS2').textContent = `${P.maxH.toFixed(1)} m`;
-  $('#rS3').textContent = `${(P.takeoffV * 3.6).toFixed(1)} km/h`;
+  $('#rS2').textContent = P.fell ? '転倒（−10%）' : P.tele === 'PERFECT' ? 'テレマーク◎（＋6%）' : P.tele === 'GOOD' ? 'テレマーク（＋3%）' : 'ふつう（±0）';
+  $('#rS3').textContent = `${Math.round(P.balT > 0 ? P.balSum / P.balT * 100 : 0)} 点`;
   $('#rS4').textContent = `${windKind()} ${Math.abs(G.wind).toFixed(1)} m/s`;
   $('#rS5').innerHTML = `${WX_ICON[G.weather].replace(/width="30" height="30"/, 'width="22" height="22"')}${WX[G.weather].name}`;
   setState('result');
-  prepareEntry({ hill: S.hill, d: +P.dist.toFixed(1), g: P.grade, wx: G.weather, w: +G.wind.toFixed(1) });
+  prepareEntry({ hill: S.hill, d: P.rec, g: P.grade, wx: G.weather, w: +G.wind.toFixed(1) });
   AU.play('cheer');
   if (rec) {
     AU.play('record');
@@ -898,7 +946,7 @@ function updateCamera(dt){
   else if (st === 'inrun') { tx = P.x + 7; ty = P.y + 0.5; tv = lerp(30, 40, clamp(P.s / HILL.len, 0, 1)); }
   else if (st === 'flight') { const h = Math.max(0, P.y - hillY(P.x)); tv = clamp(36 + h * 1.8, 36, 115); tx = P.x + tv * 0.3; ty = P.y - h * 0.42; }
   else { const h = 0; tv = 40; tx = P.x + 6; ty = P.y + 3 + h; }
-  const k = 1 - Math.exp(-dt * (st === 'flight' ? 6 : 4));
+  const k = 1 - Math.exp(-dt * (st === 'flight' ? 9 : 4));
   G.cam.x = lerp(G.cam.x, tx, k); G.cam.y = lerp(G.cam.y, ty, k); G.cam.vis = lerp(G.cam.vis, tv, 1 - Math.exp(-dt * 2.5));
 }
 function camScale(){ return Math.min(H / G.cam.vis, W / (G.cam.vis * 1.2)); }
@@ -958,7 +1006,8 @@ function render(){
   drawWeather(ctx, sc);
   if (st.storm) { ctx.fillStyle = 'rgba(20,28,40,.18)'; ctx.fillRect(0, 0, W, H); }
   if (G.lightning > 0) { ctx.fillStyle = `rgba(255,255,255,${G.lightning * 0.5})`; ctx.fillRect(0, 0, W, H); }
-  if (G.state === 'inrun' || (G.state === 'flight' && P.t < 0.6)) drawGauge(ctx);
+  if (G.state === 'inrun' || (G.state === 'flight' && P.t < 0.6 * FLIGHT_SPEED)) drawGauge(ctx);
+  if (G.state === 'flight' && !P.tele && P.tti < 0.9) drawTelePrompt(ctx, SX(P.x), SY(P.y));
   for (const c of G.confetti) { ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(c.rot); ctx.fillStyle = c.c; ctx.fillRect(-c.s / 2, -c.s / 4, c.s, c.s / 2); ctx.restore(); }
   prevCam.x = cx; prevCam.y = cy;
 }
@@ -977,7 +1026,7 @@ function drawTree(g, x, y, s, st, d, k){
 function drawMarkings(g, SX, SY, sc, xl, xr, st){
   const best = bestOf();
   g.textAlign = 'center'; g.textBaseline = 'middle';
-  for (let m = 10; m <= 700; m += 10) {
+  for (let m = 10; m <= 1600; m += 10) {
     if (m < xl || m > xr) continue;
     const y0 = hillY(m), big = m % 50 === 0;
     g.strokeStyle = big ? 'rgba(30,100,210,.85)' : 'rgba(30,100,210,.4)'; g.lineWidth = Math.max(1.5, (big ? 0.35 : 0.2) * sc);
@@ -997,7 +1046,7 @@ function drawMarkings(g, SX, SY, sc, xl, xr, st){
   if (best > 0) mark(best, '#18a65a', `BEST ${best.toFixed(1)}m`);
   // banners along the hill
   const bcols = ['#1553b9', '#e03a4a', '#f0b823', '#1553b9', '#27b863'];
-  for (let x = 20; x < 700; x += 35) {
+  for (let x = 20; x < 1600; x += 35) {
     if (x < xl - 8 || x > xr + 8) continue;
     const y0 = hillY(x) + 3.2, y1 = hillY(x + 6) + 3.2;
     g.fillStyle = bcols[(x / 35 | 0) % bcols.length];
@@ -1063,6 +1112,18 @@ function drawWeather(g, sc){
     f.x = ((f.x % 1) + 1) % 1; f.y = ((f.y % 1) + 1) % 1;
   }
 }
+function drawTelePrompt(g, x, y){
+  const ok = P.tti < 0.6, pulse = 1 + Math.sin(G.time * 18) * 0.06;
+  g.save();
+  g.strokeStyle = ok ? '#ffe14d' : 'rgba(255,255,255,.85)'; g.lineWidth = 5;
+  g.beginPath(); g.arc(x, y, (34 + P.tti * 60) * pulse, 0, 7); g.stroke();
+  const fs = Math.max(22, Math.min(W, H) * 0.06);
+  g.font = `900 ${fs}px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineJoin = 'round';
+  const ty = Math.min(H * 0.42, y - 70);
+  g.lineWidth = 7; g.strokeStyle = '#0d2f63'; g.strokeText(ok ? '着地でタップ！' : 'もうすぐ着地…', W / 2, ty);
+  g.fillStyle = ok ? '#ffe14d' : '#fff'; g.fillText(ok ? '着地でタップ！' : 'もうすぐ着地…', W / 2, ty);
+  g.restore();
+}
 function drawGauge(g){
   let tEdge;
   if (G.state === 'inrun') tEdge = P.released ? P.gaugeT : (HILL.len - P.s) / Math.max(P.v, 1);
@@ -1098,7 +1159,7 @@ function drawGauge(g){
   g.font = `900 ${Math.max(22, R * 0.2)}px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle';
   g.lineWidth = 7; g.strokeStyle = '#0d2f63'; g.lineJoin = 'round';
   const inPerfect = !P.released && Math.abs(tEdge - G.perfectC) <= 0.06;
-  const title = P.released ? '' : inPerfect ? 'いまだ！' : 'はなす！';
+  const title = P.released ? '' : inPerfect ? 'いまだ！' : 'タップ！';
   if (title) { g.strokeText(title, cx, cy - R - lw * 2.1); g.fillStyle = inPerfect ? '#ffe14d' : '#fff'; g.fillText(title, cx, cy - R - lw * 2.1); }
   g.restore();
 }
@@ -1107,7 +1168,6 @@ function drawGauge(g){
 function goReady(){
   AU.init(); AU.play('tap');
   resetRun(); setState('ready');
-  ui.hintTxt.textContent = '画面を押してスタート！';
   G.cam.x = P.x + 5; G.cam.y = P.y + 1; G.cam.vis = 30;
 }
 function goTitle(){ G.paused = false; ui.pause.hidden = true; resetRun(); setState('title'); }
@@ -1185,6 +1245,7 @@ const FB = {
 const NICK_A = ['はやい','とおくまで','そらとぶ','げんきな','しずかな','ゆうかんな','ふわふわの','きらきらの','のんびり','さすらいの','ほっきょくの','ゆきやまの','かぜをよむ','はやてな','つよきの','まっしろな','おひさまの','よぞらの','ジャンプずきの','かがやく'];
 const NICK_B = ['ペンギン','キツネ','ウサギ','シロクマ','フクロウ','オコジョ','ライチョウ','トナカイ','アザラシ','ハヤブサ','ツバメ','カモシカ','リス','タヌキ','ワシ','ラッコ','パンダ','コアラ','カワウソ','ユキヒョウ'];
 const nickOf = (a, b) => (NICK_A[a] || NICK_A[0]) + (NICK_B[b] || NICK_B[0]);
+const RK_COLL = 'skijump2'; // シーズン2（操作変更後）のランキング
 const RK = { status:'loading', tab:S.hill, board:[], uid:null, mine:null, loadSeq:0, lastRec:null };
 const rkEl = { modal:$('#ranking'), tabs:$('#rkTabs'), status:$('#rkStatus'), list:$('#rkList') };
 function hillName(id){ return (HILLS.find(h => h.id === id) || HILLS[0]).name; }
@@ -1224,18 +1285,18 @@ const docOf = d => ({ id:d.name.split('/').pop(), ...fromFs({ mapValue:{ fields:
 
 async function loadMine(){
   const t = await idToken();
-  const r = await fetch(`${FB.db}/skijump/${RK.uid}?key=${FB.key}`, { headers:{ Authorization:'Bearer ' + t } });
+  const r = await fetch(`${FB.db}/${RK_COLL}/${RK.uid}?key=${FB.key}`, { headers:{ Authorization:'Bearer ' + t } });
   RK.mine = r.ok ? docOf(await r.json()) : { hills:{} };
 }
 async function saveMine(){
   const t = await idToken();
   const body = { a:S.nick[0], b:S.nick[1], hills:RK.mine.hills || {}, at:Date.now() };
-  const r = await fetch(`${FB.db}/skijump/${RK.uid}?key=${FB.key}`, { method:'PATCH', headers:{ Authorization:'Bearer ' + t, 'Content-Type':'application/json' }, body:JSON.stringify({ fields:toFs(body).mapValue.fields }) });
+  const r = await fetch(`${FB.db}/${RK_COLL}/${RK.uid}?key=${FB.key}`, { method:'PATCH', headers:{ Authorization:'Bearer ' + t, 'Content-Type':'application/json' }, body:JSON.stringify({ fields:toFs(body).mapValue.fields }) });
   if (!r.ok) throw new Error('save ' + r.status);
 }
 async function loadBoard(hill){
   const seq = ++RK.loadSeq;
-  const q = { structuredQuery:{ from:[{ collectionId:'skijump' }], orderBy:[{ field:{ fieldPath:`hills.${hill}.d` }, direction:'DESCENDING' }], limit:100 } };
+  const q = { structuredQuery:{ from:[{ collectionId:RK_COLL }], orderBy:[{ field:{ fieldPath:`hills.${hill}.d` }, direction:'DESCENDING' }], limit:100 } };
   const res = await fetch(`${FB.db}:runQuery?key=${FB.key}`, { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(q) }).then(x => x.json());
   if (seq !== RK.loadSeq) return;
   if (!Array.isArray(res)) throw new Error('query');
@@ -1298,7 +1359,7 @@ function renderRanking(){
   rkEl.list.innerHTML = '';
   if (RK.status !== 'ok') { rkEl.status.hidden = false; rkEl.status.textContent = 'ランキングを読み込めませんでした。通信できる場所で開き直してください。'; return; }
   rkEl.status.hidden = false;
-  rkEl.status.textContent = RK.board.length ? `全国のジャンパー ${RK.board.length}人（上位100人まで）・あなたは「${nickOf(S.nick[0], S.nick[1])}」` : 'まだ記録がありません。最初の挑戦者になりましょう！';
+  rkEl.status.textContent = RK.board.length ? `シーズン2・全国のジャンパー ${RK.board.length}人（上位100人まで）・あなたは「${nickOf(S.nick[0], S.nick[1])}」` : 'まだ記録がありません。最初の挑戦者になりましょう！';
   RK.board.forEach((r, i) => {
     const h = r.hills[RK.tab];
     const li = document.createElement('li'); if (r.id === RK.uid) li.className = 'me';
