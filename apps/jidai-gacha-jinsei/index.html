@@ -1,0 +1,1359 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<script src="../../audio-pause.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>時代ガチャ人生</title>
+<meta name="description" content="原始時代から未来まで、どの時代に誰として生まれるかは完全ランダム。事件・出会い・戦・病…ランダムに起こる出来事の中で成長し、いつか死ぬ。あなたの人生は何億分の1？">
+<meta name="theme-color" content="#16131c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800&family=Shippori+Mincho+B1:wght@600;800&display=swap">
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#16131c; --panel:#211c29; --panel2:#2b2535; --line:#3b3348; --text:#f5f0e8; --muted:#a99fb8;
+  --good:#7fe0a8; --bad:#ff8f8f; --gold:#ffd36b;
+  --a1:#c98b4a; --a2:#4a2f1a;
+  --font:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Yu Gothic UI","Meiryo",sans-serif;
+  --serif:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
+}
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:var(--font);-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+body{overflow:hidden}
+button{font-family:inherit;color:inherit;border:none;background:none;cursor:pointer;touch-action:manipulation;font-size:inherit}
+#app{position:fixed;inset:0;display:flex;justify-content:center;
+  background:radial-gradient(120% 70% at 50% -10%,color-mix(in srgb,var(--a1) 28%,transparent),transparent 60%),var(--bg);transition:background .6s}
+.scr{width:100%;max-width:520px;height:100%;display:flex;flex-direction:column;padding:max(14px,env(safe-area-inset-top)) 16px max(14px,env(safe-area-inset-bottom))}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:0 22px;border-radius:16px;font-weight:800;font-size:17px;
+  background:linear-gradient(180deg,var(--a1),color-mix(in srgb,var(--a1) 70%,#000));color:#1a1208;box-shadow:0 4px 0 color-mix(in srgb,var(--a1) 45%,#000),0 10px 24px rgba(0,0,0,.35);transition:transform .08s}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 color-mix(in srgb,var(--a1) 45%,#000)}
+.btn.sub{background:var(--panel2);color:var(--text);box-shadow:0 4px 0 #120f17}
+.btn.small{min-height:40px;font-size:14px;padding:0 14px;border-radius:12px}
+.muted{color:var(--muted)}
+
+/* タイトル */
+#scr-title{justify-content:center;align-items:center;text-align:center;gap:18px}
+.logo-sub{font-size:13px;letter-spacing:.3em;color:var(--muted)}
+.logo{font-family:var(--serif);font-weight:800;font-size:clamp(40px,12vw,58px);line-height:1.1;margin:0;
+  background:linear-gradient(180deg,#fff3d6,#e3a85c);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 4px 16px rgba(227,168,92,.35))}
+.lead{font-size:15px;line-height:1.9;color:#ddd3e6;margin:0}
+.era-strip{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;font-size:22px;opacity:.9;max-width:360px}
+.era-strip span{width:36px;height:36px;display:grid;place-items:center;border-radius:10px;background:var(--panel)}
+.era-strip span.lock{filter:grayscale(1) brightness(.5)}
+.t-stats{font-size:13px;color:var(--muted)}
+.t-btns{display:flex;flex-direction:column;gap:12px;width:min(300px,100%)}
+.t-row{display:flex;gap:10px;justify-content:center}
+
+/* ガチャ */
+#scr-roll{justify-content:center;align-items:center;text-align:center;gap:18px}
+.reel{width:100%;border-radius:22px;background:var(--panel);border:2px solid var(--line);padding:26px 12px;position:relative;overflow:hidden}
+.reel-ico{font-size:64px;line-height:1}
+.reel-name{font-family:var(--serif);font-size:30px;font-weight:800;margin-top:8px}
+.reel-year{color:var(--muted);font-size:14px;margin-top:4px}
+.reel.fin{border-color:var(--a1);box-shadow:0 0 0 4px color-mix(in srgb,var(--a1) 25%,transparent),0 0 40px color-mix(in srgb,var(--a1) 40%,transparent)}
+.reveal{width:100%;display:flex;flex-direction:column;gap:10px;animation:up .5s ease both}
+@keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.rv-card{background:var(--panel);border-radius:18px;padding:16px;text-align:left;border:1px solid var(--line)}
+.rv-name{font-family:var(--serif);font-size:28px;font-weight:800}
+.rv-line{font-size:14px;line-height:1.8;color:#e7dff0}
+.odds-row{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);border-top:1px dashed var(--line);padding-top:8px;margin-top:8px}
+.odds-row b{color:var(--gold)}
+
+/* 人生 */
+#scr-life{gap:10px;padding-bottom:0}
+.hd{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:16px;background:linear-gradient(135deg,var(--a2),color-mix(in srgb,var(--a2) 50%,var(--panel)));border:1px solid color-mix(in srgb,var(--a1) 40%,transparent)}
+.hd-ico{font-size:30px}
+.hd-era{font-family:var(--serif);font-weight:800;font-size:18px;line-height:1.2}
+.hd-sub{font-size:12px;color:#e9dccb;opacity:.85}
+.hd-x{margin-left:auto;width:36px;height:36px;border-radius:10px;background:rgba(0,0,0,.25);font-size:16px}
+.person{display:flex;gap:12px;align-items:stretch}
+.p-main{flex:1;min-width:0;background:var(--panel);border-radius:16px;padding:10px 12px;border:1px solid var(--line)}
+.p-name{font-family:var(--serif);font-weight:800;font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p-job{font-size:13px;color:var(--a1);font-weight:800;margin-top:2px}
+.p-fam{font-size:12px;color:var(--muted);margin-top:4px}
+.p-age{width:92px;flex:none;background:var(--panel);border-radius:16px;border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.p-age b{font-size:40px;line-height:1;font-weight:800}
+.p-age span{font-size:12px;color:var(--muted)}
+.p-age.bump b{animation:bump .3s}
+@keyframes bump{50%{transform:scale(1.18)}}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;background:var(--panel);border-radius:16px;padding:10px 12px;border:1px solid var(--line)}
+.st{display:flex;align-items:center;gap:8px;font-size:12px}
+.st label{width:30px;color:var(--muted);flex:none}
+.st .bar{flex:1;height:8px;border-radius:5px;background:#120f17;overflow:hidden}
+.st .bar i{display:block;height:100%;border-radius:5px;transition:width .35s}
+.st em{font-style:normal;width:24px;text-align:right;font-weight:800;font-size:12px}
+.log{flex:1;min-height:0;overflow-y:auto;list-style:none;margin:0;padding:2px 2px 12px;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch}
+.log li{background:var(--panel);border-radius:12px;padding:8px 10px 8px 54px;position:relative;font-size:14px;line-height:1.6;border:1px solid transparent;animation:fadeIn .3s ease both}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-6px)}}
+.log li .ag{position:absolute;left:8px;top:8px;width:38px;text-align:center;font-size:12px;font-weight:800;color:var(--muted);background:#15111b;border-radius:8px;padding:2px 0}
+.log li.quiet{background:transparent;color:var(--muted);font-size:13px;padding-top:4px;padding-bottom:4px}
+.log li.quiet .ag{top:4px;background:transparent}
+.log li.sys{border-color:color-mix(in srgb,var(--a1) 35%,transparent)}
+.log li.big{border-color:var(--gold);background:linear-gradient(90deg,rgba(255,211,107,.12),var(--panel))}
+.log li.rare::after{content:"レア";position:absolute;right:8px;top:-7px;font-size:10px;font-weight:800;background:var(--gold);color:#2a1d00;border-radius:6px;padding:1px 6px}
+.log li.death{border-color:var(--bad);background:linear-gradient(90deg,rgba(255,120,120,.16),var(--panel))}
+.log .ch{display:inline-block;font-weight:800;color:var(--a1)}
+.log .dl{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
+.log .dl span{font-size:11px;font-weight:800;padding:0 6px;border-radius:6px;background:#15111b}
+.log .dl .p{color:var(--good)}.log .dl .m{color:var(--bad)}
+.ctrl{display:flex;gap:8px;align-items:center;padding:10px 0 max(12px,env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--bg) 30%)}
+.ctrl .btn{flex:1;min-height:50px;font-size:15px;padding:0 10px}
+.ctrl .tg{min-height:50px;padding:0 10px;border-radius:14px;background:var(--panel2);font-size:12px;font-weight:800;line-height:1.25;min-width:64px}
+.ctrl .tg.on{background:color-mix(in srgb,var(--a1) 35%,var(--panel2));color:#fff}
+
+/* 選択肢モーダル */
+#modal{position:fixed;inset:0;background:rgba(8,6,12,.62);display:flex;align-items:flex-end;justify-content:center;z-index:10;animation:fadeIn .2s}
+.m-box{width:100%;max-width:520px;background:var(--panel);border-radius:22px 22px 0 0;padding:20px 16px max(20px,env(safe-area-inset-bottom));border-top:3px solid var(--a1);animation:up .25s ease both}
+.m-age{font-size:12px;color:var(--a1);font-weight:800}
+.m-text{font-size:17px;line-height:1.75;margin:6px 0 16px;font-weight:700}
+.m-btns{display:flex;flex-direction:column;gap:10px}
+.m-btns .btn{width:100%}
+
+/* 終幕 */
+#scr-end{overflow-y:auto;gap:14px;align-items:stretch}
+.tomb{margin-top:6px;background:linear-gradient(180deg,#3a3542,#24202b);border-radius:120px 120px 18px 18px;padding:40px 18px 20px;text-align:center;border:2px solid #4b4456;box-shadow:inset 0 2px 0 rgba(255,255,255,.08),0 14px 30px rgba(0,0,0,.4);animation:up .6s ease both}
+.tb-era{font-size:13px;color:var(--muted)}
+.tb-name{font-family:var(--serif);font-weight:800;font-size:30px;margin:6px 0 2px}
+.tb-years{font-size:13px;color:#d6cde2}
+.tb-age{font-family:var(--serif);font-size:20px;margin-top:10px}
+.tb-cause{font-size:13px;color:var(--bad);margin-top:4px}
+.tb-title{display:inline-block;margin-top:14px;padding:6px 14px;border-radius:999px;background:color-mix(in srgb,var(--gold) 18%,transparent);color:var(--gold);font-weight:800;font-size:15px;border:1px solid color-mix(in srgb,var(--gold) 45%,transparent)}
+.odds-big{background:var(--panel);border-radius:18px;padding:16px;text-align:center;border:1px solid var(--line)}
+.odds-big .lbl{font-size:13px;color:var(--muted)}
+.odds-big .val{font-family:var(--serif);font-weight:800;font-size:clamp(26px,8vw,36px);color:var(--gold);margin:4px 0}
+.odds-big .cmp{font-size:12px;color:#d9cfe6;line-height:1.6}
+.meter{height:10px;border-radius:6px;background:#120f17;overflow:hidden;margin-top:10px;position:relative}
+.meter i{display:block;height:100%;background:linear-gradient(90deg,var(--a1),var(--gold))}
+.meter b{position:absolute;top:-3px;bottom:-3px;width:2px;background:#fff}
+.sum{background:var(--panel);border-radius:18px;padding:14px;border:1px solid var(--line);display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:14px}
+.sum dt{color:var(--muted)}.sum dd{margin:0;font-weight:700}
+.hl{background:var(--panel);border-radius:18px;padding:14px;border:1px solid var(--line)}
+.hl h3,.book h3{margin:0 0 8px;font-size:14px;color:var(--muted);font-weight:800}
+.hl ol{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;font-size:13px;line-height:1.6}
+.hl li b{color:var(--a1);margin-right:6px}
+#e-ach{display:flex;flex-direction:column;gap:8px}#e-ach:empty{display:none}
+.new-ach{background:color-mix(in srgb,var(--gold) 14%,var(--panel));border:1px solid color-mix(in srgb,var(--gold) 50%,transparent);border-radius:14px;padding:10px 12px;font-size:13px}
+.end-btns{display:flex;flex-direction:column;gap:10px;padding-bottom:10px}
+.end-btns .row{display:flex;gap:10px}.end-btns .row .btn{flex:1}
+
+/* 図鑑 */
+#scr-book{overflow-y:auto;gap:14px}
+.book-hd{display:flex;align-items:center;gap:10px}
+.book-hd h2{margin:0;font-family:var(--serif);font-size:24px}
+.book-hd .btn{margin-left:auto}
+.book{background:var(--panel);border-radius:18px;padding:14px;border:1px solid var(--line)}
+.eras{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.eras div{background:var(--panel2);border-radius:12px;padding:8px 4px;text-align:center;font-size:11px;line-height:1.3}
+.eras div i{display:block;font-style:normal;font-size:26px;margin-bottom:2px}
+.eras div.lock{opacity:.35}
+.eras div small{color:var(--muted)}
+.achs{display:flex;flex-direction:column;gap:6px}
+.achs>div{display:flex;gap:10px;align-items:center;font-size:13px;padding:6px 8px;border-radius:10px;background:var(--panel2)}
+.achs>div.lock{opacity:.4}
+.achs div i{font-style:normal;font-size:20px;width:26px;text-align:center}
+.achs small{display:block;color:var(--muted);font-size:11px}
+.recs{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px}
+.recs div{background:var(--panel2);border-radius:12px;padding:8px 10px}
+.recs b{display:block;font-size:16px;color:var(--gold)}
+.hist{display:flex;flex-direction:column;gap:6px;font-size:12px}
+.hist div{background:var(--panel2);border-radius:10px;padding:6px 10px;line-height:1.5}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#000c;color:#fff;padding:8px 16px;border-radius:999px;font-size:13px;z-index:20;animation:fadeIn .2s}
+</style>
+</head>
+<body>
+<div id="app">
+  <section id="scr-title" class="scr">
+    <div class="logo-sub">THE LOTTERY OF BIRTH</div>
+    <h1 class="logo">時代ガチャ<br>人生</h1>
+    <p class="lead">いつ、どこで、誰として生まれるか。<br>それは誰にも選べない。<br>原始時代から未来まで──あなたの一生は何億分の1？</p>
+    <div class="era-strip" id="t-eras"></div>
+    <div class="t-stats" id="t-stats"></div>
+    <div class="t-btns">
+      <button class="btn" id="b-born">🎲 生まれる</button>
+      <div class="t-row">
+        <button class="btn sub small" id="b-book">📖 図鑑・記録</button>
+        <button class="btn sub small" id="b-snd">🔊 音あり</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="scr-roll" class="scr" hidden>
+    <div class="muted" style="font-size:14px">あなたが生まれるのは…</div>
+    <div class="reel" id="reel"><div class="reel-ico" id="r-ico">❓</div><div class="reel-name" id="r-name">？？？</div><div class="reel-year" id="r-year"></div></div>
+    <div class="reveal" id="reveal" hidden>
+      <div class="rv-card">
+        <div class="rv-name" id="rv-name"></div>
+        <div class="rv-line" id="rv-line"></div>
+        <div class="odds-row"><span>この時代に生まれる確率</span><b id="rv-p1"></b></div>
+        <div class="odds-row"><span>この家に生まれる確率</span><b id="rv-p2"></b></div>
+      </div>
+      <button class="btn" id="b-start">人生をはじめる</button>
+      <button class="btn sub small" id="b-reroll">…いや、生まれ直す（記録されません）</button>
+    </div>
+  </section>
+
+  <section id="scr-life" class="scr" hidden>
+    <div class="hd">
+      <div class="hd-ico" id="h-ico"></div>
+      <div><div class="hd-era" id="h-era"></div><div class="hd-sub" id="h-sub"></div></div>
+      <button class="hd-x" id="b-quit" aria-label="タイトルへ">✕</button>
+    </div>
+    <div class="person">
+      <div class="p-main"><div class="p-name" id="p-name"></div><div class="p-job" id="p-job"></div><div class="p-fam" id="p-fam"></div></div>
+      <div class="p-age" id="p-age"><b id="p-agen">0</b><span>歳</span></div>
+    </div>
+    <div class="stats" id="stats"></div>
+    <ul class="log" id="log"></ul>
+    <div class="ctrl" id="ctrl">
+      <button class="tg" id="b-omakase">選択も<br>おまかせ</button>
+      <button class="btn" id="b-auto">▶ 自動</button>
+      <button class="btn sub" id="b-step">1年すすむ</button>
+      <button class="tg" id="b-speed">ふつう</button>
+    </div>
+  </section>
+
+  <section id="scr-end" class="scr" hidden>
+    <div class="tomb">
+      <div class="tb-era" id="e-era"></div>
+      <div class="tb-name" id="e-name"></div>
+      <div class="tb-years" id="e-years"></div>
+      <div class="tb-age" id="e-age"></div>
+      <div class="tb-cause" id="e-cause"></div>
+      <div class="tb-title" id="e-title"></div>
+    </div>
+    <div class="odds-big">
+      <div class="lbl">この人生が生まれる確率は</div>
+      <div class="val" id="e-odds"></div>
+      <div class="cmp" id="e-cmp"></div>
+      <div class="meter"><i id="e-meter"></i><b id="e-mark"></b></div>
+    </div>
+    <div id="e-ach"></div>
+    <dl class="sum" id="e-sum"></dl>
+    <div class="hl"><h3>人生のハイライト</h3><ol id="e-hl"></ol></div>
+    <div class="end-btns">
+      <button class="btn" id="b-again">🎲 次の人生へ（生まれ変わる）</button>
+      <div class="row"><button class="btn sub small" id="b-copy">結果をコピー</button><button class="btn sub small" id="b-ebook">📖 図鑑</button><button class="btn sub small" id="b-etitle">タイトル</button></div>
+    </div>
+  </section>
+
+  <section id="scr-book" class="scr" hidden>
+    <div class="book-hd"><h2>図鑑・記録</h2><button class="btn sub small" id="b-bback">もどる</button></div>
+    <div class="book"><h3>生まれた時代</h3><div class="eras" id="bk-eras"></div></div>
+    <div class="book"><h3>最高記録</h3><div class="recs" id="bk-recs"></div></div>
+    <div class="book"><h3>実績</h3><div class="achs" id="bk-achs"></div></div>
+    <div class="book"><h3>最近の人生</h3><div class="hist" id="bk-hist"></div></div>
+  </section>
+</div>
+
+<div id="modal" hidden><div class="m-box"><div class="m-age" id="m-age"></div><div class="m-text" id="m-text"></div><div class="m-btns" id="m-btns"></div></div></div>
+
+<script>
+'use strict';
+const R = Math.random;
+const pick = a => a[Math.floor(R() * a.length)];
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+function wpick(arr, wf) { let t = 0; for (const x of arr) t += wf(x); let r = R() * t; for (const x of arr) { r -= wf(x); if (r <= 0) return x; } return arr[arr.length - 1]; }
+const TALENT = ['歌', '絵', '料理', '計算', '踊り', '語り', '手先の器用さ', '商売'];
+
+// ================= 時代データ =================
+// ev: a=年齢範囲 y=西暦範囲 g=性別 c=条件 w=重み force=その年に起こる確率 rep=くり返し可
+//     fx=能力の増減 die/dp=死因と死亡率 sv=助かったときの文 rare=レア度(1/N) big=ハイライト
+//     ch=選択肢 [{t, s=成功に効く能力, r:[{p, t, fx, ...}]}]  lad=職業ルート変更 jobUp=出世 setJob=職業 marry=結婚
+const ERAS = [
+{
+  id: 'genshi', name: '原始時代', icon: '🦣', place: '氷河期のユーラシア大陸', yr: [-30000, -29000], w: 3, a1: '#d6a15f', a2: '#3d2a18',
+  risk: 1.3, mort: { inf: .1, bg: .016, old: .00048, g: .085 }, ps: [3, 25], work: 10, marry: [13, 28], kids: .22,
+  names: { m: ['ウル', 'ガロ', 'ドゥン', 'カグ', 'ボロ', 'ザン', 'ムガ'], f: ['ミア', 'ララ', 'ネネ', 'ユナ', 'サラ', 'アヤ', 'リム'] },
+  cls: [
+    { n: '群れのふつうの家族', w: 80, jobs: ['見習いの狩り手', '狩り手', '名ハンター', '群れのリーダー'] },
+    { n: '長老の血筋', w: 20, jobs: ['長老の手伝い', '語り部', '呪術師', '大長老'], st: { int: 8, fame: 8 } },
+  ],
+  dInf: ['生まれてすぐの寒さ', 'はやり病', '飢え'], d: ['狩りの事故', '飢え', '傷の化膿', '猛獣の襲撃', '厳しい冬の寒さ'], old: ['老衰', '寒さによる衰弱'],
+  ev: [
+    { a: [3, 12], t: 'はじめて火おこしを手伝った。火はあたたかい。', fx: { int: 4, happy: 4 } },
+    { a: [8, 30], t: 'マンモス狩りについていった。', ch: [
+      { t: '前に出る', s: 'hp', r: [{ p: .55, t: '槍を突き立てた！群れの英雄になった。', fx: { fame: 15, happy: 10 }, big: 1 }, { p: .45, t: 'マンモスに踏まれた…', fx: { hp: -30 }, die: 'マンモスの下敷き', dp: .5, sv: 'なんとか一命をとりとめた。' }] },
+      { t: '後ろで見守る', r: [{ p: 1, t: '無事に肉を分けてもらえた。', fx: { happy: 3 } }] }] },
+    { a: [5, 40], t: '洞窟の壁に動物の絵を描いた。何万年も残るかもしれない。', fx: { fame: 6, happy: 6 } },
+    { a: [0, 70], rep: 1, w: .6, t: '厳しい冬が来た。食べ物がない。', fx: { hp: -15, happy: -8 }, die: '厳しい冬の寒さ', dp: .08 },
+    { a: [12, 45], t: 'となりの群れと争いになった。', ch: [
+      { t: '戦う', s: 'hp', r: [{ p: .5, t: '勝った！獲物の豊かな谷を手に入れた。', fx: { fame: 10, money: 10 } }, { p: .5, t: '石斧で頭を打たれた。', fx: { hp: -25 }, die: '群れ同士の争い', dp: .35, sv: '意識が戻った。' }] },
+      { t: '話し合う', s: 'chr', r: [{ p: .5, t: '身ぶり手ぶりで和解した。となりの群れと仲間になった。', fx: { fame: 8, chr: 5 } }, { p: .5, t: '通じなかった。群れは住みかを追われた。', fx: { happy: -10, money: -10 } }] }] },
+    { a: [6, 60], t: '茂みにサーベルタイガーの影が見えた。', ch: [
+      { t: '木に登って隠れる', r: [{ p: .85, t: 'なんとかやり過ごした。', fx: { luck: 2 } }, { p: .15, t: '見つかってしまった…', fx: { hp: -30 }, die: 'サーベルタイガーの襲撃', dp: .7, sv: '傷だらけで逃げきった。' }] },
+      { t: '大声で威嚇する', s: 'hp', r: [{ p: .5, t: '虎は逃げていった！', fx: { fame: 8 } }, { p: .5, t: '逆効果だった…', fx: { hp: -40 }, die: 'サーベルタイガーの襲撃', dp: .8, sv: '仲間が助けてくれた。' }] }] },
+    { a: [5, 35], t: '新しい石器の作り方を思いついた！群れの暮らしが変わった。', fx: { int: 8, fame: 10 }, rare: 20, big: 1 },
+    { a: [12, 45], t: '群れごと、遠くの大地へ旅をした。', fx: { hp: -5, int: 5, happy: 5 } },
+    { a: [3, 60], t: 'きれいな貝がらの首飾りを手に入れた。', fx: { chr: 5, money: 5 } },
+    { a: [10, 60], t: '夜空を見上げて、星が季節で動くことに気づいた。', fx: { int: 7 }, rare: 8 },
+    { a: [2, 15], t: '毒のある木の実を食べてしまった。', fx: { hp: -15 }, die: '毒の木の実', dp: .15, sv: '吐き出して助かった。' },
+  ]
+},
+{
+  id: 'jomon', name: '縄文時代', icon: '🏺', place: '日本列島・東北のムラ', yr: [-3500, -2500], w: 6, a1: '#d98c4c', a2: '#4a2a14',
+  risk: 1.2, mort: { inf: .09, bg: .0128, old: .00036, g: .085 }, ps: [3, 30], work: 10, marry: [14, 28], kids: .22,
+  names: { m: ['タケル', 'イワヒコ', 'クマオ', 'ハヤト', 'ツチオ', 'カゼヒコ'], f: ['カヤ', 'ナミ', 'ホタル', 'ユリ', 'コノハ', 'ミズホ'] },
+  cls: [
+    { n: 'ムラのふつうの家', w: 75, jobs: ['見習い', '漁師', '腕ききの狩人', 'ムラの長'] },
+    { n: 'ムラの長の家', w: 12, jobs: ['長の跡取り', '若頭', 'ムラの長', '大ムラの長'], st: { money: 15, fame: 10 } },
+    { n: '土器づくりの家', w: 13, jobs: ['土器づくり見習い', '土器職人', '名工', '火焔土器の巨匠'], st: { int: 5 } },
+  ],
+  dInf: ['はやり病', '冬の寒さ', '栄養不足'], d: ['狩りの事故', '食中毒', '傷の化膿', '飢え', '海の事故'], old: ['老衰'],
+  ev: [
+    { a: [4, 14], t: '貝塚の近くでどんぐりを拾い集めた。', fx: { happy: 3 } },
+    { a: [8, 45], t: '丸木舟で海に出た。', ch: [
+      { t: '沖まで行く', s: 'luck', r: [{ p: .55, t: '大きなマグロを仕留めた！ムラ中が大喜び。', fx: { fame: 10, money: 10, happy: 8 } }, { p: .45, t: '嵐に巻き込まれた。', fx: { hp: -20 }, die: '海での遭難', dp: .4, sv: '浜に打ち上げられて助かった。' }] },
+      { t: '岸の近くで漁をする', r: [{ p: 1, t: '小魚がたくさんとれた。', fx: { money: 3 } }] }] },
+    { a: [8, 60], t: 'とびきり美しい火焔土器を作った！', fx: { fame: 10, chr: 3 }, rare: 8, big: 1 },
+    { a: [0, 70], t: '大きな地震で竪穴住居がつぶれた。', fx: { hp: -10, money: -10 }, die: '地震', dp: .05 },
+    { a: [10, 45], t: '遠いムラから、黒曜石を持った旅人がきた。', ch: [
+      { t: '毛皮と交換する', r: [{ p: 1, t: '鋭い黒曜石の矢じりを手に入れた。狩りがはかどる。', fx: { money: 6, hp: 2 } }] },
+      { t: 'ついて旅に出る', s: 'hp', r: [{ p: .6, t: '山を越え、海の向こうのムラまで見て帰ってきた。', fx: { int: 10, fame: 6, happy: 8 } }, { p: .4, t: '山で道に迷った…', fx: { hp: -20 }, die: '山での遭難', dp: .35, sv: 'なんとか帰り着いた。' }] }] },
+    { a: [3, 30], t: '土偶のお守りをもらった。', fx: { luck: 5 } },
+    { a: [5, 70], rep: 1, t: 'クリの実が大豊作！', fx: { happy: 6, money: 5, hp: 3 } },
+    { a: [5, 60], t: 'イノシシに突進された。', fx: { hp: -15 }, die: 'イノシシの突進', dp: .1 },
+    { a: [12, 40], t: '祭りの夜、一番の踊り手だと言われた。', fx: { chr: 8, fame: 5 } },
+    { a: [30, 70], t: 'ムラの子どもたちに狩りを教えた。', fx: { fame: 4, happy: 5 } },
+    { a: [0, 70], rep: 1, w: .5, t: '食べ物がとれない年が続いた。', fx: { hp: -12, happy: -6 }, die: '飢え', dp: .06 },
+  ]
+},
+{
+  id: 'egypt', name: '古代エジプト', icon: '🐫', place: 'ナイル川のほとり', yr: [-1350, -1250], w: 6, a1: '#e2b54a', a2: '#4b3610',
+  risk: 1, mort: { inf: .08, bg: .0104, old: .00028, g: .085 }, ps: [5, 35], work: 12, marry: [14, 30], kids: .2,
+  names: { m: ['アメンホテプ', 'ネフェルカ', 'セティ', 'ラーモセ', 'ホルエムヘブ', 'パネブ'], f: ['ネフェルティ', 'メリト', 'タウセレト', 'イセト', 'ヘヌト', 'ネブト'] },
+  cls: [
+    { n: '農民の家', w: 70, jobs: ['畑の手伝い', '農夫', '村の世話役', '地方の役人'] },
+    { n: '職人の家', w: 16, jobs: ['弟子', '職人', '親方', '王家の谷の匠'] },
+    { n: '書記の家', w: 12, jobs: ['書記見習い', '書記', '上級書記', '宰相'], st: { int: 10, money: 15 } },
+    { n: '王族', w: 2, jobs: ['王子', '神官長', '摂政', 'ファラオ'], jf: ['王女', '神殿の巫女', '王妃', '女王ファラオ'], st: { money: 55, fame: 25 } },
+  ],
+  dInf: ['はやり病', 'おなかの病', '熱病'], d: ['熱病', '寄生虫の病', 'ナイルでの水難事故', 'けがの悪化', '歯の病からくる感染症'], old: ['老衰'],
+  ev: [
+    { a: [5, 70], rep: 1, t: 'ナイル川が氾濫した。今年の畑はよく肥えている！', fx: { money: 6, happy: 5 } },
+    { a: [5, 70], rep: 1, t: 'ナイル川の水が少ない年だった。', fx: { money: -8, hp: -6, happy: -5 } },
+    { a: [14, 45], t: '王墓の建設に駆り出された。', ch: [
+      { t: 'まじめに働く', s: 'hp', r: [{ p: .75, t: '仲間とビールを飲みながら働きぬいた。給料はパンとビール。', fx: { money: 6, hp: -5, fame: 3 } }, { p: .25, t: '石材が崩れてきた！', fx: { hp: -30 }, die: '石切り場の事故', dp: .4, sv: '大けがだったが生きていた。' }] },
+      { t: 'ストライキに参加する', s: 'chr', r: [{ p: .6, t: '人類最古級のストライキ！配給が増えた。', fx: { money: 8, fame: 6 }, rare: 5 }, { p: .4, t: '役人に目をつけられてしまった。', fx: { happy: -8, fame: -3 } }] }] },
+    { a: [6, 20], c: S => S.int > 40, t: 'ヒエログリフを習い始めた。', fx: { int: 10 } },
+    { a: [3, 60], t: 'ナイルのワニに足をかまれた。', fx: { hp: -20 }, die: 'ワニの襲撃', dp: .2 },
+    { a: [6, 70], t: '神殿のお祭りで、黄金の神像を見た。', fx: { happy: 6, luck: 3 } },
+    { a: [15, 50], c: S => S.ci < 3, t: 'ファラオの行列に出くわした。', ch: [
+      { t: 'ひれ伏す', r: [{ p: 1, t: '何事もなく通りすぎた。' }] },
+      { t: '顔を上げて見る', s: 'luck', r: [{ p: .25, t: 'ファラオと目が合った…「面白い者よ」と宮殿に召し抱えられた！', fx: { fame: 20, money: 20 }, rare: 50, big: 1, lad: ['宮殿の召使い', 'ファラオの側近', '王の書記官', '宰相'] }, { p: .75, t: '兵士にこっぴどく叩かれた。', fx: { hp: -12, happy: -5 } }] }] },
+    { a: [20, 65], c: S => S.ci < 3, t: '墓泥棒に誘われた。', ch: [
+      { t: 'のる', s: 'luck', r: [{ p: .45, t: '黄金の副葬品を手に入れた！', fx: { money: 30, luck: -5 }, rare: 5 }, { p: .55, t: '見つかって捕まった。墓泥棒は重罪だ…', fx: { fame: -20 }, die: '処刑（墓泥棒の罪）', dp: .7, sv: '鞭打ちの刑で許された。' }] },
+      { t: '断る', r: [{ p: 1, t: '神々に恥じない生き方を選んだ。', fx: { happy: 3 } }] }] },
+    { a: [3, 40], t: '猫を飼い始めた。猫は神聖な生き物だ。', fx: { happy: 8, luck: 3 } },
+    { a: [40, 80], t: '死後の世界のために、ミイラ職人と打ち合わせをした。', fx: { money: -5, happy: 3 } },
+    { a: [20, 60], c: S => S.int > 50, t: 'パピルスに自分の詩を書き残した。', fx: { fame: 5, int: 3 } },
+  ]
+},
+{
+  id: 'rome', name: '古代ローマ', icon: '🏛️', place: '永遠の都ローマ', yr: [60, 130], w: 6, a1: '#d9645a', a2: '#4a1a16',
+  risk: 1, mort: { inf: .08, bg: .0096, old: .00024, g: .085 }, ps: [5, 35], work: 14, marry: [15, 35], kids: .18,
+  names: { m: ['ガイウス', 'マルクス', 'ルキウス', 'ティトゥス', 'クィントゥス', 'セクストゥス'], f: ['ユリア', 'コルネリア', 'クラウディア', 'リウィア', 'アントニア', 'ウァレリア'] },
+  cls: [
+    { n: '奴隷の家', w: 20, jobs: ['家内奴隷', '有能な奴隷', '解放奴隷', '富裕な解放奴隷'], st: { money: -12, happy: -10 } },
+    { n: '平民の家', w: 62, jobs: ['パン屋の見習い', '職人', '商人', '大商人'] },
+    { n: '騎士階級の家', w: 14, jobs: ['書記官', '軍団将校', '属州総督', '元老院議員'], st: { money: 20, int: 5 } },
+    { n: '元老院貴族の家', w: 4, jobs: ['若き貴族', '財務官', '執政官', '皇帝'], st: { money: 50, fame: 20 } },
+  ],
+  dInf: ['熱病', 'はやり病', '栄養不足'], d: ['マラリア', 'けがの悪化', '食中毒', '街のケンカ', '集合住宅の倒壊'], old: ['老衰'],
+  ev: [
+    { a: [6, 70], t: 'コロッセオで剣闘士の試合を観た。大興奮！', fx: { happy: 6 } },
+    { a: [16, 32], g: 'm', c: S => S.ci === 0 || S.hp > 70, t: '剣闘士養成所にスカウトされた。', ch: [
+      { t: '剣闘士になる', s: 'hp', r: [{ p: .5, t: 'デビュー戦で勝利！ローマ中の人気者になった。', fx: { fame: 25, money: 15, chr: 5 }, rare: 10, big: 1, lad: ['新米剣闘士', '人気剣闘士', 'チャンピオン', '自由を勝ち取った英雄'] }, { p: .5, t: 'デビュー戦の相手が強すぎた…', fx: { hp: -40 }, die: 'コロッセオでの死闘', dp: .75, sv: '観客の情けで命を助けられた。' }] },
+      { t: '断る', r: [{ p: 1, t: '命あってのものだね。' }] }] },
+    { a: [17, 40], g: 'm', c: S => S.ci > 0, t: 'ローマ軍団に入隊した。', ch: [
+      { t: '前線へ', s: 'hp', r: [{ p: .6, t: 'ゲルマニアの戦いで手柄をあげた！', fx: { fame: 12, money: 10 } }, { p: .4, t: '森で待ち伏せにあった。', fx: { hp: -25 }, die: 'ゲルマニアでの戦死', dp: .45, sv: '仲間に担がれて生還した。' }] },
+      { t: '道路建設の部隊へ', r: [{ p: 1, t: 'すべての道はローマに通ず。立派な街道を造った。', fx: { hp: 3, fame: 4 } }] }] },
+    { a: [5, 80], rep: 1, t: '公衆浴場でのんびりした。', fx: { happy: 5, hp: 2 } },
+    { y: [79, 79], a: [3, 90], force: .3, t: 'ナポリ湾に来ていたら、ヴェスヴィオ火山が大噴火した！', ch: [
+      { t: 'すぐに逃げる', s: 'luck', r: [{ p: .7, t: '命からがら逃げ出した。ポンペイの町は灰に埋もれた。', fx: { hp: -10, money: -15 }, big: 1, rare: 5 }, { p: .3, t: '火砕流に飲み込まれた…', die: 'ヴェスヴィオ火山の噴火', dp: 1 }] },
+      { t: '荷物をまとめてから逃げる', r: [{ p: .2, t: '奇跡的に間に合った！', fx: { luck: 10 }, rare: 20, big: 1 }, { p: .8, t: '間に合わなかった…', die: 'ヴェスヴィオ火山の噴火', dp: 1 }] }] },
+    { a: [15, 50], c: S => S.ci === 1, t: 'ワインの商売で大もうけ！', fx: { money: 15 } },
+    { a: [5, 70], t: 'ローマで大火事が起き、家が焼けた。', fx: { money: -15, happy: -10 }, die: 'ローマの大火', dp: .05 },
+    { a: [18, 60], c: S => S.ci === 0 && S.jobLv < 2, t: '主人に長年忠実に仕えてきた。', ch: [
+      { t: '自由を願い出る', s: 'chr', r: [{ p: .45, t: '主人が認めてくれた！解放奴隷になった。', fx: { happy: 20, fame: 5 }, jobUp: 1, big: 1 }, { p: .55, t: 'まだ早いと断られた。', fx: { happy: -5 } }] },
+      { t: '逃亡する', s: 'luck', r: [{ p: .3, t: '遠い属州まで逃げのびた！', fx: { happy: 15, money: -10 }, lad: ['逃亡者', '旅の職人', '属州の商人', '地方の名士'], rare: 4 }, { p: .7, t: '捕まってしまった…', fx: { hp: -25, happy: -15 }, die: '逃亡奴隷への刑罰', dp: .35 }] }] },
+    { a: [3, 70], t: '「パンとサーカス」で、小麦の配給をもらった。', fx: { hp: 3, happy: 3 } },
+    { a: [12, 40], c: S => S.ci >= 2, t: 'ギリシャ人の家庭教師から哲学を学んだ。', fx: { int: 10 } },
+    { a: [25, 70], c: S => S.ci >= 2, t: '皇帝暗殺の陰謀に誘われた。', ch: [
+      { t: '加わる', s: 'luck', r: [{ p: .35, t: '陰謀は成功！新しい皇帝のもとで出世した。', fx: { fame: 20, money: 20 }, jobUp: 1, rare: 6, big: 1 }, { p: .65, t: '陰謀がばれた…', die: '処刑（陰謀の罪）', dp: .85, sv: '財産を没収され、追放された。', fx: { money: -30 } }] },
+      { t: '密告する', r: [{ p: .7, t: '皇帝に感謝され、褒美をもらった。', fx: { money: 15, fame: 8, chr: -5 } }, { p: .3, t: '逆恨みされた。', fx: { happy: -10 }, die: '暗殺', dp: .3 }] }] },
+  ]
+},
+{
+  id: 'heian', name: '平安時代', icon: '🌸', place: '平安京', yr: [950, 1050], w: 7, a1: '#e48fb0', a2: '#4a1f33',
+  risk: 1, mort: { inf: .08, bg: .0096, old: .0002, g: .085 }, ps: [5, 40], work: 13, marry: [13, 30], kids: .18,
+  names: { m: ['太郎丸', '犬丸', '次郎', '藤太', '五郎', '黒丸'], f: ['あこ', 'いと', 'ひめ', 'ふく', 'たま', 'ちよ'] },
+  sur: ['藤原', '源', '平', '橘', '菅原', '大江'], names2: { m: ['為時', '頼親', '清行', '通任', '兼平', '致忠'], f: ['小式部', '右近', '大輔', '伊勢', '中務', '宰相の君'] },
+  cls: [
+    { n: '農民の家', w: 72, jobs: ['田の手伝い', '百姓', '名主', '地方の豪族'] },
+    { n: '下級貴族の家', w: 14, sur: 1, jobs: ['文章生', '六位の官人', '受領（国司）', '殿上人'], jf: ['女房見習い', '女房', '女流作家', '中宮の女房'], st: { int: 8, money: 15 } },
+    { n: '上級貴族の家', w: 3, sur: 1, jobs: ['童殿上', '中将', '大納言', '摂政関白'], jf: ['姫君', '女御', '中宮', '国母'], st: { money: 50, fame: 20 } },
+    { n: '寺の家', w: 11, jobs: ['小僧', '僧', '阿闍梨', '大僧正'], st: { int: 6 } },
+  ],
+  dInf: ['疱瘡', 'はやり病', '栄養不足'], d: ['疫病', '原因不明の病（物の怪）', '脚気', '食あたり', '熱病'], old: ['老衰'],
+  ev: [
+    { a: [10, 60], t: '和歌を詠んだ。', ch: [
+      { t: '恋の歌を贈る', s: 'chr', r: [{ p: .55, t: '返歌が届いた！心がときめく。', fx: { happy: 10, chr: 4 } }, { p: .45, t: '返事はなかった…', fx: { happy: -6 } }] },
+      { t: '歌合に出す', s: 'int', r: [{ p: .4, t: '勝った！都で評判になった。', fx: { fame: 12 }, rare: 3 }, { p: .6, t: '負けてしまった。', fx: { happy: -3 } }] }] },
+    { a: [6, 70], t: '物の怪に取り憑かれた！高熱が続く。', ch: [
+      { t: '陰陽師を呼ぶ', r: [{ p: .7, t: '陰陽師の祈祷でよくなった。', fx: { money: -8 } }, { p: .3, t: '効き目がなかった…', fx: { hp: -25 }, die: '原因不明の病（物の怪）', dp: .35, sv: 'ひと月寝込んで回復した。' }] },
+      { t: '薬草を飲む', s: 'hp', r: [{ p: .6, t: 'なんとか回復した。', fx: { hp: -5 } }, { p: .4, t: '悪化した…', fx: { hp: -25 }, die: '原因不明の病（物の怪）', dp: .35, sv: 'ひと月寝込んで回復した。' }] }] },
+    { a: [5, 60], t: '夜道で百鬼夜行を見てしまった！', fx: { happy: -5, luck: -3 }, rare: 5 },
+    { a: [0, 70], t: '疱瘡（天然痘）がはやった。', fx: { hp: -20 }, die: '疱瘡', dp: .15 },
+    { a: [15, 55], c: S => S.ci === 0, t: '国司の年貢の取り立てが厳しい。', ch: [
+      { t: '都に訴え出る', s: 'chr', r: [{ p: .4, t: '国司が都に呼び戻された！村の英雄に。', fx: { fame: 12, happy: 8 }, rare: 3 }, { p: .6, t: '聞き入れられなかった。', fx: { money: -8 } }] },
+      { t: '耐える', r: [{ p: 1, t: '米をほとんど持っていかれた。', fx: { money: -10, hp: -5 } }] }] },
+    { a: [6, 60], t: '都で、牛車に乗った貴族の行列を見た。', fx: { happy: 3 } },
+    { a: [15, 60], t: '夜道で盗賊に襲われた。', ch: [
+      { t: '逃げる', r: [{ p: .8, t: 'なんとか逃げきった。', fx: { money: -5 } }, { p: .2, t: '追いつかれた…', fx: { hp: -20 }, die: '盗賊の襲撃', dp: .4 }] },
+      { t: '立ち向かう', s: 'hp', r: [{ p: .5, t: '盗賊を追い払った！武勇が評判になった。', fx: { fame: 10 } }, { p: .5, t: '斬られた…', fx: { hp: -30 }, die: '盗賊の襲撃', dp: .6, sv: '深手だったが助かった。' }] }] },
+    { a: [12, 45], c: S => S.int > 55, t: '物語を書き始めた。', ch: [
+      { t: '書き続ける', s: 'int', r: [{ p: .25, t: '宮中で回し読みされる大評判に！千年後も読まれるかもしれない。', fx: { fame: 35 }, rare: 30, big: 1 }, { p: .75, t: '仲間内で少し評判になった。', fx: { fame: 4, happy: 5 } }] },
+      { t: '恥ずかしいのでやめる', r: [{ p: 1, t: 'こっそり燃やした。' }] }] },
+    { a: [35, 80], c: S => !S.custom, t: '出家して仏の道に入りたくなった。', ch: [
+      { t: '出家する', r: [{ p: 1, t: '髪をおろして、静かな日々を送ることにした。', fx: { happy: 10, money: -10 }, setJob: '出家した身', big: 1 }] },
+      { t: 'まだ俗世にいる', r: [{ p: 1, t: 'もう少しこの世を楽しむことにした。' }] }] },
+    { a: [8, 60], t: '方違え（かたたがえ）で遠回りしたら、思わぬ出会いがあった。', fx: { chr: 4, luck: 4 } },
+    { a: [25, 60], c: S => S.ci === 2, t: '娘を天皇の后にする計画が持ち上がった。', ch: [
+      { t: '進める', s: 'luck', r: [{ p: .4, t: '計画成功！一族は大いに栄えた。', fx: { fame: 20, money: 20 }, jobUp: 1, rare: 5 }, { p: .6, t: 'ライバルの家に先を越された。', fx: { fame: -5, happy: -8 } }] },
+      { t: 'やめておく', r: [{ p: 1, t: '平穏が一番。', fx: { happy: 3 } }] }] },
+  ]
+},
+{
+  id: 'medieval', name: '中世ヨーロッパ', icon: '🏰', place: 'フランスの小さな村', yr: [1320, 1360], w: 7, a1: '#8fa7d9', a2: '#1d2747',
+  risk: 1.1, mort: { inf: .085, bg: .0104, old: .00024, g: .085 }, ps: [3, 35], work: 12, marry: [15, 35], kids: .2,
+  names: { m: ['ヨハン', 'ジャン', 'ピエール', 'トマ', 'ギヨーム', 'ロベール'], f: ['アニエス', 'マルグリット', 'ジャンヌ', 'イザベル', 'マオー', 'カトリーヌ'] },
+  sur: ['ド・モンフォール', 'ド・ブロワ', 'ド・クシー', 'ド・ラヴァル', 'ド・ボーモン'],
+  cls: [
+    { n: '農奴の家', w: 70, jobs: ['畑の手伝い', '農奴', '自由農民', '村長'], st: { money: -5 } },
+    { n: '職人の家', w: 16, jobs: ['徒弟', '職人', '親方', 'ギルド長'] },
+    { n: '修道院', w: 6, jobs: ['修練士', '修道士', '修道院長', '司教'], st: { int: 10 } },
+    { n: '騎士の家', w: 8, sur: 1, jobs: ['小姓', '従者', '騎士', '領主'], jf: ['侍女', '貴婦人', '城の女主人', '領主夫人'], st: { money: 30, fame: 10 } },
+  ],
+  dInf: ['はやり病', '栄養不足', '冬の寒さ'], d: ['疫病', '飢え', '傷の化膿', '麦角中毒', '戦乱'], old: ['老衰'],
+  ev: [
+    { y: [1347, 1351], a: [6, 99], force: .55, t: '黒死病（ペスト）が村を襲った！人口の3分の1が死んでいく…', ch: [
+      { t: '村から逃げる', s: 'luck', r: [{ p: .6, t: '山奥に逃げて生き延びた。', fx: { happy: -10, money: -10 }, big: 1, rare: 2 }, { p: .4, t: '逃げた先でも病は追いかけてきた…', die: '黒死病', dp: .85, sv: '高熱を乗り越えた！', fx: { hp: -20 } }] },
+      { t: '病人の看病をする', s: 'luck', r: [{ p: .35, t: '多くの人を看取りながら、奇跡的に感染しなかった。', fx: { fame: 15, happy: -5 }, rare: 3, big: 1 }, { p: .65, t: '感染してしまった…', die: '黒死病', dp: .9, sv: '高熱を乗り越えた！', fx: { hp: -20 } }] },
+      { t: '家にこもる', s: 'luck', r: [{ p: .55, t: 'なんとか嵐が過ぎるのを待った。', fx: { happy: -10 }, rare: 2 }, { p: .45, t: '家族から感染した…', die: '黒死病', dp: .85, sv: '高熱を乗り越えた！', fx: { hp: -20 } }] }] },
+    { a: [10, 50], c: S => S.ci === 0, t: '領主の森で、こっそり鹿を仕留めた。', ch: [
+      { t: '持って帰る', s: 'luck', r: [{ p: .6, t: '家族でごちそうを食べた！', fx: { happy: 8, hp: 5 } }, { p: .4, t: '森番に見つかった…', fx: { hp: -20, money: -10 }, die: '密猟への刑罰', dp: .2 }] },
+      { t: '森に置いていく', r: [{ p: 1, t: '罰が怖い。' }] }] },
+    { a: [16, 40], g: 'm', t: '東方への遠征に参加しないかと誘われた。', ch: [
+      { t: '遠征に行く', s: 'hp', r: [{ p: .4, t: 'はるか東方まで旅し、生きて帰ってきた。見たこともない香辛料を持ち帰った！', fx: { fame: 15, money: 15, int: 8 }, rare: 4, big: 1 }, { p: .6, t: '遠い異国の地で…', fx: { hp: -30 }, die: '遠征先での戦死', dp: .7, sv: '傷だらけで帰ってきた。' }] },
+      { t: '村に残る', r: [{ p: 1, t: '畑を守ることにした。' }] }] },
+    { a: [8, 70], t: '村で魔女狩りの騒ぎが起きた。', ch: [
+      { t: '黙っている', r: [{ p: .9, t: '嵐は過ぎていった。', fx: { happy: -3 } }, { p: .1, t: '自分が告発されてしまった！', fx: { fame: -20 }, die: '魔女裁判', dp: .7, sv: '神父がかばってくれた。' }] },
+      { t: '告発された人をかばう', s: 'chr', r: [{ p: .5, t: '説得に成功した。', fx: { fame: 8, chr: 5 } }, { p: .5, t: '仲間だと疑われた…', die: '魔女裁判', dp: .6, sv: '村を追われた。', fx: { happy: -10 } }] }] },
+    { a: [6, 60], t: '馬上槍試合（トーナメント）を見物した。', fx: { happy: 6 } },
+    { a: [16, 45], g: 'm', c: S => S.ci === 3, t: '馬上槍試合に出場した！', ch: [
+      { t: '全力で突撃', s: 'hp', r: [{ p: .5, t: '優勝！貴婦人からハンカチを贈られた。', fx: { fame: 18, chr: 8 }, big: 1 }, { p: .5, t: '落馬した…', fx: { hp: -25 }, die: '馬上槍試合の事故', dp: .25 }] },
+      { t: '手堅く戦う', r: [{ p: 1, t: 'まずまずの成績だった。', fx: { fame: 3 } }] }] },
+    { a: [0, 70], rep: 1, w: .5, t: '不作で飢饉になった。', fx: { hp: -12 }, die: '飢え', dp: .06 },
+    { a: [8, 40], t: '旅の吟遊詩人から遠い国の話を聞いた。', fx: { int: 5, happy: 4 } },
+    { a: [15, 60], t: '大聖堂の建設を手伝った。完成は100年後らしい。', fx: { fame: 4, hp: -3 } },
+    { a: [20, 65], t: '錬金術師に「金を作れる」と持ちかけられた。', ch: [
+      { t: '出資する', r: [{ p: .05, t: 'なんと本当に金が…いや、ただの真鍮だった。でも高く売れた！', fx: { money: 20 }, rare: 20 }, { p: .95, t: '錬金術師はお金を持って消えた。', fx: { money: -15 } }] },
+      { t: '追い返す', r: [{ p: 1, t: '賢明な判断だ。', fx: { int: 2 } }] }] },
+  ]
+},
+{
+  id: 'sengoku', name: '戦国時代', icon: '⚔️', place: '尾張の国', yr: [1530, 1570], w: 9, a1: '#e0643e', a2: '#4a1c0e',
+  risk: 1, mort: { inf: .075, bg: .0096, old: .0002, g: .085 }, ps: [5, 40], work: 13, marry: [13, 30], kids: .2,
+  names: { m: ['弥助', '与作', '権兵衛', '藤吉', '五平', '茂作'], f: ['おみつ', 'おしげ', 'おたけ', 'おはる', 'おきく', 'おふさ'] },
+  sur: ['大森', '高山', '岩城', '長谷部', '村井', '矢島'], names2: { m: ['与一郎', '新九郎', '源三郎', '勝千代', '虎之助', '又四郎'], f: ['菊姫', '松', '千代', '於市', '初音', '綾'] },
+  cls: [
+    { n: '百姓の家', w: 68, jobs: ['田の手伝い', '百姓', '足軽', '足軽大将'] },
+    { n: '商人の家', w: 12, jobs: ['丁稚', '手代', '番頭', '堺の豪商'], st: { money: 15 } },
+    { n: '武家', w: 17, sur: 1, jobs: ['小姓', '侍', '侍大将', '家老'], jf: ['姫', '奥方', '奥を仕切る局', '大名の正室'], st: { money: 20, fame: 8 } },
+    { n: '大名家', w: 3, sur: 1, jobs: ['若君', '城主', '大名', '天下人'], jf: ['姫君', '政略結婚の姫', '城主の正室', '天下人の母'], st: { money: 50, fame: 25 } },
+  ],
+  dInf: ['はやり病', '栄養不足', '疱瘡'], d: ['疫病', '飢え', '傷の化膿', '野盗の襲撃', '戦の巻き添え'], old: ['老衰'],
+  ev: [
+    { a: [15, 50], g: 'm', rep: 1, w: 1.6, t: '合戦が始まった！', ch: [
+      { t: '先陣を切る', s: 'hp', r: [{ p: .5, t: '一番槍の手柄！殿からお褒めの言葉をいただいた。', fx: { fame: 12, money: 8 }, jobUp: 1 }, { p: .5, t: '鉄砲玉が飛んできた…', fx: { hp: -30 }, die: '合戦での討ち死に', dp: .5, sv: '深手を負ったが生き延びた。' }] },
+      { t: '後方で様子を見る', r: [{ p: .85, t: '無事に生きて帰った。' }, { p: .15, t: '背後から奇襲を受けた…', fx: { hp: -20 }, die: '合戦での討ち死に', dp: .4, sv: 'からくも逃げのびた。' }] }] },
+    { a: [3, 70], rep: 1, w: .5, t: '村が戦に巻き込まれ、田畑が荒らされた。', fx: { money: -12, happy: -8 }, die: '戦の巻き添え', dp: .04 },
+    { a: [8, 50], y: [1543, 1600], t: '南蛮人を見た！「鉄砲」という不思議な武器を持っている。', fx: { int: 5, happy: 4 } },
+    { a: [12, 35], t: '忍びの里の者に声をかけられた。', ch: [
+      { t: '忍びになる', s: 'luck', r: [{ p: .6, t: '厳しい修行を経て、一人前の忍びになった。', fx: { hp: 8, int: 5 }, lad: ['下忍', '中忍', '上忍', '伝説の忍'], rare: 8, big: 1 }, { p: .4, t: '修行が厳しすぎて逃げ出した。', fx: { hp: -10 } }] },
+      { t: '断る', r: [{ p: 1, t: '怪しい話には乗らない。' }] }] },
+    { a: [15, 55], c: S => S.ci === 0, t: '一向一揆に誘われた。', ch: [
+      { t: '加わる', s: 'luck', r: [{ p: .4, t: '一揆勢が勝ち、「百姓の持ちたる国」になった！', fx: { fame: 10, happy: 8 } }, { p: .6, t: '鎮圧された…', fx: { hp: -20 }, die: '一揆の鎮圧', dp: .4, sv: '山に隠れて生き延びた。' }] },
+      { t: '加わらない', r: [{ p: 1, t: '村で静かに過ごした。' }] }] },
+    { a: [18, 70], c: S => S.ci >= 1, t: '茶の湯の席に招かれた。', fx: { chr: 5, happy: 5 } },
+    { a: [20, 70], c: S => S.ci >= 1, t: '名物の茶器を手に入れた！一国に値すると言われる逸品だ。', fx: { money: 15, fame: 6 }, rare: 6 },
+    { y: [1582, 1582], a: [10, 80], force: .3, t: '京に泊まっていた夜、本能寺の方角に火の手が上がった！「敵は本能寺にあり」', ch: [
+      { t: '駆けつける', s: 'hp', r: [{ p: .4, t: '混乱の中で生き延び、歴史の目撃者になった。', fx: { fame: 12 }, rare: 20, big: 1 }, { p: .6, t: '明智の軍勢に斬られた…', die: '本能寺の変', dp: .8, sv: '傷を負いながら逃げのびた。' }] },
+      { t: '逃げる', r: [{ p: .9, t: '夜の京を逃げのびた。', fx: { luck: 3 }, rare: 5 }, { p: .1, t: '逃げ遅れた…', die: '本能寺の変', dp: .8 }] }] },
+    { a: [15, 35], g: 'm', c: S => S.ci === 0, t: 'ある武将が「わしの家来にならんか」と声をかけてきた。', ch: [
+      { t: '仕える', s: 'chr', r: [{ p: .5, t: '草履取りから始めて、気に入られた！', fx: { fame: 8 }, lad: ['草履取り', '足軽組頭', '侍大将', '一国一城の主'], rare: 5, big: 1 }, { p: .5, t: 'その武将はすぐ戦で負けてしまった。', fx: { happy: -6 } }] },
+      { t: '村に残る', r: [{ p: 1, t: '百姓として生きる。' }] }] },
+    { a: [13, 25], g: 'f', c: S => S.ci >= 2 && !S.married, t: '政略結婚の話がきた。', ch: [
+      { t: '受け入れる', r: [{ p: .6, t: '嫁ぎ先で大切にされた。', fx: { happy: 6, fame: 6 }, marry: 1 }, { p: .4, t: '嫁ぎ先と実家が戦になってしまった…', fx: { happy: -15 }, marry: 1 }] },
+      { t: '拒む', s: 'chr', r: [{ p: .3, t: '父が折れてくれた。', fx: { happy: 5 } }, { p: .7, t: '無理やり嫁がされた。', fx: { happy: -10 }, marry: 1 }] }] },
+    { a: [25, 70], c: S => S.jobLv >= 2 && S.lad && S.jobLv < S.lad.length - 1, t: '主君を倒して成り上がる「下剋上」のチャンスが来た。', ch: [
+      { t: '下剋上！', s: 'luck', r: [{ p: .4, t: '成功！主君に取って代わった。', fx: { fame: 20, money: 20 }, jobUp: 1, rare: 5, big: 1 }, { p: .6, t: '失敗…', die: '謀反の失敗による切腹', dp: .9, sv: '命だけは助けられ、国を追われた。', fx: { money: -30, fame: -10 } }] },
+      { t: '忠義を尽くす', r: [{ p: 1, t: '忠臣として名を残した。', fx: { fame: 5, happy: 4 } }] }] },
+  ]
+},
+{
+  id: 'edo', name: '江戸時代', icon: '🏮', place: 'お江戸・日本橋', yr: [1700, 1790], w: 9, a1: '#f0a040', a2: '#4a2a0a',
+  risk: .8, mort: { inf: .06, bg: .0064, old: .00014, g: .088 }, ps: [8, 45], work: 12, marry: [16, 32], kids: .18,
+  names: { m: ['八兵衛', '吉三郎', '熊吉', '清助', '伊之助', '長次郎'], f: ['お梅', 'おせん', 'お糸', 'おしん', 'お蝶', 'おりん'] },
+  sur: ['山田', '佐藤', '田中', '中村', '加藤', '小林'], names2: { m: ['新之丞', '源右衛門', '数馬', '主水', '平馬', '伊織'], f: ['さよ', 'ゆき', 'しの', '琴', '雪乃', '千鶴'] },
+  cls: [
+    { n: '百姓の家', w: 64, jobs: ['田の手伝い', '百姓', '組頭', '庄屋'] },
+    { n: '町人の家', w: 24, jobs: ['丁稚', '手代', '番頭', '大店の旦那'], jf: ['子守り', '女中', '看板娘', '大店のおかみ'], st: { money: 8 } },
+    { n: '武士の家', w: 10, sur: 1, jobs: ['見習い', '下級武士', '与力', '町奉行'], st: { int: 6, fame: 5 } },
+    { n: '大名家', w: 2, sur: 1, jobs: ['若殿', '藩主の嫡男', '藩主', '老中'], jf: ['姫', '奥方', '藩主の正室', '大奥の御年寄'], st: { money: 50, fame: 20 } },
+  ],
+  dInf: ['疱瘡', 'はしか', '栄養不足'], d: ['はしか', '脚気（江戸わずらい）', '火事', '食あたり', '労咳'], old: ['老衰', '中風'],
+  ev: [
+    { a: [3, 75], rep: 1, w: .4, t: '江戸の大火！「火事と喧嘩は江戸の華」…とはいえ。', fx: { money: -12, happy: -6 }, die: '江戸の大火', dp: .05 },
+    { a: [6, 12], t: '寺子屋に通い始めた。', ch: [
+      { t: 'まじめに学ぶ', r: [{ p: 1, t: '読み書きそろばんが得意になった。', fx: { int: 10 } }] },
+      { t: 'いたずらばかり', r: [{ p: 1, t: '師匠に叱られたが、友達が増えた。', fx: { chr: 6, happy: 5 } }] }] },
+    { a: [15, 65], t: 'お伊勢参りに出かけた。', fx: { happy: 12, money: -6, int: 3 } },
+    { a: [15, 75], t: '富くじ（宝くじ）の売り子が来た。', ch: [
+      { t: '買う', r: [{ p: .02, t: '一番富・千両が当たった！！', fx: { money: 50, happy: 20 }, rare: 50, big: 1 }, { p: .98, t: 'はずれた。', fx: { money: -1 } }] },
+      { t: '買わない', r: [{ p: 1, t: '堅実が一番。' }] }] },
+    { y: [1782, 1787], a: [0, 99], force: .45, t: '天明の大飢饉。作物がまったく育たない…', fx: { hp: -20, happy: -12 }, die: '天明の大飢饉', dp: .15 },
+    { y: [1783, 1783], a: [0, 99], force: .35, t: '浅間山が大噴火した！空が灰で暗くなった。', fx: { hp: -5, happy: -5 } },
+    { a: [8, 70], t: '芝居小屋で歌舞伎を観た。役者が粋でかっこいい！', fx: { happy: 7 } },
+    { a: [15, 40], c: S => S.chr > 60, t: '浮世絵師に絵のモデルを頼まれた。江戸中で錦絵が売れた！', fx: { fame: 12, chr: 5 }, rare: 4 },
+    { a: [15, 60], t: '長屋のケンカの仲裁をした。', fx: { chr: 4, fame: 2 } },
+    { a: [20, 55], c: S => S.ci === 2, t: '父の仇の居場所がわかった。', ch: [
+      { t: '仇討ちに行く', s: 'hp', r: [{ p: .5, t: '見事に本懐を遂げた！江戸中の評判に。', fx: { fame: 20 }, rare: 10, big: 1 }, { p: .5, t: '返り討ちにあった…', die: '仇討ちの返り討ち', dp: .7, sv: '深手を負ったが、命はつないだ。', fx: { hp: -25 } }] },
+      { t: '許す', r: [{ p: 1, t: '恨みの連鎖を断ち切った。', fx: { happy: 5 } }] }] },
+    { a: [20, 65], c: S => S.ci === 1, t: 'そばの屋台を出さないかと誘われた。', ch: [
+      { t: '工夫を凝らす', s: 'int', r: [{ p: .5, t: '行列のできる屋台になった！', fx: { money: 15, fame: 8 } }, { p: .5, t: 'あまり売れなかった。', fx: { money: -5 } }] },
+      { t: 'やめる', r: [{ p: 1, t: '本業に専念する。' }] }] },
+    { a: [30, 85], t: '俳句の会に入った。「古池や…」に負けない一句を詠みたい。', fx: { happy: 5, int: 3 } },
+    { a: [3, 60], t: 'はしかにかかった。', fx: { hp: -15 }, die: 'はしか', dp: .1 },
+  ]
+},
+{
+  id: 'industrial', name: '産業革命のイギリス', icon: '🏭', place: '霧の都ロンドン', yr: [1815, 1850], w: 6, a1: '#a8a39a', a2: '#2b2926',
+  risk: .9, mort: { inf: .065, bg: .0072, old: .00012, g: .088 }, ps: [5, 40], work: 8, marry: [18, 35], kids: .17,
+  names: { m: ['ジョン', 'ウィリアム', 'ジョージ', 'トマス', 'ヘンリー', 'チャールズ'], f: ['メアリー', 'エリザベス', 'アン', 'サラ', 'ジェーン', 'エミリー'] },
+  sur: ['スミス', 'ブラウン', 'テイラー', 'ウィルソン', 'エヴァンズ', 'グリーン'],
+  cls: [
+    { n: '労働者の家', w: 66, sur: 1, jobs: ['煙突掃除の子', '紡績工', '職長', '工場の監督'], st: { money: -5 } },
+    { n: '中流家庭', w: 22, sur: 1, jobs: ['見習い事務員', '技師', '工場主', '鉄道王'], st: { int: 6, money: 15 } },
+    { n: '貴族の家', w: 3, sur: 1, jobs: ['若様', '下院議員', '大臣', '首相'], jf: ['令嬢', '社交界の花', '伯爵夫人', '慈善事業の大立者'], st: { money: 55, fame: 20 } },
+    { n: '農村の家', w: 9, sur: 1, jobs: ['農場の手伝い', '小作人', '自作農', '地主'] },
+  ],
+  dInf: ['はやり病', '栄養失調', '猩紅熱'], d: ['結核', 'コレラ', 'チフス', '肺の病', '工場の事故'], old: ['老衰'],
+  ev: [
+    { a: [5, 12], c: S => S.ci === 0, t: '工場で1日14時間働かされた。', fx: { hp: -10, happy: -8 } },
+    { a: [10, 55], t: '工場で機械に巻き込まれる事故が起きた。', fx: { hp: -20 }, die: '工場の事故', dp: .15 },
+    { a: [0, 75], t: 'コレラが流行した。', fx: { hp: -15 }, die: 'コレラ', dp: .12 },
+    { y: [1830, 1900], a: [6, 75], t: '蒸気機関車に乗った！馬より速い！', fx: { happy: 8, int: 3 } },
+    { a: [15, 50], c: S => S.int > 55, t: '新しい機械を発明した。', ch: [
+      { t: '特許をとる', s: 'int', r: [{ p: .35, t: '大ヒット！一躍、発明家として有名に。', fx: { money: 30, fame: 25 }, rare: 15, big: 1, lad: ['発明家', '工場主', '実業家', '産業界の大物'] }, { p: .65, t: 'もっと良いものが先に出ていた。', fx: { money: -5 } }] },
+      { t: '工場長に渡す', r: [{ p: 1, t: '少しだけ褒美をもらった。', fx: { money: 3 } }] }] },
+    { a: [15, 50], c: S => S.ci === 0, t: '労働組合の集会に誘われた。', ch: [
+      { t: '参加する', s: 'chr', r: [{ p: .5, t: '待遇が改善された！', fx: { happy: 8, fame: 6 } }, { p: .5, t: 'クビになった。', fx: { money: -10, happy: -8 } }] },
+      { t: '参加しない', r: [{ p: 1, t: '黙々と働いた。' }] }] },
+    { a: [5, 75], rep: 1, t: 'ロンドンの霧（スモッグ）で咳が止まらない。', fx: { hp: -8 } },
+    { a: [12, 70], t: '新聞の連載小説に夢中になった。', fx: { int: 4, happy: 4 } },
+    { a: [18, 40], t: '新大陸アメリカ行きの移民船の切符を手に入れた。', ch: [
+      { t: '海を渡る', s: 'luck', r: [{ p: .55, t: '新天地で一からやり直した！', fx: { happy: 10, money: 5 }, big: 1, lad: ['移民', '職人', '商店主', '成功した移民'] }, { p: .45, t: '船の中で病が流行った…', fx: { hp: -25 }, die: '移民船での病', dp: .4, sv: 'やせ細りながらも新大陸に着いた。', lad: ['移民', '職人', '商店主', '成功した移民'] }] },
+      { t: '残る', r: [{ p: 1, t: 'ここが故郷だ。' }] }] },
+    { y: [1851, 1851], a: [5, 85], force: .5, t: 'ロンドン万国博覧会で、ガラスの宮殿「水晶宮」を見物した！', fx: { happy: 10, int: 5 }, rare: 2 },
+    { a: [16, 60], c: S => S.money < 12, t: '貧しさから救貧院に入ることになった。', fx: { happy: -15, hp: -5 } },
+  ]
+},
+{
+  id: 'bakumatsu', name: '幕末・明治', icon: '⛵', place: '長州の城下町', yr: [1838, 1858], w: 7, a1: '#5aa0d9', a2: '#13283f',
+  risk: .7, mort: { inf: .055, bg: .0056, old: .00012, g: .088 }, ps: [8, 45], work: 13, marry: [16, 32], kids: .18,
+  names: { m: ['市太郎', '権之助', '誠一郎', '源吾', '健次郎', '伊三郎'], f: ['ふみ', 'とめ', 'きく', 'うの', 'さと', 'つる'] },
+  sur: ['坂下', '新田', '桐野', '本多', '吉井', '内海'],
+  cls: [
+    { n: '百姓の家', w: 62, jobs: ['田の手伝い', '百姓', '村の名主', '大地主'] },
+    { n: '町人の家', w: 18, jobs: ['丁稚', '手代', '番頭', '商社の社長'], st: { money: 8 } },
+    { n: '下級武士の家', w: 17, sur: 1, jobs: ['見習い', '足軽', '新政府の役人', '大臣'], jf: ['武家の娘', '武家の妻', '女学校の先生', '女子教育の先駆者'], st: { int: 6 } },
+    { n: '上級武士の家', w: 3, sur: 1, jobs: ['若殿', '藩の重役', '県令', '総理大臣'], st: { money: 40, fame: 15 } },
+  ],
+  dInf: ['疱瘡', 'はしか', '栄養不足'], d: ['コレラ（コロリ）', '労咳（結核）', '脚気', '刀傷', '食あたり'], old: ['老衰', '中風'],
+  ev: [
+    { y: [1853, 1854], a: [3, 99], force: .6, t: '黒船来航！浦賀の沖に、煙を吐く巨大な鉄の船が現れた。', fx: { int: 4 }, big: 1 },
+    { y: [1858, 1866], a: [15, 40], g: 'm', t: '「尊王攘夷」を叫ぶ志士に誘われた。', ch: [
+      { t: '志士になる', s: 'luck', r: [{ p: .5, t: '京で国事に奔走した！', fx: { fame: 15 }, lad: ['脱藩浪士', '志士', '維新の功労者', '明治政府の高官'], rare: 6, big: 1 }, { p: .5, t: '新選組に見つかった…', die: '新選組との斬り合い', dp: .7, sv: '屋根づたいに逃げのびた！', fx: { hp: -15 } }] },
+      { t: '関わらない', r: [{ p: 1, t: '時代の行く末を見守った。' }] }] },
+    { y: [1867, 1867], a: [5, 70], force: .4, t: '「ええじゃないか！ええじゃないか！」町じゅうが踊り狂った。', fx: { happy: 12 }, rare: 2 },
+    { y: [1868, 1869], a: [16, 50], g: 'm', force: .5, t: '戊辰戦争が始まった。', ch: [
+      { t: '新政府軍につく', s: 'hp', r: [{ p: .65, t: '勝ち組になった！', fx: { fame: 10, money: 8 }, jobUp: 1 }, { p: .35, t: '流れ弾に当たった…', fx: { hp: -25 }, die: '戊辰戦争での戦死', dp: .6, sv: '弾は急所をそれていた。' }] },
+      { t: '旧幕府軍につく', s: 'hp', r: [{ p: .4, t: '負けたが生き延び、「筋を通した男」と言われた。', fx: { fame: 8, money: -10 } }, { p: .6, t: '箱館まで戦い抜いた…', fx: { hp: -25 }, die: '戊辰戦争での戦死', dp: .6, sv: '降伏して生き延びた。' }] }] },
+    { y: [1871, 1885], a: [10, 75], t: 'ザンギリ頭にしてみた。「文明開化の音がする」', fx: { chr: 3, happy: 4 } },
+    { y: [1870, 1895], a: [8, 80], t: '牛鍋を初めて食べた！うまい！', fx: { happy: 6, hp: 3 } },
+    { y: [1872, 1900], a: [6, 80], t: '陸蒸気（汽車）に乗った！', fx: { happy: 8 } },
+    { y: [1870, 1890], a: [15, 30], c: S => S.int > 60, t: '海外留学の話が来た！', ch: [
+      { t: '海を渡る', s: 'int', r: [{ p: .7, t: '欧米で最新の学問を学んで帰国した！', fx: { int: 15, fame: 12 }, jobUp: 1, rare: 10, big: 1 }, { p: .3, t: 'ホームシックで帰ってきた。', fx: { happy: -5, int: 5 } }] },
+      { t: '日本に残る', r: [{ p: 1, t: '国内でがんばる。' }] }] },
+    { y: [1877, 1877], a: [16, 50], g: 'm', force: .3, t: '西南戦争が起きた。', ch: [
+      { t: '西郷軍につく', s: 'hp', r: [{ p: .3, t: '生き残った。', fx: { fame: 5 } }, { p: .7, t: '城山で…', die: '西南戦争での戦死', dp: .8 }] },
+      { t: '政府軍につく', s: 'hp', r: [{ p: .75, t: '勝った。', fx: { fame: 5, money: 5 } }, { p: .25, t: '田原坂の激戦で…', die: '西南戦争での戦死', dp: .6 }] }] },
+    { a: [0, 75], t: 'コレラ（コロリ）が流行った。', fx: { hp: -15 }, die: 'コレラ（コロリ）', dp: .12 },
+  ]
+},
+{
+  id: 'wildwest', name: '西部開拓時代', icon: '🤠', place: 'アメリカ・西部の荒野', yr: [1835, 1858], w: 5, a1: '#d98a4e', a2: '#43230f',
+  risk: .8, mort: { inf: .05, bg: .0064, old: .00012, g: .088 }, ps: [8, 45], work: 14, marry: [17, 35], kids: .17,
+  names: { m: ['ジェシー', 'ビリー', 'ワイアット', 'サム', 'ジェイク', 'トム'], f: ['アニー', 'ベル', 'ローズ', 'ハンナ', 'ルーシー', 'マーサ'] },
+  sur: ['ジェームズ', 'マッコイ', 'カーター', 'ホルト', 'ブーン', 'ライアン'],
+  cls: [
+    { n: '開拓農民の家', w: 55, sur: 1, jobs: ['農場の手伝い', '開拓者', '自作農', '大農場主'] },
+    { n: '牧場の家', w: 18, sur: 1, jobs: ['牧童', 'カウボーイ', '牧場主', '牛王（キャトルキング）'] },
+    { n: '町の家', w: 22, sur: 1, jobs: ['店番', '酒場の主人', '保安官', '町長'] },
+    { n: '鉄道会社の家', w: 5, sur: 1, jobs: ['見習い', '技師', '支配人', '鉄道王'], st: { money: 40, int: 5 } },
+  ],
+  dInf: ['はやり病', 'ジフテリア', '栄養不足'], d: ['銃撃戦', '落馬', 'コレラ', '赤痢', 'ヘビの毒'], old: ['老衰'],
+  ev: [
+    { y: [1848, 1855], a: [15, 50], t: 'カリフォルニアで金が見つかったらしい！', ch: [
+      { t: 'ゴールドラッシュへ！', s: 'luck', r: [{ p: .15, t: 'こぶし大の金塊を掘り当てた！！', fx: { money: 40, fame: 10 }, rare: 15, big: 1 }, { p: .6, t: 'ほとんど見つからなかった…', fx: { money: -10, hp: -5 } }, { p: .25, t: '鉱山で落盤事故が…', die: '金鉱の落盤', dp: .5, sv: 'がれきの中から助け出された。', fx: { hp: -20 } }] },
+      { t: '行かない', r: [{ p: 1, t: 'つるはしを売る商売のほうが儲かりそうだ。', fx: { money: 5, int: 3 } }] }] },
+    { a: [16, 55], t: '酒場でならず者に決闘を申し込まれた。', ch: [
+      { t: '受けて立つ', s: 'luck', r: [{ p: .5, t: '早撃ちで勝った！西部じゅうに名がとどろいた。', fx: { fame: 18 }, rare: 4, big: 1 }, { p: .5, t: '相手のほうが速かった…', die: '決闘', dp: .85, sv: '弾は肩をかすめただけだった。', fx: { hp: -15 } }] },
+      { t: '逃げる', r: [{ p: 1, t: '腰抜けと笑われたが、命は助かった。', fx: { fame: -5 } }] }] },
+    { y: [1869, 1900], a: [10, 65], t: '乗っていた列車が強盗団に襲われた。', ch: [
+      { t: '伏せる', r: [{ p: .9, t: '財布を取られただけで済んだ。', fx: { money: -8 } }, { p: .1, t: '流れ弾が…', die: '列車強盗の銃撃', dp: .6 }] },
+      { t: '立ち向かう', s: 'hp', r: [{ p: .45, t: '強盗を捕まえた！懸賞金を手に入れた！', fx: { money: 15, fame: 12 }, rare: 4 }, { p: .55, t: '撃たれた…', die: '列車強盗の銃撃', dp: .7, sv: '奇跡的に急所を外れていた。', fx: { hp: -20 } }] }] },
+    { y: [1861, 1865], a: [17, 45], g: 'm', force: .5, t: '南北戦争が始まった。', ch: [
+      { t: '北軍で戦う', s: 'hp', r: [{ p: .7, t: '生きて帰った。', fx: { fame: 6 } }, { p: .3, t: 'ゲティスバーグで…', die: '南北戦争での戦死', dp: .8 }] },
+      { t: '徴兵を逃れる', s: 'luck', r: [{ p: .6, t: 'うまく逃れた。', fx: { fame: -4 } }, { p: .4, t: '捕まって前線送りに…', die: '南北戦争での戦死', dp: .5 }] }] },
+    { a: [3, 70], t: '竜巻が農場を襲った。', fx: { money: -12 }, die: '竜巻', dp: .04 },
+    { a: [16, 50], c: S => S.ci === 1, t: 'テキサスからカンザスまで、牛3000頭を追う大移動に出た。', fx: { hp: -5, money: 10, fame: 5 } },
+    { a: [3, 60], t: '幌馬車でさらに西へ旅をした。', fx: { hp: -5, happy: 6, int: 3 } },
+    { a: [20, 60], c: S => S.hp > 55 && !(S.lad && S.lad[2] === '保安官'), t: '町の人から保安官バッジを託された。', ch: [
+      { t: '引き受ける', s: 'hp', r: [{ p: .6, t: '町に平和をもたらした。', fx: { fame: 15 }, lad: ['保安官助手', '保安官', '連邦保安官', '伝説の保安官'] }, { p: .4, t: '無法者に狙われた…', die: '無法者の銃撃', dp: .6, sv: 'からくも撃ち返した。', fx: { hp: -15 } }] },
+      { t: '断る', r: [{ p: 1, t: '柄じゃない。' }] }] },
+    { a: [5, 65], t: 'ガラガラヘビにかまれた。', fx: { hp: -15 }, die: 'ヘビの毒', dp: .15 },
+    { y: [1869, 1869], a: [5, 85], force: .4, t: '大陸横断鉄道が開通した！', fx: { happy: 6, money: 3 } },
+  ]
+},
+{
+  id: 'showa', name: '昭和（戦前・戦後）', icon: '📻', place: '東京の下町', yr: [1918, 1935], w: 8, a1: '#c9a26b', a2: '#33281a',
+  risk: .5, mort: { inf: .03, bg: .0025, old: .00006, g: .095 }, ps: [15, 55], work: 15, marry: [20, 33], kids: .14,
+  names: { m: ['正一', '清', '茂', '勇', '博', '実'], f: ['和子', '節子', '幸子', '久子', '文子', '静江'] },
+  sur: ['佐藤', '鈴木', '高橋', '田中', '渡辺', '伊藤', '山本', '中村'],
+  cls: [
+    { n: '農家', w: 50, sur: 1, jobs: ['農作業の手伝い', '農家', '篤農家', '村長'] },
+    { n: '商店の家', w: 22, sur: 1, jobs: ['店の手伝い', '店員', '店主', '商店街の顔役'] },
+    { n: '会社員の家', w: 24, sur: 1, jobs: ['見習い社員', '社員', '課長', '重役'], st: { int: 5, money: 8 } },
+    { n: '財閥の家', w: 4, sur: 1, jobs: ['御曹司', '若社長', '社長', '財界の重鎮'], jf: ['令嬢', '社長夫人', '女性実業家', '財界の女傑'], st: { money: 50, fame: 15 } },
+  ],
+  dInf: ['はやり病', '肺炎', '栄養不足'], d: ['結核', '肺炎', '交通事故', '脳卒中', '胃の病'], old: ['老衰', '脳卒中', '心臓病'],
+  ev: [
+    { y: [1941, 1945], a: [18, 40], g: 'm', force: .55, t: '召集令状（赤紙）が届いた。', ch: [
+      { t: '南方の戦地へ', s: 'luck', r: [{ p: .5, t: 'なんとか生きて復員できた。', fx: { hp: -20, happy: -15 }, big: 1 }, { p: .5, t: '帰らぬ人に…', die: '戦地での戦死', dp: 1 }] },
+      { t: '本土の部隊を希望', s: 'luck', r: [{ p: .85, t: '本土で終戦を迎えた。', fx: { hp: -10, happy: -8 } }, { p: .15, t: '基地への空襲で…', die: '戦争', dp: 1 }] }] },
+    { y: [1944, 1945], a: [6, 12], force: .7, t: '学童疎開で、田舎のお寺に預けられた。', fx: { happy: -10, hp: -5 } },
+    { y: [1944, 1945], a: [6, 99], force: .5, t: '空襲警報が鳴り響く！', ch: [
+      { t: '防空壕に逃げる', s: 'luck', r: [{ p: .88, t: '夜が明けるまで耐えぬいた。', fx: { happy: -10 } }, { p: .12, t: '焼夷弾が近くに…', die: '空襲', dp: .8, sv: 'やけどを負ったが生きていた。', fx: { hp: -20 } }] },
+      { t: '川の方へ逃げる', s: 'luck', r: [{ p: .8, t: '火の海の中、川に飛び込んで助かった。', fx: { hp: -10, happy: -12 } }, { p: .2, t: '炎に巻かれた…', die: '空襲', dp: .8, sv: 'やけどを負ったが生きていた。', fx: { hp: -20 } }] }] },
+    { y: [1945, 1945], a: [1, 99], force: 1, t: '8月15日、ラジオから玉音放送が流れた。戦争が終わった。', fx: { happy: 5 }, big: 1 },
+    { y: [1945, 1950], a: [10, 65], t: '焼け跡の闇市で生き抜くことになった。', ch: [
+      { t: '商売を始める', s: 'int', r: [{ p: .5, t: '闇市でひと儲けした！', fx: { money: 15 }, lad: ['闇市の露天商', '店主', '会社社長', '戦後の成功者'] }, { p: .5, t: '取り締まりにあった。', fx: { money: -8 } }] },
+      { t: '配給で耐える', r: [{ p: 1, t: 'お腹がすく日々だった。', fx: { hp: -8 } }] }] },
+    { y: [1953, 1962], a: [8, 75], t: '街頭テレビで力道山のプロレスを見た！', fx: { happy: 8 } },
+    { y: [1964, 1964], a: [5, 95], force: .6, t: '東京オリンピック開催！テレビの前で日本中が熱狂した。', fx: { happy: 10 } },
+    { y: [1958, 1972], a: [20, 70], t: '三種の神器（テレビ・洗濯機・冷蔵庫）をそろえた！', fx: { happy: 8, money: -5 } },
+    { y: [1925, 1940], a: [4, 12], t: '紙芝居屋さんの水あめが毎日の楽しみだった。', fx: { happy: 5 } },
+    { a: [12, 35], t: '結核にかかった。', fx: { hp: -25 }, die: '結核', dp: .25, sv: '長い療養のすえ回復した。' },
+    { y: [1970, 1970], a: [5, 95], force: .5, t: '大阪万博で「月の石」を見た！', fx: { happy: 8, int: 3 } },
+    { y: [1986, 1991], a: [55, 90], t: 'バブル景気で、持っていた土地の値段が跳ね上がった！', fx: { money: 15 } },
+  ]
+},
+{
+  id: 'kodo', name: '高度経済成長期', icon: '🗼', place: '東京郊外の団地', yr: [1950, 1965], w: 8, a1: '#e2c05a', a2: '#3b3013',
+  risk: .2, mort: { inf: .008, bg: .0012, old: .00004, g: .1 }, ps: [30, 60], work: 22, marry: [23, 38], kids: .1,
+  names: { m: ['誠', '浩', '隆', '修', '茂樹', '健一'], f: ['恵子', '裕子', '久美子', '由美子', '明美', '真由美'] },
+  sur: ['佐藤', '鈴木', '高橋', '田中', '伊藤', '渡辺', '山本', '小林'],
+  cls: [
+    { n: 'サラリーマン家庭', w: 50, sur: 1, jobs: ['新入社員', '係長', '部長', '社長'] },
+    { n: '農家', w: 20, sur: 1, jobs: ['農業手伝い', '農家', '農協の役員', '町長'] },
+    { n: '商店の家', w: 22, sur: 1, jobs: ['店の手伝い', '二代目', '店主', 'チェーン店の社長'] },
+    { n: '社長の家', w: 8, sur: 1, jobs: ['御曹司', '専務', '社長', '会長'], jf: ['社長令嬢', '専務', '社長', '会長'], st: { money: 40 } },
+  ],
+  dInf: ['肺炎', '先天性の病気', '不慮の事故'], d: ['交通事故', 'がん', '心臓病', '脳卒中', '過労'], old: ['老衰', 'がん', '心臓病', '肺炎'],
+  ev: [
+    { y: [1964, 1964], a: [3, 95], force: .6, t: '東京オリンピック開催！家族でテレビにかじりついた。', fx: { happy: 10 } },
+    { y: [1970, 1970], a: [3, 95], force: .6, t: '大阪万博！太陽の塔に圧倒された。', fx: { happy: 10, int: 3 } },
+    { y: [1967, 1972], a: [18, 23], t: '学生運動の嵐が吹き荒れた。', ch: [
+      { t: 'ヘルメットをかぶる', r: [{ p: .7, t: '青春を燃やした。', fx: { happy: 6, fame: 2 } }, { p: .3, t: '機動隊ともみ合いケガをした。', fx: { hp: -15 } }] },
+      { t: 'ノンポリでいる', r: [{ p: 1, t: 'ジャズ喫茶に入り浸った。', fx: { happy: 4 } }] }] },
+    { y: [1973, 1974], a: [8, 95], force: .5, t: 'オイルショック！トイレットペーパーが店から消えた。', fx: { money: -5, happy: -4 } },
+    { a: [15, 18], t: '受験戦争に突入した。', ch: [
+      { t: '猛勉強する', s: 'int', r: [{ p: .6, t: '第一志望に合格！', fx: { int: 10, happy: 10 } }, { p: .4, t: '浪人した…', fx: { happy: -8, int: 5 } }] },
+      { t: '青春を楽しむ', r: [{ p: 1, t: 'バンドを組んだ。', fx: { chr: 6, happy: 8 } }] }] },
+    { y: [1986, 1990], a: [22, 75], t: 'バブル景気！株も土地もどんどん上がる。', ch: [
+      { t: '全財産を投資する', r: [{ p: .3, t: 'バブル崩壊の直前に売り抜けた！', fx: { money: 40 }, rare: 5, big: 1 }, { p: .7, t: '高値づかみ…バブルがはじけた。', fx: { money: -35, happy: -15 } }] },
+      { t: 'コツコツ貯金', r: [{ p: 1, t: '踊らされずに済んだ。', fx: { money: 3 } }] }] },
+    { y: [1979, 1992], a: [10, 60], t: 'ウォークマンで音楽を聴きながら街を歩いた。', fx: { happy: 5 } },
+    { y: [1983, 1995], a: [5, 45], t: 'ファミコンにハマった！', fx: { happy: 8, int: -2 } },
+    { a: [25, 55], c: S => S.ci === 0, rep: 1, t: '「24時間戦えますか」。モーレツ社員として働いた。', fx: { money: 8, hp: -10, happy: -5 } },
+    { y: [1995, 1995], a: [0, 99], force: .25, t: '阪神・淡路大震災が起きた。', fx: { happy: -8, money: -5 }, die: '大震災', dp: .05 },
+    { a: [30, 55], t: 'マイホームを建てた！35年ローンだ。', fx: { happy: 12, money: -15 } },
+    { y: [2010, 2030], a: [45, 95], t: 'スマートフォンを買った。使い方がよくわからない。', fx: { int: 2, happy: 2 } },
+  ]
+},
+{
+  id: 'heisei', name: '平成', icon: '📱', place: '日本の地方都市', yr: [1985, 2000], w: 9, a1: '#6fc3e8', a2: '#13324a',
+  risk: .12, mort: { inf: .003, bg: .0005, old: .000025, g: .1 }, ps: [35, 65], work: 22, marry: [24, 45], kids: .07,
+  names: { m: ['拓也', '翔太', '大輔', '健太', '翼', '蓮'], f: ['美咲', '彩', '愛', '葵', 'さくら', '七海'] },
+  sur: ['佐藤', '鈴木', '高橋', '田中', '伊藤', '渡辺', '山本', '中村'],
+  cls: [
+    { n: '会社員家庭', w: 58, sur: 1, jobs: ['新入社員', '主任', '課長', '部長'] },
+    { n: '自営業の家', w: 18, sur: 1, jobs: ['見習い', '二代目', '店主', '地元の名士'] },
+    { n: '公務員家庭', w: 16, sur: 1, jobs: ['新人職員', '係長', '課長', '局長'] },
+    { n: 'お金持ちの家', w: 8, sur: 1, jobs: ['後継ぎ', '役員', '社長', '会長'], st: { money: 40 } },
+  ],
+  dInf: ['先天性の病気', '乳幼児突然死症候群', '不慮の事故'], d: ['交通事故', 'がん', '心臓病', '脳卒中', '不慮の事故'], old: ['老衰', 'がん', '心臓病', '肺炎'],
+  ev: [
+    { y: [1996, 2005], a: [5, 15], t: 'たまごっちを育てた。', fx: { happy: 6 } },
+    { y: [1996, 2005], a: [6, 20], t: 'ポケモン図鑑を完成させた！', fx: { happy: 8 }, rare: 2 },
+    { y: [2000, 2012], a: [12, 30], t: 'ガラケーで友達とメールばかりしていた。', fx: { chr: 3, happy: 4 } },
+    { a: [22, 22], force: .9, t: '就職活動が始まった。', ch: [
+      { t: '大企業を狙う', s: 'int', r: [{ p: .4, t: '大企業から内定をもらえた！', fx: { money: 12, happy: 8, fame: 3 } }, { p: .6, t: 'なかなか決まらない…なんとか小さな会社に入った。', fx: { happy: -10 } }] },
+      { t: '夢を追う', s: 'luck', r: [{ p: .2, t: '夢がかないそうだ！', fx: { happy: 12, fame: 8 }, lad: ['駆け出しのクリエイター', '人気クリエイター', '売れっ子', '業界の第一人者'], rare: 5, big: 1 }, { p: .8, t: 'アルバイトしながら夢を追った。', fx: { money: -5, happy: 3 }, lad: ['フリーター', 'バイトリーダー', '契約社員', '正社員'] }] }] },
+    { y: [2011, 2011], a: [0, 99], force: .6, t: '東日本大震災。テレビの映像に言葉を失った。', fx: { happy: -8 }, big: 1 },
+    { y: [2008, 2035], a: [15, 40], t: '動画配信を始めてみた。', ch: [
+      { t: '毎日投稿する', s: 'chr', r: [{ p: .15, t: '動画がバズって登録者100万人！', fx: { fame: 30, money: 20 }, rare: 20, big: 1, lad: ['人気配信者', 'トップ配信者', 'タレント', 'メディアの顔'] }, { p: .85, t: '再生数は伸びなかった…', fx: { happy: -3 } }] },
+      { t: 'やめておく', r: [{ p: 1, t: '見る専門でいい。' }] }] },
+    { y: [2017, 2018], a: [18, 70], t: '仮想通貨がブームになった。', ch: [
+      { t: '買う', r: [{ p: .25, t: '「億り人」になった！', fx: { money: 40 }, rare: 10, big: 1 }, { p: .75, t: '暴落で溶けた。', fx: { money: -20, happy: -10 } }] },
+      { t: '見送る', r: [{ p: 1, t: '様子を見た。' }] }] },
+    { y: [2020, 2022], a: [0, 99], force: .8, t: 'パンデミック！マスクとリモートワークの日々。', fx: { happy: -8 }, die: '感染症', dp: .01 },
+    { a: [24, 45], t: 'ブラック企業で残業続き…', ch: [
+      { t: '転職する', s: 'luck', r: [{ p: .6, t: 'ホワイト企業に転職できた！', fx: { happy: 12 } }, { p: .4, t: '次の会社もブラックだった。', fx: { happy: -8, hp: -5 } }] },
+      { t: '耐える', r: [{ p: 1, t: '体をこわしかけた。', fx: { hp: -12, money: 5 } }] }] },
+    { a: [15, 75], t: '推しができた！毎日が楽しい。', fx: { happy: 10, money: -5 } },
+    { a: [28, 60], c: S => S.int > 60, t: 'ヘッドハンティングされた！', fx: { money: 10 }, jobUp: 1 },
+  ]
+},
+{
+  id: 'reiwa', name: '令和', icon: '🤖', place: '東京', yr: [2015, 2025], w: 9, a1: '#9b8cf0', a2: '#251d4a',
+  risk: .1, mort: { inf: .0025, bg: .0004, old: .000018, g: .1 }, ps: [40, 70], work: 22, marry: [25, 50], kids: .06,
+  names: { m: ['蓮', '陽翔', '湊', '碧', '蒼', '樹'], f: ['陽葵', '凛', '紬', '結菜', '芽依', '澪'] },
+  sur: ['佐藤', '鈴木', '高橋', '田中', '伊藤', '渡辺', '山本', '中村'],
+  cls: [
+    { n: '会社員家庭', w: 58, sur: 1, jobs: ['新社会人', '主任', 'マネージャー', '部長'] },
+    { n: 'クリエイター家庭', w: 12, sur: 1, jobs: ['見習いクリエイター', 'クリエイター', '人気クリエイター', '世界的アーティスト'], st: { chr: 6 } },
+    { n: '研究者家庭', w: 10, sur: 1, jobs: ['研究生', '研究員', '教授', 'ノーベル賞学者'], st: { int: 10 } },
+    { n: 'お金持ちの家', w: 8, sur: 1, jobs: ['後継ぎ', '役員', 'CEO', '世界的投資家'], st: { money: 40 } },
+    { n: '地方の家', w: 12, sur: 1, jobs: ['手伝い', '農家', '地元企業の社長', '地方創生の顔'] },
+  ],
+  dInf: ['先天性の病気', '不慮の事故'], d: ['がん', '心臓病', '脳卒中', '交通事故', '未知の感染症'], old: ['老衰', 'がん', '心臓病', '肺炎'],
+  ev: [
+    { y: [2020, 2022], a: [0, 99], force: .8, t: 'パンデミックで保育園や学校がお休みになった。', fx: { happy: -5 } },
+    { a: [6, 15], t: 'タブレットでプログラミングの授業を受けた。', fx: { int: 6 } },
+    { a: [8, 20], t: 'AIの家庭教師と勉強した。', fx: { int: 8 } },
+    { a: [8, 30], t: 'ネットで世界中の人と一緒にゲームをした。', fx: { happy: 6, chr: 2 } },
+    { a: [15, 40], t: 'AIと一緒に作った作品がバズった！', fx: { fame: 15 }, rare: 8, big: 1 },
+    { y: [2035, 2100], a: [20, 75], w: .5, t: '民間宇宙旅行の抽選に当たった！', ch: [
+      { t: '行く', s: 'luck', r: [{ p: .95, t: '青い地球を見た。言葉にならない。', fx: { happy: 20, fame: 5 }, rare: 30, big: 1 }, { p: .05, t: 'ロケットが…', die: '宇宙旅行の事故', dp: 1 }] },
+      { t: '辞退する', r: [{ p: 1, t: '地球から見上げる星もいいものだ。' }] }] },
+    { a: [6, 99], w: .5, t: '大地震が起きた！', ch: [
+      { t: 'すぐに高台へ', r: [{ p: .97, t: '日ごろの備えが命を救った。', fx: { happy: -5 } }, { p: .03, t: '間に合わなかった…', die: '大地震', dp: 1 }] },
+      { t: '様子を見る', r: [{ p: .75, t: 'なんとか助かった。', fx: { hp: -10 } }, { p: .25, t: '津波が…', die: '大地震', dp: 1 }] }] },
+    { y: [2040, 2120], a: [25, 80], t: '仕事の大半をAIがこなす時代になった。', ch: [
+      { t: 'AIを使いこなす', s: 'int', r: [{ p: .6, t: '生産性が爆上がりした！', fx: { money: 15 }, jobUp: 1 }, { p: .4, t: 'うまく適応できなかった。', fx: { happy: -6 } }] },
+      { t: '趣味に生きる', r: [{ p: 1, t: 'ベーシックインカムで陶芸を始めた。', fx: { happy: 12 }, setJob: '陶芸家' }] }] },
+    { a: [18, 70], t: 'メタバースで知り合った人と親友になった。', fx: { happy: 6, chr: 3 } },
+    { a: [50, 110], t: '再生医療でひざの軟骨がよみがえった！', fx: { hp: 15 } },
+    { y: [2070, 2140], a: [60, 120], t: '寿命延長治療を受けられることになった。', ch: [
+      { t: '受ける', r: [{ p: .7, t: '体が若返った気がする！', fx: { hp: 30 }, rare: 3 }, { p: .3, t: '副作用が出た…', fx: { hp: -20 } }] },
+      { t: '自然に任せる', r: [{ p: 1, t: '人生は限りがあるから美しい。', fx: { happy: 5 } }] }] },
+  ]
+},
+{
+  id: 'future', name: '未来（宇宙時代）', icon: '🚀', place: ['火星コロニー・オリンポス市', '海上都市ネオ・トーキョー', '月面都市ルナ・ゲート'], yr: [2140, 2160], w: 2, a1: '#4fe0d0', a2: '#0d2f3a',
+  risk: .05, mort: { inf: .001, bg: .0003, old: .000002, g: .1 }, ps: [50, 100], work: 22, marry: [25, 70], kids: .05,
+  names: { m: ['ソラ', 'カイ', 'ネオ', 'リオ', 'アストロ', 'ジン'], f: ['ルナ', 'ステラ', 'ミラ', 'ノア', 'セラ', 'リラ'] },
+  sur: ['アマツ', 'クロノ', 'ヴェガ', 'ホシノ', 'ゼノ', 'ミナト'],
+  cls: [
+    { n: '地球市民の家', w: 55, sur: 1, jobs: ['見習いオペレーター', 'エンジニア', 'チーフ', '都市評議員'] },
+    { n: '火星生まれの家', w: 30, sur: 1, place: '火星コロニー・オリンポス市', jobs: ['テラフォーミング作業員', '技師', '主任技師', '火星総督'] },
+    { n: '星間企業エリートの家', w: 10, sur: 1, jobs: ['研修生', 'マネージャー', '役員', '星間企業CEO'], st: { money: 45 } },
+    { n: '遺伝子デザインの家系', w: 5, sur: 1, jobs: ['被験者', '天才児', '研究リーダー', '人類の希望'], st: { int: 20, hp: 15 } },
+  ],
+  dInf: ['先天性の病気', 'コロニーの事故'], d: ['宇宙線被ばく', 'コロニーの事故', '未知のウイルス', 'ナノマシンの暴走', '減圧事故'], old: ['老衰', '寿命', '脳のシステム疲労'],
+  ev: [
+    { a: [4, 25], t: 'AIの親友ができた。名前は「ミツ」。', fx: { happy: 10 } },
+    { a: [15, 70], t: '乗っていた輸送船が宇宙海賊に襲われた！', ch: [
+      { t: '戦う', s: 'hp', r: [{ p: .5, t: '撃退した！英雄扱いされた。', fx: { fame: 15 }, big: 1 }, { p: .5, t: 'エアロックから…', die: '宇宙海賊の襲撃', dp: .7, sv: '救難ポッドで脱出した！', fx: { hp: -15 } }] },
+      { t: '降伏する', r: [{ p: 1, t: '積み荷を奪われた。', fx: { money: -15 } }] }] },
+    { a: [40, 150], w: .6, t: '意識をクラウドにアップロードする技術が実用化された。', ch: [
+      { t: 'アップロードする', r: [{ p: .85, t: '肉体を離れ、データとして永遠を手に入れた…', fx: { fame: 10 }, rare: 10, big: 1, die: 'デジタル存在への移行', dp: 1 }, { p: .15, t: 'アップロードに失敗した…', die: 'アップロードの失敗', dp: 1 }] },
+      { t: '肉体で生きる', r: [{ p: 1, t: 'この体で最後まで生きる。', fx: { happy: 5 } }] }] },
+    { a: [18, 60], w: .5, t: 'ワープ航法の試験飛行の乗員に選ばれた。', ch: [
+      { t: '乗る', s: 'luck', r: [{ p: .7, t: '4光年先のケンタウルス座に到達！人類初の快挙だ！', fx: { fame: 30, happy: 15 }, rare: 20, big: 1 }, { p: .3, t: '船ごと時空のかなたへ…', die: 'ワープ事故（行方不明）', dp: 1 }] },
+      { t: '見送る', r: [{ p: 1, t: '次の機会にしよう。' }] }] },
+    { a: [3, 90], t: '異星生命の信号が観測された！人類中が大騒ぎ。', fx: { happy: 6, int: 5 }, rare: 5 },
+    { a: [10, 80], c: S => S.place.includes('火星'), t: '火星の巨大砂嵐に巻き込まれた。', fx: { hp: -15 }, die: '火星の砂嵐', dp: .1 },
+    { a: [5, 100], t: '培養肉のステーキがまたおいしくなった。', fx: { happy: 4 } },
+    { a: [20, 100], t: '博物館級の「紙の本」を手に入れた。', fx: { int: 5, money: 5 }, rare: 5 },
+    { a: [30, 150], t: '記憶のバックアップをとった。', fx: { luck: 5 } },
+    { a: [15, 40], t: '無重力スポーツの大会に出場した。', ch: [
+      { t: '全力で挑む', s: 'hp', r: [{ p: .4, t: '優勝！太陽系チャンピオン！', fx: { fame: 20 }, rare: 6 }, { p: .6, t: '予選敗退。', fx: { happy: -3 } }] },
+      { t: '楽しむ', r: [{ p: 1, t: '楽しかった。', fx: { happy: 6 } }] }] },
+    { a: [60, 150], t: '体の一部をサイボーグ化した。', fx: { hp: 20 } },
+  ]
+},
+];
+
+// どの時代でも起こる出来事
+const GEN = [
+  { a: [1, 2], t: 'はじめて言葉をしゃべった。', fx: { int: 2, happy: 2 } },
+  { a: [1, 2], t: 'はじめて自分の足で歩いた！', fx: { hp: 2 } },
+  { a: [0, 6], rep: 1, w: .6, t: '高い熱を出して、何日も寝込んだ。', fx: { hp: -12 }, die: '幼いころの高熱', dp: .06, sv: 'なんとか熱が下がった。' },
+  { a: [6, 12], t: '近所の子とケンカした。', ch: [
+    { t: 'やり返す', s: 'hp', r: [{ p: .6, t: '勝った！ガキ大将になった。', fx: { fame: 3, hp: 2 } }, { p: .4, t: '泣かされた。', fx: { happy: -4 } }] },
+    { t: '仲直りする', s: 'chr', r: [{ p: .8, t: 'いちばんの友達になった。', fx: { chr: 4, happy: 6 } }, { p: .2, t: '無視された。', fx: { happy: -3 } }] }] },
+  { a: [3, 14], c: S => S.int > 45, t: '物覚えがいいと褒められた。', fx: { int: 7 } },
+  { a: [4, 14], c: S => S.hp > 50, t: 'かけっこで一番になった。', fx: { hp: 6, fame: 2 } },
+  { a: [5, 15], t: '木から落ちて腕の骨を折った。', fx: { hp: -8 } },
+  { a: [3, 10], t: '迷子になって一晩帰れなかった。', fx: { happy: -5 }, die: '迷子', dp: .02, sv: '朝になって見つけてもらえた。' },
+  { a: [6, 18], t: '親友ができた。', fx: { happy: 8, chr: 3 } },
+  { a: [3, 15], t: '小さな動物を拾ってきて、こっそり飼い始めた。', fx: { happy: 8 } },
+  { a: [10, 19], c: S => !S.married, t: '初恋をした。', fx: { happy: 6 }, flag: 'crush' },
+  { a: [11, 22], c: S => S.flags.crush && !S.married, t: 'あの人に想いを伝えるか迷っている…', ch: [
+    { t: '告白する', s: 'chr', r: [{ p: .5, t: '両想いだった！', fx: { happy: 15, chr: 3 } }, { p: .5, t: 'ふられた…', fx: { happy: -12 } }] },
+    { t: '胸にしまう', r: [{ p: 1, t: '甘酸っぱい思い出になった。', fx: { happy: -2 } }] }] },
+  { a: [8, 70], t: '大事にしていた宝物をなくした。', fx: { happy: -4 } },
+  { a: [15, 70], rep: 1, w: .4, t: '大きな病にかかった。', fx: { hp: -20 }, die: '大病', dp: .12, sv: '長い闘病のすえ回復した。' },
+  { a: [12, 75], t: '道で大金を拾った。', ch: [
+    { t: '持ち主に届ける', r: [{ p: .7, t: 'お礼をもらい、評判も上がった。', fx: { fame: 4, happy: 5, money: 3 } }, { p: .3, t: '持ち主は見つからず、結局自分のものになった。', fx: { money: 10 } }] },
+    { t: 'ふところに入れる', r: [{ p: .8, t: 'ちょっと得した。', fx: { money: 12, luck: -4 } }, { p: .2, t: '見られていた…信用を失った。', fx: { fame: -8, chr: -4 } }] }] },
+  { a: [18, 75], t: 'うまい儲け話を持ちかけられた。', ch: [
+    { t: 'のる', s: 'luck', r: [{ p: .2, t: '本当に儲かった！', fx: { money: 20 } }, { p: .8, t: '詐欺だった…', fx: { money: -18, happy: -6 } }] },
+    { t: '断る', r: [{ p: 1, t: 'あやしい話には乗らない。', fx: { int: 2 } }] }] },
+  { a: [16, 75], t: '賭け事に誘われた。', ch: [
+    { t: '大勝負に出る', s: 'luck', r: [{ p: .35, t: '大勝ち！', fx: { money: 20, happy: 6 } }, { p: .65, t: '大負け…', fx: { money: -20, happy: -8 } }] },
+    { t: '少しだけ遊ぶ', r: [{ p: .5, t: 'ちょっと勝った。', fx: { money: 2 } }, { p: .5, t: 'ちょっと負けた。', fx: { money: -2 } }] }] },
+  { a: [15, 70], t: '遠くの土地まで旅をした。', fx: { happy: 8, int: 4 }, die: '旅先での行方不明', dp: .02 },
+  { a: [12, 80], rep: 1, w: .6, t: '困っている人を助けた。', fx: { fame: 3, happy: 5 } },
+  { a: [18, 70], t: '酒の席で大失敗をした。', fx: { chr: -4, fame: -3 } },
+  { a: [18, 55], t: '手ごわいライバルが現れた。', ch: [
+    { t: '正面から競う', s: 'int', r: [{ p: .5, t: '勝った！大きく成長した。', fx: { int: 6, fame: 6 }, jobUp: 1 }, { p: .5, t: '負けたが、学ぶことは多かった。', fx: { int: 4, happy: -4 } }] },
+    { t: '仲間にする', s: 'chr', r: [{ p: .6, t: '最高の相棒になった。', fx: { happy: 8, fame: 3 } }, { p: .4, t: '裏切られた。', fx: { happy: -8, money: -6 } }] }] },
+  { a: [30, 80], t: '腰を痛めた。', fx: { hp: -8 } },
+  { a: [40, 95], t: '昔の友と再会し、夜通し語り合った。', fx: { happy: 10 } },
+  { a: [60, 120], t: '物忘れがひどくなってきた。', fx: { int: -6 } },
+  { a: [60, 120], rep: 1, w: .5, t: '若い人たちに昔話を聞かせた。', fx: { happy: 5, fame: 1 } },
+  { a: [6, 99], w: .01, t: '雷に打たれた！', fx: { hp: -20, luck: 20, fame: 6 }, rare: 200, big: 1, die: '落雷', dp: .35, sv: '…奇跡的に生きていた！' },
+  { a: [8, 99], rep: 1, w: .5, t: '流れ星に願いをかけた。', fx: { luck: 3 } },
+  { a: [12, 60], t: '眠っていた{talent}の才能が開花した！', fx: { fame: 10, happy: 8 }, rare: 10, big: 1 },
+  { a: [20, 85], rep: 1, w: .6, c: S => S.married, t: '{sp}と大ゲンカした。', fx: { happy: -6 } },
+  { a: [20, 85], rep: 1, w: .6, c: S => S.married, t: '{sp}と二人で夕日を眺めた。', fx: { happy: 6 } },
+  { a: [38, 99], c: S => S.kids - S.kidsLost > 0, t: '孫が生まれた！', fx: { happy: 12 } },
+  { a: [8, 90], t: '不思議な夢を見た。何かのお告げだろうか。', fx: { luck: 4 } },
+  { a: [14, 65], w: .6, t: '大けがをした。', fx: { hp: -18 }, die: '大けが', dp: .12, sv: '傷あとは残ったが治った。' },
+  { a: [5, 99], w: .004, t: '空から光る何かが降りてきて…気づいたら3日たっていた。', fx: { int: 5, fame: 3 }, rare: 1000, big: 1 },
+  { a: [5, 99], w: .008, t: '地面を掘ったら、古い壺いっぱいの財宝が出てきた！', fx: { money: 40, happy: 10 }, rare: 300, big: 1 },
+  { a: [20, 90], w: .02, t: '時の権力者に気に入られた。', fx: { fame: 15, money: 10 }, jobUp: 1, rare: 30, big: 1 },
+  { a: [25, 80], w: .3, c: S => S.money > 60, t: '貧しい人々のために財産の一部を寄付した。', fx: { money: -15, fame: 10, happy: 8 } },
+];
+
+ERAS.forEach(e => e.ev.forEach((v, i) => { v.id = e.id + i; }));
+GEN.forEach((v, i) => { v.id = 'g' + i; v.gen = 1; });
+const TOTAL_W = ERAS.reduce((s, e) => s + e.w, 0);
+const STAT = [['hp', '体力', '#7fe0a8'], ['int', '知力', '#7fb8ff'], ['chr', '魅力', '#ff9ccf'], ['luck', '運', '#c8a6ff'], ['money', '財産', '#ffd36b'], ['happy', '幸福', '#ffae6b'], ['fame', '名声', '#ff7f7f']];
+const STAT_NAME = Object.fromEntries(STAT.map(s => [s[0], s[1]]));
+const QUIET = ['平凡な一年だった。', '特に何もない、おだやかな一年。', '毎日同じような日々が続いた。', '季節がめぐった。', '少しだけ大人になった気がする。'];
+const QUIET_BABY = ['すくすく育った。', 'よく眠り、よく泣いた。', '家族に見守られて過ごした。'];
+const QUIET_OLD = ['縁側でひなたぼっこをした。', 'ゆっくりと時が過ぎていった。', '昔のことをよく思い出す。'];
+
+// ================= 保存 =================
+const SAVE = 'jidai-gacha-jinsei-v1';
+let DB = { lives: 0, eras: {}, ach: {}, best: { age: 0, odds: 0, fame: 0, money: 0 }, hist: [], muted: false };
+try { const s = JSON.parse(localStorage.getItem(SAVE)); if (s) DB = Object.assign(DB, s); } catch (e) { }
+function saveDB() { try { localStorage.setItem(SAVE, JSON.stringify(DB)); } catch (e) { } }
+
+const ACH = [
+  { id: 'first', i: '👶', n: 'はじめての人生', d: '一生を終える' },
+  { id: 'top', i: '👑', n: '頂点に立つ', d: '職業の最高位にのぼりつめる' },
+  { id: 'cent', i: '🎂', n: '百寿', d: '100歳まで生きる' },
+  { id: 'baby', i: '🕯️', n: 'つかの間の命', d: '1歳を迎えずに亡くなる' },
+  { id: 'oku', i: '🌏', n: '80億分の1', d: '人生のレア度が80億分の1を超える' },
+  { id: 'royal', i: '💎', n: '高貴な生まれ', d: '確率5%以下の家柄に生まれる' },
+  { id: 'rich', i: '💰', n: '大富豪', d: '財産を100にする' },
+  { id: 'fame', i: '📜', n: '歴史に名を残す', d: '名声を100にする' },
+  { id: 'happy', i: '🌈', n: 'しあわせ者', d: '幸福100のまま一生を終える' },
+  { id: 'big', i: '👨‍👩‍👧‍👦', n: '大家族', d: '子どもを8人以上もうける' },
+  { id: 'thunder', i: '⚡', n: '雷に愛された者', d: '雷に打たれて生き延びる' },
+  { id: 'ufo', i: '🛸', n: '空白の3日間', d: '空から来た何かに遭遇する' },
+  { id: 'digital', i: '💾', n: '永遠の存在', d: '意識をアップロードする' },
+  { id: 'all', i: '🗺️', n: '全時代制覇', d: 'すべての時代に生まれる' },
+];
+
+// ================= 状態 =================
+let S = null;
+const stats = ['hp', 'int', 'chr', 'luck', 'money', 'happy', 'fame'];
+const rs = (a, b) => Math.round(a + (R() + R()) / 2 * (b - a));
+const yearStr = y => y < 0 ? `紀元前${-y}年ごろ` : `西暦${y}年`;
+const fmtOdds = l => {
+  if (l < 4) return Math.max(1, Math.round(10 ** l)).toLocaleString() + '分の1';
+  const U = [[20, '垓'], [16, '京'], [12, '兆'], [8, '億'], [4, '万']];
+  if (l >= 24) return `10の${Math.floor(l)}乗分の1`;
+  for (const [p, u] of U) if (l >= p) { const v = 10 ** (l - p); return (v >= 100 ? Math.round(v) : v.toPrecision(3).replace(/\.?0+$/, '')) + u + '分の1'; }
+};
+
+function newLife() {
+  const E = wpick(ERAS, e => e.w);
+  const ci = E.cls.indexOf(wpick(E.cls, c => c.w));
+  const cls = E.cls[ci];
+  const g = R() < .5 ? 'm' : 'f';
+  const clsW = E.cls.reduce((s, c) => s + c.w, 0);
+  const pEra = E.w / TOTAL_W, pCls = cls.w / clsW;
+  const names = (cls.sur && E.names2) ? E.names2 : E.names;
+  const given = pick(names[g]);
+  const sur = cls.sur ? pick(E.sur) : '';
+  const place = cls.place || (Array.isArray(E.place) ? pick(E.place) : E.place);
+  S = {
+    E, ci, cls, g, given, sur, name: sur ? `${sur} ${given}` : given, place,
+    by: Math.floor(E.yr[0] + R() * (E.yr[1] - E.yr[0] + 1)), age: 0,
+    hp: rs(45, 85), int: rs(25, 75), chr: rs(25, 75), luck: rs(10, 90), money: 15, happy: 55, fame: 0,
+    married: false, everMarried: false, sp: '', widow: false, kids: 0, kidsLost: 0, grand: 0,
+    flags: {}, done: {}, lad: (g === 'f' && cls.jf) ? cls.jf : cls.jobs, jobLv: -1, custom: null,
+    log: [], big: [], odds: Math.log10(1 / pEra) + Math.log10(1 / pCls) + Math.log10(2), nev: 0, rareN: 0,
+    pd: [0, 1].map(() => Math.floor(E.ps[0] + R() * (E.ps[1] - E.ps[0]))), maxMoney: 0, maxFame: 0,
+    dead: false, cause: '', pending: null, pEra, pCls,
+  };
+  for (const k in (cls.st || {})) S[k] = clamp(S[k] + cls.st[k], 0, 100);
+  S.base = clamp(S.hp + 15, 60, 98);
+  return S;
+}
+
+const curYear = () => S.by + S.age;
+const jobName = () => S.custom || (S.lad && S.jobLv >= 0 ? S.lad[S.jobLv] : (S.age < 6 ? (S.age < 2 ? '赤ちゃん' : '子ども') : S.age < S.E.work ? '子ども' : '働き手'));
+const fill = t => t.replace(/\{name\}/g, S.given).replace(/\{sp\}/g, S.sp || '伴侶').replace(/\{talent\}/g, () => pick(TALENT));
+
+function ok(e) {
+  if (!e.rep && S.done[e.id]) return false;
+  const a = e.a || [0, 200];
+  if (S.age < a[0] || S.age > a[1]) return false;
+  if (e.ch && S.age < 6) return false;
+  if (e.y) { const y = curYear(); if (y < e.y[0] || y > e.y[1]) return false; }
+  if (e.g && e.g !== S.g) return false;
+  if (e.c && !e.c(S)) return false;
+  return true;
+}
+
+function newEntry(t, cls) { return { age: S.age, t, cls: cls || '', d: [], after: [] }; }
+function pushLog(en) { S.log.push(en); if (en.big || en.rare) S.big.push(en); UI.log(en); }
+
+function applyO(o, en, gen) {
+  if (o.fx) for (const k in o.fx) {
+    const b = S[k]; S[k] = clamp(S[k] + o.fx[k], 0, 100);
+    const d = Math.round(S[k]) - Math.round(b); if (d) en.d.push([k, d]);
+  }
+  if (o.flag) S.flags[o.flag] = 1;
+  if (o.rare) { S.odds += Math.log10(o.rare); S.rareN++; en.cls += ' rare'; en.rare = 1; }
+  if (o.big) { en.cls += ' big'; en.big = 1; }
+  if (o.setJob) { S.custom = o.setJob; S.lad = null; en.after.push(`「${o.setJob}」として生きることにした。`); }
+  if (o.lad) { S.lad = o.lad; S.jobLv = 0; S.custom = null; en.after.push(`「${S.lad[0]}」になった。`); }
+  if (o.jobUp) jobUp(en);
+  if (o.marry && !S.married) marry(en);
+  if (o.die) {
+    let p = o.dp * (gen ? S.E.risk : 1);
+    if (o.dp < 1) p *= (1.25 - S.hp / 200);
+    if (R() < p) en.death = o.die;
+    else if (o.sv) en.after.push(o.sv);
+  }
+}
+
+function jobUp(en) {
+  if (!S.lad) return;
+  if (S.jobLv < 0) { S.jobLv = 0; en.after.push(`「${jobName()}」になった。`); return; }
+  if (S.jobLv >= S.lad.length - 1) return;
+  S.jobLv++;
+  if (S.jobLv === S.lad.length - 1) {
+    en.after.push(`ついに「${jobName()}」にのぼりつめた！`); en.cls += ' big'; en.big = 1;
+    if (!S.flags.top) { S.flags.top = 1; S.odds += Math.log10(8); S.fame = clamp(S.fame + 12, 0, 100); }
+  } else en.after.push(`「${jobName()}」に出世した！`);
+  S.fame = clamp(S.fame + 4, 0, 100);
+}
+
+function marry(en) {
+  S.married = true; S.everMarried = true; S.widow = false;
+  const names = (S.cls.sur && S.E.names2) ? S.E.names2 : S.E.names;
+  S.sp = pick(names[S.g === 'm' ? 'f' : 'm']);
+  S.happy = clamp(S.happy + 12, 0, 100);
+  en.after.push(`${S.sp}と結婚した！`);
+}
+
+function runEvent(ev) {
+  S.done[ev.id] = 1;
+  const text = fill(ev.t);
+  if (ev.ch) { S.pending = { ev, text }; UI.choice(ev, text); return; }
+  const en = newEntry(text);
+  applyO(ev, en, ev.gen);
+  finishEntry(en);
+}
+
+function finishEntry(en) {
+  S.nev++; S.odds += .075;
+  pushLog(en);
+  if (en.death) die(en.death);
+}
+
+function choose(i) {
+  if (!S || !S.pending) return;
+  const { ev, text } = S.pending;
+  const c = ev.ch[i];
+  let rs2 = c.r.map(r => r.p);
+  if (c.s && rs2.length > 1) {
+    const adj = (S[c.s] - 50) / 250 + (S.luck - 50) / 500;
+    const p0 = clamp(rs2[0] + adj, .03, .97), rest = rs2.slice(1).reduce((a, b) => a + b, 0);
+    rs2 = [p0, ...rs2.slice(1).map(p => p / rest * (1 - p0))];
+  }
+  let r = R(), res = c.r[c.r.length - 1];
+  for (let k = 0; k < c.r.length; k++) { r -= rs2[k]; if (r <= 0) { res = c.r[k]; break; } }
+  S.pending = null;
+  const en = newEntry(`${text} <span class="ch">→ ${c.t}</span>${res.t ? ' ' + fill(res.t) : ''}`);
+  applyO(res, en, ev.gen);
+  finishEntry(en);
+  if (!S.dead) endYear();
+}
+
+function sysYear() {
+  const E = S.E;
+  for (let i = 0; i < 2; i++) if (S.pd[i] === S.age && S.age > 0) {
+    const en = newEntry(i === 0 ? '父が亡くなった。' : '母が亡くなった。', 'sys');
+    applyO({ fx: { happy: -12 } }, en);
+    if (i === 0 && S.cls.st && S.cls.st.money > 20) { applyO({ fx: { money: 10 } }, en); en.after.push('家を継いだ。'); }
+    pushLog(en);
+  }
+  if (S.age === E.work && S.jobLv < 0 && S.lad) {
+    S.jobLv = 0; pushLog(newEntry(`「${jobName()}」として働き始めた。`, 'sys'));
+  } else if (S.lad && S.jobLv >= 0 && S.jobLv < S.lad.length - 1 && S.age < 70) {
+    let p = .026 + (S.int + S.chr + S.luck - 150) / 3000;
+    if (S.jobLv === S.lad.length - 2) p *= .25;
+    if (S.E.work >= 20) p *= .6;
+    if (R() < p) { const en = newEntry('', 'sys'); jobUp(en); en.t = en.after.shift(); S.nev++; S.odds += .075; pushLog(en); }
+  }
+  if (!S.married && S.age >= E.marry[0] && S.age <= E.marry[1] && R() < (S.widow ? .04 : .09) + S.chr / 700) {
+    const en = newEntry('', 'sys'); marry(en); en.t = en.after.shift(); en.d.push(['happy', 12]); pushLog(en);
+  }
+  if (S.married && S.age <= (S.g === 'f' ? 44 : 55) && R() < E.kids) {
+    S.kids++;
+    const en = newEntry(`子どもが生まれた！（${S.kids}人目）`, 'sys');
+    applyO({ fx: { happy: 10 } }, en);
+    if (R() < E.mort.inf * 2) { S.kidsLost++; en.after.push('…しかし、その子は幼くして亡くなった。'); applyO({ fx: { happy: -20 } }, en); }
+    pushLog(en);
+  }
+  if (S.married && S.age > 22 && R() < E.mort.bg + E.mort.old * Math.exp(E.mort.g * (S.age + 2)) + .002) {
+    S.married = false; S.widow = true;
+    const en = newEntry(`${S.sp}に先立たれた…`, 'sys'); applyO({ fx: { happy: -25 } }, en); pushLog(en);
+  }
+}
+
+function hazard(age) {
+  const m = S.E.mort;
+  let h = m.inf * Math.exp(-age / 1.5) + m.bg + m.old * Math.exp(m.g * age);
+  h *= (1.3 - S.hp / 150);
+  return Math.min(h, .9);
+}
+
+function naturalCause() {
+  const E = S.E, m = E.mort;
+  if (S.age < 5) return pick(E.dInf);
+  const old = m.old * Math.exp(m.g * S.age);
+  if (S.age >= 55 && R() < old / (old + m.bg)) return pick(E.old);
+  return pick(E.d);
+}
+
+function step() {
+  if (!S || S.dead || S.pending) return;
+  sysYear();
+  let ev = null;
+  const all = S.E.ev.concat(GEN);
+  for (const f of all) if (f.force && ok(f) && R() < f.force) { ev = f; break; }
+  if (!ev && R() < (S.age < 3 ? .45 : .72)) {
+    const pool = all.filter(e => !e.force && ok(e));
+    if (pool.length) ev = wpick(pool, e => (e.w ?? 1) * (e.gen ? 1 : 1.8));
+  }
+  if (ev) { runEvent(ev); if (S.pending || S.dead) return; }
+  else pushLog(newEntry(pick(S.age < 4 ? QUIET_BABY : S.age >= 65 ? QUIET_OLD : QUIET), 'quiet'));
+  endYear();
+}
+
+function endYear() {
+  if (S.dead) return;
+  if (S.age >= 125 || R() < hazard(S.age)) { die(S.age >= 125 ? '老衰' : naturalCause()); return; }
+  // 成長と老い
+  const a = S.age;
+  if (a < 18) { S.hp += 1.2 + R(); S.int += R() * 2.2; S.chr += R() * 1.2; }
+  else { const fit = clamp(S.base - Math.max(0, a - 30) * .9, 15, 95); S.hp += (fit - S.hp) * .12; if (a > 65) S.int -= R() * .6; }
+  if (S.jobLv >= 0 || S.custom) S.money += (S.custom ? .4 : .2 + S.jobLv * .55) + (R() - .5) * 1.2;
+  else if (a >= S.E.work) S.money -= .3;
+  S.happy += (S.money - 35) / 80 + (S.married ? .8 : 0) - (S.hp < 30 ? 1 : 0) + (55 - S.happy) * .03;
+  for (const k of stats) S[k] = clamp(S[k], 0, 100);
+  S.maxMoney = Math.max(S.maxMoney, S.money); S.maxFame = Math.max(S.maxFame, S.fame);
+  S.age++;
+  UI.render(true);
+}
+
+function die(cause) {
+  S.dead = true; S.cause = cause;
+  S.maxMoney = Math.max(S.maxMoney, S.money); S.maxFame = Math.max(S.maxFame, S.fame);
+  if (S.age >= 100) S.odds += 1;
+  const en = newEntry(cause === 'デジタル存在への移行' ? `${S.age}歳で肉体の生涯を終え、データの海へ旅立った。` : `${S.age}歳でこの世を去った。死因：${cause}`, 'death');
+  pushLog(en);
+  UI.dead();
+}
+
+function lifeTitle() {
+  const top = S.lad && S.jobLv === S.lad.length - 1;
+  if (S.cause === 'デジタル存在への移行') return '電脳の海へ旅立った人';
+  if (S.age < 1) return '生まれてすぐの、小さな命';
+  if (S.age < 10) return '短い命を駆け抜けた子';
+  if (top && S.fame >= 70) return `伝説の${S.lad[S.jobLv]}`;
+  if (top) return `${S.lad[S.jobLv]}にのぼりつめた人`;
+  if (S.fame >= 85) return '歴史に名を残した偉人';
+  if (S.money >= 90) return '巨万の富を築いた人';
+  if (S.age >= 100) return '百寿の大往生';
+  if (S.rareN >= 4) return '波乱万丈の人生';
+  if (S.kids - S.kidsLost >= 6) return '大家族の祖';
+  if (S.happy >= 80) return '幸せに満ちた人生';
+  if (S.age < 20) return '若くして散った命';
+  if (S.happy <= 15) return '苦難を生き抜いた人';
+  if (S.fame >= 50) return '土地の名士';
+  return '名もなき、けれど確かな一生';
+}
+
+function recordLife() {
+  const newly = [];
+  const give = id => { if (!DB.ach[id]) { DB.ach[id] = 1; newly.push(ACH.find(a => a.id === id)); } };
+  DB.lives++;
+  DB.eras[S.E.id] = (DB.eras[S.E.id] || 0) + 1;
+  give('first');
+  if (S.flags.top) give('top');
+  if (S.age >= 100) give('cent');
+  if (S.age < 1) give('baby');
+  if (S.odds >= Math.log10(8e9)) give('oku');
+  if (S.pCls <= .05) give('royal');
+  if (S.maxMoney >= 100) give('rich');
+  if (S.maxFame >= 100) give('fame');
+  if (S.happy >= 100) give('happy');
+  if (S.kids >= 8) give('big');
+  if (S.log.some(l => l.t.startsWith('雷に打たれた') && !l.death)) give('thunder');
+  if (S.log.some(l => l.t.startsWith('空から光る'))) give('ufo');
+  if (S.cause === 'デジタル存在への移行') give('digital');
+  if (ERAS.every(e => DB.eras[e.id])) give('all');
+  DB.best.age = Math.max(DB.best.age, S.age);
+  DB.best.odds = Math.max(DB.best.odds, S.odds);
+  DB.best.fame = Math.max(DB.best.fame, Math.round(S.maxFame));
+  DB.best.money = Math.max(DB.best.money, Math.round(S.maxMoney));
+  DB.hist.unshift({ n: S.name, e: S.E.name, i: S.E.icon, a: S.age, c: S.cause, t: lifeTitle(), o: S.odds });
+  DB.hist = DB.hist.slice(0, 15);
+  saveDB();
+  return newly;
+}
+
+// ================= 画面 =================
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+let autoT = null, auto = false, speed = 1, omakase = false;
+const SPEEDS = [[1100, 'ゆっくり'], [550, 'ふつう'], [200, 'はやい'], [60, '爆速']];
+
+let AC = null;
+function tone(f, d = .09, type = 'sine', v = .05, delay = 0) {
+  if (DB.muted) return;
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    const t = AC.currentTime + delay, o = AC.createOscillator(), g = AC.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t); g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+    o.connect(g).connect(AC.destination); o.start(t); o.stop(t + d + .02);
+  } catch (e) { }
+}
+
+function show(id) { for (const s of document.querySelectorAll('.scr')) s.hidden = s.id !== id; }
+function setTheme(E) { const r = document.documentElement.style; r.setProperty('--a1', E ? E.a1 : '#c98b4a'); r.setProperty('--a2', E ? E.a2 : '#4a2f1a'); }
+
+const UI = {
+  log(en) {
+    const li = document.createElement('li');
+    li.className = en.cls;
+    let h = `<span class="ag">${en.age}歳</span>${en.t}`;
+    if (en.after.length) h += ' ' + en.after.map(esc).join(' ');
+    if (en.d.length) h += '<div class="dl">' + en.d.map(([k, d]) => `<span class="${d > 0 ? 'p' : 'm'}">${STAT_NAME[k]}${d > 0 ? '+' : ''}${d}</span>`).join('') + '</div>';
+    li.innerHTML = h;
+    const L = $('log'); L.prepend(li);
+    while (L.children.length > 160) L.lastChild.remove();
+    if (en.cls.includes('death')) tone(196, .9, 'triangle', .07), tone(147, 1.2, 'triangle', .06, .25);
+    else if (en.big) tone(660, .12, 'sine', .05), tone(990, .18, 'sine', .04, .1);
+  },
+  render(bump) {
+    if (!S) return;
+    const E = S.E;
+    $('h-ico').textContent = E.icon; $('h-era').textContent = E.name;
+    $('h-sub').textContent = `${yearStr(curYear())}・${S.place}`;
+    $('p-name').textContent = S.name;
+    $('p-job').textContent = jobName();
+    $('p-fam').textContent = `${S.cls.n}／${S.g === 'm' ? '男' : '女'}／${S.married ? '配偶者：' + S.sp : S.widow ? '配偶者：死別' : '独身'}／子：${S.kids - S.kidsLost}人`;
+    $('p-agen').textContent = S.age;
+    if (bump) { const a = $('p-age'); a.classList.remove('bump'); void a.offsetWidth; a.classList.add('bump'); }
+    $('stats').innerHTML = STAT.map(([k, n, c]) => `<div class="st"><label>${n}</label><div class="bar"><i style="width:${S[k]}%;background:${c}"></i></div><em>${Math.round(S[k])}</em></div>`).join('');
+  },
+  choice(ev, text) {
+    stopAuto(true);
+    if (omakase) { setTimeout(() => { if (S && S.pending) { choose(Math.floor(R() * ev.ch.length)); afterChoice(); } }, Math.max(150, SPEEDS[speed][0])); return; }
+    $('m-age').textContent = `${S.age}歳・${yearStr(curYear())}`;
+    $('m-text').textContent = text;
+    $('m-btns').innerHTML = '';
+    ev.ch.forEach((c, i) => {
+      const b = document.createElement('button');
+      b.className = 'btn' + (i ? ' sub' : ''); b.textContent = c.t;
+      b.onclick = () => { $('modal').hidden = true; choose(i); afterChoice(); };
+      $('m-btns').appendChild(b);
+    });
+    $('modal').hidden = false;
+    tone(520, .1, 'square', .03);
+  },
+  dead() {
+    stopAuto();
+    $('modal').hidden = true;
+    UI.render();
+    $('ctrl').innerHTML = '<button class="btn" id="b-review" style="flex:1">🪦 人生をふりかえる</button>';
+    $('b-review').onclick = showEnd;
+  },
+};
+
+function afterChoice() { UI.render(); if (S && !S.dead && wasAuto) startAuto(); }
+let wasAuto = false;
+function startAuto() { auto = true; wasAuto = true; $('b-auto').textContent = '⏸ 一時停止'; tick(); }
+function stopAuto(keep) { auto = false; if (!keep) wasAuto = false; clearTimeout(autoT); const b = $('b-auto'); if (b) b.textContent = '▶ 自動'; }
+function tick() {
+  clearTimeout(autoT);
+  if (!auto || !S || S.dead || S.pending) return;
+  step();
+  if (!S.dead && !S.pending) autoT = setTimeout(tick, SPEEDS[speed][0]);
+}
+
+function resetCtrl() {
+  $('ctrl').innerHTML = `<button class="tg${omakase ? ' on' : ''}" id="b-omakase">選択も<br>おまかせ</button><button class="btn" id="b-auto">▶ 自動</button><button class="btn sub" id="b-step">1年すすむ</button><button class="tg" id="b-speed">${SPEEDS[speed][1]}</button>`;
+  $('b-auto').onclick = () => { if (auto) stopAuto(); else startAuto(); };
+  $('b-step').onclick = () => { stopAuto(); step(); };
+  $('b-speed').onclick = e => { speed = (speed + 1) % SPEEDS.length; e.currentTarget.textContent = SPEEDS[speed][1]; };
+  $('b-omakase').onclick = e => { omakase = !omakase; e.currentTarget.classList.toggle('on', omakase); };
+}
+
+function titleScreen() {
+  stopAuto(); S = null; setTheme(null); show('scr-title');
+  $('t-eras').innerHTML = ERAS.map(e => `<span class="${DB.eras[e.id] ? '' : 'lock'}" title="${e.name}">${e.icon}</span>`).join('');
+  const n = ERAS.filter(e => DB.eras[e.id]).length;
+  $('t-stats').textContent = DB.lives ? `これまで ${DB.lives} 回の人生／${n}/${ERAS.length} の時代を体験` : `全${ERAS.length}の時代。どこに生まれるかは運しだい。`;
+  $('b-snd').textContent = DB.muted ? '🔇 音なし' : '🔊 音あり';
+}
+
+function roll() {
+  stopAuto();
+  const L = newLife();
+  show('scr-roll'); setTheme(null);
+  $('reveal').hidden = true; $('reel').classList.remove('fin');
+  let n = 0; const total = 26;
+  const spin = () => {
+    n++;
+    const e = n >= total ? L.E : ERAS[Math.floor(R() * ERAS.length)];
+    $('r-ico').textContent = e.icon; $('r-name').textContent = e.name; $('r-year').textContent = n >= total ? `${yearStr(L.by)}・${L.place}` : '';
+    if (n < total) { tone(300 + (n % 5) * 60, .04, 'square', .025); setTimeout(spin, 40 + n * n * .3); }
+    else {
+      setTheme(L.E); $('reel').classList.add('fin');
+      tone(523, .15, 'sine', .06); tone(659, .15, 'sine', .06, .12); tone(784, .3, 'sine', .06, .24);
+      setTimeout(() => {
+        $('rv-name').textContent = L.name;
+        $('rv-line').innerHTML = `${esc(L.cls.n)}の<b>${L.g === 'm' ? '男の子' : '女の子'}</b>として生まれる。<br>体力${L.hp}・知力${L.int}・魅力${L.chr}・運${L.luck}`;
+        $('rv-p1').textContent = fmtOdds(Math.log10(1 / L.pEra));
+        $('rv-p2').textContent = (L.pCls * 100).toFixed(L.pCls < .1 ? 1 : 0) + '%';
+        $('reveal').hidden = false;
+      }, 380);
+    }
+  };
+  spin();
+}
+
+function beginLife() {
+  show('scr-life'); resetCtrl(); setTheme(S.E);
+  $('log').innerHTML = '';
+  const en = newEntry(`${yearStr(S.by)}、${S.place}で、${S.cls.n}の${S.g === 'm' ? '男の子' : '女の子'}として生まれた。名前は「${S.given}」。`, 'sys big');
+  pushLog(en);
+  UI.render();
+  startAuto();
+}
+
+function showEnd() {
+  const newly = recordLife();
+  show('scr-end'); $('scr-end').scrollTop = 0;
+  const E = S.E;
+  $('e-era').textContent = `${E.icon} ${E.name}・${S.place}`;
+  $('e-name').textContent = S.name;
+  $('e-years').textContent = `${yearStr(S.by)} 〜 ${yearStr(curYear())}`;
+  $('e-age').textContent = `享年 ${S.age}`;
+  $('e-cause').textContent = `死因：${S.cause}`;
+  $('e-title').textContent = lifeTitle();
+  $('e-odds').textContent = fmtOdds(S.odds);
+  const oku = Math.log10(8e9);
+  $('e-cmp').innerHTML = S.odds >= oku ? '地球の人口（約80億人）よりも希少な、<b>たったひとつの人生</b>。' : `80億分の1まで、あと${fmtOdds(oku - S.odds).replace('分の1', '倍')}。<br>長く、波乱に満ちた人生ほど希少になる。`;
+  $('e-meter').style.width = Math.min(100, S.odds / 14 * 100) + '%';
+  $('e-mark').style.left = (oku / 14 * 100) + '%';
+  $('e-ach').innerHTML = newly.map(a => `<div class="new-ach">🏅 実績解除：<b>${a.i} ${a.n}</b> — ${a.d}</div>`).join('');
+  const job = S.custom || (S.lad && S.jobLv >= 0 ? S.lad[S.jobLv] : 'なし');
+  $('e-sum').innerHTML = [
+    ['生まれ', `${S.cls.n}（${(S.pCls * 100).toFixed(S.pCls < .1 ? 1 : 0)}%）`], ['最後の職業', job],
+    ['家族', `${S.everMarried ? '結婚した' : '生涯独身'}／子ども${S.kids}人${S.kidsLost ? `（うち${S.kidsLost}人は早世）` : ''}`],
+    ['財産', `${Math.round(S.money)}（最高 ${Math.round(S.maxMoney)}）`], ['名声', `${Math.round(S.fame)}`], ['幸福', `${Math.round(S.happy)}`],
+    ['出来事', `${S.nev}件（レア ${S.rareN}件）`],
+  ].map(([a, b]) => `<dt>${a}</dt><dd>${esc(b)}</dd>`).join('');
+  const hl = S.big.slice(-8);
+  $('e-hl').innerHTML = hl.length ? hl.map(e => `<li><b>${e.age}歳</b>${e.t.replace(/<[^>]+>/g, '')}${e.after.length ? ' ' + esc(e.after.join(' ')) : ''}</li>`).join('') : '<li class="muted">大きな事件のない、静かな一生だった。</li>';
+  if (newly.length) tone(880, .15, 'sine', .05, .3), tone(1175, .25, 'sine', .05, .45);
+}
+
+function copyResult() {
+  const t = `【時代ガチャ人生】\n${S.E.icon}${S.E.name}（${yearStr(S.by)}）に${S.cls.n}の${S.g === 'm' ? '男' : '女'}として生まれた「${S.name}」\n享年${S.age}・死因：${S.cause}\n称号：${lifeTitle()}\nこの人生は ${fmtOdds(S.odds)}\n${location.href}`;
+  const done = () => toast('コピーしました');
+  try { navigator.clipboard.writeText(t).then(done, () => fallbackCopy(t, done)); } catch (e) { fallbackCopy(t, done); }
+}
+function fallbackCopy(t, done) { const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); done(); } catch (e) { } ta.remove(); }
+function toast(m) { const d = document.createElement('div'); d.className = 'toast'; d.textContent = m; document.body.appendChild(d); setTimeout(() => d.remove(), 1600); }
+
+let bookBack = 'title';
+function showBook(from) {
+  bookBack = from; show('scr-book'); $('scr-book').scrollTop = 0;
+  $('bk-eras').innerHTML = ERAS.map(e => DB.eras[e.id] ? `<div><i>${e.icon}</i>${e.name}<br><small>${DB.eras[e.id]}回</small></div>` : `<div class="lock"><i>❓</i>？？？<br><small>確率 ${(e.w / TOTAL_W * 100).toFixed(1)}%</small></div>`).join('');
+  $('bk-recs').innerHTML = `<div>人生の回数<b>${DB.lives}回</b></div><div>最長寿<b>${DB.best.age}歳</b></div><div>最高レア度<b>${DB.best.odds ? fmtOdds(DB.best.odds) : '—'}</b></div><div>最高名声<b>${DB.best.fame}</b></div>`;
+  $('bk-achs').innerHTML = ACH.map(a => `<div class="${DB.ach[a.id] ? '' : 'lock'}"><i>${DB.ach[a.id] ? a.i : '🔒'}</i><div>${a.n}<small>${a.d}</small></div></div>`).join('');
+  $('bk-hist').innerHTML = DB.hist.length ? DB.hist.map(h => `<div>${h.i} <b>${esc(h.n)}</b>（${esc(h.e)}）享年${h.a}・${esc(h.c)}<br><span class="muted">${esc(h.t)}／${fmtOdds(h.o)}</span></div>`).join('') : '<div class="muted">まだ記録がありません</div>';
+}
+
+function init() {
+  $('b-born').onclick = () => { tone(440, .08); roll(); };
+  $('b-start').onclick = beginLife;
+  $('b-reroll').onclick = roll;
+  $('b-book').onclick = () => showBook('title');
+  $('b-snd').onclick = () => { DB.muted = !DB.muted; saveDB(); titleScreen(); };
+  $('b-quit').onclick = () => { if (S && !S.dead && !confirm('この人生を途中でやめてタイトルに戻りますか？（記録されません）')) return; $('modal').hidden = true; titleScreen(); };
+  $('b-again').onclick = roll;
+  $('b-copy').onclick = copyResult;
+  $('b-ebook').onclick = () => showBook('end');
+  $('b-etitle').onclick = titleScreen;
+  $('b-bback').onclick = () => bookBack === 'end' && S ? show('scr-end') : titleScreen();
+  document.addEventListener('visibilitychange', () => { if (document.hidden && auto) stopAuto(true); });
+  titleScreen();
+}
+init();
+</script>
+<script src="../../playtime.js" defer></script>
+</body>
+</html>
