@@ -277,10 +277,11 @@ input,select{user-select:text;-webkit-user-select:text}
 .side-tabs.cu .tabbtn{font-size:15px;padding:12px}
 
 /* modal / toast */
-.modal{position:absolute;inset:0;background:rgba(2,10,30,.6);display:grid;place-items:center;padding:16px;z-index:20}
-.m-box{width:100%;max-width:420px;padding:20px;display:flex;flex-direction:column;gap:14px;animation:pop .2s}
+.modal{position:absolute;inset:0;background:rgba(2,10,30,.6);display:grid;place-items:center;padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));z-index:20;box-sizing:border-box}
+.m-box{width:100%;max-width:420px;max-height:100%;box-sizing:border-box;padding:20px;display:flex;flex-direction:column;gap:14px;animation:pop .2s;min-height:0}
 .m-title{margin:0;font-size:20px;font-weight:900;text-align:center}
-.m-body{font-size:14px;line-height:1.7;color:#dcebff}
+.m-body{font-size:14px;line-height:1.7;color:#dcebff;overflow-y:auto;min-height:0;flex:1 1 auto;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+.m-title,.m-foot{flex:none}
 .m-body p{margin:0 0 8px}
 .m-body .err{color:#ff9d92;font-weight:800;min-height:1.4em;margin:6px 0 0}
 .m-body .row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.1)}
@@ -1316,6 +1317,8 @@ function modal(title,body,buttons,onOpen){
   paintIcons($('#mBody'));$('#modal').hidden=false;if(onOpen)onOpen();
 }
 function closeModal(){$('#modal').hidden=true;}
+// 枠の外（暗いところ）を押しても閉じられるようにする
+$('#modal').addEventListener('click',e=>{if(e.target===$('#modal'))closeModal();});
 
 /* ---------- タイトル ---------- */
 $('#startBtn').onclick=()=>quickMatch();
@@ -1344,7 +1347,7 @@ function openSettings(){
     <div class="row"><span>セーブデータ</span><button type="button" class="btn red sm" id="resetBtn">リセット</button></div>`,
     [{label:'保存して閉じる',onClick:()=>{
       const n=$('#setName').value.trim();S.name=n||'ゲスト';S.sound=$('#setSound').checked;S.shake=$('#setShake').checked;S.autoAim=$('#setAim').checked;
-      save();refreshUI();syncAim();closeModal();toast('設定を保存しました');}}],
+      save();refreshUI();syncAim();closeModal();toast('設定を保存しました');}},{label:'閉じる',cls:'dark'}],
     ()=>{let armed=false;$('#resetBtn').onclick=()=>{
       if(!armed){armed=true;$('#resetBtn').textContent='もう一度押すと消去';return;}
       S=clone(DEF);checkDaily();save();refreshUI();syncAim();closeModal();toast('セーブデータをリセットしました');}});
