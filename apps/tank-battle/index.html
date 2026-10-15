@@ -282,6 +282,17 @@ input,select{user-select:text;-webkit-user-select:text}
 .m-title{margin:0;font-size:20px;font-weight:900;text-align:center}
 .m-body{font-size:14px;line-height:1.7;color:#dcebff;overflow-y:auto;min-height:0;flex:1 1 auto;-webkit-overflow-scrolling:touch;touch-action:pan-y}
 .m-title,.m-foot{flex:none}
+.m-box{position:relative}
+.m-x{position:absolute;top:8px;right:8px;width:40px;height:40px;border-radius:50%;border:2px solid rgba(255,255,255,.5);background:rgba(255,255,255,.12);color:#fff;font:900 22px/1 var(--font);display:grid;place-items:center;cursor:pointer;z-index:1}
+.m-body details summary{cursor:pointer;font-weight:800;padding:6px 0}
+/* 横向きのスマホなど低い画面では、つめて表示する */
+@media (max-height:520px){
+  .m-box{padding:12px 16px;gap:8px}
+  .m-title{font-size:17px;padding:0 40px}
+  .m-body{font-size:13px;line-height:1.5}
+  .m-body .row{padding:4px 0}
+  .m-x{top:6px;right:6px;width:36px;height:36px}
+}
 .m-body p{margin:0 0 8px}
 .m-body .err{color:#ff9d92;font-weight:800;min-height:1.4em;margin:6px 0 0}
 .m-body .row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.1)}
@@ -357,7 +368,7 @@ input,select{user-select:text;-webkit-user-select:text}
       <button class="btn pill" id="setBtn" type="button"><i class="ic" data-ic="gear"></i>設定</button>
     </div>
     <div class="daily"><i class="ic box" data-ic="gift"></i><div>デイリーミッション：3回勝利 <span id="dailyTxt">0/3</span><small id="dailySub">達成で ジェム+50</small></div></div>
-    <div class="ver">ver 1.0 ・ CPU対戦</div>
+    <div class="ver">ver 1.1 ・ CPU対戦</div>
   </section>
 
   <!-- チーム戦（CPU） -->
@@ -518,6 +529,7 @@ input,select{user-select:text;-webkit-user-select:text}
 
   <div id="modal" class="modal" hidden>
     <div class="panel m-box" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+      <button type="button" class="m-x" id="mX" aria-label="閉じる">×</button>
       <h3 id="mTitle" class="m-title"></h3>
       <div class="m-body" id="mBody"></div>
       <div class="m-foot" id="mFoot"></div>
@@ -1319,6 +1331,7 @@ function modal(title,body,buttons,onOpen){
 function closeModal(){$('#modal').hidden=true;}
 // 枠の外（暗いところ）を押しても閉じられるようにする
 $('#modal').addEventListener('click',e=>{if(e.target===$('#modal'))closeModal();});
+$('#mX').onclick=closeModal;
 
 /* ---------- タイトル ---------- */
 $('#startBtn').onclick=()=>quickMatch();
@@ -1343,7 +1356,7 @@ function openSettings(){
     <div class="row"><span>サウンド</span><label class="toggle"><input type="checkbox" id="setSound" ${S.sound?'checked':''}>オン</label></div>
     <div class="row"><span>画面の揺れ</span><label class="toggle"><input type="checkbox" id="setShake" ${S.shake?'checked':''}>オン</label></div>
     <div class="row"><span>オートエイム（タッチ操作時）</span><label class="toggle"><input type="checkbox" id="setAim" ${S.autoAim?'checked':''}>オン</label></div>
-    <p style="margin-top:12px"><b>操作方法</b><br>PC：<kbd>WASD</kbd>/<kbd>矢印</kbd>で移動、マウスで照準、クリックか<kbd>Space</kbd>で発射、<kbd>Esc</kbd>で一時停止。<br>スマホ：左のスティックで移動、右のボタンで発射。照準はオートエイムが近くの敵に合わせます。</p>
+    <details><summary>操作方法</summary><p>PC：<kbd>WASD</kbd>/<kbd>矢印</kbd>で移動、マウスで照準、クリックか<kbd>Space</kbd>で発射、<kbd>Esc</kbd>で一時停止。<br>スマホ：左のスティックで移動、右のボタンで発射。照準はオートエイムが近くの敵に合わせます。</p></details>
     <div class="row"><span>セーブデータ</span><button type="button" class="btn red sm" id="resetBtn">リセット</button></div>`,
     [{label:'保存して閉じる',onClick:()=>{
       const n=$('#setName').value.trim();S.name=n||'ゲスト';S.sound=$('#setSound').checked;S.shake=$('#setShake').checked;S.autoAim=$('#setAim').checked;
