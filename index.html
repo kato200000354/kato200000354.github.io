@@ -58,7 +58,17 @@ h1 span{color:var(--accent)}
 .bar{display:flex;flex-direction:column;gap:10px}
 .filters{display:flex;gap:8px;flex-wrap:wrap}
 .tab{white-space:nowrap;flex:none}
-.sort{align-self:flex-end}
+.sort{flex:none}
+.bar-row{display:flex;align-items:center;justify-content:flex-end;gap:10px}
+.search{flex:1;max-width:340px;position:relative}
+.search input{width:100%;box-sizing:border-box;font:inherit;font-size:14px;font-weight:700;color:var(--ink);background:var(--card);border:1.5px solid var(--line);border-radius:999px;padding:7px 14px 7px 34px;outline:none}
+.search input:focus{border-color:var(--ink)}
+.search input::placeholder{color:var(--muted);font-weight:500}
+.search::before{content:"";position:absolute;left:13px;top:50%;width:9px;height:9px;margin-top:-7px;border:2px solid var(--muted);border-radius:50%;pointer-events:none}
+.search::after{content:"";position:absolute;left:23px;top:50%;width:2px;height:6px;margin-top:2px;background:var(--muted);transform:rotate(-45deg);pointer-events:none}
+.empty{grid-column:1/-1;text-align:center;color:var(--muted);font-weight:700;padding:40px 0}
+.empty button{margin-top:12px;appearance:none;font:inherit;font-size:13px;font-weight:700;color:var(--ink);background:var(--card);border:1.5px solid var(--line);border-radius:999px;padding:7px 16px;cursor:pointer}
+@media (max-width:720px){.search{max-width:none}.sort{font-size:0;gap:0}.sort select{font-size:13px}}
 @media (max-width:720px){
   /* スマホではジャンルを横スクロールで選ぶ */
   .filters{flex-wrap:nowrap;overflow-x:auto;margin:0 -16px;padding:2px 16px 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
@@ -163,6 +173,8 @@ footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--muted);f
 
   <nav class="tabs bar" aria-label="絞り込みと並べ替え">
     <div class="filters" id="filters" role="group" aria-label="ジャンル"></div>
+    <div class="bar-row">
+    <label class="search"><input type="search" id="q" placeholder="作品をさがす（例：ホラー、野球）" aria-label="作品を検索" enterkeyhint="search" autocomplete="off"></label>
     <label class="sort">並べ替え
       <select id="sort">
         <option value="new">新しい順</option>
@@ -172,6 +184,7 @@ footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--muted);f
         <option value="name">名前順</option>
       </select>
     </label>
+    </div>
   </nav>
 
   <main class="grid" id="grid"></main>
@@ -222,13 +235,31 @@ const SORTS = {
   time: (a,b) => (b.secs ?? -1) - (a.secs ?? -1) || b.made - a.made,
   name: (a,b) => a.name.localeCompare(b.name, 'ja'),
 };
+// 検索：ひらがな/カタカナ、全角/半角、大文字/小文字の違いを気にせず、名前・説明・ジャンルから探す
+const norm = t => t.normalize('NFKC').toLowerCase().replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60)).replace(/[\s・ー〜~!！?？、。,.「」『』（）()]/g, '');
+WORKS.forEach(w => w.text = norm(`${w.name} ${w.desc} ${GENRES[genreOf(w)]} ${w.kw || ""}`));
+const qInput = document.getElementById('q');
+const words = () => qInput.value.split(/[\s　]+/).map(norm).filter(Boolean);
+const empty = document.createElement('p');
+empty.className = 'empty';
 function render(){
+  const ws = words();
+  let shown = 0;
   [...WORKS].sort(SORTS[sortSel.value]).forEach(w => {
     const c = cardOf(w.id);
-    c.hidden = filter !== 'all' && genreOf(w) !== filter;
+    c.hidden = (filter !== 'all' && genreOf(w) !== filter) || !ws.every(x => w.text.includes(x));
+    if (!c.hidden) shown++;
     grid.appendChild(c);
   });
+  if (shown) return empty.remove();
+  const inGenre = filter !== 'all' && WORKS.some(w => ws.every(x => w.text.includes(x)));
+  empty.innerHTML = `「${qInput.value.replace(/[<>&"]/g, '')}」に合う作品は${inGenre ? 'このジャンルには' : ''}見つかりませんでした`
+    + (inGenre ? '<br><button type="button" data-all>すべてのジャンルでさがす</button>' : '');
+  grid.appendChild(empty);
 }
+empty.addEventListener('click', e => { if (e.target.closest('[data-all]')) filters.querySelector('[data-f="all"]').click(); });
+qInput.addEventListener('input', render);
+qInput.addEventListener('keydown', e => { if (e.key === 'Enter') qInput.blur(); });
 
 const count = k => WORKS.filter(w => k === 'all' || w.kind === k).length;
 ['all','game','app'].forEach(k => document.getElementById('s-'+k).textContent = count(k));
