@@ -535,13 +535,13 @@ function stepSwing(h, timed) {
   S.om += acc * h; S.th += S.om * h;
   const sg = Math.sign(S.om);
   if (sg !== 0 && sg !== S.lastSign) { S.lastSign = sg; S.credited = 0; }
-  // 真上を越えたら一回転。回り続けるときは真上を越えるたびに次の加速を受け付ける
-  const wt = wrapTh(), pw = S.prevW ?? wt;
-  if (Math.sign(wt) !== Math.sign(pw) && Math.abs(wt) > Math.PI / 2) {
+  // 真上を越えて、まだ行ったことのない周回に入ったら一回転（真上で左右に振って行き来しても増えない）
+  const k = Math.floor((S.th + Math.PI) / (2 * Math.PI));
+  if (k > (S.kMax ?? 0) || k < (S.kMin ?? 0)) {
+    S.kMax = Math.max(S.kMax ?? 0, k); S.kMin = Math.min(S.kMin ?? 0, k);
     S.credited = 0;
     if (timed) { S.loops = (S.loops || 0) + 1; pop(S.loops > 1 ? `${S.loops}回転！` : '一回転！', '#ffd23f', 1.2); sfx.perfect(); }
   }
-  S.prevW = wt;
   if (timed) {
     S.time -= h;
     if (S.time <= 0) { S.time = 0; release(true); }
@@ -1168,7 +1168,7 @@ function hud() {
 
 /* ---------- 進行 ---------- */
 function resetSwing() {
-  Object.assign(S, { th: -0.35, om: 0, credited: 0, lastSign: 0, combo: 0, miss: 0, twist: 0, time: T_LIMIT, kickAnim: 0, swipes: 0, phiV: 0, prevPhi: null, fs: null, loops: 0, prevW: null, bend: 0, bendV: 0, fingerV: 0, fingerOff: 0,
+  Object.assign(S, { th: -0.35, om: 0, credited: 0, lastSign: 0, combo: 0, miss: 0, twist: 0, time: T_LIMIT, kickAnim: 0, swipes: 0, phiV: 0, prevPhi: null, fs: null, loops: 0, kMax: 0, kMin: 0, bend: 0, bendV: 0, fingerV: 0, fingerOff: 0,
     hideKid: false, result: null, resultShown: false, slide: null, face: 'smile', lastTick: 99, pops: [], lastSwipe: -1 });
 }
 function startGame() {
@@ -1237,7 +1237,7 @@ function showFinal() {
 function toTitle() {
   $('finalScreen').hidden = true; $('titleScreen').hidden = false;
   app.classList.remove('in-game');
-  S.phase = 'title'; S.th = 0.6; S.om = 0; ropeInit(S.th); S.cx = AX; S.hideKid = false; S.marks = []; S.cur = 0;
+  S.phase = 'title'; S.th = 0.6; S.kMax = S.kMin = 0; S.om = 0; ropeInit(S.th); S.cx = AX; S.hideKid = false; S.marks = []; S.cur = 0;
 }
 
 /* ---------- 入力 ---------- */
