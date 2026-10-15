@@ -304,9 +304,9 @@ const sfx = {
 };
 
 /* ---------- 画面サイズとカメラ ---------- */
-let W = 0, H = 0, sc = 20, baseY = 400;
+let W = 0, H = 0, sc = 20, baseY = 400, dpr = 1;
 function resize() {
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  dpr = Math.min(2, window.devicePixelRatio || 1);
   W = cv.clientWidth; H = cv.clientHeight;
   cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -317,6 +317,9 @@ function resize() {
   baseY = H - 1.3 * sc - extra * 0.45;
 }
 addEventListener('resize', resize);
+// スマホでアプリを切り替えたりするとキャンバスの中身と拡大率がリセットされることがあるので、作り直す
+cv.addEventListener('contextrestored', resize);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) resize(); });
 const X = (x, p = 1) => W / 2 + (x - S.cx * p) * sc;
 const Y = y => baseY - (y - (S.cy || 0)) * sc;
 
@@ -1078,6 +1081,10 @@ function leaf(x, y, len, ang, col) {
   ctx.restore();
 }
 function render() {
+  // 画面サイズが変わっていたら合わせ直し、拡大率は毎フレーム設定し直す（リセットされると絵が左上に縮んでしまう）
+  if (cv.width !== Math.round(cv.clientWidth * dpr) || cv.height !== Math.round(cv.clientHeight * dpr)) resize();
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.globalAlpha = 1;
+  ctx.clearRect(0, 0, W, H);
   const hY = Y(1.4);
   drawSky(hY);
   drawSpace();
