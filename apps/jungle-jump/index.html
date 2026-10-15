@@ -44,6 +44,9 @@ body{margin:0;background:#8fd8ff;color:var(--ink);font-family:"M PLUS Rounded 1c
 .track{position:relative;width:20px;height:min(34vh,230px);border-radius:12px;border:3px solid #fff;background:linear-gradient(to top,#39b54a,#a6d93b 40%,#ffd23f 62%,#ff8a2b 82%,#e5364b);box-shadow:0 4px 12px rgba(0,30,80,.3)}
 .cover{position:absolute;left:0;right:0;top:0;height:100%;background:rgba(12,42,91,.88);border-radius:9px 9px 0 0}
 .reach{position:absolute;left:-9px;right:-9px;bottom:28.9%;border-top:3px solid #fff}
+.prevmark{position:absolute;left:-6px;right:-6px;border-top:3px dashed #ffd23f;transition:bottom .2s}
+.prevmark span{position:absolute;right:calc(100% + 4px);top:1px;font-size:10px;font-weight:800;color:#3a2a00;background:#ffd23f;padding:1px 6px;border-radius:6px;white-space:nowrap}
+.gloops{font-size:12px;font-weight:900;color:#3a2a00;background:#ffd23f;padding:2px 8px;border-radius:999px;box-shadow:0 2px 6px rgba(0,30,80,.3);font-variant-numeric:tabular-nums}
 .reach span{position:absolute;right:calc(100% + 4px);top:-11px;font-size:10px;font-weight:800;color:#fff;background:var(--navy-glass);padding:1px 6px;border-radius:6px;white-space:nowrap}
 
 /* ヒント */
@@ -137,7 +140,8 @@ body{margin:0;background:#8fd8ff;color:var(--ink);font-family:"M PLUS Rounded 1c
 
   <div class="gauge game-only" aria-hidden="true">
     <span class="glabel">いきおい</span>
-    <div class="track"><div class="cover" id="gCover"></div><div class="reach"><span>とどく</span></div></div>
+    <span class="gloops" id="gLoops" hidden></span>
+    <div class="track"><div class="cover" id="gCover"></div><div class="reach"><span>とどく</span></div><div class="prevmark" id="gPrev" hidden><span>前回</span></div></div>
   </div>
 
   <div class="hint game-only" id="hint" hidden>
@@ -258,7 +262,7 @@ try {
 
 /* ---------- 状態 ---------- */
 const S = {
-  phase: 'title', n: 1, beginner: true, round: 1, cur: 0, scores: [], recs: [], marks: [],
+  phase: 'title', n: 1, beginner: true, round: 1, cur: 0, scores: [], recs: [], marks: [], lastA: [],
   th: 0.6, om: 0, credited: false, lastSign: 0, combo: 0, miss: 0, twist: 0, time: T_LIMIT,
   px: 0, py: 0, vx: 0, vy: 0, flyAng: 0, ropeTh: 0, ropeOm: 0, hideKid: false, bumped: false,
   slide: null, landT: 0, result: null, resultShown: false, t: 0, cx: 0,
@@ -317,6 +321,10 @@ function resize() {
   baseY = H - 1.3 * sc - extra * 0.45;
 }
 addEventListener('resize', resize);
+// いきおいゲージは、上の表示（ベストなど）が折り返して2段になっても重ならないよう、その下に置く
+const placeGauge = () => { const b = document.querySelector('.hud').getBoundingClientRect().bottom; document.querySelector('.gauge').style.top = Math.round(b + 8) + 'px'; };
+if (window.ResizeObserver) new ResizeObserver(placeGauge).observe(document.querySelector('.hud'));
+addEventListener('resize', placeGauge);
 // スマホでアプリを切り替えたりするとキャンバスの中身と拡大率がリセットされることがあるので、作り直す
 cv.addEventListener('contextrestored', resize);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) resize(); });
@@ -415,6 +423,7 @@ function release(auto) {
   const c = Math.cos(S.th), s = Math.sin(S.th);
   S.px = AX + L * s; S.py = AY - L * c;
   S.vx = L * S.om * c; S.vy = L * S.om * s;
+  S.relA = amp(); S.relLoops = S.loops || 0;     // 手をはなした瞬間の勢い（ゲージに残す）
   S.ropeTh = S.th; S.ropeOm = S.om * 0.6; S.flyAng = -S.th; S.bumped = false; S.altStage = 0; S.maxAlt = 0;
   S.phase = 'fly';
   S.face = S.vx < -0.3 ? 'oops' : 'smile';
@@ -1137,7 +1146,7 @@ function updateChips() {
   });
 }
 function updateBest() { $('bestVal').textContent = best > 0 ? fmt(best) : '--'; }
-let lastTimeTxt = '', lastCover = -1, lastHint = '';
+let lastTimeTxt = '', lastCover = -1, lastHint = '', lastPrev = null, lastLoops = null;
 function hud() {
   if (S.phase === 'title' || S.phase === 'final') return;
   const ap = $('altPill');
@@ -1146,9 +1155,19 @@ function hud() {
   const tt = String(Math.ceil(S.time));
   if (tt !== lastTimeTxt) { $('timeVal').textContent = tt; lastTimeTxt = tt; }
   $('timer').classList.toggle('low', S.phase === 'swing' && S.time <= 5);
-  const A = (S.phase === 'swing' || S.phase === 'ready') ? amp() : 0;
+  // 跳んだあとは、はなした瞬間の勢いでゲージを止めておく
+  const frozen = S.phase === 'fly' || S.phase === 'landed';
+  const A = (S.phase === 'swing' || S.phase === 'ready') ? amp() : frozen ? (S.relA || 0) : 0;
   const cover = Math.round((1 - clamp(A / Math.PI, 0, 1)) * 1000) / 10;
   if (cover !== lastCover) { $('gCover').style.height = cover + '%'; lastCover = cover; }
+  // 前回の勢い（その人の前のジャンプ）
+  const pa = (S.phase === 'swing' || S.phase === 'ready') ? S.lastA[S.cur] : null;
+  const pk = pa == null ? '' : String(Math.round(clamp(pa / Math.PI, 0, 1) * 1000) / 10);
+  if (pk !== lastPrev) { lastPrev = pk; $('gPrev').hidden = !pk; if (pk) $('gPrev').style.bottom = pk + '%'; }
+  // ゲージが満タンを超えた分は回転数で見せる
+  const lp = frozen ? (S.relLoops || 0) : (S.loops || 0);
+  const lt = lp > 0 ? `${lp}回転` : '';
+  if (lt !== lastLoops) { lastLoops = lt; $('gLoops').hidden = !lt; $('gLoops').textContent = lt; }
   // ヒント
   const hint = $('hint');
   let txt = '', cls = '';
@@ -1169,14 +1188,14 @@ function hud() {
 /* ---------- 進行 ---------- */
 function resetSwing() {
   Object.assign(S, { th: -0.35, om: 0, credited: 0, lastSign: 0, combo: 0, miss: 0, twist: 0, time: T_LIMIT, kickAnim: 0, swipes: 0, phiV: 0, prevPhi: null, fs: null, loops: 0, kMax: 0, kMin: 0, bend: 0, bendV: 0, fingerV: 0, fingerOff: 0,
-    hideKid: false, result: null, resultShown: false, slide: null, face: 'smile', lastTick: 99, pops: [], lastSwipe: -1 });
+    hideKid: false, result: null, resultShown: false, relA: 0, relLoops: 0, slide: null, face: 'smile', lastTick: 99, pops: [], lastSwipe: -1 });
 }
 function startGame() {
   audio();
   S.beginner = $('optBeginner').checked;
   try { localStorage.setItem('tsuta-beginner', S.beginner ? '1' : '0'); } catch (e) {}
   S.scores = Array(S.n).fill(0); S.recs = [...Array(S.n)].map(() => []);
-  S.marks = []; S.round = 1; S.cur = 0; S.firstTurn = true; S.hintSeen = false;
+  S.marks = []; S.round = 1; S.cur = 0; S.firstTurn = true; S.hintSeen = false; S.lastA = Array(S.n).fill(null);
   $('titleScreen').hidden = true; $('finalScreen').hidden = true;
   app.classList.add('in-game');
   buildChips(); startTurn();
@@ -1212,6 +1231,7 @@ function showResult() {
 function next() {
   if (S.phase !== 'landed' || !S.resultShown) return;
   $('resultCard').hidden = true;
+  S.lastA[S.cur] = S.relA;
   S.firstTurn = false;
   S.cur++;
   if (S.cur >= S.n) { S.cur = 0; S.round++; }
