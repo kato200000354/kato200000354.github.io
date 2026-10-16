@@ -273,6 +273,36 @@ const pick = a => a[Math.floor(R() * a.length)];
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 function wpick(arr, wf) { let t = 0; for (const x of arr) t += wf(x); let r = R() * t; for (const x of arr) { r -= wf(x); if (r <= 0) return x; } return arr[arr.length - 1]; }
 const TALENT = ['歌', '絵', '料理', '計算', '踊り', '語り', '手先の器用さ', '商売'];
+// 開花した才能ごとの道（時代のグループ別の出世ルート）。s=成功に効く能力 big=大舞台の文
+const TAL = {
+  '歌': { o: '代表曲', s: 'chr', big: '{v}で歌うチャンスが来た！', lad: {
+    anc: ['歌い手', '祭りの歌い手', 'ムラ一番の歌い手', '伝説の歌い手'], pre: ['旅の歌い手', '評判の歌い手', '都の人気歌手', '宮廷の楽師長'],
+    mod: ['路上シンガー', '新人歌手', '人気歌手', '国民的歌手'], fut: ['ネットの歌い手', '人気シンガー', '惑星ツアー歌手', '銀河的スター'] } },
+  '絵': { o: '代表作の大作', s: 'int', big: '{v}で自分の絵を披露することになった！', lad: {
+    anc: ['壁画描き', '腕ききの絵描き', 'ムラの絵師', '伝説の壁画師'], pre: ['絵師見習い', '絵師', '評判の絵師', '御用絵師'],
+    mod: ['画学生', '画家', '人気画家', '世界的画家'], fut: ['ホロアート見習い', 'ホロアーティスト', '人気アーティスト', '銀河的アーティスト'] } },
+  '料理': { o: '究極の看板料理', s: 'chr', big: '{v}で料理をふるまうことになった！', lad: {
+    anc: ['料理番', 'ムラの料理番', '宴の料理長', '伝説の料理人'], pre: ['料理人見習い', '料理人', '名料理人', '宮廷料理長'],
+    mod: ['見習いコック', '料理人', '人気店のシェフ', '三つ星シェフ'], fut: ['フードプリンター職人', '分子料理人', '人気シェフ', '太陽系一のシェフ'] } },
+  '計算': { o: '大定理の証明', s: 'int', big: '{v}で、誰も解けない難問に挑むことになった！', lad: {
+    anc: ['数え役', 'ムラの数え役', '暦読み', '星読みの賢者'], pre: ['算術見習い', '算術家', '高名な学者', '国の算術指南役'],
+    mod: ['理系の学生', '研究者', '数学者', '歴史に残る数学者'], fut: ['データ見習い', '量子アナリスト', '主任研究者', '宇宙数学の巨人'] } },
+  '踊り': { o: '代表作の舞', s: 'hp', big: '{v}で踊ることになった！', lad: {
+    anc: ['踊り手', '祭りの踊り手', 'ムラ一番の踊り手', '神に捧げる舞の名手'], pre: ['踊り子', '評判の踊り手', '都の舞の名手', '宮廷舞踊の第一人者'],
+    mod: ['ダンサー見習い', 'ダンサー', '人気ダンサー', '世界的ダンサー'], fut: ['無重力ダンサー見習い', '無重力ダンサー', '人気パフォーマー', '銀河的ダンサー'] } },
+  '語り': { o: '代表作の物語', s: 'int', big: '{v}で自作の物語を披露することになった！', lad: {
+    anc: ['語り部見習い', '語り部', '名語り部', '伝説の語り部'], pre: ['語り手', '講釈師', '名の知れた物語作者', '歴史に残る文豪'],
+    mod: ['作家志望', '新人作家', '人気作家', '文学賞作家'], fut: ['VR物語見習い', 'VR物語作家', '人気クリエイター', '銀河的ストーリーテラー'] } },
+  '手先の器用さ': { o: '生涯最高の作品', s: 'int', big: '{v}で自分の作品を披露することになった！', lad: {
+    anc: ['道具作り', '腕ききの道具作り', '名工', '伝説の名工'], pre: ['弟子', '職人', '名工', '天下一の名工'],
+    mod: ['見習い職人', '職人', '名工', '人間国宝'], fut: ['ロボット技師見習い', 'ロボット技師', '名エンジニア', '伝説のメカニック'] } },
+  '商売': { o: '一代の大事業', s: 'luck', big: '{v}で、大勝負の取引を任された！', lad: {
+    anc: ['物々交換係', '交易人', '大交易人', '交易の長'], pre: ['行商人', '商人', '大商人', '豪商'],
+    mod: ['個人事業主', '社長', '実業家', '大富豪の実業家'], fut: ['宇宙行商人', '交易商', '星間商社の社長', '銀河の大富豪'] } },
+};
+const TGROUP = { genshi: 'anc', jomon: 'anc', future: 'fut', industrial: 'mod', wildwest: 'mod', showa: 'mod', kodo: 'mod', heisei: 'mod', reiwa: 'mod' };
+const TVENUE = { anc: 'まわりのムラが集まる大祭', pre: '都の大舞台', mod: '世間が注目する大舞台', fut: '太陽系中継の大舞台' };
+const tgroup = () => TGROUP[S.E.id] || 'pre';
 
 // ================= 時代データ =================
 // ev: a=年齢範囲 y=西暦範囲 g=性別 c=条件 w=重み force=その年に起こる確率 rep=くり返し可
@@ -738,7 +768,7 @@ const ERAS = [
     { y: [1996, 2005], a: [5, 15], t: 'たまごっちを育てた。', fx: { happy: 6 } },
     { y: [1996, 2005], a: [6, 20], t: 'ポケモン図鑑を完成させた！', fx: { happy: 8 }, rare: 2 },
     { y: [2000, 2012], a: [12, 30], t: 'ガラケーで友達とメールばかりしていた。', fx: { chr: 3, happy: 4 } },
-    { a: [22, 22], force: .9, t: '就職活動が始まった。', ch: [
+    { a: [22, 22], force: .9, c: S => !S.flags.tPath, t: '就職活動が始まった。', ch: [
       { t: '大企業を狙う', s: 'int', r: [{ p: .4, t: '大企業から内定をもらえた！', fx: { money: 12, happy: 8, fame: 3 } }, { p: .6, t: 'なかなか決まらない…なんとか小さな会社に入った。', fx: { happy: -10 } }] },
       { t: '夢を追う', s: 'luck', r: [{ p: .2, t: '夢がかないそうだ！', fx: { happy: 12, fame: 8 }, lad: ['駆け出しのクリエイター', '人気クリエイター', '売れっ子', '業界の第一人者'], rare: 5, big: 1 }, { p: .8, t: 'アルバイトしながら夢を追った。', fx: { money: -5, happy: 3 }, lad: ['フリーター', 'バイトリーダー', '契約社員', '正社員'] }] }] },
     { y: [2011, 2011], a: [0, 99], force: .6, t: '東日本大震災。テレビの映像に言葉を失った。', fx: { happy: -8 }, big: 1 },
@@ -868,7 +898,22 @@ const GEN = [
   { a: [60, 120], rep: 1, w: .5, t: '若い人たちに昔話を聞かせた。', fx: { happy: 5, fame: 1 } },
   { a: [6, 99], w: .01, t: '雷に打たれた！', fx: { hp: -20, luck: 20, fame: 6 }, rare: 200, big: 1, die: '落雷', dp: .35, sv: '…奇跡的に生きていた！' },
   { a: [8, 99], rep: 1, w: .5, t: '流れ星に願いをかけた。', fx: { luck: 3 } },
-  { a: [12, 60], t: '眠っていた{talent}の才能が開花した！', fx: { fame: 10, happy: 8 }, rare: 10, big: 1 },
+  { a: [10, 55], w: .06, c: S => !S.talent, talent: 1, t: '眠っていた{talent}の才能が開花した！', fx: { fame: 8, happy: 8 }, rare: 10, big: 1 },
+  // ── 開花した才能を生かす ──
+  { force: .3, a: [11, 75], c: S => S.talent && !S.flags.tPath && !S.flags.tHobby && S.age > S.talentAge, t: '{talent}の腕を見込まれ、「その道で生きてみないか」と誘われた。', ch: [
+    { t: 'その道に進む', r: [{ p: 1, t: '{talent}の道を歩みはじめた！', fx: { happy: 8 }, tpath: 1, big: 1 }] },
+    { t: '趣味として楽しむ', r: [{ p: 1, t: '好きなことは、好きなままでいい。', fx: { happy: 6 }, flag: 'tHobby' }] }] },
+  { force: .15, a: [12, 85], c: S => S.flags.tPath && S.lad && S.lad === S.tLad && S.age >= S.talentAge + 3, t: '{tbig}', ch: [
+    { t: '全力で挑む', s: 'tal', r: [{ p: .45, t: '大成功！その名が一気に広まった。', fx: { fame: 18, money: 10, happy: 10 }, jobUp: 1, rare: 4, big: 1 }, { p: .55, t: '緊張で失敗してしまった…でも、いい経験になった。', fx: { happy: -8, int: 3 } }] },
+    { t: '無難にこなす', r: [{ p: 1, t: 'そつなくこなし、評判は上々。', fx: { fame: 5 } }] }] },
+  { force: .07, a: [20, 95], c: S => S.flags.tPath && S.age >= S.talentAge + 8 && S.fame >= 35, t: '{talent}の集大成となる「{opus}」に取りかかった。', ch: [
+    { t: '何年かけても完成させる', s: 'tal', r: [{ p: .35, t: '後世まで語りつがれる傑作が生まれた！', fx: { fame: 25, happy: 12 }, flag: 'masterpiece', rare: 15, big: 1 }, { p: .65, t: 'あと一歩、どうしても納得できなかった。', fx: { int: 3, happy: -4 } }] },
+    { t: '今の自分にできる形で', r: [{ p: 1, t: '小さな作品が、身近な人たちを喜ばせた。', fx: { happy: 6, fame: 3 } }] }] },
+  { force: .05, a: [45, 110], c: S => S.talent && !S.flags.tHobby, t: '「{talent}を教えてください」と、若者が弟子入りを願ってきた。', ch: [
+    { t: '弟子にする', r: [{ p: .8, t: '技を受け継ぐ者ができた。', fx: { happy: 10, fame: 5 }, flag: 'disciple' }, { p: .2, t: '弟子はすぐに師を超えていった。うれしいような、くやしいような。', fx: { happy: 6, fame: 8 }, flag: 'disciple' }] },
+    { t: '断る', r: [{ p: 1, t: '自分の道は、自分だけのものだ。' }] }] },
+  { rep: 1, w: .8, a: [12, 110], c: S => S.flags.tHobby, t: '趣味の{talent}で、まわりの人たちを楽しませた。', fx: { happy: 5, chr: 2 } },
+  { rep: 1, w: .8, a: [12, 90], c: S => S.flags.tPath && S.lad === S.tLad, t: '{talent}の腕をさらに磨いた。', fx: { fame: 3, int: 2 } },
   { a: [20, 85], rep: 1, w: .6, c: S => S.married, t: '{sp}と大ゲンカした。', fx: { happy: -6 } },
   { a: [20, 85], rep: 1, w: .6, c: S => S.married, t: '{sp}と二人で夕日を眺めた。', fx: { happy: 6 } },
   { a: [38, 99], c: S => S.kids - S.kidsLost > 0, t: '孫が生まれた！', fx: { happy: 12 } },
@@ -1013,6 +1058,8 @@ const ACH = [
   { id: 'meet2', i: '🤝', n: '奇跡のめぐり合わせ', d: 'ひとつの人生で2人の偉人に出会う' },
   { id: 'meet10', i: '📸', n: '偉人コレクター', d: '偉人図鑑に10人登録する' },
   { id: 'meetall', i: '🏛️', n: '時の旅人', d: '偉人図鑑をすべて埋める' },
+  { id: 'master', i: '🎨', n: '一芸に生きる', d: '開花した才能で、生涯の集大成を成しとげる' },
+  { id: 'tTop', i: '🌟', n: '才能の頂へ', d: '才能の道で最高位にのぼりつめる' },
 ];
 
 // ================= 状態 =================
@@ -1060,7 +1107,7 @@ function newLife() {
 
 const curYear = () => S.by + S.age;
 const jobName = () => S.custom || (S.lad && S.jobLv >= 0 ? S.lad[S.jobLv] : (S.age < 6 ? (S.age < 2 ? '赤ちゃん' : '子ども') : S.age < S.E.work ? '子ども' : '働き手'));
-const fill = t => t.replace(/\{name\}/g, S.given).replace(/\{sp\}/g, S.sp || '伴侶').replace(/\{talent\}/g, () => pick(TALENT));
+const fill = t => t.replace(/\{tbig\}/g, () => S.talent ? TAL[S.talent].big.replace('{v}', TVENUE[tgroup()]) : '').replace(/\{opus\}/g, () => S.talent ? TAL[S.talent].o : '').replace(/\{name\}/g, S.given).replace(/\{sp\}/g, S.sp || '伴侶').replace(/\{talent\}/g, () => S.talent || pick(TALENT));
 
 function ok(e) {
   if (!e.rep && S.done[e.id]) return false;
@@ -1085,6 +1132,7 @@ function applyO(o, en, gen) {
   if (o.rare) { S.odds += Math.log10(o.rare); S.rareN++; en.cls += ' rare'; en.rare = 1; }
   if (o.big) { en.cls += ' big'; en.big = 1; }
   if (o.setJob) { S.custom = o.setJob; S.lad = null; en.after.push(`「${o.setJob}」として生きることにした。`); }
+  if (o.tpath) { S.flags.tPath = 1; S.tLad = TAL[S.talent].lad[tgroup()]; S.lad = S.tLad; S.jobLv = 0; S.custom = null; en.after.push(`「${S.lad[0]}」になった。`); }
   if (o.lad) { S.lad = o.lad; S.jobLv = 0; S.custom = null; en.after.push(`「${S.lad[0]}」になった。`); }
   if (o.jobUp) jobUp(en);
   if (o.marry && !S.married) marry(en);
@@ -1118,6 +1166,7 @@ function marry(en) {
 
 function runEvent(ev) {
   S.done[ev.id] = 1;
+  if (ev.talent && !S.talent) { S.talent = pick(TALENT); S.talentAge = S.age; }
   const text = fill(ev.t);
   if (ev.ch) { S.pending = { ev, text }; UI.choice(ev, text); return; }
   const en = newEntry(text);
@@ -1138,7 +1187,8 @@ function choose(i) {
   const c = ev.ch[i];
   let rs2 = c.r.map(r => r.p);
   if (c.s && rs2.length > 1) {
-    const adj = (S[c.s] - 50) / 250 + (S.luck - 50) / 500;
+    const sv = c.s === 'tal' ? (S[TAL[S.talent].s] + 15) : S[c.s];
+    const adj = (sv - 50) / 250 + (S.luck - 50) / 500;
     const p0 = clamp(rs2[0] + adj, .03, .97), rest = rs2.slice(1).reduce((a, b) => a + b, 0);
     rs2 = [p0, ...rs2.slice(1).map(p => p / rest * (1 - p0))];
   }
@@ -1266,6 +1316,8 @@ function lifeTitle() {
   if (S.age < 10) return '短い命を駆け抜けた子';
   if (top && S.fame >= 70) return `伝説の${S.lad[S.jobLv]}`;
   if (top) return `${S.lad[S.jobLv]}にのぼりつめた人`;
+  if (S.flags.masterpiece) return `${S.talent}の道を極めた人`;
+  if (S.flags.tPath && S.fame >= 50) return `${S.talent}に生きた人`;
   if (S.fame >= 85) return '歴史に名を残した偉人';
   if (S.money >= 90) return '巨万の富を築いた人';
   if (S.age >= 100) return '百寿の大往生';
@@ -1302,6 +1354,8 @@ function recordLife() {
   if (S.metList.length >= 2) give('meet2');
   if (nf >= 10) give('meet10');
   if (nf >= ALLFIGS.length) give('meetall');
+  if (S.flags.masterpiece) give('master');
+  if (S.tLad && S.lad === S.tLad && S.jobLv === S.lad.length - 1) give('tTop');
   DB.best.age = Math.max(DB.best.age, S.age);
   DB.best.odds = Math.max(DB.best.odds, S.odds);
   DB.best.fame = Math.max(DB.best.fame, Math.round(S.maxFame));
@@ -1481,6 +1535,7 @@ function showEnd() {
     ['家族', `${S.everMarried ? '結婚した' : '生涯独身'}／子ども${S.kids}人${S.kidsLost ? `（うち${S.kidsLost}人は早世）` : ''}`],
     ['財産', `${Math.round(S.money)}（最高 ${Math.round(S.maxMoney)}）`], ['名声', `${Math.round(S.fame)}`], ['幸福', `${Math.round(S.happy)}`],
     ['出来事', `${S.nev}件（レア ${S.rareN}件）`],
+    ['才能', S.talent ? `${S.talent}${S.flags.tPath ? '（その道に生きた）' : S.flags.tHobby ? '（趣味として楽しんだ）' : ''}${S.flags.masterpiece ? `・「${TAL[S.talent].o}」を成しとげた` : ''}${S.flags.disciple ? '・弟子がいた' : ''}` : '開花しなかった'],
     ['出会った偉人', S.metList.length ? S.metList.map(f => f.n).join('、') : 'なし'],
   ].map(([a, b]) => `<dt>${a}</dt><dd>${esc(b)}</dd>`).join('');
   const hl = S.big.slice(-8);
