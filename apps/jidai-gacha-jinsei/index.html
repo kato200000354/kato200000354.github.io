@@ -160,6 +160,21 @@ button{font-family:inherit;color:inherit;border:none;background:none;cursor:poin
 .recs b{display:block;font-size:16px;color:var(--gold)}
 .hist{display:flex;flex-direction:column;gap:6px;font-size:12px}
 .hist div{background:var(--panel2);border-radius:10px;padding:6px 10px;line-height:1.5}
+.log li.meet{border-color:#c8a6ff;background:linear-gradient(90deg,rgba(200,166,255,.2),rgba(255,211,107,.12),var(--panel))}
+.log li.meet::after{content:"偉人";position:absolute;right:8px;top:-7px;font-size:10px;font-weight:800;background:#c8a6ff;color:#1d1030;border-radius:6px;padding:1px 6px}
+.m-box.meet{border-top-color:#c8a6ff;background:radial-gradient(120% 90% at 50% 0%,rgba(200,166,255,.22),transparent 60%),var(--panel)}
+.m-box.meet .m-age{color:#d9c4ff}
+.fig-name{font-family:var(--serif);font-size:30px;font-weight:800;color:var(--gold);margin:4px 0 2px;animation:up .5s ease both}
+.fig-desc{font-size:12px;color:var(--muted);font-weight:500;margin-bottom:10px}
+.new-ach.fig{background:rgba(200,166,255,.14);border-color:rgba(200,166,255,.5)}
+.figs{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.fg-era{grid-column:1/-1;font-size:12px;font-weight:800;color:var(--muted);margin-top:6px}
+.fg{background:var(--panel2);border-radius:10px;padding:8px 10px;font-size:13px;line-height:1.4;border:1px solid rgba(200,166,255,.35)}
+.fg b{display:block}
+.fg em{font-style:normal;font-size:10px;color:#d9c4ff}
+.fg small{display:block;color:var(--muted);font-size:11px;margin-top:3px}
+.fg small.cnt{color:var(--gold)}
+.fg.lock{opacity:.45;border-color:transparent}
 .toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#000c;color:#fff;padding:8px 16px;border-radius:999px;font-size:13px;z-index:20;animation:fadeIn .2s}
 </style>
 </head>
@@ -243,6 +258,7 @@ button{font-family:inherit;color:inherit;border:none;background:none;cursor:poin
     <div class="book-hd"><h2>図鑑・記録</h2><button class="btn sub small" id="b-bback">もどる</button></div>
     <div class="book"><h3>生まれた時代</h3><div class="eras" id="bk-eras"></div></div>
     <div class="book"><h3>最高記録</h3><div class="recs" id="bk-recs"></div></div>
+    <div class="book"><h3 id="bk-fh">偉人図鑑</h3><div class="figs" id="bk-figs"></div></div>
     <div class="book"><h3>実績</h3><div class="achs" id="bk-achs"></div></div>
     <div class="book"><h3>最近の人生</h3><div class="hist" id="bk-hist"></div></div>
   </section>
@@ -866,6 +882,105 @@ const GEN = [
 
 ERAS.forEach(e => e.ev.forEach((v, i) => { v.id = e.id + i; }));
 GEN.forEach((v, i) => { v.id = 'g' + i; v.gen = 1; });
+// 歴史上の人物（ごくまれに出会える）。y=出会える西暦の範囲 p=1年あたりの確率 k=伝説/架空
+const FIGS = {
+  genshi: [
+    { id: 'chauvet', n: 'ショーヴェ洞窟の画家', k: '伝説', d: '3万年以上前、洞窟の壁にライオンや馬の群れを描いた名もなき画家。', y: [-30000, -28000], t: '洞窟の奥で、たいまつを頼りに壁へ馬の群れを描く人に出会った。「見ていけ。この絵は、ずっと残る」', fx: { int: 6, happy: 8 } },
+    { id: 'wolfman', n: 'はじめて狼と暮らした人', k: '伝説', d: '人類で最初に狼を手なずけ、犬の祖先と暮らしたとされる人。', y: [-30000, -28000], t: '群れのはずれに、狼の子と寄りそって眠る不思議な人がいた。子狼を一匹わけてもらった。', fx: { happy: 12, luck: 5 } },
+  ],
+  jomon: [
+    { id: 'venus', n: '縄文のビーナスの作り手', k: '伝説', d: '国宝「縄文のビーナス」を作った、名もなき土偶職人。', y: [-3500, -2400], t: 'ふっくらと美しい土偶を作る職人に出会った。その手つきに、時を忘れて見とれた。', fx: { int: 5, chr: 4 } },
+    { id: 'sannai', n: '三内丸山の大長', k: '伝説', d: '巨大集落・三内丸山（青森）を率いていたと考えられる長。', y: [-3500, -2400], t: '六本の巨大な柱が立つ大きなムラを訪ね、その長に歓迎された。', fx: { fame: 6, happy: 6 } },
+  ],
+  egypt: [
+    { id: 'tut', n: 'ツタンカーメン', d: '9歳で即位した古代エジプトの少年王。黄金のマスクで有名。', y: [-1332, -1323], t: '少年王ツタンカーメンが神殿を訪れ、群衆の中の自分に手を振ってくれた！', fx: { happy: 12, luck: 4 } },
+    { id: 'ramses', n: 'ラムセス2世', d: '67年も国を治めた古代エジプト最大の王。アブ・シンベル神殿を築いた。', y: [-1279, -1213], t: '巨大神殿の建設現場を見に行くと、大王ラムセス2世その人が見回りに来ていた！', fx: { fame: 6, int: 3 } },
+    { id: 'nefertari', n: 'ネフェルタリ', d: 'ラムセス2世が最も愛した王妃。「美しき伴侶」の意。', y: [-1290, -1255], t: '王妃ネフェルタリの行列に花をささげると、ほほえみ返してくれた。', fx: { chr: 6, happy: 6 } },
+  ],
+  rome: [
+    { id: 'trajan', n: 'トラヤヌス帝', d: 'ローマ帝国の領土を史上最大に広げた「最善の皇帝」。', y: [98, 117], t: '凱旋式の行列で、トラヤヌス帝が目の前を通り過ぎた！', fx: { happy: 10 } },
+    { id: 'hadrian', n: 'ハドリアヌス帝', d: '帝国中を旅した皇帝。ブリテン島に「ハドリアヌスの長城」を築いた。', y: [117, 138], t: '旅好きの皇帝ハドリアヌスが、お忍びで近所の店にふらりと立ち寄った。', fx: { fame: 6, money: 6 } },
+    { id: 'aurelius', n: 'マルクス・アウレリウス', d: '『自省録』を書いた哲人皇帝。', y: [161, 180], t: '哲人皇帝マルクス・アウレリウスの言葉を聞き、深く心を打たれた。', fx: { int: 8, happy: 4 } },
+    { id: 'galen', n: 'ガレノス', d: '皇帝の侍医もつとめた古代ローマの名医。その医学は千年以上受け継がれた。', y: [162, 199], t: '名医ガレノスに病を診てもらった。体が軽くなった！', fx: { hp: 15 } },
+  ],
+  heian: [
+    { id: 'seimei', n: '安倍晴明', d: '式神をあやつったと伝わる、平安最強の陰陽師。', y: [960, 1005], t: '陰陽師・安倍晴明が通りかかり、家にとりついた厄を祓ってくれた。', fx: { luck: 12 } },
+    { id: 'michinaga', n: '藤原道長', d: '「この世をば わが世とぞ思ふ」と詠んだ、平安貴族の頂点。', y: [995, 1027], t: '藤原道長の屋敷の宴にまぎれこみ、盃をもらった。', fx: { fame: 8, money: 5 } },
+    { id: 'murasaki', n: '紫式部', d: '世界最古級の長編小説『源氏物語』の作者。', y: [1000, 1014], t: '紫式部に会い、書きかけの『源氏物語』をこっそり読ませてもらった。', fx: { int: 8, happy: 6 } },
+    { id: 'seisho', n: '清少納言', d: '随筆『枕草子』の作者。「春はあけぼの」。', y: [993, 1000], t: '清少納言に話しかけられた。機知に富んだ会話に、すっかり魅了された。', fx: { chr: 6, int: 3 } },
+  ],
+  medieval: [
+    { id: 'blackprince', n: 'エドワード黒太子', d: '黒い鎧で知られる、百年戦争で活躍したイングランドの王太子。', y: [1346, 1376], t: '黒い鎧の騎士・エドワード黒太子の軍勢が村を通っていった。息をひそめて見送った。', fx: { luck: 4, int: 3 } },
+    { id: 'guesclin', n: 'デュ・ゲクラン', d: '百年戦争でフランスを救った英雄騎士。', y: [1356, 1380], t: 'フランスの英雄騎士ベルトラン・デュ・ゲクランに、森の抜け道を案内した。', fx: { fame: 7 } },
+    { id: 'pizan', n: 'クリスティーヌ・ド・ピザン', d: 'ヨーロッパ初の職業女性作家ともいわれる文筆家。', y: [1390, 1430], t: '女性作家クリスティーヌ・ド・ピザンの本を、旅の僧に読み聞かせてもらった。', fx: { int: 6 } },
+    { id: 'jeanne', n: 'ジャンヌ・ダルク', d: '神の声を聞き、フランス軍を率いてオルレアンを救った少女。', y: [1429, 1431], t: '「神の声を聞いた」という少女ジャンヌ・ダルクが、軍を率いて村を通った！', fx: { happy: 8, fame: 5 } },
+  ],
+  sengoku: [
+    { id: 'nobunaga', n: '織田信長', d: '天下統一目前まで迫った戦国の革命児。', y: [1551, 1582], t: '「大うつけ」と噂の織田信長が、村の祭りで派手に踊っていた！', fx: { happy: 8, fame: 4 } },
+    { id: 'hideyoshi', n: '豊臣秀吉', d: '百姓から天下人へ。日本史上最大の出世をとげた男。', y: [1558, 1598], t: '「サル」と呼ばれる男・木下藤吉郎（のちの豊臣秀吉）と、同じ釜の飯を食った。', fx: { chr: 5, fame: 3 } },
+    { id: 'ieyasu', n: '徳川家康', d: '260年続く江戸幕府を開いた、我慢の天下人。', y: [1560, 1616], t: '若き日の徳川家康に道を聞かれた。とても我慢強そうな人だった。', fx: { int: 3, luck: 4 } },
+    { id: 'rikyu', n: '千利休', d: '茶の湯を大成した茶人。わび茶の祖。', y: [1560, 1591], t: '千利休が点てた一服の茶をいただいた。心が静かに澄んでいった。', fx: { chr: 6, happy: 6 } },
+    { id: 'frois', n: 'ルイス・フロイス', d: '戦国日本を詳しく記録したポルトガルの宣教師。', y: [1563, 1597], t: '宣教師ルイス・フロイスに、日本の暮らしを根掘り葉掘り聞かれた。', fx: { int: 5 } },
+  ],
+  edo: [
+    { id: 'yoshimune', n: '徳川吉宗', d: '享保の改革を行った八代将軍。「暴れん坊将軍」のモデル。', y: [1716, 1745], t: '鷹狩りの最中の八代将軍・徳川吉宗に、うっかり出くわした！', fx: { fame: 6, luck: 3 } },
+    { id: 'ooka', n: '大岡越前', d: '名裁きで知られる江戸の町奉行・大岡忠相。', y: [1717, 1751], t: '濡れ衣を着せられたが、名奉行・大岡越前の名裁きで疑いが晴れた！', fx: { happy: 10, fame: 3 } },
+    { id: 'gennai', n: '平賀源内', d: 'エレキテルを修理・復元した江戸の天才発明家。', y: [1750, 1779], t: '平賀源内のエレキテルに触らせてもらい、ビリッとしびれた。', fx: { int: 6, happy: 3 } },
+    { id: 'hokusai', n: '葛飾北斎', d: '「富嶽三十六景」で世界に知られる浮世絵師。', y: [1790, 1849], t: '引っ越し魔の葛飾北斎がとなりに越してきた。絵の手ほどきを受けた！', fx: { fame: 6, int: 4 } },
+    { id: 'ino', n: '伊能忠敬', d: '歩いて日本全国を測量し、正確な日本地図を作った。', y: [1800, 1818], t: '日本地図を作るために歩き回る伊能忠敬の測量を手伝った。', fx: { hp: 4, fame: 4 } },
+  ],
+  industrial: [
+    { id: 'victoria', n: 'ヴィクトリア女王', d: '63年間在位し、大英帝国の最盛期を築いた女王。', y: [1837, 1901], t: '馬車に乗ったヴィクトリア女王に手を振ったら、振り返してくれた！', fx: { happy: 10 } },
+    { id: 'dickens', n: 'チャールズ・ディケンズ', d: '『クリスマス・キャロル』を書いた国民的作家。', y: [1836, 1870], t: '作家ディケンズに暮らしの話を聞かれた。のちに小説の登場人物のモデルになったらしい！', fx: { fame: 7 } },
+    { id: 'darwin', n: 'チャールズ・ダーウィン', d: '『種の起源』で進化論を唱えた博物学者。', y: [1838, 1882], t: 'ダーウィンに、ミミズの観察を手伝ってほしいと頼まれた。', fx: { int: 8 } },
+    { id: 'nightingale', n: 'ナイチンゲール', d: '「クリミアの天使」。近代看護を築いた人。', y: [1856, 1910], t: '病に倒れたとき、ナイチンゲールの看護を受けた。', fx: { hp: 15, happy: 4 } },
+    { id: 'ada', n: 'エイダ・ラブレス', d: '「世界初のプログラマー」と呼ばれる数学者。', y: [1835, 1852], t: 'エイダ・ラブレスに計算の才能を褒められた！', fx: { int: 7 } },
+  ],
+  bakumatsu: [
+    { id: 'shoin', n: '吉田松陰', d: '長州・萩の松下村塾で、維新の志士たちを育てた教育者。', y: [1855, 1859], t: '萩の松下村塾で、吉田松陰の講義を聞いた。「志を立てて、もって万事の源となす」', fx: { int: 10 } },
+    { id: 'takasugi', n: '高杉晋作', d: '身分を問わない「奇兵隊」を作った長州の風雲児。', y: [1859, 1867], t: '高杉晋作に「奇兵隊に入らんか」と誘われた。三味線がうまかった。', fx: { fame: 5, happy: 4 } },
+    { id: 'ryoma', n: '坂本龍馬', d: '薩長同盟を仲介し、日本の夜明けを夢見た土佐の志士。', y: [1862, 1867], t: '土佐なまりの大男・坂本龍馬に、異国の靴を見せびらかされた。「これからは世界じゃ！」', fx: { happy: 6, int: 4 } },
+    { id: 'saigo', n: '西郷隆盛', d: '江戸無血開城を実現した薩摩の英雄。', y: [1858, 1877], t: '犬を連れた大男・西郷隆盛と、一緒にうなぎを食べた。', fx: { happy: 8, chr: 3 } },
+    { id: 'yukichi', n: '福沢諭吉', d: '『学問のすゝめ』を書き、慶應義塾を開いた啓蒙思想家。', y: [1872, 1901], t: '福沢諭吉の講演を聞いた。「天は人の上に人を造らず」', fx: { int: 8 } },
+  ],
+  wildwest: [
+    { id: 'lincoln', n: 'エイブラハム・リンカーン', d: '奴隷解放を宣言した第16代アメリカ大統領。', y: [1861, 1865], t: 'リンカーン大統領の演説を、最前列で聞いた。', fx: { int: 5, happy: 5 } },
+    { id: 'buffalobill', n: 'バッファロー・ビル', d: '西部劇ショーで世界を巡業した伝説のガンマン。', y: [1883, 1910], t: 'バッファロー・ビルのワイルド・ウェスト・ショーに、エキストラで出演した！', fx: { fame: 8 } },
+    { id: 'earp', n: 'ワイアット・アープ', d: 'OK牧場の決闘で知られる保安官。', y: [1876, 1882], t: '酒場のケンカに巻き込まれたが、保安官ワイアット・アープが止めてくれた。', fx: { luck: 6 } },
+    { id: 'billy', n: 'ビリー・ザ・キッド', d: '21歳で死んだ西部最大のアウトロー。', y: [1877, 1881], t: '少年無法者ビリー・ザ・キッドとカード遊びをした。…負けた。', fx: { money: -5, fame: 3 } },
+    { id: 'calamity', n: 'カラミティ・ジェーン', d: '男勝りの腕を持つ、西部の女ガンマン。', y: [1870, 1903], t: 'カラミティ・ジェーンに射撃を教わった。', fx: { hp: 4, fame: 3 } },
+  ],
+  showa: [
+    { id: 'rikidozan', n: '力道山', d: '空手チョップで戦後日本を熱狂させたプロレスラー。', y: [1953, 1963], t: 'リングサイドで、力道山の空手チョップを目の前で見た！', fx: { happy: 10 } },
+    { id: 'tezuka', n: '手塚治虫', d: '『鉄腕アトム』を生んだ「マンガの神様」。', y: [1947, 1989], t: '手塚治虫に、ベレー帽姿で似顔絵を描いてもらった！', fx: { happy: 8, int: 3 } },
+    { id: 'hibari', n: '美空ひばり', d: '戦後を代表する歌謡界の女王。', y: [1949, 1989], t: '劇場で美空ひばりの歌声を聴き、涙が止まらなかった。', fx: { happy: 10 } },
+    { id: 'nagashima', n: '長嶋茂雄', d: '「ミスター・ジャイアンツ」。昭和のスーパースター。', y: [1958, 1980], t: '後楽園球場で、長嶋茂雄のホームランボールをキャッチした！', fx: { luck: 10, happy: 8 } },
+  ],
+  kodo: [
+    { id: 'beatles', n: 'ザ・ビートルズ', d: '世界を変えたイギリスのロックバンド。1966年に来日公演。', y: [1966, 1966], t: '日本武道館で、ビートルズの来日公演を観た！', fx: { happy: 15 } },
+    { id: 'oh', n: '王貞治', d: '一本足打法で通算868本塁打を放った世界のホームラン王。', y: [1959, 1980], t: '一本足打法のまねをしていたら、王貞治本人に声をかけられた！', fx: { happy: 10, hp: 3 } },
+    { id: 'kakuei', n: '田中角栄', d: '「日本列島改造論」を掲げた昭和の宰相。', y: [1957, 1985], t: '演説中の田中角栄に「まあ、その〜」と肩をたたかれた。', fx: { fame: 3, chr: 3 } },
+    { id: 'uemura', n: '植村直己', d: '世界初の五大陸最高峰登頂者となった冒険家。', y: [1970, 1984], t: '冒険家・植村直己の講演を聞き、冒険心に火がついた。', fx: { hp: 5, happy: 5 } },
+  ],
+  heisei: [
+    { id: 'fujiko', n: '藤子・F・不二雄', d: '『ドラえもん』の作者。', y: [1990, 1996], t: 'サイン会で、藤子・F・不二雄先生にドラえもんを描いてもらった！', fx: { happy: 12 } },
+    { id: 'jobs', n: 'スティーブ・ジョブズ', d: 'iPhoneを生み出したアップルの創業者。', y: [2007, 2011], t: '海外旅行中、新製品の発表会場で、スティーブ・ジョブズを生で見た！', fx: { int: 5, happy: 5 } },
+    { id: 'shimura', n: '志村けん', d: '国民的コメディアン。「だいじょうぶだぁ」。', y: [1990, 2020], t: '志村けんのコントの収録を見学した。笑いすぎてお腹が痛い。', fx: { happy: 10 } },
+    { id: 'toriyama', n: '鳥山明', d: '『ドラゴンボール』の作者。', y: [1990, 2024], t: '鳥山明先生から、ファンレターの返事が届いた！', fx: { happy: 10 } },
+  ],
+  reiwa: [
+    { id: 'ohtani', n: '大谷翔平', d: '投打の二刀流でメジャーリーグを席巻した野球選手。', y: [2021, 2035], t: 'アメリカ旅行中、大谷翔平のホームランボールをキャッチした！', fx: { luck: 10, happy: 10 } },
+    { id: 'fujii', n: '藤井聡太', d: '史上初の八冠を達成した将棋棋士。', y: [2020, 2070], t: '将棋のイベントで、藤井聡太の指導対局を受けた。', fx: { int: 8 } },
+    { id: 'aoi', n: 'ミナミ・アオイ', k: '未来・架空', d: '人類で初めて火星に降り立つ（かもしれない）日本人宇宙飛行士。', y: [2050, 2090], t: '人類初の火星着陸を成しとげた宇宙飛行士ミナミ・アオイの凱旋パレードで握手した！', fx: { happy: 10, fame: 3 } },
+  ],
+  future: [
+    { id: 'zen', n: 'ゼン・アマツ', k: '未来・架空', d: '「火星開拓の父」と呼ばれる伝説の技術者。', y: [2140, 2220], t: '「火星開拓の父」ゼン・アマツに、テラフォーミングの夢を語ってもらった。', fx: { int: 6, happy: 6 } },
+    { id: 'minerva', n: 'AIミネルヴァ', k: '未来・架空', d: '史上初めて市民権を得た人工知能。', y: [2145, 2300], t: '市民権を持つ初めてのAI・ミネルヴァと、一晩じゅう哲学を語り合った。', fx: { int: 10 } },
+    { id: 'vega', n: 'ノア・ヴェガ博士', k: '未来・架空', d: 'ワープ航法の理論を完成させた物理学者。', y: [2150, 2240], t: 'ワープ理論のノア・ヴェガ博士の研究室を見学した。黒板の数式が光って見えた。', fx: { int: 8, luck: 3 } },
+  ],
+};
+ERAS.forEach(e => { e.figs = (FIGS[e.id] || []).map(f => Object.assign(f, { era: e })); });
+const ALLFIGS = ERAS.flatMap(e => e.figs);
 const TOTAL_W = ERAS.reduce((s, e) => s + e.w, 0);
 const STAT = [['hp', '体力', '#7fe0a8'], ['int', '知力', '#7fb8ff'], ['chr', '魅力', '#ff9ccf'], ['luck', '運', '#c8a6ff'], ['money', '財産', '#ffd36b'], ['happy', '幸福', '#ffae6b'], ['fame', '名声', '#ff7f7f']];
 const STAT_NAME = Object.fromEntries(STAT.map(s => [s[0], s[1]]));
@@ -875,7 +990,7 @@ const QUIET_OLD = ['縁側でひなたぼっこをした。', 'ゆっくりと�
 
 // ================= 保存 =================
 const SAVE = 'jidai-gacha-jinsei-v1';
-let DB = { lives: 0, eras: {}, ach: {}, best: { age: 0, odds: 0, fame: 0, money: 0 }, hist: [], muted: false };
+let DB = { lives: 0, eras: {}, figs: {}, ach: {}, best: { age: 0, odds: 0, fame: 0, money: 0 }, hist: [], muted: false };
 try { const s = JSON.parse(localStorage.getItem(SAVE)); if (s) DB = Object.assign(DB, s); } catch (e) { }
 function saveDB() { try { localStorage.setItem(SAVE, JSON.stringify(DB)); } catch (e) { } }
 
@@ -894,6 +1009,10 @@ const ACH = [
   { id: 'ufo', i: '🛸', n: '空白の3日間', d: '空から来た何かに遭遇する' },
   { id: 'digital', i: '💾', n: '永遠の存在', d: '意識をアップロードする' },
   { id: 'all', i: '🗺️', n: '全時代制覇', d: 'すべての時代に生まれる' },
+  { id: 'meet1', i: '✨', n: '歴史の目撃者', d: '歴史上の人物に出会う' },
+  { id: 'meet2', i: '🤝', n: '奇跡のめぐり合わせ', d: 'ひとつの人生で2人の偉人に出会う' },
+  { id: 'meet10', i: '📸', n: '偉人コレクター', d: '偉人図鑑に10人登録する' },
+  { id: 'meetall', i: '🏛️', n: '時の旅人', d: '偉人図鑑をすべて埋める' },
 ];
 
 // ================= 状態 =================
@@ -927,10 +1046,15 @@ function newLife() {
     flags: {}, done: {}, lad: (g === 'f' && cls.jf) ? cls.jf : cls.jobs, jobLv: -1, custom: null,
     log: [], big: [], odds: Math.log10(1 / pEra) + Math.log10(1 / pCls) + Math.log10(2), nev: 0, rareN: 0,
     pd: [0, 1].map(() => Math.floor(E.ps[0] + R() * (E.ps[1] - E.ps[0]))), maxMoney: 0, maxFame: 0,
-    dead: false, cause: '', pending: null, pEra, pCls,
+    dead: false, cause: '', pending: null, pEra, pCls, met: {}, metList: [], newFigs: [],
   };
   for (const k in (cls.st || {})) S[k] = clamp(S[k] + cls.st[k], 0, 100);
   S.base = clamp(S.hp + 15, 60, 98);
+  // ごくまれに「歴史上の人物と出会う運命」を持って生まれる
+  if (E.figs.length && R() < .08) {
+    const f = pick(E.figs), my = Math.floor(f.y[0] + R() * (f.y[1] - f.y[0] + 1));
+    S.by = my - Math.floor(8 + R() * 35); S.fate = { f, y: my };
+  }
   return S;
 }
 
@@ -1009,6 +1133,7 @@ function finishEntry(en) {
 
 function choose(i) {
   if (!S || !S.pending) return;
+  if (S.pending.meet) return closeMeet();
   const { ev, text } = S.pending;
   const c = ev.ch[i];
   let rs2 = c.r.map(r => r.p);
@@ -1076,6 +1201,12 @@ function naturalCause() {
 function step() {
   if (!S || S.dead || S.pending) return;
   sysYear();
+  const yy = curYear();
+  if (S.fate && !S.met[S.fate.f.id] && yy === S.fate.y) { meet(S.fate.f); return; }
+  for (const f of S.E.figs) {
+    if (S.met[f.id] || yy < f.y[0] || yy > f.y[1] || S.age < 5) continue;
+    if (R() < .0003 * (.6 + S.luck / 100)) { meet(f); return; }
+  }
   let ev = null;
   const all = S.E.ev.concat(GEN);
   for (const f of all) if (f.force && ok(f) && R() < f.force) { ev = f; break; }
@@ -1087,6 +1218,21 @@ function step() {
   else pushLog(newEntry(pick(S.age < 4 ? QUIET_BABY : S.age >= 65 ? QUIET_OLD : QUIET), 'quiet'));
   endYear();
 }
+
+function meet(f) {
+  S.met[f.id] = 1; S.metList.push(f);
+  const en = newEntry(f.t, 'meet');
+  applyO({ fx: f.fx, rare: 150, big: 1 }, en);
+  en.after.push(`【${f.n}】`);
+  S.nev++; S.odds += .075;
+  pushLog(en);
+  const isNew = !DB.figs[f.id];
+  DB.figs[f.id] = (DB.figs[f.id] || 0) + 1; saveDB();
+  if (isNew) S.newFigs.push(f);
+  S.pending = { meet: f };
+  UI.meet(f, isNew);
+}
+function closeMeet() { if (!S || !S.pending || !S.pending.meet) return; S.pending = null; endYear(); }
 
 function endYear() {
   if (S.dead) return;
@@ -1151,6 +1297,11 @@ function recordLife() {
   if (S.log.some(l => l.t.startsWith('空から光る'))) give('ufo');
   if (S.cause === 'デジタル存在への移行') give('digital');
   if (ERAS.every(e => DB.eras[e.id])) give('all');
+  const nf = ALLFIGS.filter(f => DB.figs[f.id]).length;
+  if (S.metList.length) give('meet1');
+  if (S.metList.length >= 2) give('meet2');
+  if (nf >= 10) give('meet10');
+  if (nf >= ALLFIGS.length) give('meetall');
   DB.best.age = Math.max(DB.best.age, S.age);
   DB.best.odds = Math.max(DB.best.odds, S.odds);
   DB.best.fame = Math.max(DB.best.fame, Math.round(S.maxFame));
@@ -1221,6 +1372,21 @@ const UI = {
     $('modal').hidden = false;
     tone(520, .1, 'square', .03);
   },
+  meet(f, isNew) {
+    stopAuto(true);
+    const box = $('modal').firstElementChild; box.classList.add('meet');
+    $('m-age').textContent = `✨ 歴史上の人物に出会った！（${S.age}歳・${yearStr(curYear())}）`;
+    $('m-text').innerHTML = `<div class="fig-name">${esc(f.n)}</div><div class="fig-desc">${esc(f.d)}</div>${esc(f.t)}`;
+    $('m-btns').innerHTML = '';
+    const b = document.createElement('button'); b.className = 'btn';
+    b.textContent = isNew ? '📖 偉人図鑑に登録する（NEW）' : '📖 つづける（図鑑に登録ずみ）';
+    let closed = false;
+    const close = () => { if (closed) return; closed = true; $('modal').hidden = true; box.classList.remove('meet'); closeMeet(); afterChoice(); };
+    b.onclick = close; $('m-btns').appendChild(b);
+    $('modal').hidden = false;
+    if (omakase) setTimeout(() => { if (!$('modal').hidden) close(); }, 3200);
+    [784, 988, 1175, 1568].forEach((f2, i) => tone(f2, .25, 'sine', .05, i * .09));
+  },
   dead() {
     stopAuto();
     $('modal').hidden = true;
@@ -1253,7 +1419,8 @@ function titleScreen() {
   stopAuto(); S = null; setTheme(null); show('scr-title');
   $('t-eras').innerHTML = ERAS.map(e => `<span class="${DB.eras[e.id] ? '' : 'lock'}" title="${e.name}">${e.icon}</span>`).join('');
   const n = ERAS.filter(e => DB.eras[e.id]).length;
-  $('t-stats').textContent = DB.lives ? `これまで ${DB.lives} 回の人生／${n}/${ERAS.length} の時代を体験` : `全${ERAS.length}の時代。どこに生まれるかは運しだい。`;
+  const nf = ALLFIGS.filter(f => DB.figs[f.id]).length;
+  $('t-stats').textContent = DB.lives ? `これまで ${DB.lives} 回の人生／${n}/${ERAS.length} の時代／偉人 ${nf}/${ALLFIGS.length}人` : `全${ERAS.length}の時代。どこに生まれるかは運しだい。`;
   $('b-snd').textContent = DB.muted ? '🔇 音なし' : '🔊 音あり';
 }
 
@@ -1307,13 +1474,14 @@ function showEnd() {
   $('e-cmp').innerHTML = S.odds >= oku ? '地球の人口（約80億人）よりも希少な、<b>たったひとつの人生</b>。' : `80億分の1まで、あと${fmtOdds(oku - S.odds).replace('分の1', '倍')}。<br>長く、波乱に満ちた人生ほど希少になる。`;
   $('e-meter').style.width = Math.min(100, S.odds / 14 * 100) + '%';
   $('e-mark').style.left = (oku / 14 * 100) + '%';
-  $('e-ach').innerHTML = newly.map(a => `<div class="new-ach">🏅 実績解除：<b>${a.i} ${a.n}</b> — ${a.d}</div>`).join('');
+  $('e-ach').innerHTML = S.newFigs.map(f => `<div class="new-ach fig">📖 偉人図鑑に登録：<b>${esc(f.n)}</b>（${esc(f.era.name)}）</div>`).join('') + newly.map(a => `<div class="new-ach">🏅 実績解除：<b>${a.i} ${a.n}</b> — ${a.d}</div>`).join('');
   const job = S.custom || (S.lad && S.jobLv >= 0 ? S.lad[S.jobLv] : 'なし');
   $('e-sum').innerHTML = [
     ['生まれ', `${S.cls.n}（${(S.pCls * 100).toFixed(S.pCls < .1 ? 1 : 0)}%）`], ['最後の職業', job],
     ['家族', `${S.everMarried ? '結婚した' : '生涯独身'}／子ども${S.kids}人${S.kidsLost ? `（うち${S.kidsLost}人は早世）` : ''}`],
     ['財産', `${Math.round(S.money)}（最高 ${Math.round(S.maxMoney)}）`], ['名声', `${Math.round(S.fame)}`], ['幸福', `${Math.round(S.happy)}`],
     ['出来事', `${S.nev}件（レア ${S.rareN}件）`],
+    ['出会った偉人', S.metList.length ? S.metList.map(f => f.n).join('、') : 'なし'],
   ].map(([a, b]) => `<dt>${a}</dt><dd>${esc(b)}</dd>`).join('');
   const hl = S.big.slice(-8);
   $('e-hl').innerHTML = hl.length ? hl.map(e => `<li><b>${e.age}歳</b>${e.t.replace(/<[^>]+>/g, '')}${e.after.length ? ' ' + esc(e.after.join(' ')) : ''}</li>`).join('') : '<li class="muted">大きな事件のない、静かな一生だった。</li>';
@@ -1333,6 +1501,9 @@ function showBook(from) {
   bookBack = from; show('scr-book'); $('scr-book').scrollTop = 0;
   $('bk-eras').innerHTML = ERAS.map(e => DB.eras[e.id] ? `<div><i>${e.icon}</i>${e.name}<br><small>${DB.eras[e.id]}回</small></div>` : `<div class="lock"><i>❓</i>？？？<br><small>確率 ${(e.w / TOTAL_W * 100).toFixed(1)}%</small></div>`).join('');
   $('bk-recs').innerHTML = `<div>人生の回数<b>${DB.lives}回</b></div><div>最長寿<b>${DB.best.age}歳</b></div><div>最高レア度<b>${DB.best.odds ? fmtOdds(DB.best.odds) : '—'}</b></div><div>最高名声<b>${DB.best.fame}</b></div>`;
+  const nf = ALLFIGS.filter(f => DB.figs[f.id]).length;
+  $('bk-fh').textContent = `偉人図鑑　${nf} / ${ALLFIGS.length}人`;
+  $('bk-figs').innerHTML = ERAS.map(e => `<div class="fg-era">${e.icon} ${DB.eras[e.id] ? e.name : '？？？'}</div>` + e.figs.map(f => DB.figs[f.id] ? `<div class="fg"><b>${esc(f.n)}</b>${f.k ? `<em>${f.k}</em>` : ''}<small>${esc(f.d)}</small><small class="cnt">出会った回数 ${DB.figs[f.id]}回</small></div>` : `<div class="fg lock"><b>？？？</b><small>${DB.eras[e.id] ? 'この時代のどこかにいる…' : 'まだ見ぬ時代の人物'}</small></div>`).join('')).join('');
   $('bk-achs').innerHTML = ACH.map(a => `<div class="${DB.ach[a.id] ? '' : 'lock'}"><i>${DB.ach[a.id] ? a.i : '🔒'}</i><div>${a.n}<small>${a.d}</small></div></div>`).join('');
   $('bk-hist').innerHTML = DB.hist.length ? DB.hist.map(h => `<div>${h.i} <b>${esc(h.n)}</b>（${esc(h.e)}）享年${h.a}・${esc(h.c)}<br><span class="muted">${esc(h.t)}／${fmtOdds(h.o)}</span></div>`).join('') : '<div class="muted">まだ記録がありません</div>';
 }
