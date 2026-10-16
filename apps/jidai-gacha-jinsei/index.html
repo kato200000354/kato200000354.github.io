@@ -89,6 +89,9 @@ button{font-family:inherit;color:inherit;border:none;background:none;cursor:poin
 .log li{background:var(--panel);border-radius:12px;padding:8px 10px 8px 54px;position:relative;font-size:14px;line-height:1.6;border:1px solid transparent;animation:fadeIn .3s ease both}
 @keyframes fadeIn{from{opacity:0;transform:translateY(-6px)}}
 .log li .ag{position:absolute;left:8px;top:8px;width:38px;text-align:center;font-size:12px;font-weight:800;color:var(--muted);background:#15111b;border-radius:8px;padding:2px 0}
+.log li.new{box-shadow:0 0 0 2px color-mix(in srgb,var(--a1) 70%,transparent);font-size:15px}
+.log li.new.quiet{box-shadow:none;font-size:13px}
+.log li:not(.new){opacity:.72}
 .log li.quiet{background:transparent;color:var(--muted);font-size:13px;padding-top:4px;padding-bottom:4px}
 .log li.quiet .ag{top:4px;background:transparent}
 .log li.sys{border-color:color-mix(in srgb,var(--a1) 35%,transparent)}
@@ -1369,8 +1372,9 @@ function recordLife() {
 // ================= 画面 =================
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-let autoT = null, auto = false, speed = 1, omakase = false;
-const SPEEDS = [[1100, 'ゆっくり'], [550, 'ふつう'], [200, 'はやい'], [60, '爆速']];
+// 1年あたりの基本の待ち時間。何もない年は短く、大事な出来事の年は長く止まる
+const SPEEDS = [[2600, 'じっくり'], [1600, 'ゆっくり'], [950, 'ふつう'], [380, 'はやい'], [70, '爆速']];
+let autoT = null, auto = false, speed = clamp(DB.speed ?? 1, 0, SPEEDS.length - 1), omakase = false, yearW = 0;
 
 let AC = null;
 function tone(f, d = .09, type = 'sine', v = .05, delay = 0) {
@@ -1394,7 +1398,10 @@ const UI = {
     if (en.after.length) h += ' ' + en.after.map(esc).join(' ');
     if (en.d.length) h += '<div class="dl">' + en.d.map(([k, d]) => `<span class="${d > 0 ? 'p' : 'm'}">${STAT_NAME[k]}${d > 0 ? '+' : ''}${d}</span>`).join('') + '</div>';
     li.innerHTML = h;
-    const L = $('log'); L.prepend(li);
+    li.classList.add('new');
+    const L = $('log'); L.prepend(li); L.scrollTop = 0;
+    const len = (en.t + en.after.join('')).replace(/<[^>]+>/g, '').length;
+    yearW = Math.max(yearW, en.cls.includes('quiet') ? .4 : (en.big || en.rare || en.cls.includes('meet')) ? 2.3 : .9 + Math.min(len, 120) / 120 * .7);
     while (L.children.length > 160) L.lastChild.remove();
     if (en.cls.includes('death')) tone(196, .9, 'triangle', .07), tone(147, 1.2, 'triangle', .06, .25);
     else if (en.big) tone(660, .12, 'sine', .05), tone(990, .18, 'sine', .04, .1);
@@ -1413,14 +1420,14 @@ const UI = {
   },
   choice(ev, text) {
     stopAuto(true);
-    if (omakase) { setTimeout(() => { if (S && S.pending) { choose(Math.floor(R() * ev.ch.length)); afterChoice(); } }, Math.max(150, SPEEDS[speed][0])); return; }
+    if (omakase) { setTimeout(() => { if (S && S.pending) { yearW = 0; choose(Math.floor(R() * ev.ch.length)); afterChoice(); } }, Math.max(150, SPEEDS[speed][0] * .6)); return; }
     $('m-age').textContent = `${S.age}歳・${yearStr(curYear())}`;
     $('m-text').textContent = text;
     $('m-btns').innerHTML = '';
     ev.ch.forEach((c, i) => {
       const b = document.createElement('button');
       b.className = 'btn' + (i ? ' sub' : ''); b.textContent = c.t;
-      b.onclick = () => { $('modal').hidden = true; choose(i); afterChoice(); };
+      b.onclick = () => { $('modal').hidden = true; yearW = 0; choose(i); afterChoice(); };
       $('m-btns').appendChild(b);
     });
     $('modal').hidden = false;
@@ -1438,7 +1445,7 @@ const UI = {
     const close = () => { if (closed) return; closed = true; $('modal').hidden = true; box.classList.remove('meet'); closeMeet(); afterChoice(); };
     b.onclick = close; $('m-btns').appendChild(b);
     $('modal').hidden = false;
-    if (omakase) setTimeout(() => { if (!$('modal').hidden) close(); }, 3200);
+    if (omakase) setTimeout(() => { if (!$('modal').hidden) close(); }, Math.max(1500, SPEEDS[speed][0] * 2.5));
     [784, 988, 1175, 1568].forEach((f2, i) => tone(f2, .25, 'sine', .05, i * .09));
   },
   dead() {
@@ -1450,22 +1457,24 @@ const UI = {
   },
 };
 
-function afterChoice() { UI.render(); if (S && !S.dead && wasAuto) startAuto(); }
+function afterChoice() { UI.render(); if (S && !S.dead && wasAuto) startAuto(true); }
 let wasAuto = false;
-function startAuto() { auto = true; wasAuto = true; $('b-auto').textContent = '⏸ 一時停止'; tick(); }
+const waitMs = () => SPEEDS[speed][0] * Math.max(yearW, .4);
+function startAuto(resume) { auto = true; wasAuto = true; $('b-auto').textContent = '⏸ 止める'; clearTimeout(autoT); if (resume) autoT = setTimeout(tick, Math.max(waitMs(), 600)); else tick(); }
+function doStep() { for (const li of document.querySelectorAll('#log li.new')) li.classList.remove('new'); yearW = 0; step(); }
 function stopAuto(keep) { auto = false; if (!keep) wasAuto = false; clearTimeout(autoT); const b = $('b-auto'); if (b) b.textContent = '▶ 自動'; }
 function tick() {
   clearTimeout(autoT);
   if (!auto || !S || S.dead || S.pending) return;
-  step();
-  if (!S.dead && !S.pending) autoT = setTimeout(tick, SPEEDS[speed][0]);
+  doStep();
+  if (!S.dead && !S.pending) autoT = setTimeout(tick, waitMs());
 }
 
 function resetCtrl() {
   $('ctrl').innerHTML = `<button class="tg${omakase ? ' on' : ''}" id="b-omakase">選択も<br>おまかせ</button><button class="btn" id="b-auto">▶ 自動</button><button class="btn sub" id="b-step">1年すすむ</button><button class="tg" id="b-speed">${SPEEDS[speed][1]}</button>`;
   $('b-auto').onclick = () => { if (auto) stopAuto(); else startAuto(); };
-  $('b-step').onclick = () => { stopAuto(); step(); };
-  $('b-speed').onclick = e => { speed = (speed + 1) % SPEEDS.length; e.currentTarget.textContent = SPEEDS[speed][1]; };
+  $('b-step').onclick = () => { stopAuto(); doStep(); };
+  $('b-speed').onclick = e => { speed = (speed + 1) % SPEEDS.length; e.currentTarget.textContent = SPEEDS[speed][1]; DB.speed = speed; saveDB(); };
   $('b-omakase').onclick = e => { omakase = !omakase; e.currentTarget.classList.toggle('on', omakase); };
 }
 
@@ -1575,6 +1584,7 @@ function init() {
   $('b-ebook').onclick = () => showBook('end');
   $('b-etitle').onclick = titleScreen;
   $('b-bback').onclick = () => bookBack === 'end' && S ? show('scr-end') : titleScreen();
+  $('log').addEventListener('click', () => { if (auto) { stopAuto(); toast('一時停止中（▶ 自動 で再開）'); } });
   document.addEventListener('visibilitychange', () => { if (document.hidden && auto) stopAuto(true); });
   titleScreen();
 }
