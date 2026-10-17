@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<script src="../../audio-pause.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>まんなかマップ</title>
+<meta name="description" content="みんなの住んでいる場所・いる場所から、ちょうどまんなかの集合場所と近くの駅を探せるアプリ">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --text:#1c2024; --sub:#60646c; --line:#e0e1e6;
+  --accent:#e5484d; --accent-weak:#feebec; --btn:#f0f0f3; --btn-hover:#e8e8ec;
+  --star:#ffb224; --shadow:0 2px 10px rgba(0,0,0,.08);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#111113; --panel:#18191b; --text:#edeef0; --sub:#a0a3aa; --line:#2e3135;
+    --accent:#ff6369; --accent-weak:#3b1219; --btn:#232528; --btn-hover:#2b2d31;
+    --shadow:0 2px 10px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111113; --panel:#18191b; --text:#edeef0; --sub:#a0a3aa; --line:#2e3135;
+  --accent:#ff6369; --accent-weak:#3b1219; --btn:#232528; --btn-hover:#2b2d31;
+  --shadow:0 2px 10px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;font-size:15px;line-height:1.5}
+.app{display:flex;flex-direction:column;height:100%}
+#map{height:46vh;min-height:260px;flex:none;z-index:0}
+.panel{flex:1;overflow-y:auto;padding:14px 16px calc(24px + env(safe-area-inset-bottom));background:var(--panel)}
+@media (min-width:900px){
+  .app{flex-direction:row-reverse}
+  #map{height:100%;flex:1}
+  .panel{flex:none;width:400px;border-right:1px solid var(--line)}
+}
+h1{font-size:20px;margin:0 0 2px;display:flex;align-items:center;gap:6px}
+.lead{color:var(--sub);font-size:13px;margin:0 0 14px}
+h2{font-size:14px;margin:18px 0 8px;color:var(--sub);font-weight:600}
+.card{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--panel)}
+input[type=text]{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text);font-size:16px}
+input[type=text]:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.row{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+button{font:inherit;border:0;border-radius:10px;padding:9px 12px;background:var(--btn);color:var(--text);cursor:pointer}
+button:hover{background:var(--btn-hover)}
+button.primary{background:var(--accent);color:#fff}
+button.primary:hover{filter:brightness(1.05)}
+button.small{padding:5px 9px;font-size:13px}
+button:disabled{opacity:.5;cursor:default}
+.grow{flex:1}
+.results{margin-top:8px;display:flex;flex-direction:column;gap:4px}
+.results button{text-align:left;font-size:13px;padding:8px 10px}
+.msg{font-size:13px;color:var(--sub);margin-top:6px}
+.people{display:flex;flex-direction:column;gap:6px}
+.person{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:10px}
+.dot{width:26px;height:26px;border-radius:50%;flex:none;display:grid;place-items:center;color:#fff;font-size:12px;font-weight:700}
+.pinfo{flex:1;min-width:0}
+.pname{font-weight:600}
+.ploc{font-size:12px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pdist{font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
+.seg{display:flex;background:var(--btn);border-radius:10px;padding:3px;gap:3px}
+.seg button{flex:1;font-size:12px;padding:7px 4px;background:transparent}
+.seg button.on{background:var(--panel);box-shadow:var(--shadow);font-weight:600}
+.segnote{font-size:12px;color:var(--sub);margin-top:6px}
+.result{background:var(--accent-weak);border-radius:12px;padding:12px}
+.result .addr{font-weight:700;font-size:16px}
+.result .coord{font-size:12px;color:var(--sub)}
+.stations{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.station{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:var(--panel);border:1px solid var(--line);cursor:pointer;text-align:left;width:100%}
+.station.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.station small{color:var(--sub)}
+.banner{position:fixed;left:50%;top:12px;transform:translateX(-50%);background:var(--text);color:var(--panel);padding:8px 14px;border-radius:999px;font-size:13px;z-index:1000;box-shadow:var(--shadow);display:none;max-width:calc(100% - 32px)}
+.banner button{margin-left:8px;padding:3px 8px;font-size:12px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--text);color:var(--panel);padding:8px 14px;border-radius:999px;font-size:13px;z-index:1000;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+.pin{width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);display:grid;place-items:center}
+.pin span{transform:rotate(45deg);color:#fff;font-weight:700;font-size:12px}
+.mid{font-size:30px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
+.stmark{background:#fff;border:2px solid #1c2024;border-radius:6px;font-size:14px;width:26px;height:26px;display:grid;place-items:center}
+.empty{color:var(--sub);font-size:13px;padding:6px 2px}
+a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="app">
+  <div id="map"></div>
+  <div class="panel">
+    <h1>⭐ まんなかマップ</h1>
+    <p class="lead">みんなの住んでいる場所・いる場所を入れると、ちょうどまんなかと近くの駅がわかります。</p>
+
+    <div class="card">
+      <input type="text" id="nameIn" placeholder="名前（例：たろう）" maxlength="20">
+      <div class="row">
+        <input type="text" id="placeIn" class="grow" placeholder="場所（駅名・住所・建物名など）" style="flex:1;width:auto;min-width:0">
+        <button class="primary" id="searchBtn">検索</button>
+      </div>
+      <div class="row">
+        <button id="geoBtn" class="grow">📍 今いる場所</button>
+        <button id="tapBtn" class="grow">👆 地図をタップ</button>
+      </div>
+      <div class="results" id="results"></div>
+      <div class="msg" id="msg"></div>
+    </div>
+
+    <h2>メンバー <span id="count"></span></h2>
+    <div class="people" id="people"></div>
+
+    <h2>まんなかの決め方</h2>
+    <div class="seg" id="seg">
+      <button data-m="centroid" class="on">バランス<br>（重心）</button>
+      <button data-m="median">移動の合計<br>が最小</button>
+      <button data-m="minimax">いちばん遠い<br>人が最小</button>
+    </div>
+    <div class="segnote" id="segnote"></div>
+
+    <h2>結果</h2>
+    <div id="resultBox"><div class="empty">2人以上入れるとまんなかが出ます。</div></div>
+
+    <h2>共有</h2>
+    <div class="row" style="margin-top:0">
+      <button id="shareBtn" class="grow">🔗 リンクをコピー</button>
+      <button id="clearBtn">全部消す</button>
+    </div>
+    <div class="msg">リンクを送ると、同じメンバーと場所で開けます。受け取った人が自分を追加して送り返すこともできます。</div>
+    <div class="msg" style="margin-top:14px">地図 © OpenStreetMap contributors ／ 検索 Nominatim ／ 駅 Overpass API</div>
+  </div>
+</div>
+<div class="banner" id="banner">地図をタップして場所を選んでね<button id="bannerCancel">やめる</button></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const COLORS = ['#e5484d','#3e63dd','#30a46c','#f76b15','#8e4ec6','#12a594','#d6409f','#ad7f00','#0090ff','#71624b'];
+const MODE_NOTES = {
+  centroid: 'みんなの場所のちょうど真ん中。いちばんシンプルな決め方。',
+  median: 'みんなの移動距離を足した合計がいちばん短くなる場所。',
+  minimax: 'いちばん遠くから来る人の距離がいちばん短くなる場所。不公平感が少なめ。'
+};
+const STORE_KEY = 'mannaka-map-v1';
+
+let people = [];   // {id,name,lat,lng,label,color}
+let mode = 'centroid';
+let tapMode = false;
+let mid = null;
+let stations = [];
+let chosenStation = null;
+let nextId = 1;
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+// ---------- 地図 ----------
+const map = L.map('map', { zoomControl: true }).setView([35.681, 139.767], 11);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19, attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+const personLayer = L.layerGroup().addTo(map);
+const midLayer = L.layerGroup().addTo(map);
+const stationLayer = L.layerGroup().addTo(map);
+
+function pinIcon(color, text) {
+  return L.divIcon({ className: '', iconSize: [30, 30], iconAnchor: [15, 30],
+    html: `<div class="pin" style="background:${color}"><span>${esc(text)}</span></div>` });
+}
+const midIcon = L.divIcon({ className: '', iconSize: [30, 30], iconAnchor: [15, 15], html: '<div class="mid">⭐</div>' });
+const stIcon = L.divIcon({ className: '', iconSize: [26, 26], iconAnchor: [13, 13], html: '<div class="stmark">🚉</div>' });
+
+map.on('click', e => {
+  if (!tapMode) return;
+  setTapMode(false);
+  addPerson(e.latlng.lat, e.latlng.lng, null);
+});
+
+// ---------- 計算 ----------
+const R = 6371008.8;
+const rad = d => d * Math.PI / 180, deg = r => r * 180 / Math.PI;
+function dist(a, b) {
+  const dLat = rad(b.lat - a.lat), dLng = rad(b.lng - a.lng);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+function fmt(m) { return m < 1000 ? Math.round(m) + 'm' : (m / 1000).toFixed(m < 10000 ? 1 : 0) + 'km'; }
+
+function centroid(ps) {
+  let x = 0, y = 0, z = 0;
+  for (const p of ps) {
+    const la = rad(p.lat), lo = rad(p.lng);
+    x += Math.cos(la) * Math.cos(lo); y += Math.cos(la) * Math.sin(lo); z += Math.sin(la);
+  }
+  x /= ps.length; y /= ps.length; z /= ps.length;
+  return { lat: deg(Math.atan2(z, Math.hypot(x, y))), lng: deg(Math.atan2(y, x)) };
+}
+// 重心まわりの平面座標（メートル）に変換して計算する
+function projector(ps) {
+  const c = centroid(ps), k = Math.cos(rad(c.lat));
+  return {
+    to: p => ({ x: rad(p.lng - c.lng) * R * k, y: rad(p.lat - c.lat) * R }),
+    from: q => ({ lat: c.lat + deg(q.y / R), lng: c.lng + deg(q.x / (R * k)) })
+  };
+}
+function geometricMedian(ps) {
+  const pj = projector(ps), pts = ps.map(pj.to);
+  let c = { x: 0, y: 0 };
+  for (let i = 0; i < 500; i++) {
+    let nx = 0, ny = 0, den = 0;
+    for (const p of pts) {
+      const d = Math.hypot(p.x - c.x, p.y - c.y);
+      if (d < 1e-3) return pj.from(p);
+      nx += p.x / d; ny += p.y / d; den += 1 / d;
+    }
+    const n = { x: nx / den, y: ny / den };
+    if (Math.hypot(n.x - c.x, n.y - c.y) < 0.01) { c = n; break; }
+    c = n;
+  }
+  return pj.from(c);
+}
+function minimaxCenter(ps) {
+  const pj = projector(ps), pts = ps.map(pj.to);
+  let c = { ...pts[0] };
+  for (let i = 1; i <= 3000; i++) {
+    let far = pts[0], fd = -1;
+    for (const p of pts) { const d = Math.hypot(p.x - c.x, p.y - c.y); if (d > fd) { fd = d; far = p; } }
+    c.x += (far.x - c.x) / (i + 1); c.y += (far.y - c.y) / (i + 1);
+  }
+  return pj.from(c);
+}
+function computeMid() {
+  if (people.length < 2) return null;
+  if (mode === 'median') return geometricMedian(people);
+  if (mode === 'minimax') return minimaxCenter(people);
+  return centroid(people);
+}
+
+// ---------- 外部API ----------
+async function geocode(q) {
+  const u = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=ja&q=' + encodeURIComponent(q);
+  const r = await fetch(u); if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+async function reverse(lat, lng) {
+  const u = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=16&accept-language=ja&lat=${lat}&lon=${lng}`;
+  const r = await fetch(u); if (!r.ok) throw new Error(r.status);
+  const j = await r.json();
+  return shortLabel(j);
+}
+function shortLabel(j) {
+  const a = j.address || {};
+  const parts = [a.province || a.state, a.city || a.town || a.village || a.county, a.suburb || a.quarter || a.neighbourhood].filter(Boolean);
+  if (parts.length) return [...new Set(parts)].join(' ');
+  return (j.display_name || '').split(',').slice(0, 3).join(' ');
+}
+async function findStations(c) {
+  for (const radius of [1500, 4000, 10000, 25000]) {
+    const q = `[out:json][timeout:20];(node["railway"="station"](around:${radius},${c.lat},${c.lng});node["railway"="halt"](around:${radius},${c.lat},${c.lng}););out body 60;`;
+    const r = await fetch('https://overpass-api.de/api/interpreter', { method: 'POST', body: 'data=' + encodeURIComponent(q),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+    if (!r.ok) throw new Error(r.status);
+    const j = await r.json();
+    const seen = new Map();
+    for (const e of j.elements) {
+      const name = e.tags && (e.tags['name:ja'] || e.tags.name);
+      if (!name) continue;
+      const s = { name, lat: e.lat, lng: e.lon, line: e.tags.operator || '' };
+      s.d = dist(c, s);
+      if (!seen.has(name) || seen.get(name).d > s.d) seen.set(name, s);
+    }
+    const list = [...seen.values()];
+    if (list.length) {
+      for (const s of list) {
+        const ds = people.map(p => dist(p, s));
+        s.max = Math.max(...ds); s.sum = ds.reduce((a, b) => a + b, 0);
+      }
+      list.sort((a, b) => a.d - b.d);
+      return list.slice(0, 6);
+    }
+  }
+  return [];
+}
+
+// ---------- メンバー操作 ----------
+function nextColor() {
+  const used = new Set(people.map(p => p.color));
+  return COLORS.find(c => !used.has(c)) || COLORS[people.length % COLORS.length];
+}
+async function addPerson(lat, lng, label) {
+  const name = $('nameIn').value.trim() || `メンバー${people.length + 1}`;
+  const p = { id: nextId++, name, lat, lng, label: label || '場所を調べ中…', color: nextColor() };
+  people.push(p);
+  $('nameIn').value = ''; $('placeIn').value = ''; $('results').innerHTML = ''; $('msg').textContent = '';
+  refresh(true);
+  if (!label) {
+    try { p.label = await reverse(lat, lng); } catch { p.label = `${lat.toFixed(4)}, ${lng.toFixed(4)}`; }
+    save(); renderPeople();
+  }
+  $('nameIn').focus();
+}
+function removePerson(id) {
+  people = people.filter(p => p.id !== id);
+  refresh(true);
+}
+
+// ---------- 描画 ----------
+function refresh(fit) {
+  mid = computeMid();
+  stations = []; chosenStation = null;
+  renderMarkers(); renderPeople(); renderResult();
+  if (fit) fitAll();
+  save();
+  if (mid) updateMidLabel();
+}
+function fitAll() {
+  const pts = people.map(p => [p.lat, p.lng]);
+  if (mid) pts.push([mid.lat, mid.lng]);
+  if (pts.length === 1) map.setView(pts[0], 14);
+  else if (pts.length > 1) map.fitBounds(pts, { padding: [40, 40], maxZoom: 15 });
+}
+function renderMarkers() {
+  personLayer.clearLayers(); midLayer.clearLayers(); stationLayer.clearLayers();
+  const target = chosenStation || mid;
+  for (const p of people) {
+    const m = L.marker([p.lat, p.lng], { icon: pinIcon(p.color, p.name.slice(0, 1)), draggable: true })
+      .bindTooltip(esc(p.name), { direction: 'top', offset: [0, -28] }).addTo(personLayer);
+    m.on('dragend', async () => {
+      const ll = m.getLatLng(); p.lat = ll.lat; p.lng = ll.lng; p.label = '場所を調べ中…';
+      refresh(false);
+      try { p.label = await reverse(p.lat, p.lng); } catch { p.label = `${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}`; }
+      save(); renderPeople();
+    });
+    if (target) L.polyline([[p.lat, p.lng], [target.lat, target.lng]], { color: p.color, weight: 3, opacity: .7, dashArray: '6 6' }).addTo(personLayer);
+  }
+  if (mid) L.marker([mid.lat, mid.lng], { icon: midIcon, zIndexOffset: 1000 }).bindTooltip('まんなか', { direction: 'top' }).addTo(midLayer);
+  for (const s of stations) {
+    L.marker([s.lat, s.lng], { icon: stIcon, zIndexOffset: s === chosenStation ? 900 : 500 })
+      .bindTooltip(esc(s.name), { direction: 'top', permanent: s === chosenStation })
+      .on('click', () => chooseStation(s)).addTo(stationLayer);
+  }
+}
+function renderPeople() {
+  $('count').textContent = people.length ? `（${people.length}人）` : '';
+  const target = chosenStation || mid;
+  if (!people.length) { $('people').innerHTML = '<div class="empty">まだだれもいません。上で場所を追加してね。</div>'; return; }
+  $('people').innerHTML = people.map(p => `
+    <div class="person">
+      <div class="dot" style="background:${p.color}">${esc(p.name.slice(0, 1))}</div>
+      <div class="pinfo"><div class="pname">${esc(p.name)}</div><div class="ploc">${esc(p.label)}</div></div>
+      ${target ? `<div class="pdist">${fmt(dist(p, target))}<br><small style="color:var(--sub)">直線</small></div>` : ''}
+      <button class="small" data-del="${p.id}" aria-label="${esc(p.name)}を削除">✕</button>
+    </div>`).join('');
+}
+function renderResult() {
+  const box = $('resultBox');
+  if (!mid) { box.innerHTML = '<div class="empty">2人以上入れるとまんなかが出ます。</div>'; return; }
+  const ds = people.map(p => dist(p, mid));
+  const t = chosenStation || mid;
+  const gm = `https://www.google.com/maps/search/?api=1&query=${t.lat.toFixed(6)},${t.lng.toFixed(6)}`;
+  box.innerHTML = `
+    <div class="result">
+      <div style="font-size:12px;color:var(--sub)">⭐ まんなか</div>
+      <div class="addr" id="midAddr">${esc(mid.label || '場所を調べ中…')}</div>
+      <div class="coord">いちばん遠い人 ${fmt(Math.max(...ds))} ／ 合計 ${fmt(ds.reduce((a, b) => a + b, 0))}（直線距離）</div>
+      <div class="row">
+        <button class="primary grow" id="stBtn">🚉 近くの駅をさがす</button>
+        <a href="${gm}" target="_blank" rel="noopener"><button>Googleマップ</button></a>
+      </div>
+      <div class="stations" id="stList">${stationsHtml()}</div>
+    </div>`;
+  $('stBtn').onclick = searchStations;
+}
+function stationsHtml() {
+  if (!stations.length) return '';
+  return '<div style="font-size:12px;color:var(--sub);margin-top:4px">タップで集合場所にする</div>' + stations.map((s, i) => `
+    <button class="station${s === chosenStation ? ' on' : ''}" data-st="${i}">
+      <span><b>${esc(s.name)}</b><br><small>まんなかから ${fmt(s.d)}</small></span>
+      <small style="text-align:right">最大 ${fmt(s.max)}<br>合計 ${fmt(s.sum)}</small>
+    </button>`).join('');
+}
+async function updateMidLabel() {
+  const m = mid;
+  try {
+    const label = await reverse(m.lat, m.lng);
+    if (m !== mid) return;
+    mid.label = label;
+  } catch { if (m !== mid) return; mid.label = `${m.lat.toFixed(4)}, ${m.lng.toFixed(4)}`; }
+  const el = $('midAddr'); if (el) el.textContent = mid.label;
+}
+async function searchStations() {
+  const btn = $('stBtn'), m = mid;
+  btn.disabled = true; btn.textContent = 'さがし中…';
+  try {
+    const list = await findStations(m);
+    if (m !== mid) return;
+    stations = list; chosenStation = null;
+    if (!list.length) toast('近くに駅が見つかりませんでした');
+    renderMarkers(); renderResult();
+    if (list.length) map.fitBounds([...people.map(p => [p.lat, p.lng]), ...list.map(s => [s.lat, s.lng])], { padding: [40, 40], maxZoom: 15 });
+  } catch {
+    toast('駅の検索に失敗しました。少し待ってもう一度どうぞ');
+    btn.disabled = false; btn.textContent = '🚉 近くの駅をさがす';
+  }
+}
+function chooseStation(s) {
+  chosenStation = chosenStation === s ? null : s;
+  renderMarkers(); renderPeople(); renderResult();
+  if (chosenStation) map.panTo([s.lat, s.lng]);
+}
+
+// ---------- 入力UI ----------
+async function doSearch() {
+  const q = $('placeIn').value.trim();
+  if (!q) { $('placeIn').focus(); return; }
+  $('msg').textContent = '検索中…'; $('results').innerHTML = '';
+  try {
+    const list = await geocode(q);
+    if (!list.length) { $('msg').textContent = '見つかりませんでした。別の書き方で試してね。'; return; }
+    $('msg').textContent = 'どれか選んでね';
+    $('results').innerHTML = list.map((r, i) => `<button data-r="${i}">${esc(r.display_name)}</button>`).join('');
+    $('results').querySelectorAll('button').forEach(b => b.onclick = () => {
+      const r = list[+b.dataset.r];
+      addPerson(+r.lat, +r.lon, r.name || shortLabel(r));
+    });
+  } catch { $('msg').textContent = '検索に失敗しました。少し待ってもう一度どうぞ。'; }
+}
+$('searchBtn').onclick = doSearch;
+$('placeIn').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) doSearch(); });
+$('geoBtn').onclick = () => {
+  if (!navigator.geolocation) { $('msg').textContent = 'この端末では現在地が使えません。'; return; }
+  $('msg').textContent = '現在地を取得中…';
+  navigator.geolocation.getCurrentPosition(
+    pos => addPerson(pos.coords.latitude, pos.coords.longitude, null),
+    () => { $('msg').textContent = '現在地を取得できませんでした（位置情報の許可を確認してね）。'; },
+    { enableHighAccuracy: true, timeout: 15000 });
+};
+function setTapMode(on) {
+  tapMode = on;
+  $('banner').style.display = on ? 'block' : 'none';
+  map.getContainer().style.cursor = on ? 'crosshair' : '';
+  if (on && window.innerWidth < 900) window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+$('tapBtn').onclick = () => setTapMode(true);
+$('bannerCancel').onclick = () => setTapMode(false);
+$('people').addEventListener('click', e => {
+  const b = e.target.closest('[data-del]'); if (b) removePerson(+b.dataset.del);
+});
+$('resultBox').addEventListener('click', e => {
+  const b = e.target.closest('[data-st]'); if (b) chooseStation(stations[+b.dataset.st]);
+});
+$('seg').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  mode = b.dataset.m;
+  $('seg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+  $('segnote').textContent = MODE_NOTES[mode];
+  refresh(false);
+});
+$('clearBtn').onclick = () => {
+  if (!people.length || !confirm('メンバーを全部消しますか？')) return;
+  people = []; history.replaceState(null, '', location.pathname + location.search); refresh(false);
+};
+
+// ---------- 共有・保存 ----------
+function encodeShare() {
+  return 'p=' + people.map(p => [encodeURIComponent(p.name), p.lat.toFixed(5), p.lng.toFixed(5)].join(',')).join(';') + '&m=' + mode;
+}
+function decodeShare(hash) {
+  const params = new URLSearchParams(hash.replace(/^#/, ''));
+  const raw = params.get('p'); if (!raw) return null;
+  const list = raw.split(';').map(s => s.split(',')).filter(a => a.length === 3)
+    .map(([n, la, lo]) => ({ name: decodeURIComponent(n).slice(0, 20), lat: +la, lng: +lo }))
+    .filter(p => isFinite(p.lat) && isFinite(p.lng) && Math.abs(p.lat) <= 90 && Math.abs(p.lng) <= 180);
+  return { list, mode: params.get('m') };
+}
+$('shareBtn').onclick = async () => {
+  if (!people.length) { toast('先にメンバーを追加してね'); return; }
+  const url = location.origin + location.pathname + '#' + encodeShare();
+  history.replaceState(null, '', url);
+  if (navigator.share && matchMedia('(pointer:coarse)').matches) {
+    try { await navigator.share({ title: 'まんなかマップ', url }); return; } catch (e) { if (e.name === 'AbortError') return; }
+  }
+  try { await navigator.clipboard.writeText(url); toast('リンクをコピーしました'); }
+  catch { prompt('このリンクをコピーしてね', url); }
+};
+function save() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify({ people, mode })); } catch {}
+}
+function load() {
+  const shared = decodeShare(location.hash);
+  if (shared && shared.list.length) {
+    people = shared.list.map(p => ({ ...p, id: nextId++, label: '場所を調べ中…', color: null }));
+    people.forEach(p => p.color = COLORS[(p.id - 1) % COLORS.length]);
+    if (MODE_NOTES[shared.mode]) mode = shared.mode;
+    // 共有リンクから開いたときは、場所名をゆっくり順番に調べる（Nominatimは1秒1回まで）
+    (async () => {
+      for (const p of people) {
+        try { p.label = await reverse(p.lat, p.lng); } catch { p.label = `${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}`; }
+        renderPeople(); save();
+        await new Promise(r => setTimeout(r, 1100));
+      }
+    })();
+    return;
+  }
+  try {
+    const s = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
+    if (s && Array.isArray(s.people)) {
+      people = s.people.filter(p => isFinite(p.lat) && isFinite(p.lng)).map(p => ({ ...p, id: nextId++ }));
+      if (MODE_NOTES[s.mode]) mode = s.mode;
+    }
+  } catch {}
+}
+let toastTimer;
+function toast(t) {
+  const el = $('toast'); el.textContent = t; el.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+load();
+$('seg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.m === mode));
+$('segnote').textContent = MODE_NOTES[mode];
+refresh(true);
+</script>
+<script src="../../playtime.js" defer></script>
+</body>
+</html>
