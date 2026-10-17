@@ -236,16 +236,32 @@ function initAudio() {
   try {
     AC = new (window.AudioContext || window.webkitAudioContext)();
     const comp = AC.createDynamicsCompressor();
-    comp.threshold.value = -16; comp.ratio.value = 8; comp.attack.value = .002; comp.release.value = .15;
-    master = AC.createGain(); master.gain.value = muted ? 0 : .6;
-    master.connect(comp); comp.connect(AC.destination);
+    comp.threshold.value = -22; comp.ratio.value = 20; comp.knee.value = 6; comp.attack.value = .001; comp.release.value = .2;
+    // 最後の砦：はみ出した音をやわらかく丸めて、バリッと割れないようにする
+    const clip = AC.createWaveShaper(), curve = new Float32Array(2048);
+    for (let i = 0; i < curve.length; i++) { const x = i / (curve.length - 1) * 2 - 1; curve[i] = Math.tanh(x * 1.4) / Math.tanh(1.4); }
+    clip.curve = curve; clip.oversample = '2x';
+    const out = AC.createGain(); out.gain.value = .85;
+    master = AC.createGain(); master.gain.value = muted ? 0 : .5;
+    master.connect(comp); comp.connect(clip); clip.connect(out); out.connect(AC.destination);
     noiseBuf = AC.createBuffer(1, AC.sampleRate * .6, AC.sampleRate);
     const d = noiseBuf.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   } catch (e) { AC = null; }
 }
-function tone(f, dur, type, vol, when = 0, slide = 0) {
+// 同時に鳴っている音の数。多すぎると音割れ・処理落ちするので上限を設ける
+let voices = 0;
+const MAX_VOICES = 28;
+function track(node) { voices++; node.onended = () => { voices--; }; }
+const gates = {};
+function gate(key, sec) {
+  const n = AC ? AC.currentTime : 0;
+  if (n - (gates[key] || -1) < sec) return false;
+  gates[key] = n; return true;
+}
+function tone(f, dur, type, vol, when = 0, slide = 0, force = false) {
   if (!AC || muted) return;
+  if (!force && voices >= MAX_VOICES) return;
   const t = AC.currentTime + when;
   const o = AC.createOscillator(), g = AC.createGain();
   o.type = type; o.frequency.setValueAtTime(f, t);
@@ -253,12 +269,13 @@ function tone(f, dur, type, vol, when = 0, slide = 0) {
   g.gain.setValueAtTime(.0001, t);
   g.gain.exponentialRampToValueAtTime(vol, t + .006);
   g.gain.exponentialRampToValueAtTime(.0001, t + dur);
-  o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + .03);
+  o.connect(g); g.connect(master); track(o); o.start(t); o.stop(t + dur + .03);
 }
 function noise(dur, vol, f0, f1, when = 0) {
   if (!AC || muted) return;
+  if (voices >= MAX_VOICES) return;
   const t = AC.currentTime + when;
-  const s = AC.createBufferSource(); s.buffer = noiseBuf;
+  const s = AC.createBufferSource(); s.buffer = noiseBuf; track(s);
   const fl = AC.createBiquadFilter(); fl.type = 'lowpass';
   fl.frequency.setValueAtTime(f0, t); fl.frequency.exponentialRampToValueAtTime(f1, t + dur);
   const g = AC.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
@@ -268,7 +285,8 @@ const PENTA = [0, 2, 4, 7, 9];
 const noteF = semi => 261.63 * Math.pow(2, semi / 12);
 let popVoices = 0, lastCoinSnd = 0, lastVib = 0;
 function sPop(c) {
-  if (popVoices >= 3) return; popVoices++;
+  if (popVoices >= 1 || !gate('pop', .028)) return; popVoices++;
+  if (voices >= MAX_VOICES - 6) return; // 区切りの和音などのために少し空けておく
   let i = c - 1, semi;
   if (i < 40) semi = PENTA[i % 5] + 12 * Math.floor(i / 5) - 5;
   else semi = 31 + PENTA[(i * 3) % 5] + 12 * ((i >> 1) % 2);
@@ -288,28 +306,29 @@ function sCoin() {
   tone(1568, .06, 'square', .05); tone(2093, .16, 'square', .05, .05);
 }
 function sChord(level) {
+  if (!gate('chord', .25)) return;
   const base = [0, 4, 7, 11, 14, 19][level % 6];
-  [0, 4, 7, 12, 16].forEach((s, i) => { tone(noteF(12 + base + s), .45, 'sawtooth', .05, i * .045); tone(noteF(12 + base + s), .5, 'triangle', .12, i * .045); });
+  [0, 4, 7, 12, 16].forEach((s, i) => { tone(noteF(12 + base + s), .45, 'sawtooth', .04, i * .045, 0, true); tone(noteF(12 + base + s), .5, 'triangle', .1, i * .045, 0, true); });
 }
 function sFanfare() {
   [[0, 0], [4, .1], [7, .2], [12, .3], [7, .45], [12, .55]].forEach(([s, t]) => { tone(noteF(12 + s), .32, 'square', .07, t); tone(noteF(s), .4, 'triangle', .15, t); });
   tone(noteF(24), .9, 'triangle', .15, .55);
 }
-function sFever() { for (let i = 0; i < 16; i++) tone(noteF(i * 3), .18, 'square', .05, i * .03); noise(.9, .4, 6000, 200); }
+function sFever() { if (!gate('fever', .5)) return; for (let i = 0; i < 16; i++) tone(noteF(i * 3), .18, 'square', .05, i * .03); noise(.9, .4, 6000, 200); }
 function sFail() { [7, 4, 0, -5].forEach((s, i) => tone(noteF(s), .35, 'triangle', .2, i * .16)); }
 function sTick(i) { tone(noteF(14 + (i % 24)), .05, 'square', .04); }
 function sCard(r, i) {
   tone(noteF(12 + i * 4), .15, 'triangle', .15);
   if (r === 2) for (let k = 0; k < 10; k++) tone(noteF(24 + PENTA[k % 5] + 12 * (k / 5 | 0)), .2, 'sine', .08, .05 + k * .04);
 }
-function sZap() { noise(.25, .5, 9000, 500); tone(1200, .2, 'sawtooth', .08, 0, .1); }
+function sZap() { if (!gate('zap', .15)) return; noise(.25, .4, 9000, 500); tone(1200, .2, 'sawtooth', .07, 0, .1); }
 function vib(ms) {
   const n = performance.now(); if (n - lastVib < 60) return; lastVib = n;
   try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {}
 }
 function setMute(m) {
   muted = m; store.set('dopa-muted', m); $('mute').textContent = m ? '🔇' : '🔊';
-  if (master) master.gain.value = m ? 0 : .6;
+  if (master) master.gain.value = m ? 0 : .5;
 }
 $('mute').addEventListener('click', e => { e.stopPropagation(); initAudio(); setMute(!muted); });
 setMute(muted);
@@ -478,7 +497,7 @@ function pop(o, demo) {
   spawnCoins(o.x, o.y, cval, o.type === 'gold' ? 12 : 1);
   floatText(o.x, o.y - o.r, '+' + fmt(pts), (o.type === 'n' ? 13 : 18) * Math.min(1.8, 1 + c / 150), o.type === 'gold' ? 50 : hue, .75);
   if (crit) floatText(o.x, o.y - 26 * U, 'CRITICAL!', 20, 55, .9, -40);
-  if (o.type === 'gold') { floatText(o.x, o.y + 18 * U, 'JACKPOT!', 18, 48, 1, -30); tone(2637, .3, 'square', .05); }
+  if (o.type === 'gold') { floatText(o.x, o.y + 18 * U, 'JACKPOT!', 18, 48, 1, -30); if (gate('jack', .1)) tone(2637, .3, 'square', .05); }
   sPop(c);
   if (o.type !== 'n') vib(25); else vib(8);
 
