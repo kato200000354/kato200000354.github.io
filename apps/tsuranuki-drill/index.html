@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<script src="../../audio-pause.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>地球つらぬきドリル</title>
+<meta name="description" content="日本から真下にほりつづけて、地球の反対側を目指す放置ゲーム。なかまを雇って、お宝を集めて、マントルも核もつらぬけ！その先には天王星・土星・木星、そして太陽が待っている。">
+<meta name="theme-color" content="#2a1a10">
+<style>
+:root{--bg:#1b120c;--panel:#2a1d14;--panel2:#3a2a1d;--line:#4d3826;--ink:#fff4e6;--dim:#c9b29a;--gold:#ffc83d;--gold2:#e29a00;--ok:#5fd16b;--red:#ff6b4a;--blue:#5fb8ff}
+[hidden]{display:none!important}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:#120b07;color:var(--ink);font-family:"Hiragino Maru Gothic ProN","Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",system-ui,sans-serif;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer;touch-action:manipulation}
+#app{position:fixed;inset:0;max-width:520px;margin:0 auto;display:flex;flex-direction:column;background:var(--bg);box-shadow:0 0 30px rgba(0,0,0,.5);overflow:hidden}
+/* HUD */
+#hud{padding:calc(8px + env(safe-area-inset-top)) 14px 8px;background:linear-gradient(#3a2716,#2a1d14);border-bottom:2px solid #000;position:relative;z-index:3}
+.hrow{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#planetChip{font-size:13px;font-weight:700;background:rgba(255,255,255,.1);padding:3px 10px;border-radius:99px;white-space:nowrap}
+#temp{font-size:13px;color:#ffd2b0;white-space:nowrap}
+#depth{font-size:34px;font-weight:900;letter-spacing:.5px;line-height:1.1;text-align:center;margin-top:2px;text-shadow:0 2px 0 #000;font-variant-numeric:tabular-nums}
+#depthSub{font-size:12px;color:var(--dim);text-align:center;min-height:16px}
+#prog{position:relative;height:10px;border-radius:99px;background:#0d0805;margin:6px 0 6px;overflow:hidden;border:1px solid #000}
+#progFill{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,#8b5a2b,#c4501f,#f08a24,#ffd34d);border-radius:99px}
+#progMid{position:absolute;left:50%;top:-2px;bottom:-2px;width:2px;background:rgba(255,255,255,.55)}
+.money{display:flex;justify-content:space-between;align-items:baseline;font-variant-numeric:tabular-nums}
+#coins{font-size:22px;font-weight:900;color:var(--gold);text-shadow:0 2px 0 #000}
+#dps{font-size:14px;color:#ffe0b8;font-weight:700}
+/* stage */
+#stage{position:relative;flex:1;min-height:150px;overflow:hidden;touch-action:none}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#fx{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.float{position:absolute;font-weight:900;font-size:16px;color:#fff;text-shadow:0 2px 0 #000,0 0 6px #000;white-space:nowrap;animation:fl 0.9s ease-out forwards;transform:translate(-50%,-50%)}
+.float.big{font-size:22px;color:var(--gold)}
+@keyframes fl{0%{opacity:1;margin-top:0}100%{opacity:0;margin-top:-60px}}
+#buffs{position:absolute;left:8px;top:8px;display:flex;flex-direction:column;gap:4px;pointer-events:none}
+.buff{font-size:12px;font-weight:800;padding:3px 8px;border-radius:99px;background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.25)}
+.buff.fever{background:#d63a1f;animation:pulse .5s infinite alternate}
+.buff.rush{background:#c48a00}
+.buff.tapf{background:#7a3cc4}
+@keyframes pulse{to{transform:scale(1.06)}}
+#combo{position:absolute;right:46px;top:10px;font-weight:900;font-size:15px;color:#fff;text-shadow:0 2px 0 #000;pointer-events:none;opacity:0;transition:opacity .2s}
+#hint{position:absolute;left:50%;bottom:16%;transform:translateX(-50%);background:rgba(0,0,0,.65);padding:8px 16px;border-radius:99px;font-weight:800;font-size:15px;pointer-events:none;animation:pulse .7s infinite alternate;white-space:nowrap}
+#banner{position:absolute;left:0;right:0;top:34%;text-align:center;pointer-events:none;opacity:0;transform:scale(.8);transition:all .35s}
+#banner.on{opacity:1;transform:none}
+#banner b{display:block;font-size:26px;font-weight:900;text-shadow:0 3px 0 #000,0 0 12px rgba(0,0,0,.8)}
+#banner span{display:inline-block;margin-top:4px;font-size:13px;background:rgba(0,0,0,.6);padding:4px 12px;border-radius:99px}
+#toast{position:absolute;left:10px;right:10px;top:8px;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none}
+.card{display:flex;align-items:center;gap:10px;background:rgba(30,20,12,.92);border:2px solid #7a5a3a;border-radius:14px;padding:8px 12px;max-width:100%;box-shadow:0 4px 12px rgba(0,0,0,.5);animation:cin .3s ease-out}
+.card.r1{border-color:#5fb8ff}
+.card.r2{border-color:var(--gold);box-shadow:0 0 18px rgba(255,200,61,.6)}
+.card.mile{border-color:#9ae6a2}
+.card .ic{font-size:30px}
+.card .tx{font-size:13px;line-height:1.35}
+.card .tx b{font-size:14px}
+.card .new{color:#ff8; font-weight:900;font-size:11px;margin-left:4px}
+.card.out{animation:cout .4s forwards}
+@keyframes cin{from{opacity:0;transform:translateY(-14px)}}
+@keyframes cout{to{opacity:0;transform:translateY(-14px)}}
+#mole{position:absolute;font-size:40px;width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,rgba(255,240,150,.95),rgba(255,200,40,.5) 55%,rgba(255,200,40,0) 72%);animation:mole 1s infinite alternate;z-index:2}
+@keyframes mole{from{transform:scale(.92) rotate(-8deg)}to{transform:scale(1.08) rotate(8deg)}}
+/* panel */
+#panel{height:min(44%,400px);display:flex;flex-direction:column;background:var(--panel);border-top:2px solid #000;position:relative;z-index:3}
+#tabs{display:flex;background:#1f150e}
+#tabs button{flex:1;padding:9px 0 8px;font-size:14px;font-weight:800;color:var(--dim);border-bottom:3px solid transparent;position:relative}
+#tabs button.on{color:var(--ink);border-bottom-color:var(--gold);background:var(--panel)}
+#tabs .dot{position:absolute;top:5px;right:16%;width:8px;height:8px;border-radius:50%;background:var(--red)}
+#list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 10px calc(12px + env(safe-area-inset-bottom))}
+.qty{display:flex;gap:6px;margin-bottom:8px;align-items:center;font-size:12px;color:var(--dim)}
+.qty button{padding:4px 12px;border-radius:99px;background:var(--panel2);font-weight:800;font-size:13px}
+.qty button.on{background:var(--gold);color:#3a2400}
+.row{display:flex;align-items:center;gap:10px;background:var(--panel2);border-radius:12px;padding:8px 10px;margin-bottom:7px;border:1px solid var(--line)}
+.row .ic{font-size:30px;width:40px;text-align:center;flex:none}
+.row .info{flex:1;min-width:0}
+.row .nm{font-weight:800;font-size:14px}
+.row .nm small{font-weight:700;color:var(--gold);margin-left:4px}
+.row .ds{font-size:11.5px;color:var(--dim);line-height:1.35;margin-top:2px}
+.row .ms{font-size:11px;color:#9ae6a2;margin-top:1px}
+.buy{flex:none;min-width:86px;padding:8px 6px;border-radius:10px;background:linear-gradient(#ffd34d,#e29a00);color:#3a2400;font-weight:900;font-size:13px;line-height:1.2;box-shadow:0 3px 0 #8a5a00;text-align:center}
+.buy small{display:block;font-size:10px;font-weight:800;opacity:.8}
+.buy:active{transform:translateY(2px);box-shadow:0 1px 0 #8a5a00}
+.buy.no{background:#4d3b2b;color:#9c8670;box-shadow:0 3px 0 #2a1e14}
+.row.locked{opacity:.55}
+.sec{font-size:13px;font-weight:800;color:var(--gold);margin:10px 2px 6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:6px}
+.cell{aspect-ratio:1;background:var(--panel2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:26px;border:2px solid var(--line);position:relative}
+.cell.r1{border-color:#3d79a8}.cell.r2{border-color:#b08400}
+.cell.no{font-size:18px;color:#6d5a48}
+.cell i{position:absolute;right:3px;bottom:1px;font-style:normal;font-size:10px;color:var(--dim)}
+.note{font-size:12px;color:var(--dim);line-height:1.6;margin:4px 2px 8px}
+.pl{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;background:var(--panel2);margin-bottom:7px;border:1px solid var(--line)}
+.pl .ic{font-size:30px}
+.pl.cur{border-color:var(--gold)}
+.pl.lock{opacity:.5}
+.btn2{padding:9px 14px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);font-weight:800;font-size:13px}
+/* modal */
+.modal{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.66);padding:16px}
+.mbox{width:100%;max-width:400px;background:#2f2117;border:3px solid var(--gold2);border-radius:20px;padding:20px 18px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.6);animation:pop .35s ease-out;max-height:90%;overflow-y:auto}
+@keyframes pop{from{transform:scale(.8);opacity:0}}
+.mbox h2{font-size:22px;margin-bottom:6px}
+.mbox .big{font-size:56px;line-height:1.2}
+.mbox p{font-size:14px;line-height:1.7;color:#f3dfc8;margin:6px 0}
+.mbox .gain{font-size:20px;font-weight:900;color:var(--gold);margin:6px 0}
+.mbox .main{display:block;width:100%;margin-top:12px;padding:13px;border-radius:14px;background:linear-gradient(#ffd34d,#e29a00);color:#3a2400;font-weight:900;font-size:17px;box-shadow:0 4px 0 #8a5a00}
+.mbox .sub{display:block;width:100%;margin-top:8px;padding:10px;border-radius:12px;background:#4d3b2b;font-weight:800;font-size:14px}
+.olist{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;font-size:26px;margin:6px 0}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="hud">
+    <div class="hrow"><span id="planetChip">🌏 地球</span><span id="temp">🌡 15℃</span></div>
+    <div id="depth">0.00 m</div>
+    <div id="depthSub">画面をタップしてほろう！</div>
+    <div id="prog"><div id="progFill"></div><div id="progMid"></div></div>
+    <div class="money"><span id="coins">🪙 0</span><span id="dps">⛏ 0 m/秒</span></div>
+  </div>
+  <div id="stage">
+    <canvas id="cv"></canvas>
+    <div id="fx"></div>
+    <div id="buffs"></div>
+    <div id="combo"></div>
+    <div id="banner"><b></b><span></span></div>
+    <div id="toast"></div>
+    <div id="hint">👆 タップでほる！</div>
+    <button id="mole" hidden aria-label="キラキラモグラ">🐹</button>
+  </div>
+  <div id="panel">
+    <div id="tabs">
+      <button data-t="units" class="on">なかま</button>
+      <button data-t="ups">強化</button>
+      <button data-t="book">図鑑<span class="dot" id="bookDot" hidden></span></button>
+      <button data-t="star">星</button>
+    </div>
+    <div id="list"></div>
+  </div>
+</div>
+
+<div class="modal" id="mOffline" hidden><div class="mbox">
+  <div class="big">😴⛏️</div>
+  <h2>おかえり！</h2>
+  <p id="offTxt"></p>
+  <div class="gain" id="offGain"></div>
+  <div class="olist" id="offItems"></div>
+  <button class="main" id="offOk">つづきをほる！</button>
+</div></div>
+
+<div class="modal" id="mArrive" hidden><div class="mbox">
+  <div class="big" id="arBig">🌊</div>
+  <h2 id="arTitle"></h2>
+  <p id="arTxt"></p>
+  <p id="arStat" style="font-size:12px;color:#c9b29a"></p>
+  <div class="gain" id="arGain"></div>
+  <p id="arNext"></p>
+  <button class="main" id="arGo">次の星へ出発！</button>
+  <button class="sub" id="arLater">もうちょっとここにいる</button>
+</div></div>
+
+<div class="modal" id="mItem" hidden><div class="mbox">
+  <div class="big" id="itBig"></div>
+  <h2 id="itName"></h2>
+  <p id="itDesc"></p>
+  <p id="itMeta" style="font-size:12px;color:#c9b29a"></p>
+  <button class="main" id="itOk">とじる</button>
+</div></div>
+
+<script>
+'use strict';
+const VER='1.0';
+const SAVE_KEY='tsuranuki-drill-v1';
+
+/* ===================== データ ===================== */
+// 層のタイプ：名前・色・説明・飾り・お宝（[絵文字,名前,説明]を 普通/レア/激レア の順に）
+const T={
+  soil:{n:'表土',c:'#8b5a2b',d:'草の根っこと虫たちの世界',deco:['🪱','🌱','🐜','🥔'],it:[['🪱','ミミズ','土をふかふかにしてくれる名人。ありがとう。'],['🥫','むかしのカンづめ','賞味期限は…見なかったことにしよう。'],['💍','だれかの指輪','おとしもの。持ち主が見つかるといいね。']]},
+  clay:{n:'ねんど層',c:'#a86a38',d:'ねっとり重たい土。昔の人の落とし物も',deco:['🦴','🏺'],it:[['🧱','ねんど玉','こねると何にでもなる。ちょっと楽しい。'],['🏺','縄文土器のかけら','何千年も前の人が使っていたうつわ。'],['🦣','ナウマンゾウの骨','むかし日本にいた大きなゾウ。野尻湖で有名。']]},
+  rock:{n:'岩盤',c:'#7d7268',d:'化石がねむる、かたい岩の層',deco:['🐚','🪨','🦴'],it:[['🐚','アンモナイト','うずまきの貝の化石。恐竜と同じ時代のなかま。'],['🦕','恐竜の化石','ほぼ全身そろってる！博物館が泣いてよろこぶ。'],['🔮','巨大な水晶','長い時間をかけて育った、すきとおった結晶。']]},
+  crust:{n:'地殻の奥',c:'#5e5550',d:'人類がほった最深の穴（約12km）もこのへん',deco:['♨️','🪨'],it:[['🪨','花こう岩','大陸をつくる岩。お墓や建物にも使われる。'],['♨️','ひみつの温泉','地下の熱でわいたお湯。ドリルもひと休み。'],['🟡','金の鉱脈','岩のすきまにキラキラの金。大当たり！']]},
+  um:{n:'上部マントル',c:'#c4501f',d:'ゆっくり流れる、熱い岩の世界',deco:['🔥','🟢'],it:[['🟢','かんらん石','マントルにいっぱいある緑の石。宝石名はペリドット。'],['🌋','マグマのしずく','岩がとけたもの。火山のもとになる。'],['💎','ダイヤモンド','高い熱と圧力で炭素がダイヤに変身する場所。']]},
+  lm:{n:'下部マントル',c:'#9c2f1a',d:'地球の体積の半分以上をしめる巨大な層',deco:['🔥','🔷'],it:[['🔷','ブリッジマナイト','地球でいちばん多い鉱物。でも地上ではほぼ見られない。'],['💧','岩の中の海','鉱物の中に水がとじこめられている。海より多いかも？'],['🟣','超深部ダイヤ','マントルの奥深くで生まれた、ナゾのダイヤ。']]},
+  oc:{n:'外核',c:'#f08a24',d:'ドロドロにとけた鉄の海！',deco:['🌊','⚙️'],it:[['⚙️','とけた鉄のしずく','約4000℃。さわっちゃダメ、ぜったい。'],['🌊','鉄の海の波','液体の鉄がうねっている。サーフィンは無理。'],['🧲','方位磁石のひみつ','この鉄の流れが地球の磁場をつくっている！']]},
+  ic:{n:'内核',c:'#ffd34d',d:'太陽の表面くらい熱い、かたい鉄のボール',deco:['✨','🔩'],it:[['🔩','鉄の結晶','ものすごい圧力で、とけずに固まっている鉄。'],['🌀','内核のさらに内側','中心にもう一つ層があるという説があるんだ。'],['💛','地球の心臓','ドクン…ドクン…（気のせい）']]},
+  sea:{n:'ブラジル沖の海',c:'#1f5fa8',d:'日本のちょうど反対側は、大西洋の海の中！',deco:['🐟','🫧','🐠'],it:[['🐟','深海魚','暗い海の底でくらす、ちょっと顔がこわい魚。'],['🦑','ダイオウイカ','体長10m以上！深海の大物。'],['🏴‍☠️','沈没船の宝箱','中には金貨がザクザク！']]},
+  // 天王星
+  ucl:{n:'メタンの雲',c:'#9fe3ea',d:'メタンが赤い光を吸うから青く見える',deco:['☁️','🔵'],it:[['☁️','ふわふわの雲','マイナス200℃。さわるとこおりそう。'],['🔵','青いメタンガス','天王星が青緑に見えるのはこれのおかげ。'],['🛰️','ボイジャー2号の記念写真','天王星に近づいた探査機は、いまのところこの1機だけ。']]},
+  uat:{n:'水素の大気',c:'#6cc6d6',d:'どこまでも続く、深いガスの海',deco:['🫧','🎈'],it:[['🎈','ヘリウム風船','大気の材料。声が高くなる…かも。'],['🫧','水素の泡','宇宙でいちばん多い元素。'],['🧭','横だおしのコマ','天王星は横にたおれたまま回っている。ふしぎ！']]},
+  uic:{n:'氷のマントル',c:'#3a8fb7',d:'「氷」と呼ぶけど数千℃。水やアンモニアのドロドロ',deco:['🧊','💎'],it:[['🧪','アンモニアのスープ','鼻がツーンとするやつ。'],['🧊','熱い氷','高い圧力で、熱くても氷のような状態になった水。'],['💎','ダイヤの雨','中では本当にダイヤが雨のように降っているらしい！']]},
+  uco:{n:'岩石の核',c:'#6b5a52',d:'天王星の芯。地球くらいの重さの岩のかたまり',deco:['🪨','🔥'],it:[['🪨','天王星の岩','地球から30億km。持ち帰るのが大変。'],['🔥','5000℃の芯','外は寒いのに中はアツアツ。'],['🥶','いちばん寒い星の記録','太陽系でいちばん寒い大気（-224℃）を記録した星。']]},
+  // 土星
+  scl:{n:'アンモニアの雲',c:'#e8d39a',d:'うすい金色のしましま雲',deco:['☁️','💍'],it:[['💍','環のかけら','土星の環は、ほとんど氷のつぶでできている。'],['⬡','六角形の嵐','北極にある、なぜか六角形の巨大なうず。'],['🌬️','秒速500mの風','新幹線の5倍以上の速さ！']]},
+  slq:{n:'液体水素の海',c:'#c9a96b',d:'ガスがおしつぶされて液体になった海',deco:['🌊','🫧'],it:[['🫧','水素のあぶく','土星はとても軽い。水にうかぶくらい！'],['💧','ヘリウムの雨','中ではヘリウムが雨になって降っている。'],['🛁','でっかいおふろ','土星を入れられるおふろがあればうかぶらしい。']]},
+  smh:{n:'金属水素',c:'#8b7aa8',d:'水素が金属みたいに電気を通す、ふしぎな層',deco:['⚡','🧲'],it:[['⚡','電気の流れ','金属になった水素はピカピカ電気を通す。'],['🧲','土星の磁場','この層が大きな磁場をつくっている。'],['🌈','土星のオーロラ','極で光る、宇宙のカーテン。']]},
+  sco:{n:'岩と氷の核',c:'#5c4e46',d:'土星の真ん中。地球の十数倍の重さ',deco:['🪨','🧊'],it:[['🪨','核の岩','ぎゅうぎゅうにおしつぶされた岩。'],['🧊','核の氷','岩と氷がまざりあっている。'],['🥚','ぼやけた芯','土星の核は、まわりとの境目があいまいらしい。']]},
+  // 木星
+  jcl:{n:'しましま雲',c:'#d9a066',d:'茶色と白の帯がぐるぐる回る',deco:['🌩️','🟠'],it:[['🟠','しましま雲','アンモニアの雲が帯になってならんでいる。'],['🌩️','巨大な雷','地球の雷の何千倍も強いことも。'],['🔴','大赤斑のかけら','地球がすっぽり入る巨大な嵐。何百年も続いている。']]},
+  jlq:{n:'液体水素',c:'#b9825a',d:'空と海の境目がない、ふしぎな世界',deco:['🫧','🌧️'],it:[['🫧','水素のあぶく','木星の材料のほとんどは水素。'],['🌧️','ネオンの雨','ネオンが雨のように降っているかもしれない。'],['🎆','ヘリウムの流れ星','中でヘリウムのしずくが落ちていく。']]},
+  jmh:{n:'金属水素の海',c:'#7a6aa0',d:'太陽系でいちばん強い磁場を生む層',deco:['⚡','🧲'],it:[['⚡','超電流','とんでもない量の電気が流れている。'],['🧲','最強の磁場','太陽系の惑星でいちばん強い磁場！'],['🌌','木星のオーロラ','地球のオーロラより何百倍も明るい。']]},
+  jco:{n:'ぼんやりした核',c:'#4e4a5c',d:'岩と金属がとけかけた、もやもやの芯',deco:['🌫️','🪨'],it:[['🌫️','もやもやの核','探査機ジュノーが見つけた、ぼやけた核。'],['🪨','木星の芯の石','地球の10倍以上の重さがあるかも。'],['👑','惑星の王冠','太陽系いちばん大きな惑星をつらぬいた証。']]},
+  // 太陽
+  sph:{n:'光球',c:'#ffb020',d:'私たちが見ている太陽の表面。約6000℃',deco:['🔆','🍚'],it:[['🍚','粒状斑','表面のつぶつぶもよう。ごはん粒っぽい。'],['🔆','黒点','まわりより温度が低いから黒く見える。'],['🌋','太陽フレア','太陽の大爆発。地球のオーロラのもとにもなる。']]},
+  scv:{n:'対流層',c:'#ff8a1a',d:'熱いガスがぐつぐつわき上がる',deco:['🌀','🔥'],it:[['🔥','プラズマ','ガスが熱すぎて電気をおびた状態。'],['🌀','熱のぐるぐる','おみそ汁みたいに、熱が上がって下がる。'],['🧲','磁力線のたば','ねじれてからまって、黒点やフレアのもとになる。']]},
+  srd:{n:'放射層',c:'#ffd060',d:'光がぶつかりまくって、なかなか外に出られない',deco:['✨','📦'],it:[['✨','光のつぶ','光子。ここでは何万年も迷子になる。'],['🥵','700万℃','もう何がなんだか。'],['📦','17万年前の光','いま中心で生まれた光が外に出るまで、十万年以上かかる！']]},
+  sco2:{n:'中心核',c:'#fff3b0',d:'約1500万℃。水素がヘリウムに変わる核融合のかまど',deco:['☀️','💛'],it:[['☀️','核融合の火','水素4つでヘリウム1つ。これが太陽の光のもと。'],['🎐','ニュートリノ','すべてをすりぬける、おばけみたいな粒。'],['💛','太陽の心臓','ここが止まると…考えないでおこう。']]}
+};
+const RAR=['ふつう','レア','激レア'], RW=[60,30,10], RSEC=[15,45,150];
+
+function mkLayers(D,inward){ // inward: [[半径に対する割合, type], ...] 中心までの層 → 反対側は鏡うつし
+  const R=D/2, out=inward.map(([f,t])=>[f*R,t]);
+  for(let i=inward.length-2;i>=0;i--) out.push([D-inward[i+1][0]*R,inward[i][1]]);
+  return out;
+}
+const PLANETS=[
+  {n:'地球',e:'🌏',D:12742e3,medal:1,bg:'earth',
+   layers:[[0,'soil'],[30,'clay'],[300,'rock'],[3000,'crust'],[35e3,'um'],[660e3,'lm'],[2900e3,'oc'],[5150e3,'ic'],[7592e3,'oc'],[9842e3,'lm'],[12082e3,'um'],[12707e3,'crust'],[12738e3,'sea']],
+   temp:[[0,15],[3000,90],[35e3,900],[660e3,1900],[2900e3,3700],[5150e3,5400],[6371e3,6000]],
+   miles:[[3,'🕳️ 落とし穴くらいの深さ'],[10,'🏢 ビル3階ぶんほった！'],[60,'🗼 東京タワーの展望台ぶん…の下へ'],[333,'🗼 東京タワーの高さぶんほった！'],[634,'🗼 スカイツリーの高さぶん！'],[828,'🏙️ 世界一高いビルぶん！'],[3776,'🗻 富士山の高さぶん！'],[8849,'🏔️ エベレストの高さぶん！'],[10920,'🌊 世界一深い海（マリアナ海溝）よりも深い！'],[12262,'🏆 人類最深の穴（コラ超深度掘削坑）をこえた！'],[35e3,'🔥 地殻をぬけた！ここからマントル'],[2900e3,'🌊 液体の鉄の海に突入！'],[6371e3,'🌏 地球の中心に到着！ここから先は「上」にほる！'],[9000e3,'↗️ 帰り道も半分すぎた'],[12707e3,'🌎 地殻にもどってきた！もうすぐ反対側！']],
+   arrive:{big:'🌊🇧🇷',t:'地球つらぬき成功！',x:'ザッパーン！ブラジル沖の大西洋に飛び出した！日本のちょうど反対側は、海の上だったんだ。'}},
+  {n:'天王星',e:'🪐',D:51118e3,medal:2,bg:'space',sc:'#9fe3ea',
+   layers:mkLayers(51118e3,[[0,'ucl'],[0.03,'uat'],[0.25,'uic'],[0.8,'uco']]),
+   temp:[[0,-220],[0.03,-200],[0.25,2000],[0.8,4700],[1,5000]],
+   miles:[[25559e3,'🪐 天王星の中心に到着！'],[30000e3,'🧊 氷のマントルを上へほり進む']],
+   arrive:{big:'🪐✨',t:'天王星つらぬき成功！',x:'青い氷の巨人をつらぬいて、反対側の宇宙に飛び出した！横だおしで回る星は、中までふしぎだった。'}},
+  {n:'土星',e:'💍',D:116460e3,medal:3,bg:'space',sc:'#e8d39a',
+   layers:mkLayers(116460e3,[[0,'scl'],[0.02,'slq'],[0.5,'smh'],[0.8,'sco']]),
+   temp:[[0,-180],[0.5,8000],[1,11700]],
+   miles:[[58230e3,'💍 土星の中心に到着！']],
+   arrive:{big:'💍🚀',t:'土星つらぬき成功！',x:'環のある星を、ど真ん中からつらぬいた！ふり返ると、キラキラの環が見える。'}},
+  {n:'木星',e:'🟠',D:139820e3,medal:4,bg:'space',sc:'#d9a066',
+   layers:mkLayers(139820e3,[[0,'jcl'],[0.02,'jlq'],[0.18,'jmh'],[0.85,'jco']]),
+   temp:[[0,-110],[0.18,4000],[0.85,20000],[1,24000]],
+   miles:[[69910e3,'🟠 木星の中心に到着！']],
+   arrive:{big:'🟠👑',t:'木星つらぬき成功！',x:'太陽系でいちばん大きな惑星をつらぬいた！のこるは…あの星だけ。'}},
+  {n:'太陽',e:'☀️',D:1392700e3,medal:5,bg:'space',sc:'#ffb020',
+   layers:mkLayers(1392700e3,[[0,'sph'],[0.005,'scv'],[0.3,'srd'],[0.75,'sco2']]),
+   temp:[[0,5500],[0.005,6000],[0.3,2000000],[0.75,7000000],[1,15000000]],
+   miles:[[696350e3,'☀️ 太陽の中心！1500万℃！ドリルはなぜか無事！']],
+   arrive:{big:'☀️🏆',t:'太陽つらぬき成功！！',x:'まさか本当に太陽をつらぬくとは…。ドリルは なぜか溶けなかった。気合いだ。'}}
+];
+// 地球以外は温度表が「半径の割合」なのでメートルに直す
+PLANETS.forEach(p=>{if(p.bg!=='earth')p.temp=p.temp.map(([f,t])=>[f*p.D/2,t])});
+// 深さ（直径に対する割合）ごとのコインの価値
+const VF=[[0,1],[2.4e-6,1.5],[2.4e-5,2],[2.4e-4,3],[0.0027,4],[0.052,6],[0.228,8],[0.404,10],[0.5,13],[0.596,16],[0.772,20],[0.948,25],[0.997,30],[0.9997,40]];
+
+const UNITS=[
+  ['👴','ほりほりじいさん','スコップ一本で60年。',0.2,20],
+  ['🐹','モグラ部隊','10匹1組でほりまくる。',1.2,1200],
+  ['🚜','ショベルカー','ガガガッと力まかせ。',7,18000],
+  ['🔩','ボーリングマシン','ぐるぐる回って深くまで。',40,3e5],
+  ['🤖','掘削ロボ','24時間休まない。えらい。',230,6e6],
+  ['🦖','地底怪獣ドリラゴン','鼻がドリルの怪獣。なついた。',1300,1.32e8],
+  ['🛸','UFOビーム','宇宙人が手伝ってくれる。',7500,3e9],
+  ['🌀','ブラックホール掘り','土ごと吸いこむ。危ない。',45000,7.2e10],
+  ['🌠','宇宙の意志','宇宙そのものが、ほれと言っている。',280000,1.8e12]
+];
+const MILES=[25,50,100,200,300,400];
+const DRILLN=['鉄','はがね','チタン','タングステン','ダイヤ','オリハルコン','アダマン','流れ星','ゆめ','かみ'];
+const DRILLC=['#9aa3ad','#c9d1d9','#8fd3e8','#7f8fa6','#bff4ff','#ffb347','#ff6b9a','#ffe14d','#c99bff','#ffffff'];
+const UPS=[
+  {k:'drill',ic:'🔧',n:'ドリル改造',d:l=>`ドリルを${DRILLN[Math.min(l,9)]}${l>9?'+'+(l-9):''}製に。みんなの掘る速さ ×1.6`,cost:l=>3000*Math.pow(30,l),max:99},
+  {k:'tap',ic:'⛏️',n:'つるはし',d:l=>`タップでほる量アップ（今：${fmtM(tapMeters(true))}）`,cost:l=>50*Math.pow(3.2,l),max:25},
+  {k:'radar',ic:'📡',n:'お宝レーダー',d:l=>`お宝が見つかりやすくなる（今：約${Math.round(treasureInt())}秒に1回）`,cost:l=>800*Math.pow(8,l),max:8},
+  {k:'sell',ic:'🏪',n:'土の買い取り屋',d:l=>`ほった土が高く売れる ×1.3（今：×${fmtX(Math.pow(1.3,l))}）`,cost:l=>1e4*Math.pow(22,l),max:15}
+];
+
+/* ===================== 状態 ===================== */
+function fresh(){return{planet:0,loop:0,depth:0,coins:0,units:UNITS.map(()=>0),up:{drill:0,tap:0,radar:0,sell:0},found:{},medals:0,cleared:[],runStart:Date.now(),mi:0,arrived:false,taps:0,lastT:Date.now(),sound:true,total:0}}
+let S=fresh();
+try{const j=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');if(j&&typeof j==='object'){S=Object.assign(fresh(),j);S.up=Object.assign(fresh().up,j.up||{});while(S.units.length<UNITS.length)S.units.push(0);}}catch(e){}
+function save(){S.lastT=Date.now();try{localStorage.setItem(SAVE_KEY,JSON.stringify(S))}catch(e){}}
+
+const P=()=>PLANETS[S.planet];
+let feverT=0,rushT=0,tapFT=0;
+
+/* ===================== 計算 ===================== */
+const uniq=()=>Object.keys(S.found).length;
+const ALLITEMS=[];PLANETS.forEach((p,pi)=>{const seen=new Set();p.layers.forEach(([,t])=>{if(seen.has(t))return;seen.add(t);T[t].it.forEach((it,i)=>ALLITEMS.push({id:t+':'+i,t,i,pi}))})});
+function mileMult(n){let m=1;for(const t of MILES)if(n>=t)m*=2;return m}
+function glob(){return Math.pow(1.6,S.up.drill)*(1+0.5*S.medals)*(1+0.02*uniq())}
+function baseDps(){let s=0;UNITS.forEach((u,i)=>s+=u[3]*S.units[i]*mileMult(S.units[i]));return s*glob()}
+function buffMult(){return (feverT>0?3:1)*(rushT>0?7:1)}
+function dps(){return baseDps()*buffMult()}
+function tapMeters(plain){const l=S.up.tap;let m=(1+l)*(1+0.5*S.medals)+baseDps()*0.02*l;if(!plain)m*=(feverT>0?3:1)*(tapFT>0?20:1);return m}
+function sellMult(){return Math.pow(1.3,S.up.sell)}
+function val(d){const f=d/P().D;let v=1;for(const [a,b] of VF)if(f>=a)v=b;return v}
+function income(){return baseDps()*val(S.depth)*sellMult()}
+function treasureInt(){return 30*Math.pow(0.85,S.up.radar)}
+function unitCost(i,n){n=n??S.units[i];return UNITS[i][4]*Math.pow(1.2,n)}
+function bulkCost(i,k){const a=unitCost(i);return a*(Math.pow(1.2,k)-1)/0.2}
+function maxBuy(i){const a=unitCost(i);if(S.coins<a)return 0;return Math.floor(Math.log(S.coins*0.2/a+1)/Math.log(1.2))}
+function layerIdx(d){const L=P().layers;let k=0;for(let i=0;i<L.length;i++)if(d>=L[i][0])k=i;return k}
+function layerAt(d){return T[P().layers[layerIdx(d)][1]]}
+function tempAt(d){const p=P(),x=Math.min(d,p.D-d),tb=p.temp;if(x<=tb[0][0])return tb[0][1];for(let i=1;i<tb.length;i++)if(x<=tb[i][0]){const [a,ta]=tb[i-1],[b,tb2]=tb[i];return ta+(tb2-ta)*(x-a)/(b-a)}return tb[tb.length-1][1]}
+
+/* ===================== 表示用の数字 ===================== */
+const JU=['','万','億','兆','京','垓','秭','穣','溝','澗','正','載','極'];
+function fmt(n){if(!isFinite(n))return'∞';if(n<1e4){return n<10&&n%1?n.toFixed(1):Math.floor(n).toLocaleString()}const u=Math.min(JU.length-1,Math.floor(Math.log10(n)/4));const v=n/Math.pow(10,4*u);return(v<10?v.toFixed(2):v<100?v.toFixed(1):Math.floor(v))+JU[u]}
+function fmtM(m){if(m<1000)return(m<10?m.toFixed(2):m<100?m.toFixed(1):Math.floor(m))+' m';const k=m/1000;return(k<100?k.toFixed(2):k<10000?k.toFixed(1):Math.floor(k).toLocaleString())+' km'}
+function fmtSpd(m){return m<1000?(m<10?m.toFixed(2):m<100?m.toFixed(1):Math.floor(m))+' m':(m/1000<1000?(m/1000).toFixed(m<1e4?2:1):fmt(m/1000))+' km'}
+function fmtX(x){return x<100?x.toFixed(x<10?2:1):fmt(x)}
+function fmtT(s){s=Math.max(0,s);if(!isFinite(s)||s>86400*999)return'ずっと先';if(s<60)return Math.ceil(s)+'秒';if(s<3600)return Math.floor(s/60)+'分'+Math.floor(s%60)+'秒';if(s<86400)return Math.floor(s/3600)+'時間'+Math.floor(s%3600/60)+'分';return Math.floor(s/86400)+'日'+Math.floor(s%86400/3600)+'時間'}
+function fmtTemp(t){return(Math.abs(t)>=1e4?fmt(Math.round(t)):Math.round(t).toLocaleString())+'℃'}
+
+/* ===================== 音 ===================== */
+let AC=null;
+function ac(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();return AC}
+function tone(f,d=0.08,type='square',v=0.05,when=0,slide=0){if(!S.sound)return;const a=ac();if(!a)return;const t=a.currentTime+when,o=a.createOscillator(),g=a.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(30,f*slide),t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(0.0001,t+d);o.connect(g).connect(a.destination);o.start(t);o.stop(t+d+0.02)}
+const sTap=()=>tone(120+Math.random()*60,0.06,'square',0.035,0,0.5);
+const sBuy=()=>{tone(660,0.06,'triangle',0.06);tone(990,0.08,'triangle',0.05,0.05)};
+const sGem=r=>{const n=[784,988,1175,1568].slice(0,2+r);n.forEach((f,i)=>tone(f,0.12,'triangle',0.06,i*0.07))};
+const sFan=()=>[523,659,784,1047,784,1047].forEach((f,i)=>tone(f,0.18,'triangle',0.07,i*0.12));
+
+/* ===================== DOM ===================== */
+const $=id=>document.getElementById(id);
+const cv=$('cv'),ctx=cv.getContext('2d'),stage=$('stage'),fx=$('fx');
+let W=0,H=0,DPR=1;
+function resize(){const r=stage.getBoundingClientRect();W=r.width;H=r.height;DPR=Math.min(2,window.devicePixelRatio||1);cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR)}
+window.addEventListener('resize',resize);
+
+function floatText(x,y,txt,big){if(fx.childElementCount>24)fx.firstChild.remove();const e=document.createElement('div');e.className='float'+(big?' big':'');e.textContent=txt;e.style.left=x+'px';e.style.top=y+'px';fx.appendChild(e);setTimeout(()=>e.remove(),900)}
+function toast(html,cls,ms=2600){const box=$('toast');while(box.childElementCount>=3)box.firstChild.remove();const e=document.createElement('div');e.className='card '+(cls||'');e.innerHTML=html;box.appendChild(e);setTimeout(()=>{e.classList.add('out');setTimeout(()=>e.remove(),400)},ms)}
+let bannerTO=0;
+function banner(t,s){const b=$('banner');b.querySelector('b').textContent=t;b.querySelector('span').textContent=s;b.classList.add('on');clearTimeout(bannerTO);bannerTO=setTimeout(()=>b.classList.remove('on'),2600)}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ===================== ほる ===================== */
+let curLayer=layerIdx(S.depth);
+function dig(m,quiet){
+  if(S.arrived||m<=0)return 0;
+  const p=P(),before=S.depth;S.depth=Math.min(p.D,S.depth+m);
+  const real=S.depth-before;S.coins+=real*val((before+S.depth)/2)*sellMult();S.total+=real;
+  const li=layerIdx(S.depth);
+  if(li!==curLayer){curLayer=li;if(!quiet){const L=p.layers[li],t=T[L[1]];banner((L[0]>=p.D/2&&L[1]!=='sea'?'↑ ':'↓ ')+t.n,t.d)}}
+  while(S.mi<p.miles.length&&S.depth>=p.miles[S.mi][0]){if(!quiet)toast(`<span class="ic">📏</span><span class="tx"><b>${fmtM(p.miles[S.mi][0])}</b><br>${esc(p.miles[S.mi][1])}</span>`,'mile',3600);S.mi++}
+  if(S.depth>=p.D){S.arrived=true;if(!quiet)setTimeout(showArrive,600)}
+  return real;
+}
+function findTreasure(quiet,forceRare){
+  const t=P().layers[layerIdx(S.depth)][1];let r=0;
+  if(forceRare)r=Math.random()<0.4?2:1;else{let x=Math.random()*100;r=x<RW[0]?0:x<RW[0]+RW[1]?1:2}
+  const id=t+':'+r,it=T[t].it[r],isNew=!S.found[id];S.found[id]=(S.found[id]||0)+1;
+  const g=Math.max(income(),val(S.depth)*sellMult()*0.5)*RSEC[r]*(isNew?2:1);S.coins+=g;
+  if(isNew)$('bookDot').hidden=false;
+  if(!quiet){sGem(r);toast(`<span class="ic">${it[0]}</span><span class="tx"><b>${esc(it[1])}</b><span class="new">${isNew?'NEW!':''}</span><br>${RAR[r]}のお宝！ 🪙+${fmt(g)}${isNew?'（初発見ボーナス×2）':''}</span>`,'r'+r,3000)}
+  return {it,isNew,g};
+}
+
+/* ===================== タップ ===================== */
+let combo=0,comboT=0,shake=0,lastTapX=0,lastTapY=0;
+cv.addEventListener('pointerdown',e=>{
+  e.preventDefault();ac();
+  if(S.arrived){showArrive();return}
+  const r=cv.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
+  const m=dig(tapMeters());S.taps++;shake=0.12;sTap();
+  combo++;comboT=0.7;
+  if(combo===40&&feverT<=0){feverT=10;banner('🔥 ドリル暴走！','10秒間 ぜんぶ×3！');tone(220,0.4,'sawtooth',0.05,0,3)}
+  floatText(x,y-10,'+'+fmtM(m),tapFT>0||feverT>0);
+  burst(12);
+  if(S.taps>=8)$('hint').hidden=true;
+});
+
+/* ===================== キラキラモグラ ===================== */
+let moleNext=60+Math.random()*60,moleLife=0;
+const mole=$('mole');
+function spawnMole(){mole.style.left=(20+Math.random()*(W-104))+'px';mole.style.top=(30+Math.random()*(H-130))+'px';mole.hidden=false;moleLife=11;tone(1400,0.1,'triangle',0.05);tone(1800,0.1,'triangle',0.05,0.1)}
+mole.addEventListener('pointerdown',e=>{
+  e.preventDefault();e.stopPropagation();mole.hidden=true;moleNext=100+Math.random()*100;
+  const x=parseFloat(mole.style.left)+32,y=parseFloat(mole.style.top)+32;
+  const k=Math.random();
+  if(k<0.4){rushT=20;banner('🌟 ほりほりラッシュ！','20秒間 掘る速さ×7')}
+  else if(k<0.7){tapFT=15;banner('👆 タップ祭り！','15秒間 タップ×20')}
+  else{const g=Math.max(income()*240,30);S.coins+=g;floatText(x,y,'🪙+'+fmt(g),true);findTreasure(false,true);banner('🎁 お宝の山！','コインとレアなお宝をゲット')}
+  sFan();
+});
+
+/* ===================== パーティクル & 描画 ===================== */
+const parts=[];
+function burst(n){const c=layerAt(S.depth).c;const cx=W/2,cy=H*0.42+18;for(let i=0;i<n&&parts.length<160;i++){const a=-Math.PI/2+(Math.random()-0.5)*2.6;const s=60+Math.random()*180;parts.push({x:cx+(Math.random()-0.5)*20,y:cy,vx:Math.cos(a)*s,vy:Math.sin(a)*s,l:0.5+Math.random()*0.5,c:Math.random()<0.3?'#fff8':c,z:2+Math.random()*4})}}
+let ppm=40,scroll=0,spin=0,emitAcc=0;
+const STARS=Array.from({length:70},()=>[Math.random(),Math.random(),Math.random()*1.5+0.3]);
+function hsh(a,b){const x=Math.sin(a*127.1+b*311.7+S.planet*74.7)*43758.5453;return x-Math.floor(x)}
+function shade(hex,k){const n=parseInt(hex.slice(1),16);let r=n>>16,g=n>>8&255,b=n&255;const f=v=>Math.max(0,Math.min(255,Math.round(k<0?v*(1+k):v+(255-v)*k)));return`rgb(${f(r)},${f(g)},${f(b)})`}
+const EMO='"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+function nice(x){const e=Math.pow(10,Math.floor(Math.log10(x)));const m=x/e;return(m<1.5?1:m<3.5?2:m<7.5?5:10)*e}
+
+function draw(dt){
+  const p=P(),D=p.D,dY=Math.round(H*0.42),cx=W/2;
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  const top=dY-S.depth*ppm, exitY=dY+(D-S.depth)*ppm;
+  // 背景（スタート地点）
+  if(top>0){
+    if(p.bg==='earth'){const g=ctx.createLinearGradient(0,0,0,top);g.addColorStop(0,'#5fb8ff');g.addColorStop(1,'#cdeeff');ctx.fillStyle=g;ctx.fillRect(0,0,W,top);
+      ctx.font=`26px ${EMO}`;ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText('🏠',cx-90,top+2);ctx.fillText('🌳',cx+90,top+2);ctx.fillText('🇯🇵',cx+40,top+2);ctx.font=`22px ${EMO}`;ctx.fillText('☁️',W*0.2,top-60);ctx.fillText('☀️',W*0.85,top-90);
+      ctx.fillStyle='#5cbf4a';ctx.fillRect(0,top-4,W,6)}
+    else drawSpace(0,top,p.sc);
+  }
+  // 層
+  const L=p.layers;
+  for(let i=0;i<L.length;i++){let y0=dY+(L[i][0]-S.depth)*ppm,y1=dY+((i+1<L.length?L[i+1][0]:D)-S.depth)*ppm;if(y1<0||y0>H)continue;y0=Math.max(y0,0);y1=Math.min(y1,H);const c=T[L[i][1]].c;const g=ctx.createLinearGradient(0,y0,0,y1);g.addColorStop(0,c);g.addColorStop(1,shade(c,-0.15));ctx.fillStyle=g;ctx.fillRect(0,y0,W,y1-y0+0.5)}
+  // ゴール地点（反対側）
+  if(exitY<H){if(p.bg==='earth'){const g=ctx.createLinearGradient(0,exitY,0,H);g.addColorStop(0,'#cdeeff');g.addColorStop(1,'#5fb8ff');ctx.fillStyle=g;ctx.fillRect(0,exitY,W,H-exitY);ctx.fillStyle='#9fd8ff';ctx.fillRect(0,exitY,W,4);ctx.font=`bold 13px sans-serif`;ctx.fillStyle='#1d4f86';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText('↓ ブラジル沖の空（ゴール）',cx,exitY+10)}else{drawSpace(exitY,H,p.sc);ctx.font=`bold 13px sans-serif`;ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText('↓ 反対側の宇宙（ゴール）',cx,exitY+10)}}
+  // つぶつぶ模様と飾り
+  const CS=26,y0=Math.max(0,top),y1=Math.min(H,exitY);
+  if(y1>y0){
+    const r0=Math.floor((y0+scroll)/CS),r1=Math.ceil((y1+scroll)/CS),cols=Math.ceil(W/CS);
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    for(let r=r0;r<=r1;r++){const y=r*CS-scroll;for(let c=0;c<cols;c++){const h=hsh(r,c);if(h>0.42)continue;const px=c*CS+hsh(c,r)*CS,py=y+hsh(r+7,c)*CS;if(py<y0||py>y1)continue;
+      if(h<0.011){const t=layerAt(S.depth+(py-dY)/ppm);ctx.font=`17px ${EMO}`;ctx.globalAlpha=0.85;ctx.fillText(t.deco[Math.floor(hsh(c+3,r)*t.deco.length)],px,py);ctx.globalAlpha=1;continue}
+      ctx.fillStyle=h<0.2?'rgba(0,0,0,.16)':'rgba(255,255,255,.10)';const z=2+hsh(r,c+5)*5;ctx.beginPath();ctx.ellipse(px,py,z,z*0.7,h*6,0,7);ctx.fill()}}
+  }
+  // 掘った穴
+  const sy=Math.max(0,top);
+  if(dY-30>sy){ctx.fillStyle='rgba(15,8,4,.55)';ctx.fillRect(cx-28,sy,56,dY-30-sy);ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(cx-31,sy,3,dY-30-sy);ctx.fillRect(cx+28,sy,3,dY-30-sy);ctx.strokeStyle='#bbb';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(cx,sy);ctx.lineTo(cx,dY-60);ctx.stroke()}
+  // なかま
+  ctx.font=`22px ${EMO}`;ctx.textAlign='center';ctx.textBaseline='middle';let k=0;const tt=performance.now()/1000;
+  for(let i=0;i<UNITS.length;i++){if(!S.units[i])continue;const side=k%2?1:-1,row=Math.floor(k/2);const x=cx+side*(62+row*8)+Math.sin(tt*3+i)*3,y=dY-8-row*34+Math.cos(tt*4+i)*3;if(y>sy+10)ctx.fillText(UNITS[i][0],x,y);k++}
+  // ドリル
+  const sx=shake>0?(Math.random()-0.5)*8:0,dc=DRILLC[Math.min(S.up.drill,9)];
+  ctx.save();ctx.translate(cx+sx,dY);
+  ctx.fillStyle='#d6402b';rr(-26,-72,52,44,10);ctx.fill();ctx.fillStyle='#a52c1c';ctx.fillRect(-26,-36,52,8);
+  ctx.fillStyle='#bfe9ff';ctx.beginPath();ctx.arc(0,-52,12,0,7);ctx.fill();ctx.font=`16px ${EMO}`;ctx.fillText('👷',0,-51);
+  // 刃
+  ctx.beginPath();ctx.moveTo(-24,-28);ctx.lineTo(24,-28);ctx.lineTo(0,24);ctx.closePath();ctx.fillStyle=dc;ctx.fill();
+  ctx.save();ctx.clip();ctx.strokeStyle='rgba(0,0,0,.35)';ctx.lineWidth=4;for(let j=-4;j<8;j++){const yy=-28+((j*12+spin)%84+84)%84-12;ctx.beginPath();ctx.moveTo(-30,yy);ctx.lineTo(30,yy+14);ctx.stroke()}ctx.restore();
+  ctx.restore();
+  // 破片
+  for(const q of parts){ctx.fillStyle=q.c;ctx.fillRect(q.x-q.z/2,q.y-q.z/2,q.z,q.z)}
+  // ものさし
+  const step=nice(90/ppm);const d0=Math.ceil((S.depth-dY/ppm)/step)*step;
+  ctx.font='bold 10px sans-serif';ctx.textAlign='right';ctx.textBaseline='middle';
+  for(let d=Math.max(0,d0);d<=Math.min(D,S.depth+(H-dY)/ppm);d+=step){const y=dY+(d-S.depth)*ppm;ctx.fillStyle='rgba(255,255,255,.7)';ctx.fillRect(W-8,y,8,1.5);ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillText(fmtM(d),W-11,y+1);ctx.fillStyle='rgba(255,255,255,.85)';ctx.fillText(fmtM(d),W-12,y)}
+}
+function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+function drawSpace(a,b,sc){ctx.fillStyle='#070a1c';ctx.fillRect(0,a,W,b-a);ctx.fillStyle='#fff';for(const [x,y,z] of STARS){const yy=a+y*(b-a);ctx.globalAlpha=0.4+0.6*Math.abs(Math.sin(performance.now()/900+x*20));ctx.fillRect(x*W,yy,z,z)}ctx.globalAlpha=1;
+  if(a===0){ctx.fillStyle=sc;ctx.fillRect(0,b-5,W,6)}else{ctx.fillStyle=sc;ctx.fillRect(0,a-1,W,5)}}
+
+/* ===================== HUD・パネル更新 ===================== */
+function updHud(){
+  const p=P(),d=dps(),rem=p.D-S.depth;
+  $('planetChip').textContent=`${p.e} ${p.n}${S.loop?` ${S.loop+1}周目`:''}`;
+  $('temp').textContent='🌡 '+fmtTemp(tempAt(S.depth));
+  $('depth').textContent=fmtM(S.depth);
+  const half=p.D/2;
+  $('depthSub').textContent=S.arrived?'🎉 反対側に到着！':S.depth<1&&S.taps<3?'画面をタップしてほろう！':`${layerAt(S.depth).n}・${S.depth<half?'中心まで '+fmtM(half-S.depth):'出口まで '+fmtM(rem)}${d>0?'（あと '+fmtT(rem/d)+'）':''}`;
+  $('progFill').style.width=(S.depth/p.D*100).toFixed(3)+'%';
+  $('coins').textContent='🪙 '+fmt(S.coins);
+  $('dps').textContent='⛏ '+fmtSpd(d)+'/秒';
+  const b=[];if(feverT>0)b.push(`<span class="buff fever">🔥 暴走 ×3 ${Math.ceil(feverT)}</span>`);if(rushT>0)b.push(`<span class="buff rush">🌟 ラッシュ ×7 ${Math.ceil(rushT)}</span>`);if(tapFT>0)b.push(`<span class="buff tapf">👆 タップ×20 ${Math.ceil(tapFT)}</span>`);
+  const bh=b.join('');if($('buffs').innerHTML!==bh)$('buffs').innerHTML=bh;
+  const cb=$('combo');if(combo>=5){cb.textContent=combo+' コンボ'+(combo<40&&feverT<=0?`（40で暴走）`:'');cb.style.opacity=1}else cb.style.opacity=0;
+}
+
+let tab='units',qty=1,listKey='';
+document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>{tab=b.dataset.t;document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));if(tab==='book')$('bookDot').hidden=true;listKey='';renderList();$('list').scrollTop=0}));
+
+function renderList(){
+  const el=$('list');
+  if(tab==='units'){
+    const vis=UNITS.map((u,i)=>i===0||S.units[i-1]>0||S.units[i]>0);
+    const key='u'+vis.join()+qty;
+    if(key!==listKey){listKey=key;let h=`<div class="qty">まとめ買い <button data-q="1" class="${qty===1?'on':''}">×1</button><button data-q="10" class="${qty===10?'on':''}">×10</button><button data-q="0" class="${qty===0?'on':''}">最大</button></div>`;
+      let shownLock=false;
+      UNITS.forEach((u,i)=>{if(vis[i])h+=`<div class="row"><div class="ic">${u[0]}</div><div class="info"><div class="nm">${u[1]}<small id="un${i}"></small></div><div class="ds">${u[2]} <span id="ud${i}"></span></div><div class="ms" id="um${i}"></div></div><button class="buy" id="ub${i}" data-u="${i}"></button></div>`;
+        else if(!shownLock){shownLock=true;h+=`<div class="row locked"><div class="ic">❓</div><div class="info"><div class="nm">？？？</div><div class="ds">1つ前のなかまを雇うと出てくる</div></div></div>`}});
+      el.innerHTML=h;
+      el.querySelectorAll('.qty button').forEach(b=>b.onclick=()=>{qty=+b.dataset.q;listKey='';renderList()});
+      el.querySelectorAll('[data-u]').forEach(b=>b.onclick=()=>buyUnit(+b.dataset.u));
+    }
+    const g=glob();
+    UNITS.forEach((u,i)=>{if(!vis[i])return;const n=S.units[i];const k=qty===0?Math.max(1,maxBuy(i)):qty;const c=bulkCost(i,k);
+      $('un'+i).textContent=n?`× ${n}`:'';
+      $('ud'+i).textContent=`（1体 ${fmtSpd(u[3]*mileMult(n)*g)}/秒）`;
+      const nx=MILES.find(t=>t>n);$('um'+i).textContent=nx?`あと${nx-n}体で このなかま ×2`:'★ さいこう';
+      const b=$('ub'+i);b.innerHTML=`🪙${fmt(c)}<small>${k>1?k+'体 ':''}雇う</small>`;b.classList.toggle('no',S.coins<c)});
+  }
+  else if(tab==='ups'){
+    if(listKey!=='p'){listKey='p';el.innerHTML=UPS.map(u=>`<div class="row"><div class="ic">${u.ic}</div><div class="info"><div class="nm">${u.n}<small id="pl${u.k}"></small></div><div class="ds" id="pd${u.k}"></div></div><button class="buy" id="pb${u.k}" data-p="${u.k}"></button></div>`).join('')+`<p class="note">🔥 すばやく40回タップすると「ドリル暴走」！<br>🐹 ときどき出てくるキラキラモグラをタップすると、いいことがあるよ。</p>`;
+      el.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>buyUp(b.dataset.p))}
+    UPS.forEach(u=>{const l=S.up[u.k],mx=l>=u.max;$('pl'+u.k).textContent=' Lv'+l;$('pd'+u.k).textContent=u.d(l);const b=$('pb'+u.k);if(mx){b.innerHTML='MAX';b.classList.add('no')}else{const c=u.cost(l);b.innerHTML=`🪙${fmt(c)}<small>強化</small>`;b.classList.toggle('no',S.coins<c)}});
+  }
+  else if(tab==='book'){
+    const key='b'+uniq()+S.planet+S.cleared.length;if(key===listKey)return;listKey=key;
+    let h=`<p class="note">見つけたお宝 <b style="color:var(--gold)">${uniq()} / ${ALLITEMS.length}</b>　1種類ごとに 掘る速さ +2%（今：+${uniq()*2}%）</p>`;
+    PLANETS.forEach((p,pi)=>{const open=pi<=S.planet||S.cleared.includes(pi);if(!open){h+=`<div class="sec">🔒 ？？？</div>`;return}
+      const types=[...new Set(p.layers.map(l=>l[1]))];h+=`<div class="sec">${p.e} ${p.n}</div>`;
+      types.forEach(t=>{h+=`<div class="note" style="margin:6px 2px 4px">${T[t].n}</div><div class="grid">`+T[t].it.map((it,i)=>{const id=t+':'+i,n=S.found[id];return n?`<button class="cell r${i}" data-it="${id}">${it[0]}${n>1?`<i>${n}</i>`:''}</button>`:`<div class="cell no">？</div>`}).join('')+'</div>'})});
+    el.innerHTML=h;el.querySelectorAll('[data-it]').forEach(b=>b.onclick=()=>showItem(b.dataset.it));
+  }
+  else if(tab==='star'){
+    const key='s'+S.planet+S.medals+S.sound+S.loop+(S.arrived?1:0);if(key===listKey)return;listKey=key;
+    let h=`<p class="note">🏅 メダル <b style="color:var(--gold)">${S.medals}枚</b>：掘る速さ ×${fmtX(1+0.5*S.medals)}<br>星をつらぬくとメダルがもらえて、次の星へ進めるよ。（なかまと強化は最初から）</p>`;
+    PLANETS.forEach((p,pi)=>{const done=S.cleared.includes(pi),cur=pi===S.planet,lock=!done&&!cur&&pi>S.planet;h+=`<div class="pl ${cur?'cur':''} ${lock?'lock':''}"><div class="ic">${lock?'🔒':p.e}</div><div class="info"><div class="nm" style="font-weight:800">${lock?'？？？':p.n}${done?' ✅':''}${cur?' ← いまここ':''}</div><div class="ds" style="font-size:12px;color:var(--dim)">${lock?'前の星をつらぬくと行ける':'直径 '+fmtM(p.D)+'・メダル+'+p.medal}</div></div></div>`});
+    if(S.arrived)h+=`<button class="buy" style="width:100%;margin:6px 0 10px;padding:12px" id="goNext">🚀 次の星へ出発する</button>`;
+    h+=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px"><button class="btn2" id="snd">${S.sound?'🔊 音あり':'🔇 音なし'}</button><button class="btn2" id="rst">🗑 データを消す</button></div><p class="note" style="margin-top:10px">合計 ${fmtM(S.total)} ほった・タップ ${S.taps.toLocaleString()}回<br>ver ${VER}</p>`;
+    el.innerHTML=h;
+    $('snd').onclick=()=>{S.sound=!S.sound;listKey='';renderList();save()};
+    $('rst').onclick=()=>{if(confirm('本当にデータを消して最初からにしますか？')&&confirm('メダルも図鑑も消えます。いいですか？')){try{localStorage.removeItem(SAVE_KEY)}catch(e){}S=fresh();curLayer=0;ppm=40;listKey='';tab='units';document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x.dataset.t==='units'));renderList();save()}};
+    if($('goNext'))$('goNext').onclick=nextPlanet;
+  }
+}
+function buyUnit(i){const k=qty===0?maxBuy(i):qty;if(k<1)return;const c=bulkCost(i,k);if(S.coins<c)return;S.coins-=c;const before=S.units[i];S.units[i]+=k;sBuy();
+  const nx=MILES.filter(t=>t>before&&t<=S.units[i]);if(nx.length)toast(`<span class="ic">${UNITS[i][0]}</span><span class="tx"><b>${UNITS[i][1]} ${S.units[i]}体！</b><br>このなかまの掘る速さ ×${Math.pow(2,nx.length)}</span>`,'mile');
+  listKey='';renderList();save()}
+function buyUp(k){const u=UPS.find(x=>x.k===k),l=S.up[k];if(l>=u.max)return;const c=u.cost(l);if(S.coins<c)return;S.coins-=c;S.up[k]++;sBuy();if(k==='drill')toast(`<span class="ic">🔧</span><span class="tx"><b>${DRILLN[Math.min(S.up.drill,9)]}のドリル！</b><br>みんなの掘る速さ ×1.6</span>`,'mile');renderList();save()}
+
+/* ===================== モーダル ===================== */
+function showItem(id){const [t,i]=id.split(':'),it=T[t].it[+i];$('itBig').textContent=it[0];$('itName').textContent=it[1];$('itDesc').textContent=it[2];$('itMeta').textContent=`${T[t].n}・${RAR[+i]}・見つけた回数 ${S.found[id]}`;$('mItem').hidden=false}
+$('itOk').onclick=()=>$('mItem').hidden=true;
+function showArrive(){if(!$('mArrive').hidden)return;const p=P(),a=p.arrive;$('arBig').textContent=a.big;$('arTitle').textContent=a.t;$('arTxt').textContent=a.x;
+  $('arStat').textContent=`かかった時間 ${fmtT((Date.now()-S.runStart)/1000)}`;$('arGain').textContent=`🏅 メダル +${p.medal}`;
+  const np=PLANETS[Math.min(S.planet+1,4)];$('arNext').textContent=S.planet<4?`次の目標：${np.e} ${np.n}（直径 ${fmtM(np.D)}）`:`太陽をもう一度つらぬく？（${S.loop+2}周目）`;
+  $('mArrive').hidden=false;sFan();listKey=''}
+$('arLater').onclick=()=>{$('mArrive').hidden=true;tab='star';document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x.dataset.t==='star'));listKey='';renderList()};
+$('arGo').onclick=nextPlanet;
+function nextPlanet(){if(!S.arrived)return;const p=P();S.medals+=p.medal;if(!S.cleared.includes(S.planet))S.cleared.push(S.planet);
+  if(S.planet<4)S.planet++;else S.loop++;
+  Object.assign(S,{depth:0,coins:0,units:UNITS.map(()=>0),up:{drill:0,tap:0,radar:0,sell:0},runStart:Date.now(),mi:0,arrived:false});
+  curLayer=0;ppm=40;feverT=rushT=tapFT=0;$('mArrive').hidden=true;tab='units';document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x.dataset.t==='units'));listKey='';renderList();save();
+  const q=P();banner(`${q.e} ${q.n}へようこそ！`,`直径 ${fmtM(q.D)}。メダル${S.medals}枚で掘る速さ×${fmtX(1+0.5*S.medals)}`)}
+
+/* ===================== 放置中の進み ===================== */
+function offline(sec){
+  if(sec<5||S.arrived)return;sec=Math.min(sec,12*3600);
+  const d0=S.depth,c0=S.coins,r=baseDps();if(r<=0)return;
+  const n=Math.min(600,Math.ceil(sec)),dt=sec/n;for(let i=0;i<n&&!S.arrived;i++)dig(r*dt,true);
+  const finds=Math.min(10,Math.floor(sec/treasureInt()/2)),items=[];for(let i=0;i<finds&&!S.arrived;i++)items.push(findTreasure(true));
+  curLayer=layerIdx(S.depth);
+  if(sec>=60){$('offTxt').innerHTML=`${fmtT(sec)}のあいだ、なかまが ほりつづけてくれた！<br><b>${fmtM(S.depth-d0)}</b> ほって、いまは ${esc(layerAt(S.depth).n)}。`;$('offGain').textContent='🪙 +'+fmt(S.coins-c0);
+    $('offItems').innerHTML=items.map(x=>`<span title="${esc(x.it[1])}">${x.it[0]}</span>`).join('');$('mOffline').hidden=false}
+  if(S.arrived)$('mOffline').querySelector('.main').textContent='到着を見る！';
+  save();
+}
+$('offOk').onclick=()=>{$('mOffline').hidden=true;$('mOffline').querySelector('.main').textContent='つづきをほる！';if(S.arrived)showArrive()};
+document.addEventListener('visibilitychange',()=>{if(document.hidden)save();else{offline((Date.now()-S.lastT)/1000);last=performance.now()}});
+window.addEventListener('pagehide',save);
+
+/* ===================== メインループ ===================== */
+let last=performance.now(),tAcc=0,uiAcc=0,saveAcc=0,treasT=treasureInt()*(0.6+Math.random()*0.8);
+function frame(now){
+  let dt=(now-last)/1000;last=now;
+  if(dt>2){offline(dt);dt=0}dt=Math.min(dt,0.1);
+  const d=dps();
+  if(!S.arrived&&d>0)dig(d*dt);
+  feverT=Math.max(0,feverT-dt);rushT=Math.max(0,rushT-dt);tapFT=Math.max(0,tapFT-dt);
+  comboT-=dt;if(comboT<=0)combo=0;
+  shake=Math.max(0,shake-dt);
+  // 見た目のスクロールとズーム（掘る速さが変わっても画面の流れは一定くらいに）
+  const eff=Math.max(d,0.3)+(shake>0?tapMeters()*4:0);
+  const target=Math.min(40,110/eff);ppm=Math.exp(Math.log(ppm)+(Math.log(target)-Math.log(ppm))*Math.min(1,dt*2));
+  if(!S.arrived){scroll=(scroll+Math.min(d*ppm*dt,30))%(26*100000);spin+=dt*(d>0?Math.min(400,60+Math.log10(d+1)*80):0)+(shake>0?dt*300:0)}
+  emitAcc+=dt*(S.arrived||d<=0?0:Math.min(30,4+Math.log10(d+1)*5));while(emitAcc>1){emitAcc--;burst(1)}
+  for(let i=parts.length-1;i>=0;i--){const q=parts[i];q.l-=dt;q.vy+=420*dt;q.x+=q.vx*dt;q.y+=q.vy*dt;if(q.l<=0)parts.splice(i,1)}
+  // お宝
+  if(!S.arrived&&S.depth>0.5){treasT-=dt*(d>0||shake>0?1:0);if(treasT<=0){treasT=treasureInt()*(0.6+Math.random()*0.8);findTreasure(false)}}
+  // キラキラモグラ
+  if(mole.hidden){if(!S.arrived&&S.depth>5)moleNext-=dt;if(moleNext<=0)spawnMole()}else{moleLife-=dt;if(moleLife<=0){mole.hidden=true;moleNext=90+Math.random()*90}}
+  draw(dt);
+  uiAcc+=dt;if(uiAcc>0.12){uiAcc=0;updHud();renderList()}
+  saveAcc+=dt;if(saveAcc>5){saveAcc=0;save()}
+  requestAnimationFrame(frame);
+}
+resize();
+if(S.taps>=8)$('hint').hidden=true;
+offline((Date.now()-S.lastT)/1000);
+if(S.arrived&&$('mOffline').hidden)setTimeout(showArrive,400);
+updHud();renderList();
+requestAnimationFrame(frame);
+</script>
+<script src="../../playtime.js" defer></script>
+</body>
+</html>
