@@ -421,7 +421,7 @@ function absorb(o) {
   ball.worldToLocal(tmpV);
   if (tmpV.lengthSq() < 1e-12) tmpV.set(0, 1, 0);
   tmpV.normalize();
-  const dist = r * 0.98 - o.s * 0.15;
+  const dist = r * 0.92 - o.s * 0.1;
   scene.remove(m);
   m.position.copy(tmpV).multiplyScalar(dist);
   tmpQ.copy(ball.quaternion).invert();
@@ -430,7 +430,7 @@ function absorb(o) {
   ball.add(m);
 
   const rel = o.s / r;
-  r = Math.sqrt(r * r + 0.45 * o.s * o.s);
+  r = Math.sqrt(r * r + 0.8 * o.s * o.s);
   count++;
   collected[o.t.n] = (collected[o.t.n] || 0) + 1;
   pulse = Math.max(pulse, 0.05 + rel * 0.15);
@@ -449,7 +449,7 @@ function knockOff(n) {
     c.position.copy(tmpV); c.quaternion.copy(q);
     scene.add(c);
     const s = c.userData.s;
-    r = Math.max(R0, Math.sqrt(Math.max(0, r * r - 0.25 * s * s)));
+    r = Math.max(R0, Math.sqrt(Math.max(0, r * r - 0.5 * s * s)));
     const dx = tmpV.x - bx, dz = tmpV.z - bz, l = Math.hypot(dx, dz) || 1;
     debris.push({ m: c, vx: dx / l * r * 3, vy: r * 4, vz: dz / l * r * 3, life: 1, sc: c.scale.x });
   }
@@ -677,7 +677,7 @@ function update(dt) {
     for (let i = ball.children.length - 1; i >= 0; i--) {
       const c = ball.children[i];
       if (c === core) continue;
-      if (c.userData.d + c.userData.s * 0.5 < r * 0.97) ball.remove(c);
+      if (c.userData.d + c.userData.s * 0.5 < r * 0.86) ball.remove(c);
     }
     let extra = ball.children.length - 160;
     for (let i = 0; extra > 0 && i < ball.children.length;) {
@@ -704,7 +704,7 @@ function update(dt) {
 
   // 見た目
   pulse *= Math.exp(-6 * dt);
-  core.scale.setScalar(r * (1 + pulse));
+  core.scale.setScalar(r * 0.88 * (1 + pulse));
   ball.position.set(bx, r, bz);
   shadow.position.set(bx, r * 0.004 + 0.0005, bz);
   shadow.scale.setScalar(r * 2.6);
