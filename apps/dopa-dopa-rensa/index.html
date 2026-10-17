@@ -1,0 +1,1003 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<script src="../../audio-pause.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>ドパドパ連鎖</title>
+<meta name="description" content="画面をタップして大爆発！まわりのオーブを巻き込んで連鎖、連鎖、また連鎖。光と音と数字があふれる爽快連鎖ゲーム。ラウンドごとにパワーアップを選んで、どこまで連鎖をのばせるか挑戦しよう。">
+<meta name="theme-color" content="#07031a">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{height:100%;overflow:hidden;background:#07031a;color:#fff;font-family:"M PLUS Rounded 1c",system-ui,sans-serif;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#cv{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer;touch-action:manipulation}
+
+#hud{position:fixed;left:0;right:0;top:0;padding:calc(8px + env(safe-area-inset-top)) 16px 0;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:5}
+.lbl{font-size:10px;letter-spacing:.15em;opacity:.6;font-weight:800}
+#hScore{font-size:24px;font-weight:900;line-height:1.1;text-shadow:0 0 12px #f0f}
+.hc{text-align:center}
+#hRound{font-size:13px;font-weight:800;letter-spacing:.08em;opacity:.85}
+#hHearts{font-size:16px;letter-spacing:2px}
+#hCoin{font-size:20px;font-weight:900;padding:4px 10px;border-radius:999px;background:rgba(255,200,0,.14);border:1px solid rgba(255,210,80,.4);text-shadow:0 0 10px #fc0;transition:transform .08s}
+#hCoin.bump{transform:scale(1.18)}
+#quota{position:fixed;left:16px;right:16px;top:calc(56px + env(safe-area-inset-top));z-index:5;pointer-events:none;display:flex;align-items:center;gap:8px}
+#qBar{flex:1;height:10px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden;border:1px solid rgba(255,255,255,.15)}
+#qFill{display:block;height:100%;width:0;background:linear-gradient(90deg,#0ff,#f0f);box-shadow:0 0 12px #f0f;transition:width .12s}
+#quota.done #qFill{background:linear-gradient(90deg,#ff0,#f80,#f0f,#0ff);background-size:200% 100%;animation:rb 1s linear infinite}
+@keyframes rb{to{background-position:200% 0}}
+#qTxt{font-size:13px;font-weight:800;min-width:64px;text-align:right}
+#taps{position:fixed;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom));display:flex;justify-content:center;gap:8px;z-index:5;pointer-events:none}
+#taps i{font-style:normal;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:16px;background:radial-gradient(circle at 35% 30%,#fff,#ff5ad8 45%,#7a0fd0);box-shadow:0 0 14px #f4c;transition:all .25s}
+#taps i.used{background:rgba(255,255,255,.08);box-shadow:none;transform:scale(.7)}
+#mute{position:fixed;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:20;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.08);font-size:18px}
+
+.ov{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));background:rgba(7,3,26,.55);overflow-y:auto}
+.panel{width:min(420px,100%);background:linear-gradient(160deg,rgba(60,20,110,.92),rgba(20,8,50,.94));border:1px solid rgba(255,255,255,.18);border-radius:22px;padding:22px 20px;text-align:center;box-shadow:0 0 40px rgba(255,0,200,.35);animation:pop .35s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{from{transform:scale(.6);opacity:0}}
+.big{font-size:30px;font-weight:900;line-height:1.15;background:linear-gradient(90deg,#ff0,#f6c,#0ff);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 10px rgba(255,0,200,.6))}
+.big.sad{background:linear-gradient(90deg,#9cf,#88a);-webkit-background-clip:text;background-clip:text}
+.rows{margin:16px 0 6px;display:grid;gap:8px}
+.rr{display:flex;justify-content:space-between;align-items:baseline;font-size:15px;font-weight:800;padding:8px 12px;border-radius:12px;background:rgba(255,255,255,.06)}
+.rr b{font-size:22px;font-weight:900}
+.btn{display:block;width:100%;margin-top:14px;padding:15px;border-radius:16px;font-size:19px;font-weight:900;background:linear-gradient(90deg,#ff3cac,#784ba0,#2b86c5);box-shadow:0 6px 24px rgba(255,60,172,.45);animation:breath 1.4s ease-in-out infinite}
+@keyframes breath{50%{transform:scale(1.03)}}
+.btn:active{transform:scale(.96)}
+
+#title .logo{font-size:clamp(46px,15vw,84px);font-weight:900;line-height:1;text-align:center;background:linear-gradient(90deg,#ff0,#f6c,#0ff,#ff0);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:rb 3s linear infinite;filter:drop-shadow(0 0 18px rgba(255,0,200,.8))}
+#title .sub{margin-top:8px;font-size:15px;font-weight:800;opacity:.85;text-align:center}
+#title .how{margin:26px auto 0;width:min(360px,100%);font-size:14px;line-height:1.75;background:rgba(0,0,0,.35);padding:14px 16px;border-radius:16px;border:1px solid rgba(255,255,255,.12)}
+#title .best{margin-top:14px;font-size:14px;opacity:.8;text-align:center}
+#title .go{margin-top:22px;font-size:20px;font-weight:900;animation:blink 1s steps(2) infinite;text-align:center}
+@keyframes blink{50%{opacity:.25}}
+
+#pick h2{font-size:24px;font-weight:900;text-align:center;margin-bottom:4px}
+#pick .owned{font-size:13px;opacity:.75;text-align:center;min-height:18px;margin-bottom:10px;word-break:break-all}
+#cards{width:min(420px,100%);display:grid;gap:10px}
+.card{display:flex;align-items:center;gap:12px;text-align:left;padding:14px;border-radius:18px;background:linear-gradient(135deg,#2a1858,#160b33);border:2px solid #6d5bd0;opacity:0;animation:deal .45s cubic-bezier(.2,1.5,.4,1) forwards;position:relative;overflow:hidden}
+.card:active{transform:scale(.97)}
+.card .ic{font-size:36px;width:52px;text-align:center;flex:none}
+.card .nm{font-size:18px;font-weight:900}
+.card .ds{font-size:13px;opacity:.85;margin-top:2px;line-height:1.4}
+.card .rt{position:absolute;right:10px;top:8px;font-size:10px;font-weight:900;letter-spacing:.12em;padding:2px 7px;border-radius:99px;background:rgba(255,255,255,.12)}
+.card.r1{border-color:#3cf;box-shadow:0 0 18px rgba(50,200,255,.45)}
+.card.r1 .rt{background:#08a;}
+.card.r2{border-color:#ffd23c;box-shadow:0 0 28px rgba(255,200,40,.7);background:linear-gradient(135deg,#5a3a00,#2a0d40)}
+.card.r2 .rt{background:linear-gradient(90deg,#f80,#f0f);}
+.card.r2::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.45) 50%,transparent 70%);background-size:250% 100%;animation:shine 1.6s linear infinite;pointer-events:none}
+@keyframes shine{from{background-position:150% 0}to{background-position:-100% 0}}
+@keyframes deal{from{opacity:0;transform:translateY(40px) rotateX(70deg) scale(.8)}to{opacity:1;transform:none}}
+.prow{width:min(420px,100%);display:flex;gap:10px;margin-top:12px}
+.pb{flex:1;padding:12px 8px;border-radius:14px;font-size:15px;font-weight:900;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2)}
+.pb:disabled{opacity:.35}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+
+<div id="hud" hidden>
+  <div><div class="lbl">SCORE</div><div id="hScore">0</div></div>
+  <div class="hc"><div id="hRound">ROUND 1</div><div id="hHearts"></div></div>
+  <div id="hCoin">💰<span id="hCoinN">0</span></div>
+</div>
+<div id="quota" hidden><div id="qBar"><i id="qFill"></i></div><div id="qTxt">0 / 0</div></div>
+<div id="taps" hidden></div>
+<button id="mute" aria-label="音のオンオフ">🔊</button>
+
+<div id="title" class="ov">
+  <div class="logo">ドパドパ<br>連鎖</div>
+  <div class="sub">タップ一発、脳汁ドバドバ。</div>
+  <div class="how">
+    👆 画面をタップすると<b>大爆発</b><br>
+    💥 爆風に触れたオーブも爆発して<b>連鎖</b>する<br>
+    🎯 目標の数だけ連鎖させたらクリア<br>
+    🃏 クリアごとにパワーアップを1枚えらぶ<br>
+    🪙金 💣爆弾 🎆分裂 🌈虹（FEVER）を狙え！
+  </div>
+  <div class="best" id="tBest"></div>
+  <div class="go">▶ タップでスタート</div>
+</div>
+
+<div id="result" class="ov" hidden>
+  <div class="panel">
+    <div class="big" id="rTitle">CLEAR!</div>
+    <div class="rows">
+      <div class="rr"><span>連鎖</span><b id="rPops">0</b></div>
+      <div class="rr"><span>獲得スコア</span><b id="rScore">0</b></div>
+      <div class="rr"><span>獲得コイン</span><b id="rCoin">0</b></div>
+      <div class="rr" id="rExtraRow" hidden><span id="rExtraL"></span><b id="rExtra"></b></div>
+    </div>
+    <button class="btn" id="rNext" hidden>つぎへ ▶</button>
+  </div>
+</div>
+
+<div id="pick" class="ov" hidden>
+  <h2>パワーアップを選べ！</h2>
+  <div class="owned" id="owned"></div>
+  <div id="cards"></div>
+  <div class="prow">
+    <button class="pb" id="reroll">🔄 引き直し 💰<span id="rrCost">20</span></button>
+    <button class="pb" id="heal">❤️ 回復 💰<span id="healCost">80</span></button>
+  </div>
+</div>
+
+<div id="over" class="ov" hidden>
+  <div class="panel">
+    <div class="big sad">GAME OVER</div>
+    <div id="oNew" class="big" style="font-size:22px;margin-top:6px" hidden>🎉 NEW RECORD 🎉</div>
+    <div class="rows">
+      <div class="rr"><span>スコア</span><b id="oScore">0</b></div>
+      <div class="rr"><span>到達ラウンド</span><b id="oRound">0</b></div>
+      <div class="rr"><span>最大連鎖</span><b id="oMax">0</b></div>
+      <div class="rr"><span>ベスト</span><b id="oBest">0</b></div>
+    </div>
+    <button class="btn" id="oRetry">もう一回！</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const cv = $('cv'), ctx = cv.getContext('2d');
+const TAU = Math.PI * 2;
+const rand = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const fmt = n => Math.floor(n).toLocaleString('ja-JP');
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+
+let W = 0, H = 0, DPR = 1, U = 1, fieldTop = 90, fieldBot = 0;
+let bgStars = null;
+function resize() {
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  W = window.innerWidth; H = window.innerHeight;
+  cv.width = W * DPR | 0; cv.height = H * DPR | 0;
+  U = Math.min(W, H * 0.62) / 400;
+  fieldTop = 84; fieldBot = H - 58;
+  bgStars = document.createElement('canvas');
+  bgStars.width = cv.width; bgStars.height = cv.height;
+  const g = bgStars.getContext('2d');
+  for (let i = 0; i < 140; i++) {
+    g.fillStyle = `hsla(${rand(180, 330)},100%,85%,${rand(.15, .6)})`;
+    const s = rand(.6, 2) * DPR;
+    g.fillRect(Math.random() * bgStars.width, Math.random() * bgStars.height, s, s);
+  }
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ---------- スプライト ----------
+function mk(size, fn) { const c = document.createElement('canvas'); c.width = c.height = size; fn(c.getContext('2d'), size / 2); return c; }
+const glowCache = {};
+function getGlow(h) {
+  h = ((Math.round(h / 10) * 10) % 360 + 360) % 360;
+  return glowCache[h] || (glowCache[h] = mk(128, (g, c) => {
+    const gr = g.createRadialGradient(c, c, 0, c, c, c);
+    gr.addColorStop(0, `hsla(${h},100%,97%,1)`);
+    gr.addColorStop(.3, `hsla(${h},100%,72%,.85)`);
+    gr.addColorStop(.62, `hsla(${h},100%,55%,.3)`);
+    gr.addColorStop(1, `hsla(${h},100%,50%,0)`);
+    g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+  }));
+}
+function ball(g, c, r, h, s, l) {
+  const gl = g.createRadialGradient(c, c, r * .5, c, c, c);
+  gl.addColorStop(0, `hsla(${h},${s}%,${l}%,.55)`); gl.addColorStop(1, `hsla(${h},${s}%,${l}%,0)`);
+  g.fillStyle = gl; g.fillRect(0, 0, c * 2, c * 2);
+  const gr = g.createRadialGradient(c - r * .35, c - r * .4, r * .1, c, c, r);
+  gr.addColorStop(0, `hsl(${h},${s}%,${Math.min(97, l + 38)}%)`);
+  gr.addColorStop(.55, `hsl(${h},${s}%,${l}%)`);
+  gr.addColorStop(1, `hsl(${h},${s}%,${l * .5}%)`);
+  g.fillStyle = gr; g.beginPath(); g.arc(c, c, r, 0, TAU); g.fill();
+}
+const ORB_R = 20; // スプライト内の玉の半径
+const HUES = [190, 280, 320, 150, 220, 340, 170, 260];
+const orbSprites = {};
+HUES.forEach(h => orbSprites['n' + h] = mk(96, (g, c) => ball(g, c, ORB_R, h, 100, 58)));
+orbSprites.gold = mk(96, (g, c) => {
+  ball(g, c, ORB_R, 46, 100, 55);
+  g.fillStyle = 'rgba(255,255,230,.95)'; g.beginPath();
+  for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * TAU / 10, rr = i % 2 ? 4.5 : 11; g.lineTo(c + Math.cos(a) * rr, c + Math.sin(a) * rr); }
+  g.fill();
+});
+orbSprites.bomb = mk(96, (g, c) => {
+  ball(g, c, ORB_R, 0, 100, 48);
+  g.strokeStyle = '#fff'; g.lineWidth = 3; g.beginPath(); g.arc(c, c, 9, 0, TAU); g.stroke();
+  g.fillStyle = '#fff'; g.beginPath(); g.arc(c, c, 4, 0, TAU); g.fill();
+});
+orbSprites.split = mk(96, (g, c) => {
+  ball(g, c, ORB_R, 275, 100, 60);
+  g.fillStyle = '#fff';
+  for (let i = 0; i < 6; i++) { const a = i * TAU / 6; g.beginPath(); g.arc(c + Math.cos(a) * 10, c + Math.sin(a) * 10, 2.8, 0, TAU); g.fill(); }
+});
+orbSprites.rainbow = mk(96, (g, c) => {
+  const gl = g.createRadialGradient(c, c, 10, c, c, c);
+  gl.addColorStop(0, 'rgba(255,255,255,.7)'); gl.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gl; g.fillRect(0, 0, 96, 96);
+  for (let i = 0; i < 12; i++) {
+    g.fillStyle = `hsl(${i * 30},100%,60%)`;
+    g.beginPath(); g.moveTo(c, c); g.arc(c, c, ORB_R, i * TAU / 12, (i + 1) * TAU / 12 + .02); g.fill();
+  }
+  const hi = g.createRadialGradient(c - 7, c - 8, 1, c, c, ORB_R);
+  hi.addColorStop(0, 'rgba(255,255,255,.95)'); hi.addColorStop(.5, 'rgba(255,255,255,.1)'); hi.addColorStop(1, 'rgba(0,0,0,.25)');
+  g.fillStyle = hi; g.beginPath(); g.arc(c, c, ORB_R, 0, TAU); g.fill();
+});
+
+// ---------- 音 ----------
+let AC = null, master = null, noiseBuf = null, muted = store.get('dopa-muted', false);
+function initAudio() {
+  if (AC) { if (AC.state === 'suspended') AC.resume(); return; }
+  try {
+    AC = new (window.AudioContext || window.webkitAudioContext)();
+    const comp = AC.createDynamicsCompressor();
+    comp.threshold.value = -16; comp.ratio.value = 8; comp.attack.value = .002; comp.release.value = .15;
+    master = AC.createGain(); master.gain.value = muted ? 0 : .6;
+    master.connect(comp); comp.connect(AC.destination);
+    noiseBuf = AC.createBuffer(1, AC.sampleRate * .6, AC.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  } catch (e) { AC = null; }
+}
+function tone(f, dur, type, vol, when = 0, slide = 0) {
+  if (!AC || muted) return;
+  const t = AC.currentTime + when;
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t);
+  if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(20, f * slide), t + dur);
+  g.gain.setValueAtTime(.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + .006);
+  g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + .03);
+}
+function noise(dur, vol, f0, f1, when = 0) {
+  if (!AC || muted) return;
+  const t = AC.currentTime + when;
+  const s = AC.createBufferSource(); s.buffer = noiseBuf;
+  const fl = AC.createBiquadFilter(); fl.type = 'lowpass';
+  fl.frequency.setValueAtTime(f0, t); fl.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  const g = AC.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  s.connect(fl); fl.connect(g); g.connect(master); s.start(t); s.stop(t + dur);
+}
+const PENTA = [0, 2, 4, 7, 9];
+const noteF = semi => 261.63 * Math.pow(2, semi / 12);
+let popVoices = 0, lastCoinSnd = 0, lastVib = 0;
+function sPop(c) {
+  if (popVoices >= 3) return; popVoices++;
+  let i = c - 1, semi;
+  if (i < 40) semi = PENTA[i % 5] + 12 * Math.floor(i / 5) - 5;
+  else semi = 31 + PENTA[(i * 3) % 5] + 12 * ((i >> 1) % 2);
+  semi = Math.min(semi, 43);
+  const f = noteF(semi);
+  tone(f, .2, 'triangle', .22);
+  tone(f * 2, .12, 'sine', .07);
+  if (c > 30) tone(f * 1.5, .1, 'square', .025);
+}
+function sBoom(big) {
+  noise(big ? .7 : .45, big ? .7 : .45, 2400, 80);
+  tone(big ? 110 : 150, .45, 'sine', .55, 0, .25);
+}
+function sCoin() {
+  if (!AC) return;
+  const now = AC.currentTime; if (now - lastCoinSnd < .05) return; lastCoinSnd = now;
+  tone(1568, .06, 'square', .05); tone(2093, .16, 'square', .05, .05);
+}
+function sChord(level) {
+  const base = [0, 4, 7, 11, 14, 19][level % 6];
+  [0, 4, 7, 12, 16].forEach((s, i) => { tone(noteF(12 + base + s), .45, 'sawtooth', .05, i * .045); tone(noteF(12 + base + s), .5, 'triangle', .12, i * .045); });
+}
+function sFanfare() {
+  [[0, 0], [4, .1], [7, .2], [12, .3], [7, .45], [12, .55]].forEach(([s, t]) => { tone(noteF(12 + s), .32, 'square', .07, t); tone(noteF(s), .4, 'triangle', .15, t); });
+  tone(noteF(24), .9, 'triangle', .15, .55);
+}
+function sFever() { for (let i = 0; i < 16; i++) tone(noteF(i * 3), .18, 'square', .05, i * .03); noise(.9, .4, 6000, 200); }
+function sFail() { [7, 4, 0, -5].forEach((s, i) => tone(noteF(s), .35, 'triangle', .2, i * .16)); }
+function sTick(i) { tone(noteF(14 + (i % 24)), .05, 'square', .04); }
+function sCard(r, i) {
+  tone(noteF(12 + i * 4), .15, 'triangle', .15);
+  if (r === 2) for (let k = 0; k < 10; k++) tone(noteF(24 + PENTA[k % 5] + 12 * (k / 5 | 0)), .2, 'sine', .08, .05 + k * .04);
+}
+function sZap() { noise(.25, .5, 9000, 500); tone(1200, .2, 'sawtooth', .08, 0, .1); }
+function vib(ms) {
+  const n = performance.now(); if (n - lastVib < 60) return; lastVib = n;
+  try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {}
+}
+function setMute(m) {
+  muted = m; store.set('dopa-muted', m); $('mute').textContent = m ? '🔇' : '🔊';
+  if (master) master.gain.value = m ? 0 : .6;
+}
+$('mute').addEventListener('click', e => { e.stopPropagation(); initAudio(); setMute(!muted); });
+setMute(muted);
+
+// ---------- パワーアップ ----------
+const UPS = [
+  { id: 'rad', r: 0, icon: '💥', name: '爆風拡大', desc: '爆発の大きさ +15%' },
+  { id: 'orbs', r: 0, icon: '🫧', name: 'オーブ増量', desc: 'オーブ +10個。ぎっしりで連鎖しやすい' },
+  { id: 'dur', r: 0, icon: '⏳', name: 'ロング爆風', desc: '爆発が長く残る +20%' },
+  { id: 'gold', r: 0, icon: '🪙', name: 'ゴールドラッシュ', desc: 'コインたっぷりの金オーブが出やすい' },
+  { id: 'bomb', r: 0, icon: '💣', name: '爆弾まつり', desc: '特大爆発する爆弾オーブが出やすい' },
+  { id: 'score', r: 0, icon: '📈', name: 'スコアブースト', desc: 'スコア ×1.5' },
+  { id: 'tap', r: 1, icon: '👆', name: '追加の一発', desc: 'タップできる回数 +1' },
+  { id: 'split', r: 1, icon: '🎆', name: '花火オーブ', desc: '弾けて火花が飛び散る分裂オーブが出やすい' },
+  { id: 'crit', r: 1, icon: '⚡', name: 'クリティカル', desc: '6%の確率で爆発が2倍の大きさに' },
+  { id: 'coin', r: 1, icon: '💰', name: 'コイン倍増', desc: 'もらえるコイン ×1.5' },
+  { id: 'rainbow', r: 1, icon: '🌈', name: '虹のかけら', desc: 'FEVERを起こす虹オーブが出やすい' },
+  { id: 'magnet', r: 2, icon: '🌀', name: 'ブラックホール', desc: '爆発がまわりのオーブを吸い寄せる' },
+  { id: 'quake', r: 2, icon: '🌩️', name: '雷鳴', desc: '一定の連鎖ごとに遠くのオーブへ雷が落ちる' },
+  { id: 'mega', r: 2, icon: '☄️', name: 'メガ爆発', desc: 'タップの爆発が超巨大になる' },
+];
+const RARE_NAME = ['NORMAL', 'RARE', 'LEGEND'];
+function freshUp() {
+  return { rad: 1, orbs: 0, dur: 1, gold: .03, bomb: .04, split: .03, rainbow: .01, score: 1, taps: 2, crit: 0, coin: 1, magnet: 0, quake: 0, tapR: 1.4, own: {} };
+}
+function applyUp(id) {
+  const u = up;
+  u.own[id] = (u.own[id] || 0) + 1;
+  switch (id) {
+    case 'rad': u.rad *= 1.15; break;
+    case 'orbs': u.orbs += 10; break;
+    case 'dur': u.dur *= 1.2; break;
+    case 'gold': u.gold += .04; break;
+    case 'bomb': u.bomb += .04; break;
+    case 'score': u.score *= 1.5; break;
+    case 'tap': u.taps += 1; break;
+    case 'split': u.split += .035; break;
+    case 'crit': u.crit += .06; break;
+    case 'coin': u.coin *= 1.5; break;
+    case 'rainbow': u.rainbow += .012; break;
+    case 'magnet': u.magnet += 1; break;
+    case 'quake': u.quake = u.quake ? Math.max(4, u.quake - 3) : 12; break;
+    case 'mega': u.tapR += 1; break;
+  }
+}
+
+// ---------- ゲーム状態 ----------
+let state = 'title';
+let up = freshUp();
+let orbs = [], exps = [], parts = [], rings = [], texts = [], coinsP = [], bolts = [];
+let score = 0, scoreShown = 0, coins = 0, coinsShown = 0, hearts = 3, level = 1;
+let quota = 0, pops = 0, roundScore = 0, roundCoins = 0, tapsLeft = 0, cleared = false;
+let maxChain = 0, endTimer = 0, hitstop = 0, shake = 0, flash = 0, flashHue = 0, fever = 0;
+let chainPulse = 0, heat = 0, bannerQ = [], banner = null, demoTimer = 0, rerollCost = 20, healCost = 80;
+let best = store.get('dopa-best', 0);
+let aliveCount = 0;
+
+const baseR = () => 38 * U * up.rad;
+function spawnOrbs(n, demo) {
+  orbs = []; aliveCount = 0;
+  for (let i = 0; i < n; i++) {
+    let type = 'n';
+    if (!demo) {
+      let r = Math.random();
+      if ((r -= up.rainbow) < 0) type = 'rainbow';
+      else if ((r -= up.gold) < 0) type = 'gold';
+      else if ((r -= up.bomb) < 0) type = 'bomb';
+      else if ((r -= up.split) < 0) type = 'split';
+    } else {
+      const r = Math.random();
+      type = r < .03 ? 'rainbow' : r < .08 ? 'gold' : r < .13 ? 'bomb' : r < .18 ? 'split' : 'n';
+    }
+    const hue = type === 'n' ? HUES[Math.random() * HUES.length | 0] : type === 'gold' ? 48 : type === 'bomb' ? 8 : type === 'split' ? 280 : 0;
+    const sp = rand(14, 42) * U, a = Math.random() * TAU;
+    const r = (type === 'n' ? 9 : type === 'rainbow' ? 12.5 : 11) * U;
+    orbs.push({ x: rand(r, W - r), y: rand(fieldTop + r, fieldBot - r), vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, base: sp, r, type, hue, alive: true, ph: Math.random() * TAU });
+    aliveCount++;
+  }
+}
+function addExp(x, y, R, hue, opt = {}) {
+  const life = opt.life || (.12 + .42 * up.dur + .28);
+  exps.push({ x, y, R, hue, t: 0, life, grow: .12, vx: opt.vx || 0, vy: opt.vy || 0, shard: !!opt.shard, cur: 0 });
+}
+function expRadius(e) {
+  if (e.shard) return e.R * (1 - Math.pow(e.t / e.life, 3));
+  const shrink = .28;
+  if (e.t < e.grow) { const k = e.t / e.grow; return e.R * (1 - (1 - k) * (1 - k)) * 1.08; }
+  if (e.t < e.life - shrink) return e.R * (1.02 + .03 * Math.sin(e.t * 30));
+  return e.R * Math.max(0, (e.life - e.t) / shrink);
+}
+function sparks(x, y, hue, n, spd = 1) {
+  if (parts.length > 900) n = Math.min(n, 3);
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * TAU, s = rand(80, 340) * U * spd;
+    parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, t: 0, life: rand(.35, .8), hue: hue + rand(-25, 25), w: rand(1.5, 3) * U });
+  }
+}
+function ring(x, y, max, hue, life = .5, w = 4) { rings.push({ x, y, max, hue, t: 0, life, w }); }
+function floatText(x, y, s, size, hue, life = .8, vy = -60) {
+  if (texts.length > 70) texts.shift();
+  texts.push({ x, y, s, size, hue, t: 0, life, vy });
+}
+function coinTarget() {
+  const r = $('hCoinN').getBoundingClientRect();
+  return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+}
+function spawnCoins(x, y, val, n) {
+  n = Math.max(1, n);
+  if (coinsP.length + n > 140) { coinsShown += val; return; }
+  const each = val / n;
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * TAU, s = rand(60, 260) * U;
+    coinsP.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 80 * U, t: 0, v: each, spin: Math.random() * TAU });
+  }
+}
+function showBanner(text, hue, size = 1, life = 1.1, rainbow = false) {
+  banner = { text, hue, size, t: 0, life, rainbow };
+}
+
+const MILES = [
+  [10, 'NICE!'], [20, 'GREAT!!'], [35, 'EXCELLENT!!'], [50, 'AMAZING!!!'], [75, 'FANTASTIC!!!'],
+  [100, 'ドパドパ!!!!'], [150, '脳汁 MAX!!!!'], [200, 'GODLIKE!!!!!'], [300, '∞ INFINITY ∞'], [500, '宇宙誕生']
+];
+
+function pop(o, demo) {
+  if (!o.alive) return;
+  o.alive = false; aliveCount--;
+  pops++;
+  const c = pops;
+  let R = baseR() * (fever > 0 ? 1.35 : 1);
+  let crit = false;
+  if (o.type === 'bomb') R *= 2.2;
+  if (o.type === 'rainbow') R *= 3.2;
+  if (!demo && up.crit > 0 && Math.random() < up.crit) { R *= 2; crit = true; }
+  const hue = o.type === 'rainbow' ? (performance.now() / 5) % 360 : o.hue;
+  addExp(o.x, o.y, R, hue);
+  sparks(o.x, o.y, hue, o.type === 'n' ? 10 : 26, o.type === 'n' ? 1 : 1.5);
+  shake = Math.min(18, shake + (o.type === 'n' ? 1.2 : 5));
+  heat = Math.min(1, heat + .05);
+  chainPulse = 1;
+
+  if (o.type === 'split') {
+    for (let i = 0; i < 8; i++) {
+      const a = i * TAU / 8 + rand(-.2, .2), s = rand(260, 340) * U;
+      addExp(o.x, o.y, 12 * U * up.rad, 280 + i * 10, { vx: Math.cos(a) * s, vy: Math.sin(a) * s, shard: true, life: .6 });
+    }
+    ring(o.x, o.y, 120 * U, 280, .5);
+  }
+  if (o.type === 'bomb' || crit) { ring(o.x, o.y, R * 1.6, o.hue, .55, 6); flash = Math.max(flash, .25); flashHue = 20; }
+  if (o.type === 'rainbow') {
+    ring(o.x, o.y, Math.max(W, H), 0, 1, 10);
+    if (!demo) {
+      fever = 5; flash = .8; flashHue = 300; hitstop = .12; shake = 24;
+      showBanner('🌈 FEVER 🌈', 0, 1.25, 1.4, true);
+      sFever(); vib(80);
+    }
+  }
+  if (demo) return;
+
+  // スコアとコイン
+  const pts = Math.round(100 * (1 + c * .1) * up.score * (fever > 0 ? 2 : 1) * (o.type === 'gold' ? 5 : 1) * (crit ? 2 : 1));
+  score += pts; roundScore += pts;
+  let cval = (1 + (cleared ? 1 : 0)) * up.coin;
+  if (o.type === 'gold') cval += 20 * up.coin;
+  coins += cval; roundCoins += cval;
+  spawnCoins(o.x, o.y, cval, o.type === 'gold' ? 12 : 1);
+  floatText(o.x, o.y - o.r, '+' + fmt(pts), (o.type === 'n' ? 13 : 18) * Math.min(1.8, 1 + c / 150), o.type === 'gold' ? 50 : hue, .75);
+  if (crit) floatText(o.x, o.y - 26 * U, 'CRITICAL!', 20, 55, .9, -40);
+  if (o.type === 'gold') { floatText(o.x, o.y + 18 * U, 'JACKPOT!', 18, 48, 1, -30); tone(2637, .3, 'square', .05); }
+  sPop(c);
+  if (o.type !== 'n') vib(25); else vib(8);
+
+  for (const [n, label] of MILES) {
+    if (c === n) {
+      const lv = MILES.findIndex(m => m[0] === n);
+      showBanner(label, (lv * 50 + 300) % 360, 1 + lv * .06, 1.2, n >= 100);
+      flash = Math.max(flash, .35 + lv * .05); flashHue = (lv * 50 + 300) % 360;
+      hitstop = Math.max(hitstop, .05 + lv * .012);
+      shake = Math.min(26, shake + 6 + lv);
+      ring(o.x, o.y, Math.max(W, H) * .8, flashHue, .8, 8);
+      sChord(lv); vib(40 + lv * 10);
+    }
+  }
+  if (c > 500 && c % 100 === 0) { showBanner(c + ' CHAIN!!', (c / 3) % 360, 1.4, 1.2, true); sChord(c / 100 | 0); flash = .5; hitstop = .1; }
+  maxChain = Math.max(maxChain, c);
+
+  if (!cleared && c >= quota) {
+    cleared = true;
+    $('quota').classList.add('done');
+    setTimeout(() => { if (state === 'play') { showBanner('CLEAR!', 60, 1.3, 1.3, true); sFanfare(); } }, 60);
+    flash = .6; flashHue = 60;
+    for (let i = 0; i < 60; i++) { const a = Math.random() * TAU; parts.push({ x: W / 2, y: H * .35, vx: Math.cos(a) * rand(100, 600) * U, vy: Math.sin(a) * rand(100, 600) * U - 200 * U, t: 0, life: rand(.8, 1.6), hue: rand(0, 360), w: rand(3, 5) * U, conf: true }); }
+  }
+  if (up.quake && c % up.quake === 0) {
+    let target = null, bd = -1;
+    for (let k = 0; k < 6; k++) {
+      const t = orbs[Math.random() * orbs.length | 0];
+      if (!t || !t.alive) continue;
+      const d = Math.hypot(t.x - o.x, t.y - o.y);
+      if (d > bd) { bd = d; target = t; }
+    }
+    if (target) {
+      bolts.push({ x1: o.x, y1: o.y, x2: target.x, y2: target.y, t: 0, seed: Math.random() * 1000 });
+      sZap(); flash = Math.max(flash, .2); flashHue = 200;
+      pop(target, false);
+    }
+  }
+  updateHud();
+}
+
+function tapExplode(x, y) {
+  tapsLeft--;
+  const R = baseR() * up.tapR * (fever > 0 ? 1.35 : 1);
+  addExp(x, y, R, 50, { life: .12 + .5 * up.dur + .28 });
+  sparks(x, y, 50, 30, 1.6);
+  ring(x, y, R * 2, 40, .5, 6);
+  shake = Math.min(20, shake + 10);
+  flash = Math.max(flash, .2); flashHue = 40;
+  sBoom(up.tapR > 2); vib(30);
+  renderTaps();
+}
+
+// ---------- ラウンドの流れ ----------
+function startRun() {
+  up = freshUp(); score = scoreShown = 0; coins = coinsShown = 0; hearts = 3; level = 1;
+  maxChain = 0; rerollCost = 20; healCost = 80;
+  startRound();
+}
+function startRound() {
+  const n = 50 + 6 * (level - 1) + up.orbs;
+  spawnOrbs(n, false);
+  quota = Math.ceil(n * Math.min(.85, .2 + .05 * (level - 1)));
+  exps = []; bolts = []; pops = 0; roundScore = 0; roundCoins = 0; cleared = false; endTimer = 0; fever = 0;
+  tapsLeft = up.taps;
+  state = 'play';
+  ['title', 'result', 'pick', 'over'].forEach(id => $(id).hidden = true);
+  ['hud', 'quota', 'taps'].forEach(id => $(id).hidden = false);
+  $('quota').classList.remove('done');
+  showBanner('ROUND ' + level, 200, 1, 1.4);
+  floatText(W / 2, H * .5, `目標 ${quota} 連鎖`, 22, 180, 1.6, -10);
+  renderTaps(); updateHud();
+}
+function finishRound() {
+  state = 'result';
+  coinsShown = coins;
+  const perfect = aliveCount === 0;
+  let extraL = '', extra = 0;
+  if (cleared && perfect) {
+    extra = roundScore; score += extra; coins += 50; coinsShown = coins;
+    extraL = '✨ PERFECT ボーナス';
+  }
+  $('rTitle').textContent = cleared ? (perfect ? 'PERFECT!!' : 'CLEAR!') : 'ざんねん… ❤-1';
+  $('rTitle').classList.toggle('sad', !cleared);
+  $('rExtraRow').hidden = !extra;
+  $('rExtraL').textContent = extraL;
+  $('rNext').hidden = true;
+  $('result').hidden = false;
+  if (!cleared) { hearts--; sFail(); }
+  updateHud();
+  let i = 0;
+  const step = () => {
+    i++;
+    if (i === 1) countUp($('rPops'), pops, 500, step);
+    else if (i === 2) countUp($('rScore'), roundScore, 600, step);
+    else if (i === 3) countUp($('rCoin'), roundCoins, 400, step);
+    else if (i === 4 && extra) countUp($('rExtra'), extra, 500, step);
+    else {
+      $('rNext').hidden = false;
+      if (cleared) { sFanfare(); }
+    }
+  };
+  ['rPops', 'rScore', 'rCoin', 'rExtra'].forEach(id => $(id).textContent = '0');
+  setTimeout(step, 250);
+}
+function countUp(el, to, dur, done) {
+  const t0 = performance.now(); let k = 0;
+  const f = () => {
+    const p = Math.min(1, (performance.now() - t0) / dur);
+    el.textContent = fmt(to * (1 - Math.pow(1 - p, 3)));
+    if (k++ % 2 === 0) sTick(k / 2 | 0);
+    if (p < 1) requestAnimationFrame(f);
+    else { el.textContent = fmt(to); el.animate([{ transform: 'scale(1.5)' }, { transform: 'scale(1)' }], { duration: 250, easing: 'ease-out' }); tone(noteF(24), .15, 'triangle', .15); setTimeout(done, 120); }
+  };
+  f();
+}
+$('rNext').addEventListener('click', () => {
+  initAudio();
+  if (cleared) openPick();
+  else if (hearts <= 0) gameOver();
+  else startRound();
+});
+
+let curCards = [];
+function drawCards() {
+  const pool = [...UPS];
+  const res = [];
+  while (res.length < 3) {
+    const roll = Math.random();
+    const want = roll < .08 + Math.min(.1, level * .006) ? 2 : roll < .4 ? 1 : 0;
+    const cand = pool.filter(u => u.r === want && !res.includes(u));
+    if (!cand.length) continue;
+    res.push(cand[Math.random() * cand.length | 0]);
+  }
+  return res;
+}
+function openPick() {
+  state = 'pick';
+  $('result').hidden = true; $('pick').hidden = false;
+  curCards = drawCards();
+  renderPick();
+}
+function renderPick() {
+  const box = $('cards'); box.innerHTML = '';
+  curCards.forEach((u, i) => {
+    const b = document.createElement('button');
+    b.className = 'card r' + u.r;
+    b.style.animationDelay = (i * .14) + 's';
+    b.innerHTML = `<div class="ic">${u.icon}</div><div><div class="nm">${u.name}</div><div class="ds">${u.desc}</div></div><span class="rt">${RARE_NAME[u.r]}</span>`;
+    b.addEventListener('click', () => choose(u, b));
+    box.appendChild(b);
+    setTimeout(() => sCard(u.r, i), i * 140 + 80);
+  });
+  const own = Object.entries(up.own).map(([id, n]) => UPS.find(u => u.id === id).icon + (n > 1 ? '×' + n : '')).join(' ');
+  $('owned').textContent = own ? '所持：' + own : '';
+  $('rrCost').textContent = rerollCost; $('healCost').textContent = healCost;
+  $('reroll').disabled = coins < rerollCost;
+  $('heal').disabled = coins < healCost || hearts >= 3;
+  updateHud();
+}
+function choose(u, el) {
+  if (state !== 'pick') return;
+  state = 'picked';
+  applyUp(u.id);
+  el.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.12)', filter: 'brightness(2)' }, { transform: 'scale(1)' }], { duration: 300 });
+  for (let i = 0; i < 6; i++) tone(noteF(12 + i * 5), .2, 'triangle', .12, i * .04);
+  vib(40);
+  setTimeout(() => { level++; startRound(); }, 380);
+}
+$('reroll').addEventListener('click', () => {
+  if (coins < rerollCost || state !== 'pick') return;
+  coins -= rerollCost; coinsShown = coins; rerollCost += 10;
+  curCards = drawCards(); renderPick(); tone(800, .2, 'triangle', .15, 0, 2);
+});
+$('heal').addEventListener('click', () => {
+  if (coins < healCost || hearts >= 3 || state !== 'pick') return;
+  coins -= healCost; coinsShown = coins; hearts++; healCost += 40;
+  renderPick(); [0, 4, 7, 12].forEach((s, i) => tone(noteF(12 + s), .25, 'triangle', .15, i * .06));
+});
+function gameOver() {
+  state = 'over';
+  const isNew = score > best;
+  if (isNew) { best = score; store.set('dopa-best', best); }
+  $('result').hidden = true; $('over').hidden = false;
+  ['hud', 'quota', 'taps'].forEach(id => $(id).hidden = true);
+  $('oNew').hidden = !isNew;
+  $('oScore').textContent = fmt(score); $('oRound').textContent = level; $('oMax').textContent = fmt(maxChain); $('oBest').textContent = fmt(best);
+  if (isNew) sFanfare(); else sFail();
+}
+$('oRetry').addEventListener('click', () => { initAudio(); startRun(); });
+
+function renderTaps() {
+  const box = $('taps'); box.innerHTML = '';
+  for (let i = 0; i < up.taps; i++) {
+    const e = document.createElement('i');
+    e.textContent = '💥';
+    if (i >= tapsLeft) e.className = 'used';
+    box.appendChild(e);
+  }
+}
+let lastHeartsStr = '';
+function updateHud() {
+  $('hRound').textContent = 'ROUND ' + level;
+  const hs = '❤️'.repeat(Math.max(0, hearts)) + '🖤'.repeat(Math.max(0, 3 - hearts));
+  if (hs !== lastHeartsStr) { $('hHearts').textContent = hs; lastHeartsStr = hs; }
+  $('qTxt').textContent = `${Math.min(pops, 9999)} / ${quota}`;
+  $('qFill').style.width = Math.min(100, pops / Math.max(1, quota) * 100) + '%';
+}
+
+// ---------- 入力 ----------
+cv.addEventListener('pointerdown', e => {
+  initAudio();
+  if (state === 'play' && tapsLeft > 0) tapExplode(e.clientX, e.clientY);
+});
+$('title').addEventListener('pointerdown', e => {
+  if (e.target.closest('#mute')) return;
+  initAudio();
+  tone(noteF(12), .1, 'triangle', .2); tone(noteF(19), .2, 'triangle', .2, .08);
+  startRun();
+});
+
+// ---------- 更新 ----------
+function update(dt) {
+  popVoices = 0;
+  if (hitstop > 0) { hitstop -= dt; shake *= .9; return; }
+  const demo = state === 'title';
+  fever = Math.max(0, fever - dt);
+  heat = Math.max(0, heat - dt * .35);
+  chainPulse = Math.max(0, chainPulse - dt * 5);
+
+  // オーブ
+  const magnet = up.magnet * (demo ? 0 : 1);
+  for (const o of orbs) {
+    if (!o.alive) continue;
+    if (magnet) {
+      for (const e of exps) {
+        if (e.shard) continue;
+        const dx = e.x - o.x, dy = e.y - o.y, d = Math.hypot(dx, dy), reach = e.R * 4;
+        if (d < reach && d > 1) { const f = 340 * U * magnet * (1 - d / reach) * dt / d; o.vx += dx * f; o.vy += dy * f; }
+      }
+    }
+    const sp = Math.hypot(o.vx, o.vy);
+    if (sp > o.base * 1.05) { const k = Math.pow(.25, dt); o.vx *= k; o.vy *= k; if (Math.hypot(o.vx, o.vy) < o.base) { const s2 = Math.hypot(o.vx, o.vy) || 1; o.vx *= o.base / s2; o.vy *= o.base / s2; } }
+    o.x += o.vx * dt; o.y += o.vy * dt;
+    if (o.x < o.r) { o.x = o.r; o.vx = Math.abs(o.vx); }
+    if (o.x > W - o.r) { o.x = W - o.r; o.vx = -Math.abs(o.vx); }
+    if (o.y < fieldTop + o.r) { o.y = fieldTop + o.r; o.vy = Math.abs(o.vy); }
+    if (o.y > fieldBot - o.r) { o.y = fieldBot - o.r; o.vy = -Math.abs(o.vy); }
+    o.ph += dt * 3;
+  }
+
+  // 爆発と当たり判定
+  const n0 = exps.length;
+  for (let i = 0; i < n0; i++) {
+    const e = exps[i];
+    e.t += dt;
+    if (e.shard) { e.x += e.vx * dt; e.y += e.vy * dt; const k = Math.pow(.08, dt); e.vx *= k; e.vy *= k; if (Math.random() < .5) parts.push({ x: e.x, y: e.y, vx: 0, vy: 0, t: 0, life: .3, hue: e.hue, w: 2.5 * U }); }
+    e.cur = expRadius(e);
+    if (e.cur <= 0) continue;
+    for (const o of orbs) {
+      if (!o.alive) continue;
+      const dx = o.x - e.x, dy = o.y - e.y, rr = e.cur + o.r;
+      if (dx * dx + dy * dy < rr * rr) pop(o, demo);
+    }
+  }
+  exps = exps.filter(e => e.t < e.life);
+
+  for (const p of parts) {
+    p.t += dt;
+    const k = Math.pow(p.conf ? .5 : .04, dt);
+    p.vx *= k; p.vy *= k;
+    if (p.conf) p.vy += 500 * U * dt;
+    p.x += p.vx * dt; p.y += p.vy * dt;
+  }
+  parts = parts.filter(p => p.t < p.life);
+  for (const r of rings) r.t += dt;
+  rings = rings.filter(r => r.t < r.life);
+  for (const t of texts) { t.t += dt; t.y += t.vy * dt; t.vy *= Math.pow(.2, dt); }
+  texts = texts.filter(t => t.t < t.life);
+  for (const b of bolts) b.t += dt;
+  bolts = bolts.filter(b => b.t < .35);
+
+  // コインがHUDへ飛んでいく
+  if (coinsP.length) {
+    const tg = coinTarget();
+    for (const c of coinsP) {
+      c.t += dt; c.spin += dt * 12;
+      if (c.t < .3) { c.vx *= Math.pow(.05, dt); c.vy *= Math.pow(.05, dt); }
+      else {
+        const dx = tg.x - c.x, dy = tg.y - c.y, d = Math.hypot(dx, dy) || 1;
+        const sp = 300 + (c.t - .3) * 2600;
+        c.vx += (dx / d * sp - c.vx) * Math.min(1, dt * 10);
+        c.vy += (dy / d * sp - c.vy) * Math.min(1, dt * 10);
+        if (d < 18) { c.done = true; coinsShown = Math.min(coins, coinsShown + c.v); sCoin(); bumpCoin(); }
+      }
+      c.x += c.vx * dt; c.y += c.vy * dt;
+    }
+    coinsP = coinsP.filter(c => !c.done && c.t < 3);
+  }
+  scoreShown += (score - scoreShown) * Math.min(1, dt * 10);
+  if (Math.abs(score - scoreShown) < 1) scoreShown = score;
+
+  if (banner) { banner.t += dt; if (banner.t > banner.life) banner = null; }
+  shake *= Math.pow(.004, dt);
+  flash = Math.max(0, flash - dt * 2.2);
+
+  if (demo) {
+    demoTimer -= dt;
+    if (demoTimer <= 0 && exps.length === 0) {
+      demoTimer = 2.4;
+      if (aliveCount < 25) spawnOrbs(Math.round(55 * Math.max(1, W * H / (400 * 750 * U * U)) ** .5), true);
+      const alive = orbs.filter(o => o.alive);
+      const t = alive[Math.random() * alive.length | 0];
+      if (t) { addExp(t.x, t.y, 40 * U, 50); ring(t.x, t.y, 90 * U, 50); }
+    }
+    pops = 0;
+  }
+
+  if (state === 'play') {
+    if ((tapsLeft === 0 || aliveCount === 0) && exps.length === 0) {
+      endTimer += dt;
+      if (endTimer > (aliveCount === 0 ? .4 : .8)) finishRound();
+    } else endTimer = 0;
+  }
+}
+let bumpT = 0;
+function bumpCoin() {
+  const el = $('hCoin');
+  el.classList.add('bump'); clearTimeout(bumpT); bumpT = setTimeout(() => el.classList.remove('bump'), 70);
+}
+
+// ---------- 描画 ----------
+function draw() {
+  const now = performance.now() / 1000;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  // 背景
+  ctx.fillStyle = '#07031a'; ctx.fillRect(0, 0, W, H);
+  ctx.globalAlpha = .7; ctx.drawImage(bgStars, 0, 0, W, H); ctx.globalAlpha = 1;
+  const heatHue = fever > 0 ? (now * 200) % 360 : 280 + heat * 60;
+  const hg = ctx.createRadialGradient(W / 2, H * .55, 0, W / 2, H * .55, Math.max(W, H) * .75);
+  const hi = .12 + heat * .35 + (fever > 0 ? .25 : 0);
+  hg.addColorStop(0, `hsla(${heatHue},100%,45%,${hi})`);
+  hg.addColorStop(1, 'hsla(260,100%,10%,0)');
+  ctx.fillStyle = hg; ctx.fillRect(0, 0, W, H);
+  if (fever > 0) {
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 6; i++) {
+      ctx.fillStyle = `hsla(${(now * 160 + i * 60) % 360},100%,50%,.07)`;
+      const y = ((now * 300 + i * H / 6) % (H + 80)) - 40;
+      ctx.fillRect(0, y, W, 40);
+    }
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  ctx.save();
+  if (shake > .3) ctx.translate(rand(-shake, shake), rand(-shake, shake));
+
+  // 連鎖カウンター（背景側に大きく）
+  if ((state === 'play' || state === 'result') && pops > 0) {
+    const s = 1 + chainPulse * .25;
+    ctx.save();
+    ctx.translate(W / 2, H * .44); ctx.scale(s, s);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const sz = Math.min(W * .4, 170) * Math.min(1.3, .7 + pops / 200);
+    ctx.font = `900 ${sz}px "M PLUS Rounded 1c",sans-serif`;
+    ctx.fillStyle = `hsla(${fever > 0 ? (now * 300) % 360 : 300 + Math.min(pops, 120)},100%,70%,${.14 + chainPulse * .14})`;
+    ctx.fillText(pops, 0, 0);
+    ctx.font = `900 ${sz * .22}px "M PLUS Rounded 1c",sans-serif`;
+    ctx.fillText('CHAIN', 0, sz * .62);
+    ctx.restore();
+  }
+
+  // 爆発
+  ctx.globalCompositeOperation = 'lighter';
+  for (const e of exps) {
+    if (e.cur <= 0) continue;
+    const a = e.shard ? 1 : Math.min(1, (e.life - e.t) / .3 + .2);
+    const g = getGlow(e.hue), rr = e.cur * (e.shard ? 2.2 : 1.45);
+    ctx.globalAlpha = a;
+    ctx.drawImage(g, e.x - rr, e.y - rr, rr * 2, rr * 2);
+    if (!e.shard) {
+      ctx.strokeStyle = `hsla(${e.hue},100%,80%,${a * .8})`;
+      ctx.lineWidth = 2 * U;
+      ctx.beginPath(); ctx.arc(e.x, e.y, e.cur, 0, TAU); ctx.stroke();
+    }
+  }
+  ctx.globalAlpha = 1;
+  for (const r of rings) {
+    const k = r.t / r.life, e = 1 - Math.pow(1 - k, 3);
+    ctx.strokeStyle = `hsla(${r.hue},100%,75%,${1 - k})`;
+    ctx.lineWidth = r.w * U * (1 - k) + .5;
+    ctx.beginPath(); ctx.arc(r.x, r.y, r.max * e, 0, TAU); ctx.stroke();
+  }
+  ctx.globalCompositeOperation = 'source-over';
+
+  // オーブ
+  for (const o of orbs) {
+    if (!o.alive) continue;
+    const spr = o.type === 'n' ? orbSprites['n' + o.hue] : orbSprites[o.type];
+    const pul = o.type === 'n' ? 1 + Math.sin(o.ph) * .05 : 1 + Math.sin(o.ph * 2) * .1;
+    const s = o.r / ORB_R * pul, half = 48 * s;
+    if (o.type === 'rainbow') {
+      ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(now * 3);
+      ctx.drawImage(spr, -half, -half, half * 2, half * 2); ctx.restore();
+    } else ctx.drawImage(spr, o.x - half, o.y - half, half * 2, half * 2);
+  }
+
+  // 雷
+  for (const b of bolts) {
+    const a = 1 - b.t / .35;
+    ctx.globalCompositeOperation = 'lighter';
+    for (let pass = 0; pass < 2; pass++) {
+      ctx.strokeStyle = pass ? `rgba(255,255,255,${a})` : `hsla(200,100%,65%,${a * .6})`;
+      ctx.lineWidth = (pass ? 2 : 8) * U;
+      ctx.beginPath(); ctx.moveTo(b.x1, b.y1);
+      const segs = 10;
+      for (let i = 1; i < segs; i++) {
+        const k = i / segs, j = Math.sin(b.seed + i * 12.9898) * 43758.5453;
+        const off = (j - Math.floor(j) - .5) * 40 * U;
+        const nx = -(b.y2 - b.y1), ny = b.x2 - b.x1, nl = Math.hypot(nx, ny) || 1;
+        ctx.lineTo(b.x1 + (b.x2 - b.x1) * k + nx / nl * off, b.y1 + (b.y2 - b.y1) * k + ny / nl * off);
+      }
+      ctx.lineTo(b.x2, b.y2); ctx.stroke();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  // 火花
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.lineCap = 'round';
+  for (const p of parts) {
+    const a = 1 - p.t / p.life;
+    if (p.conf) {
+      ctx.fillStyle = `hsla(${p.hue},100%,60%,${a})`;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.t * 10 + p.hue); ctx.fillRect(-p.w, -p.w / 2, p.w * 2, p.w); ctx.restore();
+      continue;
+    }
+    ctx.strokeStyle = `hsla(${p.hue},100%,${60 + a * 30}%,${a})`;
+    ctx.lineWidth = p.w * a + .5;
+    ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * .04, p.y - p.vy * .04 + .01); ctx.stroke();
+  }
+  ctx.globalCompositeOperation = 'source-over';
+
+  // 数字
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (const t of texts) {
+    const k = t.t / t.life;
+    const s = k < .15 ? .6 + k / .15 * .6 : 1.2 - Math.min(.2, (k - .15));
+    ctx.globalAlpha = k > .7 ? (1 - k) / .3 : 1;
+    ctx.font = `900 ${t.size * s}px "M PLUS Rounded 1c",sans-serif`;
+    ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(20,0,40,.8)';
+    ctx.strokeText(t.s, t.x, t.y);
+    ctx.fillStyle = `hsl(${t.hue},100%,80%)`;
+    ctx.fillText(t.s, t.x, t.y);
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+
+  // コイン（揺れの外）
+  for (const c of coinsP) {
+    const sx = Math.abs(Math.cos(c.spin)) * 7 + 1.5;
+    ctx.fillStyle = '#ffd23c';
+    ctx.beginPath(); ctx.ellipse(c.x, c.y, sx, 8, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#fff6b0'; ctx.beginPath(); ctx.ellipse(c.x - sx * .25, c.y - 2.5, sx * .35, 2.5, 0, 0, TAU); ctx.fill();
+  }
+
+  // 大きな見出し
+  if (banner) {
+    const b = banner, k = b.t / b.life;
+    let s = k < .18 ? elastic(k / .18) : 1 + (k - .18) * .15;
+    const a = k > .75 ? (1 - k) / .25 : 1;
+    const sz = Math.min(W * .14, 64) * b.size;
+    ctx.save(); ctx.translate(W / 2, H * .3); ctx.scale(s, s); ctx.rotate(Math.sin(b.t * 18) * .03 * (1 - k));
+    ctx.globalAlpha = a;
+    ctx.font = `900 ${sz}px "M PLUS Rounded 1c",sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.lineWidth = sz * .16; ctx.lineJoin = 'round'; ctx.strokeStyle = 'rgba(20,0,40,.9)';
+    ctx.strokeText(b.text, 0, 0);
+    const tw = ctx.measureText(b.text).width;
+    const gr = ctx.createLinearGradient(-tw / 2, 0, tw / 2, 0);
+    if (b.rainbow) for (let i = 0; i <= 6; i++) gr.addColorStop(i / 6, `hsl(${(i * 60 + now * 400) % 360},100%,65%)`);
+    else { gr.addColorStop(0, `hsl(${b.hue},100%,85%)`); gr.addColorStop(.5, '#fff'); gr.addColorStop(1, `hsl(${b.hue + 40},100%,70%)`); }
+    ctx.fillStyle = gr; ctx.shadowColor = `hsl(${b.hue},100%,60%)`; ctx.shadowBlur = 24;
+    ctx.fillText(b.text, 0, 0);
+    ctx.restore();
+  }
+  if (fever > 0 && state === 'play') {
+    ctx.save();
+    ctx.globalAlpha = .6 + .4 * Math.sin(now * 20);
+    ctx.font = `900 16px "M PLUS Rounded 1c",sans-serif`; ctx.textAlign = 'center';
+    ctx.fillStyle = `hsl(${(now * 400) % 360},100%,70%)`;
+    ctx.fillText(`FEVER ×2  ${fever.toFixed(1)}`, W / 2, fieldTop + 22);
+    ctx.restore();
+  }
+
+  if (flash > 0) {
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = `hsla(${flashHue},100%,70%,${flash * .45})`;
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  $('hScore').textContent = fmt(scoreShown);
+  $('hCoinN').textContent = fmt(coinsShown);
+}
+function elastic(x) { return x === 1 ? 1 : Math.pow(2, -10 * x) * Math.sin((x * 10 - .75) * TAU / 3) + 1; }
+
+let last = performance.now();
+function frame(t) {
+  const dt = Math.min(.05, (t - last) / 1000); last = t;
+  update(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+$('tBest').textContent = best ? 'ベスト：' + fmt(best) : '';
+spawnOrbs(55, true);
+requestAnimationFrame(frame);
+</script>
+<script src="../../playtime.js" defer></script>
+</body>
+</html>
