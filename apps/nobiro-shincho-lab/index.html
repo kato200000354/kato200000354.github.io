@@ -1,0 +1,1293 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<script src="../../audio-pause.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>のびろ！身長ラボ</title>
+<meta name="description" content="身長研究所の所長になって、睡眠・栄養・運動の習慣から育成スタート。研究が進むと100時間ルーム、重力装置、巨人化カプセル…と研究身長がどんどん暴走する放置育成ゲーム。">
+<meta name="theme-color" content="#19a38c">
+<style>
+:root{--bg:#e8f6f1;--card:#fff;--ink:#22333b;--dim:#6b7f86;--teal:#19a38c;--teal2:#0f7d6b;--orange:#ff8a3d;--pink:#ff6f91;--purple:#7a5cff;--gold:#f5b70a;--line:#d5e7e1;--lock:#b9c6c4}
+[hidden]{display:none!important}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:#cfe9e1;color:var(--ink);font-family:"Hiragino Maru Gothic ProN","Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",system-ui,sans-serif}
+button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer;touch-action:manipulation}
+#app{position:fixed;inset:0;max-width:520px;margin:0 auto;background:var(--bg);overflow:hidden;box-shadow:0 0 30px rgba(0,0,0,.12)}
+/* ---------- title ---------- */
+#title{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;background:linear-gradient(#8fd9f5,#dff6ff 55%,#bde9c9 55.2%,#9fd9ad);overflow:hidden}
+#title .logo{font-size:44px;font-weight:900;letter-spacing:.02em;color:#fff;text-shadow:0 3px 0 #0f7d6b,0 6px 0 #0a5c4f,0 10px 18px rgba(0,0,0,.25);text-align:center;line-height:1.1}
+#title .logo small{display:block;font-size:15px;letter-spacing:.3em;margin-bottom:6px;text-shadow:0 2px 0 #0f7d6b}
+#titleCv{width:200px;height:210px}
+.tbtns{display:flex;flex-direction:column;gap:10px;width:min(280px,90%)}
+.btn{display:block;width:100%;padding:14px 16px;border-radius:16px;font-size:17px;font-weight:800;background:var(--teal);color:#fff;box-shadow:0 4px 0 var(--teal2);transition:transform .06s}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--teal2)}
+.btn.sub{background:#fff;color:var(--teal2);box-shadow:0 4px 0 #b7d8cf}
+.btn.org{background:var(--orange);box-shadow:0 4px 0 #c8601c}
+.btn.pur{background:var(--purple);box-shadow:0 4px 0 #4d35b8}
+.btn.red{background:#e2504c;box-shadow:0 4px 0 #a6302d}
+.btn.sm{padding:9px 12px;font-size:14px;border-radius:12px}
+.btn:disabled{opacity:.45;filter:grayscale(.6)}
+.tnote{font-size:11px;color:#3d5a57;text-align:center;line-height:1.6;max-width:320px}
+/* ---------- game frame ---------- */
+#game{position:absolute;inset:0;display:flex;flex-direction:column}
+#top{flex:none;display:flex;align-items:center;gap:6px;padding:calc(8px + env(safe-area-inset-top)) 10px 8px;background:var(--teal);color:#fff}
+.chip{flex:1;min-width:0;background:rgba(0,0,0,.18);border-radius:12px;padding:5px 8px;line-height:1.15}
+.chip b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip span{font-size:10px;opacity:.85;white-space:nowrap}
+#bSet{flex:none;width:38px;height:38px;border-radius:12px;background:rgba(0,0,0,.18);font-size:18px;color:#fff}
+#main{flex:1;min-height:0;position:relative;overflow:hidden}
+.tab{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 12px 24px}
+#tab-home{padding:0;display:flex;flex-direction:column;overflow:hidden}
+#nav{flex:none;display:flex;background:#fff;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+#nav button{flex:1;padding:7px 0 8px;font-size:11px;font-weight:700;color:var(--dim);display:flex;flex-direction:column;align-items:center;gap:1px;position:relative}
+#nav button i{font-style:normal;font-size:22px;line-height:1.1;filter:grayscale(.7);opacity:.7}
+#nav button.on{color:var(--teal2)}
+#nav button.on i{filter:none;opacity:1}
+.badge{position:absolute;top:4px;left:calc(50% + 8px);min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--pink);color:#fff;font-size:10px;line-height:16px;font-style:normal}
+/* ---------- home ---------- */
+#stage{flex:1;min-height:200px;position:relative;overflow:hidden;background:#f4efe6}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block}
+#hcard{position:absolute;left:8px;right:8px;top:8px;background:rgba(255,255,255,.88);border-radius:14px;padding:8px 12px 9px;box-shadow:0 3px 10px rgba(0,0,0,.12);pointer-events:none;display:grid;grid-template-columns:auto 1fr;column-gap:12px;align-items:end}
+#hcard>#hLabel{grid-column:1/3}
+#hNext{grid-column:1/3}
+#hSub{text-align:right;align-self:center}
+#hLabel{font-size:11px;color:var(--dim);font-weight:700}
+#hBig{font-size:28px;font-weight:900;line-height:1.1;color:var(--ink);white-space:nowrap}
+#hBig.rs{color:var(--purple)}
+#hSub{font-size:11px;color:var(--dim);margin-top:2px;line-height:1.5}
+#hNext{margin-top:5px;font-size:10.5px;color:var(--ink)}
+.bar{height:7px;background:#e3ece9;border-radius:4px;overflow:hidden;margin-top:3px}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--teal),#53d6b9);border-radius:4px;transition:width .3s}
+.bar.p i{background:linear-gradient(90deg,var(--purple),#c08bff)}
+.bar.o i{background:linear-gradient(90deg,var(--orange),#ffc15e)}
+#hint{position:absolute;left:10px;right:10px;bottom:8px;display:flex;gap:6px;align-items:flex-end;pointer-events:none}
+#hint .bot{font-size:22px;flex:none;filter:drop-shadow(0 2px 2px rgba(0,0,0,.2))}
+#hint .bub{background:rgba(255,255,255,.9);border-radius:12px 12px 12px 3px;padding:5px 9px;font-size:11.5px;line-height:1.5;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.idea{position:absolute;width:54px;height:54px;border-radius:50%;font-size:30px;background:radial-gradient(circle,#fffbd0,#ffe066 60%,rgba(255,224,102,0) 72%);animation:float 2.2s ease-in-out infinite;z-index:3}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-10px) rotate(6deg)}}
+.flt{position:absolute;z-index:4;font-weight:900;font-size:17px;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.35),0 0 6px rgba(0,0,0,.3);pointer-events:none;animation:flt 1s ease-out forwards;white-space:nowrap}
+@keyframes flt{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-60px)}}
+#homeCtl{flex:none;padding:8px 10px 8px;display:flex;flex-direction:column;gap:7px;background:var(--bg)}
+#bMeasure{width:100%;padding:12px;border-radius:18px;background:linear-gradient(#ff9d55,var(--orange));color:#fff;font-size:20px;font-weight:900;box-shadow:0 5px 0 #c8601c;display:flex;align-items:center;justify-content:center;gap:10px}
+#bMeasure:active{transform:translateY(4px);box-shadow:0 1px 0 #c8601c}
+#bMeasure small{font-size:13px;font-weight:700;background:rgba(0,0,0,.15);border-radius:8px;padding:2px 8px}
+.habits{display:flex;gap:7px}
+.hab{flex:1;position:relative;overflow:hidden;background:#fff;border-radius:14px;padding:6px 2px;font-size:12px;font-weight:800;box-shadow:0 3px 0 #c7ddd6;line-height:1.2}
+.hab i{font-style:normal;font-size:20px;display:block}
+.hab .cd{position:absolute;left:0;bottom:0;height:4px;background:var(--teal);width:0}
+.hab.wait{color:var(--lock)}
+.hab.wait i{filter:grayscale(1);opacity:.5}
+.hab.wait .cd{background:var(--lock)}
+.row2{display:flex;gap:7px}
+.row2 .btn{flex:1;position:relative}
+#offCard{background:linear-gradient(135deg,#fff7e0,#ffe9c2);border:2px solid #ffcf7a;border-radius:14px;padding:8px 10px;display:flex;gap:8px;align-items:center;font-size:12px;line-height:1.45}
+#offCard div{flex:1}
+#rate{font-size:11px;color:var(--dim);text-align:center}
+/* ---------- lists ---------- */
+h2{font-size:17px;margin:6px 2px 8px;display:flex;align-items:center;gap:6px}
+h3{font-size:14px;margin:14px 2px 6px;color:var(--teal2)}
+.subtabs{display:flex;gap:6px;margin-bottom:10px;position:sticky;top:-12px;z-index:2;background:var(--bg);padding:6px 0}
+.subtabs button{flex:1;padding:9px 4px;border-radius:12px;background:#fff;font-weight:800;font-size:13px;color:var(--dim);box-shadow:0 2px 0 #c7ddd6}
+.subtabs button.on{background:var(--teal);color:#fff;box-shadow:0 2px 0 var(--teal2)}
+.card{background:var(--card);border-radius:16px;padding:10px 12px;margin-bottom:8px;box-shadow:0 2px 0 #cfe2dc}
+.item{display:flex;gap:10px;align-items:center}
+.item .ic{flex:none;width:46px;height:46px;border-radius:12px;background:#eef7f4;display:flex;align-items:center;justify-content:center;font-size:26px;position:relative}
+.item .ic em{position:absolute;right:-4px;bottom:-4px;font-style:normal;font-size:11px;font-weight:900;background:var(--ink);color:#fff;border-radius:8px;padding:0 5px;line-height:16px}
+.item .tx{flex:1;min-width:0}
+.item .nm{font-weight:800;font-size:14px}
+.item .ds{font-size:11px;color:var(--dim);line-height:1.45;margin-top:1px}
+.item .ef{font-size:11px;color:var(--teal2);font-weight:700;margin-top:2px}
+.buy{flex:none;min-width:84px;padding:8px 8px;border-radius:12px;background:var(--teal);color:#fff;font-weight:800;font-size:12px;line-height:1.25;box-shadow:0 3px 0 var(--teal2)}
+.buy:active{transform:translateY(2px);box-shadow:0 1px 0 var(--teal2)}
+.buy.no{background:#c9d6d3;box-shadow:0 3px 0 #a9b9b5;color:#fff}
+.buy.done{background:#fff;color:var(--teal2);box-shadow:none;border:2px solid var(--teal)}
+.buy.wear{background:var(--orange);box-shadow:0 3px 0 #c8601c}
+.locked{opacity:.6}
+.locked .ic{filter:grayscale(1)}
+.amt{display:flex;gap:4px;justify-content:flex-end;margin-bottom:8px;align-items:center;font-size:12px;color:var(--dim)}
+.amt button{padding:5px 10px;border-radius:9px;background:#fff;font-weight:800;font-size:12px}
+.amt button.on{background:var(--ink);color:#fff}
+.stars{color:var(--gold);font-size:11px;letter-spacing:-1px}
+/* tree */
+.route{border-radius:18px;padding:10px;margin-bottom:12px}
+.route.health{background:#dff5ea}
+.route.science{background:#e0ecff}
+.route.neta{background:#f0e4ff}
+.route>.rh{font-weight:900;font-size:15px;margin:0 2px 8px;display:flex;justify-content:space-between;align-items:baseline}
+.route>.rh small{font-size:11px;color:var(--dim);font-weight:700}
+.node{position:relative;background:#fff;border-radius:14px;padding:9px 10px;margin-bottom:14px;display:flex;gap:9px;align-items:center;box-shadow:0 2px 0 rgba(0,0,0,.08)}
+.node:not(:last-child)::after{content:"";position:absolute;left:30px;bottom:-14px;width:4px;height:14px;background:rgba(0,0,0,.12)}
+.node .ic{flex:none;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;background:#eef3f2}
+.node.done .ic{background:var(--teal);color:#fff}
+.node.done{box-shadow:0 0 0 2px var(--teal) inset}
+.node.hid .nm{letter-spacing:.2em;color:var(--lock)}
+.node .tx{flex:1;min-width:0}
+.node .nm{font-weight:800;font-size:13.5px}
+.node .ds{font-size:11px;color:var(--dim);line-height:1.4;margin-top:1px}
+.node .rq{font-size:10.5px;color:#c0504d;margin-top:2px}
+.prest{background:linear-gradient(135deg,#2a1b5c,#5a2fa8);color:#fff;border-radius:16px;padding:12px;margin-bottom:12px;font-size:12.5px;line-height:1.6}
+.prest b{font-size:15px}
+/* book */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:7px}
+.cell{background:#fff;border-radius:12px;padding:8px 6px;text-align:center;font-size:11px;line-height:1.35;box-shadow:0 2px 0 #cfe2dc;min-height:84px}
+.cell i{font-style:normal;font-size:26px;display:block;margin-bottom:3px}
+.cell b{display:block;font-size:11.5px}
+.cell.no{color:var(--lock)}
+.cell.no i{filter:grayscale(1) brightness(1.4);opacity:.45}
+.end{display:flex;gap:10px;align-items:center}
+.end .ic{font-size:30px}
+.kv{display:flex;justify-content:space-between;font-size:13px;padding:5px 2px;border-bottom:1px dashed var(--line)}
+.kv:last-child{border:0}
+.kv b{font-weight:800}
+.hst{display:grid;grid-template-columns:52px 1fr 40px;gap:6px;align-items:center;font-size:12px;margin:6px 0}
+.rank{font-size:34px;font-weight:900;color:var(--teal2);line-height:1}
+#graph{width:100%;height:170px;display:block;background:#fbfefd;border-radius:12px}
+.mis .bar{height:9px}
+.mis .pg{font-size:11px;color:var(--dim);margin-top:3px;display:flex;justify-content:space-between}
+.note{font-size:11px;color:var(--dim);line-height:1.6;margin:6px 2px}
+.back{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:800;color:var(--teal2);padding:4px 2px;margin-bottom:4px}
+textarea{width:100%;height:90px;border-radius:10px;border:1px solid var(--line);padding:8px;font-size:11px;font-family:monospace}
+input[type=text]{width:100%;padding:12px;border-radius:12px;border:2px solid var(--line);font-size:18px;font-family:inherit;text-align:center}
+/* modal / toast */
+#modal{position:absolute;inset:0;z-index:50;background:rgba(20,35,40,.55);display:flex;align-items:center;justify-content:center;padding:18px}
+#mbox{background:#fff;border-radius:22px;width:100%;max-width:400px;max-height:88%;overflow:auto;padding:18px 16px 16px;animation:pop .22s ease-out;text-align:center}
+@keyframes pop{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
+#mbox .mic{font-size:52px;line-height:1.1}
+#mbox h4{font-size:19px;margin:6px 0 8px}
+#mbox .mt{font-size:13px;line-height:1.75;color:#3a4c52;text-align:left}
+#mbox .mt.c{text-align:center}
+#mbox .mbtns{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+#mbox.end{background:linear-gradient(#1b1240,#3d2287);color:#fff}
+#mbox.end .mt{color:#e6defc}
+.rw{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:8px 0}
+.rw span{background:#f1f7f5;border-radius:10px;padding:5px 10px;font-weight:800;font-size:14px}
+#toasts{position:absolute;left:0;right:0;top:calc(64px + env(safe-area-inset-top));z-index:40;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none}
+.toast{background:rgba(34,51,59,.92);color:#fff;border-radius:14px;padding:8px 14px;font-size:13px;font-weight:700;max-width:90%;text-align:center;animation:tin .25s ease-out;line-height:1.45}
+.toast.gold{background:linear-gradient(135deg,#f5a700,#ff7a3d)}
+.toast.pur{background:linear-gradient(135deg,#6a45ff,#b04dff)}
+@keyframes tin{from{transform:translateY(-12px);opacity:0}to{transform:none;opacity:1}}
+.shake{animation:shk .4s}
+@keyframes shk{0%,100%{transform:none}20%{transform:translate(-6px,3px)}40%{transform:translate(5px,-4px)}60%{transform:translate(-4px,2px)}80%{transform:translate(3px,-1px)}}
+.sw{display:inline-block;width:52px;height:30px;border-radius:15px;background:#c9d6d3;position:relative;vertical-align:middle;transition:background .2s}
+.sw::after{content:"";position:absolute;left:3px;top:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:left .2s}
+.sw.on{background:var(--teal)}
+.sw.on::after{left:25px}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- タイトル -->
+  <div id="title">
+    <div class="logo"><small>身長研究シミュレーション</small>のびろ！<br>身長ラボ</div>
+    <canvas id="titleCv" width="400" height="420"></canvas>
+    <div class="tbtns">
+      <button class="btn" id="tContinue" hidden>つづきから</button>
+      <button class="btn org" id="tNew">はじめる</button>
+      <div style="display:flex;gap:8px"><button class="btn sub sm" id="tBook">📖 図鑑</button><button class="btn sub sm" id="tSet">⚙ 設定</button></div>
+    </div>
+    <p class="tnote">※ゲーム内の身長はシミュレーション値です。研究身長は架空の技術によるゲーム専用の数値です。</p>
+  </div>
+
+  <!-- ゲーム本体 -->
+  <div id="game" hidden>
+    <header id="top">
+      <div class="chip"><span>💰 コイン</span><b id="vCoin">0</b></div>
+      <div class="chip"><span>🔬 研究pt</span><b id="vRp">0</b></div>
+      <div class="chip" id="chipDd"><span>💾 発見データ</span><b id="vDd">0</b></div>
+      <button id="bSet" aria-label="設定">⚙</button>
+    </header>
+    <main id="main">
+      <section class="tab" id="tab-home">
+        <div id="stage">
+          <canvas id="cv"></canvas>
+          <div id="hcard">
+            <div id="hLabel">現在の身長</div>
+            <div id="hBig">160.0 cm</div>
+            <div id="hSub"></div>
+            <div id="hNext"><span id="hNextT"></span><div class="bar"><i id="hNextB"></i></div></div>
+          </div>
+          <div id="hint"><div class="bot">🤖</div><div class="bub" id="hintT"></div></div>
+        </div>
+        <div id="homeCtl">
+          <button id="bMeasure">📏 測定する <small id="tapV">+1 G</small></button>
+          <div class="habits">
+            <button class="hab" data-h="sleep"><i>😴</i>ねる<div class="cd"></div></button>
+            <button class="hab" data-h="food"><i>🍙</i>たべる<div class="cd"></div></button>
+            <button class="hab" data-h="ex"><i>🏃</i>うごく<div class="cd"></div></button>
+          </div>
+          <div id="offCard" hidden><div id="offT"></div><button class="btn sm org" id="bOff" style="width:auto">受け取る</button></div>
+          <div class="row2"><button class="btn sub sm" id="bMis">📋 ミッション<i class="badge" id="misBadge" hidden>!</i></button><button class="btn sub sm" id="bRec">📈 身長記録</button></div>
+          <div id="rate"></div>
+        </div>
+      </section>
+      <section class="tab" id="tab-lab" hidden></section>
+      <section class="tab" id="tab-shop" hidden></section>
+      <section class="tab" id="tab-book" hidden></section>
+      <section class="tab" id="tab-mis" hidden></section>
+      <section class="tab" id="tab-rec" hidden></section>
+      <section class="tab" id="tab-set" hidden></section>
+    </main>
+    <nav id="nav">
+      <button data-tab="home" class="on"><i>🏠</i>ホーム</button>
+      <button data-tab="lab"><i>🔬</i>研究<em class="badge" id="labBadge" hidden>!</em></button>
+      <button data-tab="shop"><i>🛒</i>ショップ</button>
+      <button data-tab="book"><i>📖</i>図鑑</button>
+    </nav>
+  </div>
+
+  <div id="modal" hidden><div id="mbox"></div></div>
+  <div id="toasts"></div>
+</div>
+
+<script>
+/*LOGIC_START*/
+// ============================================================
+//  ゲームデータとロジック（DOMに依存しない部分）
+// ============================================================
+const LY = 9.4607e17;          // 1光年(cm)
+const UNIVERSE = 8.8e28;       // 観測可能な宇宙の直径(cm)
+const DAYSEC = 15;             // ゲーム内1日 = 15秒
+const GROW_YEARS = 4;          // 14歳→18歳まで成長期
+const START_AGE = 14, START_H = 160;
+const GROW_DAYS = GROW_YEARS * 365.25;
+
+// 施設  g:コイン/秒  rp:研究pt/秒  dd:発見データ/秒  grow:研究身長の伸び(cm/秒)
+const FAC = [
+  {id:'bed',      icon:'🛏️', name:'快眠ベッド',        cost:15, g:0.1, rp:0.01, dd:0, grow:0,     stat:'sleep', desc:'ぐっすり眠れる研究用ベッド。睡眠は成長期のいちばんの土台。'},
+  {id:'kitchen',  icon:'🍳', name:'栄養キッチン',      cost:110, g:0.8, rp:0.03, dd:0, grow:0,     stat:'food',  desc:'たんぱく質・カルシウム・ビタミンを考えた献立を作る。'},
+  {id:'gym',      icon:'🏀', name:'運動ジム',          cost:1200, g:6, rp:0.12, dd:0, grow:0,     stat:'ex',    desc:'縄とび・バスケ・水泳。体を動かすと骨も筋肉も丈夫に。'},
+  {id:'posture',  icon:'🧘', name:'姿勢ラボ',          cost:13000, g:35, rp:0.5, dd:0, grow:0,     stat:'post',  desc:'猫背をチェックし、正しい姿勢を身につける。'},
+  {id:'robot',    icon:'🤖', name:'測定ロボ工房',      cost:140000, g:200, rp:2.5, dd:0.003, grow:0,     unlock:'s1', desc:'身長を自動で読み取るロボット。24時間測り続ける。'},
+  {id:'room100',  icon:'⏳', name:'100時間ルーム',      cost:1.6e6, g:1100, rp:10, dd:0.01, grow:0.05,  unlock:'s3', desc:'1日が100時間ある謎の部屋。何がどう伸びるのかは誰にもわからない。'},
+  {id:'gravity',  icon:'🌀', name:'重力研究棟',        cost:2e7, g:6500, rp:45, dd:0.04, grow:3,     unlock:'s4', desc:'重力を弱めて体を伸ばす研究装置。所長、浮いてます。'},
+  {id:'capsule',  icon:'💊', name:'巨人化カプセル工場', cost:3.3e8, g:40000, rp:200, dd:0.15, grow:250,   unlock:'n2', desc:'入ると巨人になれるカプセル。出るときは頭からどうぞ。'},
+  {id:'satellite',icon:'🛰️', name:'人工衛星発射場',    cost:5.1e9, g:240000, rp:900, dd:0.6, grow:30000,   unlock:'s6', desc:'頭のてっぺんを宇宙から測るため、人工衛星を打ち上げる。'},
+  {id:'dimension',icon:'📐', name:'四次元ものさし研究所',cost:7.5e10, g:1.5e6, rp:4000, dd:2.5, grow:5e6,   unlock:'n4', desc:'4次元方向にも目盛りがある定規を量産する。'},
+  {id:'galaxy',   icon:'🌌', name:'銀河伸長炉',        cost:1e12, g:9e6, rp:20000, dd:10, grow:1.5e9, unlock:'s8', desc:'銀河の回転エネルギーで背筋をぐいーっと伸ばす炉。'},
+  {id:'genesis',  icon:'✨', name:'宇宙創生ラボ',      cost:1.4e13, g:6e7, rp:100000, dd:40, grow:6e11,  unlock:'n6', desc:'新しい宇宙を作り、その中で身長を測る。'},
+];
+const FAC_LV = [25, 50, 100, 150, 200, 250, 300]; // この数に達するたび、その施設の効率×2
+
+// 研究ツリー
+const RES = [
+  // 健康ルート
+  {id:'h1',route:'health',icon:'🌙',name:'睡眠リズムの研究',cost:{rp:3},req:[],eff:'快眠ベッドの効率×2・睡眠ステータスUP',fx:C=>{C.fm.bed*=2;C.hs.sleep+=5},tip:'成長ホルモンは、深い眠りのあいだに多く分泌されるといわれています。毎日同じ時間に寝起きするのがコツ。'},
+  {id:'h2',route:'health',icon:'🍳',name:'朝ごはん研究',cost:{rp:20},req:['h1'],eff:'栄養キッチンの効率×2・栄養ステータスUP',fx:C=>{C.fm.kitchen*=2;C.hs.food+=5},tip:'牛乳だけ、など1つの食べ物で背が伸びるわけではありません。たんぱく質・カルシウム・ビタミンDなどをバランスよく。'},
+  {id:'h5',route:'health',icon:'📵',name:'夜ふかし対策',cost:{rp:200},req:['h1'],eff:'放置報酬の上限 8時間→12時間',fx:C=>{C.offCap=Math.max(C.offCap,12);C.hs.sleep+=5},tip:'寝る直前のスマホやゲームは、眠りを浅くする原因のひとつ。'},
+  {id:'h3',route:'health',icon:'🏀',name:'運動と骨の研究',cost:{rp:150},req:['h2'],eff:'運動ジムの効率×2・運動ステータスUP',fx:C=>{C.fm.gym*=2;C.hs.ex+=5},tip:'走る・跳ぶなど、骨に適度な刺激がかかる運動は骨を丈夫にするのに役立ちます。やりすぎは逆効果なので休養も大切。'},
+  {id:'h4',route:'health',icon:'🧘',name:'姿勢の科学',cost:{rp:1200},req:['h3'],eff:'姿勢ラボの効率×2・姿勢ステータスUP',fx:C=>{C.fm.posture*=2;C.hs.post+=8},tip:'猫背が直ると、測った身長が1〜2cmほど変わることがあります。ただし骨が伸びたわけではありません。'},
+  {id:'h6',route:'health',icon:'🥗',name:'栄養バランス表',cost:{rp:20000},req:['h4'],eff:'健康系4施設の効率×3・全ステータスUP',fx:C=>{for(const k of['bed','kitchen','gym','posture'])C.fm[k]*=3;for(const k in C.hs)C.hs[k]+=4},tip:'主食・主菜・副菜をそろえると、自然と栄養バランスが整います。'},
+  {id:'h7',route:'health',icon:'📅',name:'習慣化の達人',cost:{rp:150000},req:['h6'],eff:'習慣アクションの待ち時間½・報酬×3',fx:C=>{C.habitCd*=0.5;C.habitMul*=3},tip:'習慣は「がんばる」より「同じ時間に、同じ順番で」が続くコツです。'},
+  {id:'h8',route:'health',icon:'💪',name:'健康第一宣言',cost:{rp:3e6},req:['h7'],eff:'すべての生産×2',fx:C=>{C.allMul*=2},tip:'どんな研究より、毎日の健康がいちばんの土台です。'},
+  {id:'h9',route:'health',icon:'🛌',name:'熟睡マスター',cost:{rp:1e8},req:['h8','h5'],eff:'放置報酬の上限 24時間・放置報酬+50%',fx:C=>{C.offCap=Math.max(C.offCap,24);C.offMul*=1.5;C.hs.sleep+=8},tip:'中高生にすすめられる睡眠時間は、おおむね8〜10時間といわれています。'},
+  // 科学ルート
+  {id:'s1',route:'science',icon:'🤖',name:'自動測定の研究',cost:{rp:60},req:['h1'],eff:'「測定ロボ工房」を建設できる',fx:C=>{C.tapCps+=0.01}},
+  {id:'s2',route:'science',icon:'📊',name:'データ解析',cost:{rp:500},req:['s1'],eff:'研究ポイント×2',fx:C=>{C.rpMul*=2}},
+  {id:'s3',route:'science',icon:'⏳',name:'時間圧縮理論',cost:{rp:9000},req:['s2'],eff:'「100時間ルーム」解放。研究身長が出現…？',fx:C=>{}},
+  {id:'s4',route:'science',icon:'🌀',name:'重力の研究',cost:{rp:60000,dd:5},req:['s3'],eff:'「重力研究棟」を建設できる',fx:C=>{}},
+  {id:'s5',route:'science',icon:'🏭',name:'ロボ量産化',cost:{rp:500000},req:['s4'],eff:'測定ロボ工房×5・測定に毎秒コインの4%を上乗せ',fx:C=>{C.fm.robot*=5;C.tapCps+=0.04}},
+  {id:'s6',route:'science',icon:'🛰️',name:'人工衛星計画',cost:{rp:1e7,dd:80},req:['s5'],eff:'「人工衛星発射場」を建設できる',fx:C=>{}},
+  {id:'s7',route:'science',icon:'🧠',name:'AI研究員',cost:{rp:1e8},req:['s6'],eff:'研究ポイント×3・発見データ×2',fx:C=>{C.rpMul*=3;C.ddMul*=2}},
+  {id:'s8',route:'science',icon:'🌌',name:'銀河伸長炉計画',cost:{rp:5e9,dd:3000},req:['s7','n4'],eff:'「銀河伸長炉」を建設できる',fx:C=>{}},
+  {id:'s9',route:'science',icon:'♾️',name:'無限背伸び理論',cost:{rp:3e12,dd:100000},req:['s8','n6'],eff:'研究身長が毎分1.2%ずつ、指数関数的に伸びつづける',fx:C=>{C.expRate=0.0002}},
+  // ネタ技術ルート
+  {id:'n1',route:'neta',icon:'🦶',name:'背伸びエンジン',cost:{dd:3},req:['s3'],eff:'研究身長の伸び×2・100時間ルーム×2',fx:C=>{C.growMul*=2;C.fm.room100*=2}},
+  {id:'n2',route:'neta',icon:'💊',name:'巨人化理論',cost:{rp:400000,dd:20},req:['n1','s4'],eff:'「巨人化カプセル工場」を建設できる',fx:C=>{}},
+  {id:'n3',route:'neta',icon:'📏',name:'サバ読み定規',cost:{dd:60},req:['n2'],eff:'研究身長の伸び×3（定規の目盛りを細かくする作戦）',fx:C=>{C.growMul*=3}},
+  {id:'n4',route:'neta',icon:'📐',name:'四次元ものさし',cost:{rp:2e8,dd:500},req:['n3','s6'],eff:'「四次元ものさし研究所」を建設できる',fx:C=>{}},
+  {id:'n5',route:'neta',icon:'🥛',name:'牛乳1万リットル計画',cost:{dd:2000},req:['n4'],eff:'すべての生産×3・研究身長の伸び×2',fx:C=>{C.allMul*=3;C.growMul*=2}},
+  {id:'n6',route:'neta',icon:'💥',name:'ビッグバン再現実験',cost:{rp:1e11,dd:20000},req:['n5','s8'],eff:'「宇宙創生ラボ」を建設できる',fx:C=>{}},
+  {id:'n7',route:'neta',icon:'🎩',name:'頭に定規をのせる',cost:{dd:6e4},req:['n6'],eff:'研究身長の伸び×10',fx:C=>{C.growMul*=10}},
+];
+const ROUTES = {health:{name:'健康ルート',sub:'睡眠・栄養・運動・姿勢'},science:{name:'科学ルート',sub:'自動測定・ロボット・重力・宇宙'},neta:{name:'ネタ技術ルート',sub:'巨大化 → 重力制御 → 宇宙サイズ計画'}};
+
+// ショップ
+const SHOP = [
+  {id:'outfit_coat',   cat:'outfit',icon:'🥼',name:'研究用白衣',price:{g:0},eff:'いつもの白衣。',look:'coat'},
+  {id:'outfit_jersey', cat:'outfit',icon:'🎽',name:'ジャージ',price:{g:800},eff:'習慣アクションの報酬 +20%',fx:C=>{C.habitMul*=1.2},look:'jersey'},
+  {id:'outfit_pajama', cat:'outfit',icon:'🌙',name:'パジャマ',price:{g:6000},eff:'放置報酬 +20%',fx:C=>{C.offMul*=1.2},look:'pajama'},
+  {id:'outfit_uniform',cat:'outfit',icon:'🎓',name:'制服',price:{g:8e4},eff:'研究ポイント +10%',fx:C=>{C.rpMul*=1.1},look:'uniform'},
+  {id:'outfit_space',  cat:'outfit',icon:'👨‍🚀',name:'宇宙服',price:{g:2e9},eff:'発見データ +20%',fx:C=>{C.ddMul*=1.2},look:'space'},
+  {id:'outfit_king',   cat:'outfit',icon:'👑',name:'王様マント',price:{g:5e11},eff:'コイン +20%',fx:C=>{C.gMul*=1.2},look:'king'},
+  {id:'outfit_galaxy', cat:'outfit',icon:'🌠',name:'銀河スーツ',price:{dd:3e4},eff:'研究身長の伸び ×2',fx:C=>{C.growMul*=2},look:'galaxy'},
+  {id:'meter_wood',    cat:'meter',icon:'📏',name:'木の身長計',price:{g:0},eff:'昔ながらの身長計。',look:'wood'},
+  {id:'meter_digital', cat:'meter',icon:'📟',name:'デジタル身長計',price:{g:3000},eff:'測定の報酬 ×2',fx:C=>{C.tapMul*=2},look:'digital'},
+  {id:'meter_laser',   cat:'meter',icon:'🔴',name:'レーザー測定器',price:{g:5e5},eff:'測定の報酬 ×3・毎秒コインの2%を上乗せ',fx:C=>{C.tapMul*=3;C.tapCps+=0.02},look:'laser'},
+  {id:'meter_sat',     cat:'meter',icon:'📡',name:'衛星測定システム',price:{g:5e10},eff:'測定の報酬 ×5・毎秒コインの5%を上乗せ',fx:C=>{C.tapMul*=5;C.tapCps+=0.05},look:'sat'},
+  {id:'f_plant',  cat:'furn',icon:'🪴',name:'観葉植物',price:{g:400},eff:'コイン +5%',fx:C=>{C.gMul*=1.05}},
+  {id:'f_shelf',  cat:'furn',icon:'📚',name:'本棚',price:{g:2e4},eff:'研究ポイント +15%',fx:C=>{C.rpMul*=1.15}},
+  {id:'f_sofa',   cat:'furn',icon:'🛋️',name:'ふかふかソファ',price:{g:4e5},eff:'放置報酬 +15%',fx:C=>{C.offMul*=1.15}},
+  {id:'f_monitor',cat:'furn',icon:'🖥️',name:'大型モニター',price:{g:8e6},eff:'すべての生産 +10%',fx:C=>{C.allMul*=1.1}},
+  {id:'f_scope',  cat:'furn',icon:'🔭',name:'天体望遠鏡',price:{g:3e8},eff:'発見データ +25%',fx:C=>{C.ddMul*=1.25}},
+  {id:'m_clock',  cat:'myst',icon:'⏩',name:'時計早回しスイッチ',price:{dd:3},repeat:true,eff:'1時間分のコインと研究ポイントを今すぐ獲得（使うたびに値上がり）'},
+  {id:'m_hat',    cat:'myst',icon:'🎩',name:'背が伸びそうな帽子',price:{dd:5},eff:'研究身長 +5cm（帽子込みで測る）',fx:C=>{C.hatAdd=5}},
+  {id:'m_bulb',   cat:'myst',icon:'💡',name:'ひらめき電球',price:{dd:12},eff:'ひらめきが2倍出やすくなる',fx:C=>{C.ideaRate*=2}},
+  {id:'m_boots',  cat:'myst',icon:'👢',name:'伸び〜るブーツ',price:{dd:40},eff:'研究身長の伸び +50%',fx:C=>{C.growMul*=1.5}},
+  {id:'m_milk',   cat:'myst',icon:'🥛',name:'無限牛乳サーバー',price:{dd:150},eff:'コイン ×1.5（※現実の牛乳に魔法の効果はありません）',fx:C=>{C.gMul*=1.5}},
+  {id:'m_mirror', cat:'myst',icon:'🪞',name:'ちょっと縦長に映る鏡',price:{dd:800},eff:'すべての生産 ×1.5',fx:C=>{C.allMul*=1.5}},
+];
+const SHOP_CATS = {outfit:'衣装',meter:'身長計',furn:'家具',myst:'謎の装置'};
+
+// 身長の称号（real:実身長で判定）
+const MILES = [
+  {h:165,real:true,name:'伸び盛り',dd:0},
+  {h:170,real:true,name:'すくすく研究体',dd:0},
+  {h:175,real:true,name:'スラリと長身',dd:0},
+  {h:180,name:'目標180cm達成！',dd:2},
+  {h:200,name:'ドアに頭をぶつける人',dd:2},
+  {h:260,name:'天井を突き破った',dd:3},
+  {h:530,name:'キリンと目が合う',dd:4},
+  {h:1000,name:'3階の窓から挨拶',dd:5},
+  {h:5000,name:'ビルの屋上で昼寝',dd:6},
+  {h:33300,name:'東京タワー級',dd:10},
+  {h:63400,name:'スカイツリー級',dd:12},
+  {h:377600,name:'富士山を見下ろす',dd:20},
+  {h:884800,name:'世界の屋根を超えた',dd:25},
+  {h:1e7,name:'頭が宇宙に出た',dd:40},
+  {h:4e7,name:'ISSとハイタッチ',dd:60},
+  {h:1.274e9,name:'地球より大きい',dd:100},
+  {h:3.844e10,name:'月まで届いた',dd:200},
+  {h:1.392e11,name:'太陽を追い越した',dd:400},
+  {h:1.496e13,name:'1天文単位の男女',dd:800},
+  {h:9e14,name:'太陽系からはみ出した',dd:1500},
+  {h:LY,name:'1光年の巨人',dd:3000,end:'space'},
+  {h:4.0e18,name:'となりの星に届く',dd:6000},
+  {h:9.46e22,name:'天の川サイズ',dd:2e4},
+  {h:2.4e24,name:'アンドロメダとご対面',dd:5e4},
+  {h:UNIVERSE,name:'宇宙そのもの',dd:0,end:'universe'},
+];
+const ENDINGS = {
+  health:  {icon:'🌱',name:'すこやかエンディング',hint:'成長期を終えるまでに健康ランクAを達成する'},
+  space:   {icon:'🚀',name:'宇宙サイズ計画達成',hint:'研究身長を1光年にする'},
+  universe:{icon:'♾️',name:'隠しエンディング「測定不能」',hint:'？？？'},
+};
+
+function newState(){
+  return {v:1,name:'ミライ',created:Date.now(),last:Date.now(),coins:0,rp:0,dd:0,
+    fac:{},res:{},shop:{outfit_coat:1,meter_wood:1},outfit:'coat',meter:'wood',
+    days:0,realBase:START_H,extra:0,maxRH:START_H,miles:{},runMiles:{},endings:{},
+    stats:{taps:0,bought:0,researched:0,habits:0,ideas:0,coinsEarned:0,play:0,missions:0,prestige:0},
+    habit:{sleep:0,food:0,ex:0},habitAt:{},missions:[],history:[],fame:0,gen:1,sound:true,
+    pending:null,clock:0,adultShown:false,indoorBroke:false,mysteryShown:false};
+}
+function gfun(days){ const t=Math.min(1,Math.max(0,days/GROW_DAYS)); return 1-(1-t)*(1-t); }
+function facLevel(n){ let l=0; for(const v of FAC_LV) if(n>=v) l++; return l; }
+function facUnlocked(S,f){ return !f.unlock || !!S.res[f.unlock]; }
+function facCost(f,owned,n){ return f.cost*Math.pow(1.15,owned)*(Math.pow(1.15,n)-1)/0.15; }
+function facMaxBuy(f,owned,coins){ let n=Math.floor(Math.log(coins*0.15/(f.cost*Math.pow(1.15,owned))+1)/Math.log(1.15)); return Math.max(0,n); }
+function resAvail(S,r){ return !S.res[r.id] && r.req.every(q=>S.res[q]); }
+function priceOf(S,it){ if(it.id==='m_clock') return {dd:Math.ceil(3*Math.pow(1.6,S.clock||0))}; return it.price; }
+function canPay(S,p){ return (p.g||0)<=S.coins+1e-9 && (p.rp||0)<=S.rp+1e-9 && (p.dd||0)<=S.dd+1e-9; }
+function pay(S,p){ S.coins-=p.g||0; S.rp-=p.rp||0; S.dd-=p.dd||0; }
+
+function calc(S){
+  const C={fm:{},hs:{sleep:6,food:6,ex:6,post:3},gMul:1,rpMul:1,ddMul:1,growMul:1,allMul:1,tapMul:1,tapCps:0,
+    offCap:8,offMul:1,habitMul:1,habitCd:1,ideaRate:1,expRate:0,hatAdd:0};
+  for(const f of FAC) C.fm[f.id]=Math.pow(2,facLevel(S.fac[f.id]||0));
+  for(const r of RES) if(S.res[r.id]&&r.fx) r.fx(C);
+  for(const it of SHOP) if(S.shop[it.id]&&it.fx) it.fx(C);
+  // 健康
+  const raw={sleep:(S.fac.bed||0)+S.habit.sleep*0.5+C.hs.sleep, food:(S.fac.kitchen||0)+S.habit.food*0.5+C.hs.food,
+    ex:(S.fac.gym||0)+S.habit.ex*0.5+C.hs.ex, post:(S.fac.posture||0)*1.5+C.hs.post};
+  C.health={}; for(const k in raw) C.health[k]=1-Math.exp(-raw[k]/30);
+  C.hAvg=(C.health.sleep+C.health.food+C.health.ex+C.health.post)/4;
+  C.rank=C.hAvg>=.85?'S':C.hAvg>=.7?'A':C.hAvg>=.5?'B':C.hAvg>=.3?'C':'D';
+  C.finalH=165+12*(C.health.sleep+C.health.food+C.health.ex)/3;
+  C.postBonus=1.2*C.health.post;
+  // 生産
+  let g=2/60,rp=0.015,dd=0,grow=0;
+  for(const f of FAC){ const n=S.fac[f.id]||0; if(!n) continue; const m=C.fm[f.id];
+    g+=n*f.g*m; rp+=n*f.rp*m; dd+=n*f.dd*m; grow+=n*f.grow*m; }
+  C.fameMul=1+0.25*(S.fame||0);
+  C.healthMul=1+0.5*C.hAvg;
+  C.cps=g*C.gMul*C.allMul*C.healthMul*C.fameMul;
+  C.rps=rp*C.rpMul*C.allMul*C.fameMul;
+  C.dds=dd*C.ddMul*C.fameMul;
+  C.grow=grow*C.growMul*C.allMul*C.fameMul;
+  C.tap=(1*C.tapMul)*C.fameMul*(1+C.hAvg)+C.cps*C.tapCps;
+  C.habitCdSec=60*C.habitCd;
+  C.habitCoins=Math.max(10,C.cps*12)*C.habitMul;
+  C.habitRp=Math.max(0.5,C.rps*8)*C.habitMul;
+  return C;
+}
+function realH(S,C){ return S.realBase+C.postBonus; }
+function curRH(S,C){ return Math.min(UNIVERSE, realH(S,C)+S.extra+C.hatAdd); }
+
+// 研究身長の伸び（exp有りでも解析的に）
+function growExtra(S,C,dt){
+  if(C.expRate>0){ const k=C.expRate, a=C.grow/k; S.extra=(S.extra+a)*Math.exp(Math.min(k*dt,700))-a; }
+  else S.extra+=C.grow*dt;
+  if(!isFinite(S.extra)||S.extra>UNIVERSE) S.extra=UNIVERSE;
+}
+function growReal(S,C,dt){
+  if(S.days>=GROW_DAYS) return;
+  const d0=S.days, d1=Math.min(GROW_DAYS,d0+dt/DAYSEC);
+  S.realBase+=(C.finalH-START_H)*(gfun(d1)-gfun(d0));
+  S.days=d1;
+}
+function advance(S,C,dt){
+  const g=C.cps*dt; S.coins+=g; S.stats.coinsEarned+=g;
+  S.rp+=C.rps*dt; S.dd+=C.dds*dt;
+  growExtra(S,C,dt); growReal(S,C,dt);
+  const r=curRH(S,C); if(r>S.maxRH) S.maxRH=r;
+}
+// 放置：成長はすぐ反映、資源は「受け取る」まで保留
+function offline(S,C,sec){
+  const cap=C.offCap*3600, dt=Math.min(sec,cap);
+  const h0=curRH(S,C), r0=realH(S,C), d0=S.days;
+  growExtra(S,C,dt); growReal(S,C,dt);
+  const C2=calc(S); const h1=curRH(S,C2);
+  if(h1>S.maxRH) S.maxRH=h1;
+  const m=C.offMul;
+  const res={sec,dt,coins:C.cps*dt*m,rp:C.rps*dt*m,dd:C.dds*dt*m,dh:h1-h0,dreal:realH(S,C2)-r0,ddays:S.days-d0};
+  if(S.pending){ for(const k of['coins','rp','dd','dh','dreal','ddays','sec','dt']) S.pending[k]=(S.pending[k]||0)+res[k]; }
+  else S.pending=res;
+  return res;
+}
+function fameGain(S){ return Math.max(0,Math.floor(Math.log10(Math.max(1,S.maxRH)))-14); }
+/*LOGIC_END*/
+
+// ============================================================
+//  表示・入力
+// ============================================================
+let S=null, C=null, curTab='home', labSub='fac', shopSub='outfit', buyAmt=1, lastTick=0, hiddenAt=0;
+const $=s=>document.querySelector(s);
+const KEY='nobiro-shincho-lab-v1';
+const app=$('#app');
+
+// ---------- 数値表記 ----------
+const JU=[[1e48,'極'],[1e44,'載'],[1e40,'正'],[1e36,'澗'],[1e32,'溝'],[1e28,'穣'],[1e24,'秭'],[1e20,'垓'],[1e16,'京'],[1e12,'兆'],[1e8,'億'],[1e4,'万']];
+function fmt(n){
+  if(!isFinite(n)) return '∞';
+  if(n<0) return '-'+fmt(-n);
+  if(n<10 && n%1) return n.toFixed(n<1?2:1);
+  if(n<1e4) return Math.floor(n).toLocaleString('ja-JP');
+  for(const [v,u] of JU) if(n>=v){ const x=n/v; return (x<10?x.toFixed(2):x<100?x.toFixed(1):Math.floor(x).toString())+u; }
+  return n.toExponential(2);
+}
+function fmtLen(cm,short){
+  if(cm<1000) return cm.toFixed(short?0:1)+' cm';
+  if(cm<1e5) return (cm/100).toFixed(cm<1e4?2:1).replace(/\.?0+$/,short?'':'$&')+' m';
+  if(cm<LY*0.05) return fmt(cm/1e5)+' km';
+  return fmt(cm/LY)+' 光年';
+}
+function fmtPrice(p){
+  const a=[]; if(p.g) a.push('💰'+fmt(p.g)); if(p.rp) a.push('🔬'+fmt(p.rp)); if(p.dd) a.push('💾'+fmt(p.dd));
+  return a.length?a.join(' '):'無料';
+}
+function fmtTime(sec){
+  sec=Math.floor(sec); const h=Math.floor(sec/3600), m=Math.floor(sec%3600/60), s=sec%60;
+  return h?`${h}時間${m}分`:m?`${m}分${s?s+'秒':''}`:`${s}秒`;
+}
+function ageText(){ const y=START_AGE+Math.floor(S.days/365.25), d=Math.floor(S.days%365.25); return S.days>=GROW_DAYS?'18歳（成長期完了）':`${y}歳 ${d}日`; }
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+// ---------- セーブ ----------
+function save(){ if(!S) return; S.last=Date.now(); try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
+function loadSave(){
+  try{ const t=localStorage.getItem(KEY); if(!t) return null; return migrate(JSON.parse(t)); }catch(e){ return null; }
+}
+function migrate(o){
+  const b=newState(); const s=Object.assign(b,o);
+  s.stats=Object.assign(newState().stats,o.stats||{}); s.habit=Object.assign({sleep:0,food:0,ex:0},o.habit||{});
+  s.fac=o.fac||{}; s.res=o.res||{}; s.shop=Object.assign({outfit_coat:1,meter_wood:1},o.shop||{});
+  return s;
+}
+
+// ---------- 効果音 ----------
+let AC=null;
+function sfx(type){
+  if(!S||!S.sound) return;
+  try{
+    AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+    if(AC.state==='suspended') AC.resume();
+    const seq={tap:[[880,.05,'sine',.12]],buy:[[523,.07,'square',.06],[784,.09,'square',.06]],res:[[523,.08,'triangle',.15],[659,.08,'triangle',.15],[784,.08,'triangle',.15],[1046,.16,'triangle',.15]],
+      fan:[[523,.12,'square',.07],[659,.12,'square',.07],[784,.12,'square',.07],[1046,.35,'square',.07]],idea:[[1200,.06,'sine',.12],[1600,.1,'sine',.12]],
+      no:[[200,.12,'sawtooth',.05]],habit:[[392,.08,'triangle',.15],[587,.12,'triangle',.15]]}[type]||[];
+    let t=AC.currentTime;
+    for(const [f,d,w,v] of seq){
+      const o=AC.createOscillator(), g=AC.createGain(); o.type=w; o.frequency.value=f;
+      g.gain.setValueAtTime(v,t); g.gain.exponentialRampToValueAtTime(0.0001,t+d);
+      o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t+d+0.02); t+=d*0.85;
+    }
+  }catch(e){}
+}
+
+// ---------- トースト・モーダル ----------
+function toast(msg,cls){
+  const d=document.createElement('div'); d.className='toast '+(cls||''); d.innerHTML=msg; $('#toasts').appendChild(d);
+  setTimeout(()=>{d.style.transition='opacity .4s';d.style.opacity='0';},2600); setTimeout(()=>d.remove(),3100);
+  const all=$('#toasts').children; if(all.length>4) all[0].remove();
+}
+let modalQ=[], modalOpen=false;
+function modal(o){ modalQ.push(o); if(!modalOpen) nextModal(); }
+function nextModal(){
+  const o=modalQ.shift(); if(!o){ modalOpen=false; $('#modal').hidden=true; return; }
+  modalOpen=true; const mb=$('#mbox'); mb.className=o.cls||'';
+  mb.innerHTML=(o.icon?`<div class="mic">${o.icon}</div>`:'')+(o.title?`<h4>${o.title}</h4>`:'')+`<div class="mt ${o.center?'c':''}">${o.html||''}</div><div class="mbtns"></div>`;
+  const bx=mb.querySelector('.mbtns');
+  (o.btns||[{t:'OK'}]).forEach(b=>{ const e=document.createElement('button'); e.className='btn '+(b.c||''); e.textContent=b.t;
+    e.onclick=()=>{ if(b.keep){ b.fn&&b.fn(mb); return; } nextModal(); b.fn&&b.fn(mb); }; bx.appendChild(e); });
+  $('#modal').hidden=false; o.onOpen&&o.onOpen(mb);
+}
+
+// ============================================================
+//  起動・タイトル
+// ============================================================
+function showTitle(){
+  $('#title').hidden=false; $('#game').hidden=true;
+  $('#tContinue').hidden=!loadSave();
+  drawTitleChar();
+}
+$('#tContinue').onclick=()=>{ S=loadSave(); if(!S){ showTitle(); return; } startGame(true); };
+$('#tNew').onclick=()=>{
+  const go=()=>askName(name=>{ S=newState(); S.name=name; startGame(false); });
+  if(loadSave()) modal({icon:'⚠️',title:'はじめから？',html:'今のセーブデータは消えてしまいます。本当にはじめからにしますか？',center:true,btns:[{t:'はじめからにする',c:'red',fn:go},{t:'やめる',c:'sub'}]});
+  else go();
+};
+$('#tBook').onclick=()=>{ S=loadSave()||newState(); S.__peek=true; startGame(true,'book'); };
+$('#tSet').onclick=()=>{ S=loadSave()||newState(); S.__peek=true; startGame(true,'set'); };
+function askName(cb){
+  modal({icon:'🧪',title:'身長ラボへようこそ！',html:`あなたは今日から「身長研究所」の所長です。<br>研究対象（育てるキャラクター）の名前を決めてください。<div style="margin-top:10px"><input type="text" id="nmIn" maxlength="10" value="ミライ"></div>`,
+    btns:[{t:'研究スタート！',c:'org',fn:mb=>{}}],onOpen:mb=>{
+      const b=mb.querySelector('.btn'); b.onclick=()=>{ const v=(mb.querySelector('#nmIn').value||'').trim()||'ミライ'; nextModal(); cb(v.slice(0,10)); };
+    }});
+}
+
+function startGame(isLoad,openTab){
+  const peek=S.__peek; delete S.__peek;
+  $('#title').hidden=true; $('#game').hidden=false;
+  C=calc(S);
+  if(!S.missions.length) for(let i=0;i<3;i++) S.missions.push(newMission());
+  if(isLoad && !peek){
+    const sec=(Date.now()-(S.last||Date.now()))/1000;
+    if(sec>60) doOffline(sec);
+  }
+  if(!isLoad){
+    modal({icon:'🤖',title:'助手ロボ「ハカルくん」',html:`所長、はじめまして！ぼくは助手ロボのハカルくんです。<br><br>${esc(S.name)}さんの身長は今 <b>160.0cm</b>、14歳。まずは<b>睡眠・栄養・運動</b>の習慣を整えるところから始めましょう！<br><br>「📏 測定する」をタップすると研究費（コイン）がもらえます。`,btns:[{t:'了解！',c:'org'}]});
+  }
+  lastTick=Date.now();
+  switchTab(openTab||'home');
+  save();
+}
+
+// ============================================================
+//  タブ切り替え
+// ============================================================
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{ sfx('tap'); switchTab(b.dataset.tab); });
+$('#bSet').onclick=()=>{ sfx('tap'); switchTab('set'); };
+$('#bMis').onclick=()=>{ sfx('tap'); switchTab('mis'); };
+$('#bRec').onclick=()=>{ sfx('tap'); switchTab('rec'); };
+function switchTab(t){
+  curTab=t;
+  for(const id of ['home','lab','shop','book','mis','rec','set']) $('#tab-'+id).hidden=(id!==t);
+  const navT={mis:'home',rec:'home',set:null}[t]; const nt=navT===undefined?t:navT;
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===nt));
+  render();
+  if(t==='home') resizeCv();
+}
+function render(){
+  if(curTab==='lab') renderLab();
+  else if(curTab==='shop') renderShop();
+  else if(curTab==='book') renderBook();
+  else if(curTab==='mis') renderMis();
+  else if(curTab==='rec') renderRec();
+  else if(curTab==='set') renderSet();
+  refresh();
+}
+
+// ============================================================
+//  ホーム
+// ============================================================
+function floatText(txt,x,y,color){
+  const d=document.createElement('div'); d.className='flt'; d.textContent=txt; d.style.left=x+'px'; d.style.top=y+'px'; if(color) d.style.color=color;
+  $('#stage').appendChild(d); setTimeout(()=>d.remove(),1000);
+}
+let measureT=0;
+$('#bMeasure').onclick=e=>{
+  const v=C.tap; S.coins+=v; S.stats.coinsEarned+=v; S.stats.taps++; measureT=performance.now(); sfx('tap');
+  const st=$('#stage').getBoundingClientRect();
+  floatText('+'+fmt(v)+' G',st.width*(0.5+(Math.random()-.5)*.25),st.height*0.32);
+  checkMis(); refresh();
+};
+document.querySelectorAll('.hab').forEach(b=>b.onclick=()=>{
+  const k=b.dataset.h, now=Date.now(), at=S.habitAt[k]||0;
+  if(now-at<C.habitCdSec*1000){ sfx('no'); toast(`あと${Math.ceil((C.habitCdSec*1000-(now-at))/1000)}秒で、もう一度できます`); return; }
+  S.habitAt[k]=now; S.habit[k]++; S.stats.habits++;
+  const g=C.habitCoins, r=C.habitRp; S.coins+=g; S.stats.coinsEarned+=g; S.rp+=r; sfx('habit');
+  const msg={sleep:['ぐっすり眠った！','睡眠'],food:['バランスよく食べた！','栄養'],ex:['しっかり体を動かした！','運動']}[k];
+  const st=$('#stage').getBoundingClientRect();
+  floatText(`${msg[0]} ${msg[1]}UP`,st.width*0.5,st.height*0.45,'#fffbd0');
+  floatText(`+${fmt(g)} G  +${fmt(r)} pt`,st.width*0.5,st.height*0.55);
+  C=calc(S); checkMis(); refresh();
+});
+$('#bOff').onclick=()=>claimOffline();
+
+function doOffline(sec){
+  const r=offline(S,C,sec); C=calc(S);
+  checkMiles(true);
+  const p=S.pending;
+  const capped=p.sec>p.dt+1;
+  modal({icon:'🌙',title:'おかえりなさい、所長！',center:true,
+    html:`前回から <b>${fmtTime(r.sec)}</b> 経過しました。${capped?`<br><small>（放置報酬の上限は${C.offCap}時間です）</small>`:''}
+    ${p.ddays>0.5?`<br>${esc(S.name)}さんは ${Math.floor(p.ddays)}日ぶん成長しました。`:''}
+    <div class="rw"><span>💰 ${fmt(p.coins)}</span><span>🔬 ${fmt(p.rp)}</span>${p.dd>=0.01?`<span>💾 ${fmt(p.dd)}</span>`:''}</div>
+    ${p.dreal>0.005?`<div>実身長 +${p.dreal.toFixed(2)} cm</div>`:''}${p.dh-p.dreal>0.5?`<div style="color:var(--purple);font-weight:800">研究身長 +${fmtLen(p.dh-p.dreal)}</div>`:''}`,
+    btns:[{t:'放置報酬を受け取る',c:'org',fn:claimOffline},{t:'あとで',c:'sub'}]});
+  refresh();
+}
+function claimOffline(){
+  const p=S.pending; if(!p) return;
+  S.coins+=p.coins; S.stats.coinsEarned+=p.coins; S.rp+=p.rp; S.dd+=p.dd; S.pending=null; sfx('fan');
+  const st=$('#stage').getBoundingClientRect();
+  floatText('+'+fmt(p.coins)+' G',st.width*0.5,st.height*0.35,'#ffe066');
+  checkMis(); refresh(); save();
+}
+
+// ひらめき
+let ideaNext=performance.now()+25000;
+function spawnIdea(){
+  const st=$('#stage'); const b=document.createElement('button'); b.className='idea'; b.textContent='💡';
+  b.style.left=(10+Math.random()*68)+'%'; b.style.top=(22+Math.random()*40)+'%';
+  b.onclick=()=>{
+    b.remove(); S.stats.ideas++; sfx('idea');
+    const roll=Math.random(); let txt;
+    if(S.res.s3 && roll<0.4){ const d=Math.max(1,Math.floor(1+C.dds*240)); S.dd+=d; txt=`💾 発見データ +${fmt(d)}`; }
+    else if(roll<0.7){ const r=Math.max(3,C.rps*120); S.rp+=r; txt=`🔬 研究pt +${fmt(r)}`; }
+    else { const g=Math.max(50,C.cps*100); S.coins+=g; S.stats.coinsEarned+=g; txt=`💰 +${fmt(g)} G`; }
+    toast('💡 ひらめいた！ '+txt,'gold'); checkMis(); refresh();
+  };
+  st.appendChild(b); setTimeout(()=>b.remove(),12000);
+}
+
+function hintText(){
+  const n=k=>S.fac[k]||0;
+  if(S.stats.taps<3) return '「📏 測定する」をタップして研究費を集めよう！';
+  if(!n('bed')&&S.coins<15) return 'コインが15たまったら「研究」タブで施設を建てられるよ。';
+  if(!n('bed')) return '「🔬 研究」タブの施設から「快眠ベッド」を建てよう！';
+  if(S.stats.habits<1) return '下の「ねる・たべる・うごく」で生活習慣を整えよう。健康が上がると実身長が伸びやすくなるよ。';
+  if(!S.res.h1&&S.rp>=3) return '研究ポイントがたまった！「研究」→「研究ツリー」を開こう。';
+  if(!S.res.h1) return '施設が増えると研究ポイントも増えるよ。最初の研究は3ポイント！';
+  if(!S.res.s3&&S.res.s2) return '「時間圧縮理論」…？　なんだか、あやしい研究が見えてきました。';
+  if(S.res.s3&&!S.res.n1&&S.dd>=3) return '発見データが3たまった！ネタ技術ルートの「背伸びエンジン」が研究できます。';
+  if(S.res.s3&&!S.res.n1) return '発見データは💡ひらめき・称号・ロボから手に入ります。ネタ技術の研究に使おう。';
+  const tips=['睡眠中は成長ホルモンが多く分泌されるといわれています。','牛乳だけで背が伸びるわけではありません。バランスが大事！',
+    '姿勢がよくなると、測った身長が少し高くなることがあります。','成人後に骨を伸ばす効果が証明された方法は、日常生活の中にはありません。',
+    '研究身長はフィクションです。良い子はカプセルに入らないでね。','ミッションをこなすと、まとまった報酬がもらえるよ。','💡が出たらタップ！研究のヒントがもらえます。'];
+  const crazy=['所長、重力をちょっとだけ切ってみました。','身長計が足りないので、ものさしを1万本つなぎました。','頭のてっぺんの天気は、くもりです。',
+    '宇宙から見ても、ちゃんと猫背が直っていますね！','測定ロボが「目盛りが足りません」と泣いています。','100時間ルームで昼寝をしたら、3日たっていました。'];
+  const pool=S.res.s4?tips.concat(crazy,crazy):tips;
+  return pool[Math.floor(Date.now()/9000)%pool.length];
+}
+
+// ============================================================
+//  研究タブ
+// ============================================================
+function renderLab(){
+  const el=$('#tab-lab');
+  let h=`<div class="subtabs"><button data-sub="fac" class="${labSub==='fac'?'on':''}">🏗️ 施設</button><button data-sub="tree" class="${labSub==='tree'?'on':''}">🌳 研究ツリー</button></div>`;
+  if(S.endings.space||fameGain(S)>0){
+    const fg=fameGain(S);
+    h+=`<div class="prest"><b>🏛️ 新しい研究所を建てる</b><br>研究成果を学会で発表し、名声を得て一からやり直します。名声1につき全生産+25%。<br>現在の名声 ${S.fame} → 発表すると <b>+${fg}</b><br><small>※衣装・家具・図鑑・エンディングは引きつぎます</small><div style="margin-top:8px"><button class="btn sm org" id="bPrest" ${fg>0?'':'disabled'}>学会で発表する</button></div></div>`;
+  }
+  if(labSub==='fac'){
+    h+=`<div class="amt">まとめ買い <button data-amt="1" class="${buyAmt===1?'on':''}">×1</button><button data-amt="10" class="${buyAmt===10?'on':''}">×10</button><button data-amt="0" class="${buyAmt===0?'on':''}">MAX</button></div>`;
+    let shownLocked=0;
+    for(const f of FAC){
+      const n=S.fac[f.id]||0;
+      if(!facUnlocked(S,f)){
+        if(shownLocked++>0) continue;
+        const r=RES.find(x=>x.id===f.unlock);
+        h+=`<div class="card item locked"><div class="ic">❔</div><div class="tx"><div class="nm">？？？</div><div class="ds">研究「${r.name}」で解放</div></div></div>`;
+        continue;
+      }
+      const lv=facLevel(n), nextLv=FAC_LV[lv];
+      const per=[]; const m=C.fm[f.id];
+      if(f.g) per.push(`💰${fmt(f.g*m*C.gMul*C.allMul*C.healthMul*C.fameMul)}/秒`);
+      if(f.rp) per.push(`🔬${fmt(f.rp*m*C.rpMul*C.allMul*C.fameMul)}/秒`);
+      if(f.dd) per.push(`💾${fmt(f.dd*m*C.ddMul*C.fameMul)}/秒`);
+      if(f.grow) per.push(`📏${fmtLen(f.grow*m*C.growMul*C.allMul*C.fameMul)}/秒`);
+      h+=`<div class="card item" data-fac="${f.id}"><div class="ic">${f.icon}${n?`<em>${n}</em>`:''}</div><div class="tx"><div class="nm">${f.name} ${lv?`<span class="stars">${'★'.repeat(lv)}</span>`:''}</div><div class="ds">${f.desc}</div><div class="ef">1つあたり ${per.join(' ')}</div>${nextLv?`<div class="ds">あと${nextLv-n}個で効率×2</div>`:''}</div><button class="buy" data-buyfac="${f.id}"></button></div>`;
+    }
+  }else{
+    for(const rk of ['health','science','neta']){
+      const list=RES.filter(r=>r.route===rk);
+      if(rk==='neta'&&!S.res.s3){ h+=`<div class="route neta"><div class="rh">❓ ？？？ルート <small>科学ルートを進めると…</small></div></div>`; continue; }
+      const done=list.filter(r=>S.res[r.id]).length;
+      h+=`<div class="route ${rk}"><div class="rh">${ROUTES[rk].name} <small>${ROUTES[rk].sub}　${done}/${list.length}</small></div>`;
+      for(const r of list){
+        const isDone=!!S.res[r.id], av=resAvail(S,r);
+        const vis=isDone||av||r.req.every(q=>S.res[q]||RES.find(x=>x.id===q).req.every(z=>S.res[z]));
+        if(!vis){ h+=`<div class="node hid"><div class="ic">🔒</div><div class="tx"><div class="nm">？？？</div></div></div>`; continue; }
+        const miss=r.req.filter(q=>!S.res[q]).map(q=>RES.find(x=>x.id===q).name);
+        h+=`<div class="node ${isDone?'done':''}" data-res="${r.id}"><div class="ic">${isDone?'✔':r.icon}</div><div class="tx"><div class="nm">${r.name}</div><div class="ds">${r.eff}</div>${miss.length?`<div class="rq">必要：${miss.join('・')}</div>`:''}${isDone&&r.tip?`<div class="ds" style="color:var(--teal2)">💡 ${r.tip}</div>`:''}</div>${isDone?'':`<button class="buy" data-buyres="${r.id}">${fmtPrice(r.cost)}</button>`}</div>`;
+      }
+      h+=`</div>`;
+    }
+    h+=`<p class="note">健康ルートのヒントは、一般的に知られている生活習慣の知識をもとにしています。科学ルート・ネタ技術ルートはゲームの中だけの架空の技術です。</p>`;
+  }
+  el.innerHTML=h;
+  el.querySelectorAll('.subtabs button').forEach(b=>b.onclick=()=>{ labSub=b.dataset.sub; sfx('tap'); renderLab(); refresh(); });
+  el.querySelectorAll('[data-amt]').forEach(b=>b.onclick=()=>{ buyAmt=+b.dataset.amt; renderLab(); refresh(); });
+  el.querySelectorAll('[data-buyfac]').forEach(b=>b.onclick=()=>buyFac(b.dataset.buyfac));
+  el.querySelectorAll('[data-buyres]').forEach(b=>b.onclick=()=>buyRes(b.dataset.buyres));
+  const bp=el.querySelector('#bPrest'); if(bp) bp.onclick=prestige;
+  refreshLab();
+}
+function facBuyN(f){ const n=S.fac[f.id]||0; return buyAmt===0?Math.max(1,facMaxBuy(f,n,S.coins)):buyAmt; }
+function refreshLab(){
+  const el=$('#tab-lab');
+  el.querySelectorAll('[data-buyfac]').forEach(b=>{
+    const f=FAC.find(x=>x.id===b.dataset.buyfac), n=facBuyN(f), c=facCost(f,S.fac[f.id]||0,n);
+    b.innerHTML=`建てる${n>1?'×'+n:''}<br>💰${fmt(c)}`; b.classList.toggle('no',c>S.coins);
+  });
+  el.querySelectorAll('[data-buyres]').forEach(b=>{
+    const r=RES.find(x=>x.id===b.dataset.buyres); b.classList.toggle('no',!(resAvail(S,r)&&canPay(S,r.cost)));
+  });
+}
+function buyFac(id){
+  const f=FAC.find(x=>x.id===id), owned=S.fac[id]||0, n=facBuyN(f), c=facCost(f,owned,n);
+  if(c>S.coins){ sfx('no'); toast('コインが足りません'); return; }
+  const lv0=facLevel(owned);
+  S.coins-=c; S.fac[id]=owned+n; S.stats.bought+=n; sfx('buy');
+  if(!owned) toast(`${f.icon} ${f.name} を建てました！`);
+  if(facLevel(owned+n)>lv0) toast(`${f.icon} ${f.name}が${owned+n}個に！ 効率×2`,'gold');
+  C=calc(S); checkMis(); renderLab(); refresh();
+}
+function buyRes(id){
+  const r=RES.find(x=>x.id===id);
+  if(!resAvail(S,r)){ sfx('no'); toast('先に必要な研究を終わらせよう'); return; }
+  if(!canPay(S,r.cost)){ sfx('no'); toast('研究に必要な資源が足りません'); return; }
+  pay(S,r.cost); S.res[id]=true; S.stats.researched++; sfx('res'); C=calc(S);
+  toast(`🎉 研究完了「${r.name}」`,'pur');
+  if(r.tip) modal({icon:r.icon,title:r.name,html:`<b>${r.eff}</b><br><br>💡 ${r.tip}`,btns:[{t:'なるほど！'}]});
+  const f=FAC.find(x=>x.unlock===id);
+  if(id==='s3') modal({icon:'🚪',title:'研究所に謎の扉が出現…',html:`時間圧縮理論の完成とともに、研究所の地下に<b>「100時間ルーム」</b>への扉があらわれました。<br><br>ここから先は<b style="color:var(--purple)">研究身長</b>の世界。架空の技術で、ゲームの中だけの身長をどこまでも伸ばしていきます。<br><br>${esc(S.name)}さんの<b>実身長</b>は、これまでどおり健康的な成長シミュレーションで記録されます。<br><br>ネタ技術ルートが解放されました！`,btns:[{t:'…やってみよう'}]});
+  else if(f) modal({icon:f.icon,title:`新施設「${f.name}」`,html:f.desc+'<br><br>「施設」から建設できます。',btns:[{t:'建てに行く',fn:()=>{labSub='fac';renderLab();}}]});
+  checkMis(); renderLab(); refresh();
+}
+function prestige(){
+  const fg=fameGain(S); if(fg<=0) return;
+  modal({icon:'🏛️',title:'学会で発表しますか？',html:`名声 <b>+${fg}</b>（合計 ${S.fame+fg}）で、全生産が <b>×${(1+0.25*(S.fame+fg)).toFixed(2)}</b> になります。<br><br>コイン・研究pt・発見データ・施設・研究・身長はリセットされ、新しい研究対象と一からスタートします。<br>衣装・身長計・家具・謎の装置・図鑑・エンディングは引きつぎます。`,
+    btns:[{t:'発表する！',c:'pur',fn:()=>{
+      const keep={name:S.name,shop:S.shop,outfit:S.outfit,meter:S.meter,miles:S.miles,endings:S.endings,stats:S.stats,fame:S.fame+fg,gen:(S.gen||1)+1,sound:S.sound,clock:0};
+      keep.stats.prestige++;
+      S=Object.assign(newState(),keep); C=calc(S); for(let i=0;i<3;i++) S.missions.push(newMission());
+      for(const it of SHOP) if(it.repeat) delete S.shop[it.id];
+      sfx('fan'); save(); switchTab('home');
+      modal({icon:'🎓',title:`第${S.gen}期 身長ラボ 開所！`,html:`発表は大成功！名声が ${S.fame} になりました。<br>新しい研究所で、ふたたび160cmからの研究がはじまります。`});
+    }},{t:'やめる',c:'sub'}]});
+}
+
+// ============================================================
+//  ショップ
+// ============================================================
+function shopVisible(it){
+  if(it.cat==='myst') return !!S.res.s3;
+  if(it.id==='outfit_galaxy'||it.id==='outfit_space'||it.id==='outfit_king') return !!S.res.s4||!!S.shop[it.id];
+  if(it.id==='meter_sat') return !!S.res.s4||!!S.shop[it.id];
+  return true;
+}
+function renderShop(){
+  const el=$('#tab-shop');
+  let h=`<div class="subtabs">${Object.entries(SHOP_CATS).map(([k,v])=>`<button data-sc="${k}" class="${shopSub===k?'on':''}">${v}</button>`).join('')}</div>`;
+  const list=SHOP.filter(x=>x.cat===shopSub);
+  if(shopSub==='myst'&&!S.res.s3) h+=`<div class="card item locked"><div class="ic">❔</div><div class="tx"><div class="nm">？？？</div><div class="ds">科学ルートの研究を進めると、あやしい商人がやってくる…</div></div></div>`;
+  let hidden=0;
+  for(const it of list){
+    if(!shopVisible(it)){ hidden++; continue; }
+    const own=!!S.shop[it.id];
+    h+=`<div class="card item"><div class="ic">${it.icon}</div><div class="tx"><div class="nm">${it.name}</div><div class="ef">${it.eff}</div>${it.id==='m_clock'?`<div class="ds">今すぐ 💰${fmt(C.cps*3600)} ・ 🔬${fmt(C.rps*3600)}</div>`:''}</div><button class="buy" data-shop="${it.id}"></button></div>`;
+  }
+  if(hidden) h+=`<p class="note">研究が進むと、新しい商品が入荷します（あと${hidden}品）</p>`;
+  if(shopSub==='outfit'||shopSub==='meter') h+=`<p class="note">買ったものの効果は、身につけていなくてもずっと続きます。</p>`;
+  el.innerHTML=h;
+  el.querySelectorAll('[data-sc]').forEach(b=>b.onclick=()=>{ shopSub=b.dataset.sc; sfx('tap'); renderShop(); refresh(); });
+  el.querySelectorAll('[data-shop]').forEach(b=>b.onclick=()=>buyShop(b.dataset.shop));
+  refreshShop();
+}
+function refreshShop(){
+  $('#tab-shop').querySelectorAll('[data-shop]').forEach(b=>{
+    const it=SHOP.find(x=>x.id===b.dataset.shop), own=!!S.shop[it.id], p=priceOf(S,it);
+    b.className='buy';
+    if(own&&(it.cat==='outfit'||it.cat==='meter')){
+      const worn=(it.cat==='outfit'?S.outfit:S.meter)===it.look;
+      b.textContent=worn?'使用中':'つかう'; b.classList.add(worn?'done':'wear');
+    }else if(own){ b.textContent='購入済み'; b.classList.add('done'); }
+    else{ b.innerHTML=`買う<br>${fmtPrice(p)}`; if(!canPay(S,p)) b.classList.add('no'); }
+  });
+}
+function buyShop(id){
+  const it=SHOP.find(x=>x.id===id), own=!!S.shop[id];
+  if(own&&(it.cat==='outfit'||it.cat==='meter')){ if(it.cat==='outfit') S.outfit=it.look; else S.meter=it.look; sfx('tap'); renderShop(); return; }
+  if(own) return;
+  const p=priceOf(S,it); if(!canPay(S,p)){ sfx('no'); toast('お金（データ）が足りません'); return; }
+  pay(S,p); sfx('buy');
+  if(it.id==='m_clock'){ S.clock=(S.clock||0)+1; const g=C.cps*3600, r=C.rps*3600; S.coins+=g; S.stats.coinsEarned+=g; S.rp+=r; toast(`⏩ 時計を早回し！ 💰${fmt(g)} 🔬${fmt(r)}`,'gold'); }
+  else{ S.shop[id]=1; if(it.cat==='outfit') S.outfit=it.look; if(it.cat==='meter') S.meter=it.look; toast(`${it.icon} ${it.name} を手に入れた！`); }
+  C=calc(S); checkMis(); renderShop(); refresh();
+}
+
+// ============================================================
+//  ミッション
+// ============================================================
+const MT=[
+  {k:'taps',  t:n=>`測定を${n}回する`, n:()=>[10,20,30][Math.floor(Math.random()*3)]},
+  {k:'bought',t:n=>`施設を${n}個建てる`, n:()=>1+Math.floor(Math.random()*4)},
+  {k:'researched',t:n=>`研究を${n}個完了する`, n:()=>1, ok:()=>RES.some(r=>resAvail(S,r))},
+  {k:'habits',t:n=>`習慣アクションを${n}回する`, n:()=>2+Math.floor(Math.random()*2)},
+  {k:'ideas', t:n=>`💡ひらめきを${n}回キャッチ`, n:()=>1},
+  {k:'coinsEarned',t:n=>`コインを${fmt(n)}かせぐ`, n:()=>{ const c=C?C.cps:0.1; const v=Math.max(150,c*240); const p=Math.pow(10,Math.floor(Math.log10(v))); return Math.ceil(v/p)*p; }},
+];
+function newMission(){
+  const have=new Set((S.missions||[]).map(m=>m.k));
+  const pool=MT.filter(m=>!have.has(m.k)&&(!m.ok||m.ok()));
+  const m=pool[Math.floor(Math.random()*pool.length)]||MT[0];
+  return {k:m.k,need:m.n(),base:S.stats[m.k]||0};
+}
+function misProg(m){ return Math.min(m.need,(S.stats[m.k]||0)-m.base); }
+function misReward(){ return {g:Math.max(30,C.cps*60),rp:Math.max(2,C.rps*60),dd:S.res.s3?Math.max(1,Math.floor(C.dds*200)):0}; }
+function checkMis(){ const n=S.missions.filter(m=>misProg(m)>=m.need).length; $('#misBadge').hidden=!n; $('#misBadge').textContent=n; }
+function renderMis(){
+  const el=$('#tab-mis'); const rw=misReward();
+  let h=`<button class="back" id="misBack">‹ ホームへ</button><h2>📋 ミッション</h2><p class="note">短い時間で達成できる目標です。達成すると次のミッションが届きます。</p>`;
+  S.missions.forEach((m,i)=>{
+    const t=MT.find(x=>x.k===m.k), p=misProg(m), ok=p>=m.need;
+    h+=`<div class="card mis"><div class="item"><div class="tx"><div class="nm">${t.t(m.need)}</div><div class="bar o"><i style="width:${p/m.need*100}%"></i></div><div class="pg"><span>${fmt(p)} / ${fmt(m.need)}</span><span>報酬 💰${fmt(rw.g)} 🔬${fmt(rw.rp)}${rw.dd?' 💾'+fmt(rw.dd):''}</span></div></div><button class="buy ${ok?'wear':'no'}" data-mis="${i}">${ok?'受け取る':'挑戦中'}</button></div></div>`;
+  });
+  h+=`<p class="note">これまでの達成数：${S.stats.missions}</p>`;
+  el.innerHTML=h;
+  el.querySelector('#misBack').onclick=()=>switchTab('home');
+  el.querySelectorAll('[data-mis]').forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.mis, m=S.missions[i]; if(misProg(m)<m.need){ sfx('no'); return; }
+    const r=misReward(); S.coins+=r.g; S.stats.coinsEarned+=r.g; S.rp+=r.rp; S.dd+=r.dd; S.stats.missions++;
+    S.missions.splice(i,1); S.missions.push(newMission()); sfx('fan');
+    toast(`ミッション達成！ 💰${fmt(r.g)} 🔬${fmt(r.rp)}${r.dd?' 💾'+fmt(r.dd):''}`,'gold');
+    checkMis(); renderMis(); refresh();
+  });
+}
+
+// ============================================================
+//  身長記録
+// ============================================================
+function renderRec(){
+  const el=$('#tab-rec'); const rh=curRH(S,C), rl=realH(S,C);
+  const hb=(n,k,ic)=>`<div class="hst"><span>${ic} ${n}</span><div class="bar"><i style="width:${C.health[k]*100}%"></i></div><b>${Math.round(C.health[k]*100)}</b></div>`;
+  let h=`<button class="back" id="recBack">‹ ホームへ</button><h2>📈 身長測定・記録</h2>
+  <div class="card"><div class="kv"><span>研究対象</span><b>${esc(S.name)}（第${S.gen}期）</b></div><div class="kv"><span>年齢</span><b>${ageText()}</b></div>
+  <div class="kv"><span>実身長</span><b>${rl.toFixed(1)} cm</b></div>
+  <div class="kv"><span>実身長の着地点（予想）</span><b>${S.days>=GROW_DAYS?'確定':'約 '+(C.finalH+C.postBonus).toFixed(1)+' cm'}</b></div>
+  ${S.res.s3?`<div class="kv"><span>研究身長</span><b style="color:var(--purple)">${fmtLen(rh)}</b></div><div class="kv"><span>研究身長の最高記録</span><b>${fmtLen(S.maxRH)}</b></div>`:''}</div>
+  <h3>健康ステータス</h3><div class="card"><div style="display:flex;gap:12px;align-items:center"><div style="text-align:center"><div class="rank">${C.rank}</div><div style="font-size:10px;color:var(--dim)">健康ランク</div></div><div style="flex:1">${hb('睡眠','sleep','😴')}${hb('栄養','food','🍙')}${hb('運動','ex','🏃')}${hb('姿勢','post','🧘')}</div></div>
+  <p class="note">睡眠・栄養・運動が整うほど、成長期の伸びしろ（実身長の着地点）が上がります。姿勢は測ったときの値に少しだけ影響します。健康ランクが高いと、研究所の生産も最大+50%。</p></div>
+  <h3>成長グラフ</h3><div class="card"><canvas id="graph"></canvas><p class="note">${S.res.s3?'紫：研究身長（対数目盛り）／ 緑：実身長':'緑：実身長'}</p></div>
+  <h3>獲得した称号</h3><div class="card">`;
+  const got=MILES.map((m,i)=>[m,i]).filter(([m,i])=>S.runMiles[i]);
+  h+=got.length?got.map(([m])=>`<div class="kv"><span>🏅 ${m.name}</span><b>${m.real?'実':'研'} ${fmtLen(m.h,true)}</b></div>`).join(''):'<p class="note">まだありません</p>';
+  h+=`</div><p class="note">ゲーム内の身長はシミュレーション値です。現実の成長には個人差があり、成人後に骨を長くする効果が証明された方法はありません。</p>`;
+  el.innerHTML=h;
+  el.querySelector('#recBack').onclick=()=>switchTab('home');
+  drawGraph();
+}
+function drawGraph(){
+  const cv=$('#graph'); if(!cv) return; const dpr=window.devicePixelRatio||1; const w=cv.clientWidth, hh=cv.clientHeight;
+  cv.width=w*dpr; cv.height=hh*dpr; const g=cv.getContext('2d'); g.scale(dpr,dpr);
+  const H=S.history.concat([[Date.now(),curRH(S,C),realH(S,C)]]);
+  if(H.length<2){ g.fillStyle='#9ab'; g.font='12px sans-serif'; g.textAlign='center'; g.fillText('しばらく遊ぶとグラフが表示されます',w/2,hh/2); return; }
+  const t0=H[0][0], t1=H[H.length-1][0]||t0+1, pad=28;
+  const X=t=>pad+(w-pad-8)*(t-t0)/Math.max(1,t1-t0);
+  const rmin=Math.min(...H.map(x=>x[2]))-1, rmax=Math.max(...H.map(x=>x[2]))+1;
+  g.strokeStyle='#e3ece9'; g.lineWidth=1; for(let i=0;i<=4;i++){ const y=10+(hh-30)*i/4; g.beginPath(); g.moveTo(pad,y); g.lineTo(w-8,y); g.stroke(); }
+  g.fillStyle='#8aa'; g.font='9px sans-serif'; g.textAlign='right';
+  g.fillText(rmax.toFixed(0),pad-3,14); g.fillText(rmin.toFixed(0),pad-3,hh-20);
+  const line=(f,col)=>{ g.strokeStyle=col; g.lineWidth=2.5; g.beginPath(); H.forEach((p,i)=>{ const y=f(p); i?g.lineTo(X(p[0]),y):g.moveTo(X(p[0]),y); }); g.stroke(); };
+  if(S.res.s3){
+    const lmin=Math.log10(Math.min(...H.map(x=>x[1]))), lmax=Math.max(lmin+0.1,Math.log10(Math.max(...H.map(x=>x[1]))));
+    line(p=>10+(hh-30)*(1-(Math.log10(p[1])-lmin)/(lmax-lmin)),'#7a5cff');
+    g.fillStyle='#7a5cff'; g.textAlign='left'; g.fillText(fmtLen(Math.pow(10,lmax),true),pad+2,22);
+  }
+  line(p=>10+(hh-30)*(1-(p[2]-rmin)/(rmax-rmin)),'#19a38c');
+  g.fillStyle='#8aa'; g.textAlign='center'; g.fillText('はじめ',pad+10,hh-6); g.fillText('いま',w-20,hh-6);
+}
+
+// ============================================================
+//  図鑑
+// ============================================================
+function renderBook(){
+  const el=$('#tab-book');
+  let h=`<h2>📖 図鑑・実績</h2>`;
+  h+=`<h3>🏁 エンディング</h3>`;
+  for(const [k,e] of Object.entries(ENDINGS)){
+    const got=S.endings[k];
+    h+=`<div class="card end"><div class="ic">${got?e.icon:'🔒'}</div><div class="tx" style="flex:1"><div class="nm" style="font-weight:800">${got||k!=='universe'?e.name:'？？？'}</div><div class="ds" style="font-size:11px;color:var(--dim)">${got?'達成済み':e.hint}</div></div>${got?`<button class="buy wear" data-end="${k}">見る</button>`:''}</div>`;
+  }
+  h+=`<h3>🏗️ 発見した施設・装置</h3><div class="grid">`;
+  for(const f of FAC){ const n=S.fac[f.id]||0, seen=n>0||(S.stats.prestige>0&&S.miles['f_'+f.id]);
+    h+=`<div class="cell ${seen?'':'no'}"><i>${f.icon}</i><b>${seen?f.name:'？？？'}</b>${seen?`所有 ${n}`:''}</div>`; }
+  h+=`</div><h3>👕 衣装・身長計・家具・装置</h3><div class="grid">`;
+  for(const it of SHOP){ if(it.repeat) continue; const own=!!S.shop[it.id];
+    h+=`<div class="cell ${own?'':'no'}"><i>${it.icon}</i><b>${own?it.name:'？？？'}</b>${SHOP_CATS[it.cat]}</div>`; }
+  const gotN=MILES.filter((m,i)=>S.miles[i]).length;
+  h+=`</div><h3>🏅 称号 ${gotN}/${MILES.length}</h3><div class="grid">`;
+  MILES.forEach((m,i)=>{ const got=S.miles[i];
+    h+=`<div class="cell ${got?'':'no'}"><i>🏅</i><b>${got?m.name:'？？？'}</b>${m.real?'実身長':'研究身長'} ${fmtLen(m.h,true)}</div>`; });
+  const st=S.stats;
+  h+=`</div><h3>📊 統計</h3><div class="card">
+  <div class="kv"><span>プレイ時間</span><b>${fmtTime(st.play)}</b></div><div class="kv"><span>測定した回数</span><b>${fmt(st.taps)}</b></div>
+  <div class="kv"><span>建てた施設</span><b>${fmt(st.bought)}</b></div><div class="kv"><span>完了した研究</span><b>${fmt(st.researched)}</b></div>
+  <div class="kv"><span>習慣アクション</span><b>${fmt(st.habits)}</b></div><div class="kv"><span>ひらめき</span><b>${fmt(st.ideas)}</b></div>
+  <div class="kv"><span>ミッション達成</span><b>${fmt(st.missions)}</b></div><div class="kv"><span>かせいだコイン</span><b>${fmt(st.coinsEarned)}</b></div>
+  <div class="kv"><span>研究身長の最高記録</span><b>${fmtLen(S.maxRH)}</b></div><div class="kv"><span>名声 / 研究所</span><b>${S.fame} / 第${S.gen}期</b></div></div>`;
+  el.innerHTML=h;
+  el.querySelectorAll('[data-end]').forEach(b=>b.onclick=()=>showEnding(b.dataset.end,true));
+}
+
+// ============================================================
+//  設定
+// ============================================================
+function renderSet(){
+  const el=$('#tab-set');
+  el.innerHTML=`<button class="back" id="setBack">‹ もどる</button><h2>⚙ 設定</h2>
+  <div class="card"><div class="kv" style="align-items:center"><span>効果音</span><button class="sw ${S.sound?'on':''}" id="swSnd" aria-label="効果音"></button></div>
+  <div class="kv"><span>研究対象の名前</span><b>${esc(S.name)} <button class="btn sub sm" id="bRename" style="display:inline-block;width:auto;padding:4px 10px;margin-left:6px">変更</button></b></div></div>
+  <h3>セーブデータ</h3><div class="card"><p class="note">セーブはこの端末のブラウザに自動保存されます。別の端末に移すときは、下の文字列をコピーして「読み込む」に貼り付けてください。</p>
+  <button class="btn sub sm" id="bExp">書き出す</button><textarea id="saveTx" placeholder="ここにセーブ文字列"></textarea><div style="display:flex;gap:8px;margin-top:6px"><button class="btn sub sm" id="bImp">読み込む</button><button class="btn red sm" id="bReset">データを消す</button></div></div>
+  <h3>このゲームについて</h3><div class="card"><p class="note" style="margin:0">『のびろ！身長ラボ』は、生活習慣の育成と放置ゲームを組み合わせたフィクションのゲームです。<br>
+  ・<b>実身長</b>は、睡眠・栄養・運動・姿勢をテーマにした簡易シミュレーションです。成長期（14〜18歳）が終わると伸びなくなります。現実の成長には個人差があり、成人後に骨を長くする効果が証明された方法はありません。<br>
+  ・<b>研究身長</b>は、架空の技術によるゲーム専用の数値です。<br>
+  ・ゲーム内の1日は現実の15秒です。放置報酬は前回プレイ時刻との差から計算されます。</p></div>
+  <button class="btn sub sm" id="bToTitle" style="margin-top:6px">タイトルへもどる</button>`;
+  el.querySelector('#setBack').onclick=()=>switchTab('home');
+  el.querySelector('#swSnd').onclick=e=>{ S.sound=!S.sound; e.target.classList.toggle('on',S.sound); sfx('tap'); save(); };
+  el.querySelector('#bRename').onclick=()=>askName(n=>{ S.name=n; save(); renderSet(); });
+  el.querySelector('#bExp').onclick=()=>{ save(); const t=el.querySelector('#saveTx'); try{ t.value=btoa(unescape(encodeURIComponent(JSON.stringify(S)))); t.select(); toast('書き出しました。コピーして保管してください'); }catch(e){ toast('書き出しに失敗しました'); } };
+  el.querySelector('#bImp').onclick=()=>{ const v=el.querySelector('#saveTx').value.trim(); if(!v) return;
+    try{ const o=JSON.parse(decodeURIComponent(escape(atob(v)))); if(!o||typeof o!=='object'||!('coins' in o)) throw 0;
+      modal({icon:'📥',title:'読み込みますか？',html:'今のデータは上書きされます。',center:true,btns:[{t:'読み込む',c:'org',fn:()=>{ S=migrate(o); S.last=Date.now(); C=calc(S); save(); toast('読み込みました'); switchTab('home'); }},{t:'やめる',c:'sub'}]});
+    }catch(e){ toast('セーブ文字列が正しくありません'); } };
+  el.querySelector('#bReset').onclick=()=>modal({icon:'🗑️',title:'データを消しますか？',html:'すべての進行状況・図鑑が消えます。元にもどせません。',center:true,btns:[{t:'消す',c:'red',fn:()=>{ try{localStorage.removeItem(KEY);}catch(e){} S=null; showTitle(); }},{t:'やめる',c:'sub'}]});
+  el.querySelector('#bToTitle').onclick=()=>{ save(); S=null; showTitle(); };
+}
+
+// ============================================================
+//  称号・エンディング
+// ============================================================
+function checkMiles(quiet){
+  const rh=curRH(S,C), rl=realH(S,C);
+  MILES.forEach((m,i)=>{
+    if(S.runMiles[i]) return;
+    if(!m.real && !S.res.s3 && m.h>180) return; // 研究身長が出るまでは非表示
+    if((m.real?rl:rh)>=m.h){
+      S.runMiles[i]=1; const first=!S.miles[i]; if(first) S.miles[i]=Date.now();
+      if(m.dd) S.dd+=m.dd;
+      toast(`🏅 称号「${m.name}」${m.dd?` 💾+${fmt(m.dd)}`:''}`,'gold'); if(!quiet) sfx('fan');
+      if(m.h===260 && !m.real){ $('#stage').classList.remove('shake'); void $('#stage').offsetWidth; $('#stage').classList.add('shake'); }
+      if(m.end && !S.endings[m.end]) showEnding(m.end);
+    }
+  });
+  for(const f of FAC) if(S.fac[f.id]) S.miles['f_'+f.id]=1;
+  if(S.days>=GROW_DAYS && !S.adultShown){
+    S.adultShown=true;
+    modal({icon:'🎂',title:`${esc(S.name)}さん、18歳になりました`,html:`成長期がおわりました。実身長は <b>${realH(S,C).toFixed(1)} cm</b> で確定です。<br>健康ランク：<b>${C.rank}</b><br><br>成人後は骨の長さはほとんど変わりません。ここからは、姿勢と健康を保つことが大切です。${S.res.s3?'<br><br>…研究身長のほうは、まだまだ伸ばせますよ、所長。':''}`});
+  }
+  if(S.days>=GROW_DAYS && !S.endings.health && (C.rank==='A'||C.rank==='S')) showEnding('health');
+}
+function showEnding(k,replay){
+  if(!replay){ S.endings[k]=Date.now(); save(); }
+  const nm=esc(S.name);
+  const E={
+    health:{icon:'🌱',title:'すこやかエンディング',html:`よく眠り、よく食べ、よく動いた${nm}さん。<br>実身長は <b>${realH(S,C).toFixed(1)} cm</b>。<br><br>数字よりも大切なのは、毎日を元気に過ごせる体です。<br>身長研究所の健康データは、未来の誰かの役に立つでしょう。<br><br><b>— すこやかエンディング —</b>`},
+    space:{icon:'🚀',title:'宇宙サイズ計画、達成',html:`ついに研究身長が <b>1光年</b> に到達しました。<br>頭のてっぺんから足もとまで、光でも1年かかります。<br><br>人工衛星「ハカル1号」は今日も${nm}さんの頭のまわりを回っています。<br>もう誰も、この身長を測ることはできません。<br>…でも所長は言いました。「まだ伸ばせる」と。<br><br><b>— 宇宙サイズ計画 達成 —</b><br><small>研究タブで「新しい研究所」が建てられるようになりました。</small>`},
+    universe:{icon:'♾️',title:'隠しエンディング「測定不能」',html:`研究身長が、観測可能な宇宙の大きさに達しました。<br>${nm}さんは、宇宙そのものになりました。<br><br>宇宙の外から、ハカルくんの声がします。<br>「所長…測るための目盛りが、もうどこにもありません」<br><br>所長は、ものさしを置いて笑いました。<br>「じゃあ、今日はここまで。また明日、測ろう」<br><br><b>— THE END? —</b>`},
+  }[k];
+  modal({icon:E.icon,title:E.title,html:E.html,cls:'end',center:true,btns:[{t:'とじる',c:'pur'}]});
+  if(!replay) sfx('fan');
+}
+
+// ============================================================
+//  更新ループ
+// ============================================================
+let lastRefresh=0, lastSave=0, lastHist=0, lastCalc=0;
+function tick(){
+  if(!S||$('#game').hidden) { lastTick=Date.now(); return; }
+  if(document.hidden) return;
+  const now=performance.now(), wall=Date.now(); let dt=(wall-lastTick)/1000; lastTick=wall;
+  if(dt>5){ if(dt>60) doOffline(dt); else advance(S,C,dt); return; }
+  if(now-lastCalc>1000){ C=calc(S); lastCalc=now; }
+  advance(S,C,dt); S.stats.play+=dt;
+  checkMiles(false);
+  if(Date.now()-lastHist>60000||!S.history.length){ lastHist=Date.now(); S.history.push([Date.now(),curRH(S,C),realH(S,C)]); if(S.history.length>240) S.history.splice(0,S.history.length-240); }
+  if(curTab==='home' && now>ideaNext && !document.querySelector('.idea')){ spawnIdea(); ideaNext=now+(45000+Math.random()*75000)/C.ideaRate; }
+  if(now-lastRefresh>250){ lastRefresh=now; refresh(); }
+  if(now-lastSave>5000){ lastSave=now; save(); }
+}
+function refresh(){
+  if(!S||!C) return;
+  $('#vCoin').textContent=fmt(S.coins); $('#vRp').textContent=fmt(S.rp); $('#vDd').textContent=fmt(S.dd);
+  $('#chipDd').style.opacity=S.res.s3||S.dd>0?1:.45;
+  $('#labBadge').hidden=!(RES.some(r=>resAvail(S,r)&&canPay(S,r.cost)));
+  if(curTab==='home'){
+    const rh=curRH(S,C), rl=realH(S,C), mad=!!S.res.s3;
+    $('#hLabel').textContent=mad?'研究身長（ゲーム専用の架空の値）':`${S.name}さんの身長`;
+    $('#hBig').textContent=mad?fmtLen(rh):rl.toFixed(1)+' cm'; $('#hBig').classList.toggle('rs',mad);
+    $('#hSub').innerHTML=(mad?`実身長 ${rl.toFixed(1)} cm ・ `:'')+`${ageText()} ・ 健康 ${C.rank}`+(mad&&C.grow?`<br>伸び +${fmtLen(C.grow)}/秒${C.expRate?' ＋指数成長':''}`:'');
+    let next=null, prev=START_H;
+    for(const m of MILES){ const v=m.real?rl:rh; if(m.real&&mad) continue; if(!mad&&!m.real&&m.h>180) break; if(v<m.h){ next=m; break; } prev=m.h; }
+    if(!mad && !next) next={h:180,name:'目標180cm（研究で…？）'};
+    if(next){ const v=next.real?rl:rh; const p=mad?Math.max(0,(Math.log(v)-Math.log(prev))/(Math.log(next.h)-Math.log(prev))):Math.max(0,(v-START_H)/(next.h-START_H));
+      $('#hNextT').textContent=`次の目標：${fmtLen(next.h,true)}「${next.name}」`; $('#hNextB').style.width=Math.min(100,p*100)+'%'; $('#hNext').hidden=false; }
+    else $('#hNext').hidden=true;
+    $('#tapV').textContent='+'+fmt(C.tap)+' G';
+    const now=Date.now();
+    document.querySelectorAll('.hab').forEach(b=>{ const at=S.habitAt[b.dataset.h]||0, r=Math.max(0,1-(now-at)/(C.habitCdSec*1000));
+      b.classList.toggle('wait',r>0); b.querySelector('.cd').style.width=(r>0?(1-r)*100:100)+'%'; });
+    const p=S.pending; $('#offCard').hidden=!p;
+    if(p) $('#offT').innerHTML=`<b>放置報酬</b><br>前回から${fmtTime(p.sec)}経過。 💰${fmt(p.coins)} 🔬${fmt(p.rp)}${p.dd>=0.01?' 💾'+fmt(p.dd):''}`;
+    $('#rate').textContent=`毎秒 💰${fmt(C.cps)} ・ 🔬${fmt(C.rps)}${C.dds?` ・ 💾${fmt(C.dds)}`:''}`;
+    if(Math.floor(now/9000)!==refresh._h){ refresh._h=Math.floor(now/9000); $('#hintT').textContent=hintText(); }
+    else if(S.stats.taps<3||!S.res.h1) $('#hintT').textContent=hintText();
+  }
+  else if(curTab==='lab') refreshLab();
+  else if(curTab==='shop') refreshShop();
+  else if(curTab==='mis'){ /* 進行はタブを開いたときに更新 */ }
+  checkMis();
+}
+setInterval(tick,100);
+document.addEventListener('visibilitychange',()=>{
+  if(!S) return;
+  if(document.hidden) save();
+});
+window.addEventListener('pagehide',save);
+
+// ============================================================
+//  ステージ描画（キャンバス）
+// ============================================================
+const cv=$('#cv'), ctx=cv.getContext('2d'); let dpr=1, CW=300, CH=300;
+function resizeCv(){ const r=$('#stage').getBoundingClientRect(); dpr=Math.min(2,window.devicePixelRatio||1); CW=Math.max(1,r.width); CH=Math.max(1,r.height); cv.width=CW*dpr; cv.height=CH*dpr; }
+window.addEventListener('resize',()=>{ if(curTab==='home') resizeCv(); });
+const STARS=Array.from({length:140},()=>[Math.random(),Math.random(),Math.random()*1.6+0.3,Math.random()*6.28]);
+const OBJS=[
+  {s:200,name:'ドア',k:'door',w:0.45},
+  {s:530,name:'キリン',k:'emoji',e:'🦒',w:0.8},
+  {s:750,name:'家',k:'house',w:1.1},
+  {s:5000,name:'ビル(50m)',k:'bldg',w:0.5},
+  {s:33300,name:'東京タワー',k:'tower',w:0.3},
+  {s:63400,name:'スカイツリー',k:'stree',w:0.12},
+  {s:377600,name:'富士山',k:'mt',w:3},
+  {s:884800,name:'エベレスト',k:'mt2',w:2.2},
+  {s:3.474e8,name:'月',k:'ball',c:['#e8e4d8','#b9b4a6'],w:1},
+  {s:1.43e10,name:'木星',k:'ball',c:['#e8c69a','#b98455'],w:1,band:1},
+  {s:1.392e11,name:'太陽',k:'ball',c:['#fff3a0','#ff9d1f'],w:1,glow:1},
+  {s:9e14,name:'太陽系',k:'orbits',w:1},
+  {s:9.46e22,name:'天の川銀河',k:'galaxy',w:1},
+  {s:2.2e23,name:'アンドロメダ銀河',k:'galaxy',w:1,tilt:1},
+];
+const LINES=[
+  {s:1e7,name:'宇宙の境界 (高度100km)'},{s:4e7,name:'🛰️ 国際宇宙ステーション (高度400km)'},{s:3.844e10,name:'🌕 月までの距離'},
+  {s:1.496e13,name:'☀️ 太陽までの距離'},{s:4.5e15,name:'🪐 海王星の軌道…のずっと外'},{s:LY,name:'💫 1光年'},{s:4.0e18,name:'⭐ プロキシマ・ケンタウリ'},
+  {s:2.4e24,name:'🌀 アンドロメダ銀河までの距離'}];
+const LOOKS={
+  coat:{coat:'#ffffff',shirt:'#6ec6ff',pants:'#3b4a6b',shoe:'#5b4636'},
+  jersey:{shirt:'#e8473f',pants:'#e8473f',shoe:'#ffffff',stripe:'#ffffff'},
+  pajama:{shirt:'#9ad0ff',pants:'#9ad0ff',shoe:'#f4a3b5',dots:'#ffffff',cap:'#9ad0ff'},
+  uniform:{shirt:'#2a3557',pants:'#2a3557',shoe:'#222',collar:'#ffffff'},
+  space:{shirt:'#f2f4f7',pants:'#f2f4f7',shoe:'#8a94a6',helmet:1,stripe:'#ff8a3d'},
+  king:{shirt:'#ffd34d',pants:'#7a2a2a',shoe:'#5a1f1f',cape:'#c62828',crown:1},
+  galaxy:{shirt:'#2b1a5c',pants:'#2b1a5c',shoe:'#110a26',stars:1,glow:'#b28cff'},
+};
+function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function mix(a,b,t){ t=Math.max(0,Math.min(1,t)); const pa=parseInt(a.slice(1),16), pb=parseInt(b.slice(1),16);
+  const c=k=>Math.round(((pa>>k)&255)*(1-t)+((pb>>k)&255)*t); return `rgb(${c(16)},${c(8)},${c(0)})`; }
+
+function drawChar(g,cx,base,H,look,t,opt){
+  opt=opt||{}; const L=LOOKS[look]||LOOKS.coat; const u=H;
+  const breath=1+Math.sin(t*2.2)*0.006; const X=v=>cx+v*u, Y=v=>base-v*u*breath;
+  const sw=Math.sin(t*1.6)*0.04;
+  g.save();
+  if(L.glow){ g.shadowColor=L.glow; g.shadowBlur=Math.min(40,u*0.08); }
+  // マント
+  if(L.cape){ g.fillStyle=L.cape; g.beginPath(); g.moveTo(X(-0.15),Y(0.78)); g.lineTo(X(0.15),Y(0.78)); g.lineTo(X(0.22+sw*0.3),Y(0.08)); g.lineTo(X(-0.22+sw*0.3),Y(0.08)); g.closePath(); g.fill(); }
+  // 脚
+  g.fillStyle=L.pants; rr(X(-0.085),Y(0.47),u*0.075,u*0.45,u*0.02); g.fill(); rr(X(0.01),Y(0.47),u*0.075,u*0.45,u*0.02); g.fill();
+  g.fillStyle=L.shoe; rr(X(-0.1),Y(0.035),u*0.095,u*0.035,u*0.015); g.fill(); rr(X(0.005),Y(0.035),u*0.095,u*0.035,u*0.015); g.fill();
+  // 腕（体の後ろ）
+  const arm=(side)=>{ g.save(); g.translate(X(side*0.135),Y(0.765)); g.rotate(side*0.08+sw*side*-1); g.fillStyle=L.coat||L.shirt; rr(-u*0.033,0,u*0.066,u*0.3,u*0.03); g.fill();
+    g.fillStyle='#ffd9b8'; g.beginPath(); g.arc(0,u*0.31,u*0.032,0,6.29); g.fill(); g.restore(); };
+  if(!L.coat){ arm(-1); arm(1); }
+  // 胴
+  g.fillStyle=L.shirt; rr(X(-0.13),Y(0.79),u*0.26,u*0.35,u*0.06); g.fill();
+  if(L.stripe){ g.fillStyle=L.stripe; g.fillRect(X(-0.012),Y(0.79),u*0.024,u*0.33); g.fillRect(X(-0.085),Y(0.47),u*0.015,u*0.44); g.fillRect(X(0.07),Y(0.47),u*0.015,u*0.44); }
+  if(L.dots){ g.fillStyle=L.dots; for(let i=0;i<9;i++){ g.beginPath(); g.arc(X(-0.09+(i%3)*0.09),Y(0.73-Math.floor(i/3)*0.1),u*0.012,0,6.29); g.fill(); } }
+  if(L.collar){ g.fillStyle=L.collar; g.beginPath(); g.moveTo(X(-0.07),Y(0.79)); g.lineTo(X(0),Y(0.7)); g.lineTo(X(0.07),Y(0.79)); g.closePath(); g.fill(); g.fillStyle='#d23b3b'; g.beginPath(); g.moveTo(X(-0.02),Y(0.74)); g.lineTo(X(0.02),Y(0.74)); g.lineTo(X(0),Y(0.66)); g.fill(); }
+  if(L.stars){ g.fillStyle='#fff'; for(let i=0;i<14;i++){ const a=(i*97)%100/100, b=(i*53)%100/100; g.fillRect(X(-0.11+a*0.22),Y(0.46+b*0.32),u*0.008,u*0.008); } }
+  if(L.coat){ // 白衣
+    g.fillStyle=L.coat; g.strokeStyle='#cfd8dc'; g.lineWidth=Math.max(1,u*0.004);
+    g.beginPath(); g.moveTo(X(-0.14),Y(0.78)); g.lineTo(X(-0.035),Y(0.78)); g.lineTo(X(-0.02),Y(0.36)); g.lineTo(X(-0.16),Y(0.36)); g.closePath(); g.fill(); g.stroke();
+    g.beginPath(); g.moveTo(X(0.14),Y(0.78)); g.lineTo(X(0.035),Y(0.78)); g.lineTo(X(0.02),Y(0.36)); g.lineTo(X(0.16),Y(0.36)); g.closePath(); g.fill(); g.stroke();
+    g.fillStyle='#e8eef0'; g.fillRect(X(0.06),Y(0.52),u*0.06,u*0.05);
+    arm(-1); arm(1);
+  }
+  g.shadowBlur=0;
+  // 首・頭
+  g.fillStyle='#ffd9b8'; g.fillRect(X(-0.025),Y(0.81),u*0.05,u*0.03);
+  g.beginPath(); g.arc(X(0),Y(0.885),u*0.095,0,6.29); g.fill();
+  // 髪
+  g.fillStyle='#3a2a20'; g.beginPath(); g.arc(X(0),Y(0.9),u*0.1,Math.PI*1.05,Math.PI*1.95); g.lineTo(X(0.098),Y(0.88)); g.quadraticCurveTo(X(0.05),Y(0.955),X(-0.02),Y(0.93)); g.quadraticCurveTo(X(-0.07),Y(0.95),X(-0.098),Y(0.87)); g.closePath(); g.fill();
+  g.beginPath(); g.moveTo(X(0.01),Y(0.995)); g.quadraticCurveTo(X(0.04),Y(1.03),X(0.06),Y(1.0)); g.lineWidth=Math.max(1,u*0.012); g.strokeStyle='#3a2a20'; g.stroke();
+  // 顔
+  const blink=(t%4.2)<0.12;
+  g.fillStyle='#2b2b2b';
+  if(blink){ g.fillRect(X(-0.05),Y(0.885),u*0.03,u*0.006); g.fillRect(X(0.02),Y(0.885),u*0.03,u*0.006); }
+  else{ g.beginPath(); g.arc(X(-0.035),Y(0.882),u*0.013,0,6.29); g.arc(X(0.035),Y(0.882),u*0.013,0,6.29); g.fill();
+    g.fillStyle='#fff'; g.beginPath(); g.arc(X(-0.031),Y(0.887),u*0.004,0,6.29); g.arc(X(0.039),Y(0.887),u*0.004,0,6.29); g.fill(); }
+  g.fillStyle='rgba(255,120,120,.35)'; g.beginPath(); g.arc(X(-0.06),Y(0.86),u*0.014,0,6.29); g.arc(X(0.06),Y(0.86),u*0.014,0,6.29); g.fill();
+  g.strokeStyle='#8a3b2e'; g.lineWidth=Math.max(1,u*0.006); g.beginPath(); g.arc(X(0),Y(0.858),u*0.022,0.15*Math.PI,0.85*Math.PI); g.stroke();
+  // 帽子・ヘルメット・王冠
+  if(L.cap){ g.fillStyle=L.cap; g.beginPath(); g.moveTo(X(-0.1),Y(0.94)); g.quadraticCurveTo(X(0),Y(1.08),X(0.16),Y(0.9)); g.lineTo(X(0.1),Y(0.95)); g.closePath(); g.fill(); g.fillStyle='#fff'; g.beginPath(); g.arc(X(0.16),Y(0.9),u*0.02,0,6.29); g.fill(); }
+  if(L.crown){ g.fillStyle='#ffc61a'; g.beginPath(); g.moveTo(X(-0.06),Y(0.97)); g.lineTo(X(-0.06),Y(1.04)); g.lineTo(X(-0.03),Y(1.0)); g.lineTo(X(0),Y(1.05)); g.lineTo(X(0.03),Y(1.0)); g.lineTo(X(0.06),Y(1.04)); g.lineTo(X(0.06),Y(0.97)); g.closePath(); g.fill(); }
+  if(opt.hat){ g.fillStyle='#2b2b3a'; g.fillRect(X(-0.11),Y(0.975),u*0.22,u*0.02); g.fillRect(X(-0.07),Y(1.06),u*0.14,u*0.09); g.fillStyle='#ff6f91'; g.fillRect(X(-0.07),Y(0.995),u*0.14,u*0.015); }
+  if(L.helmet){ g.strokeStyle='rgba(200,220,255,.9)'; g.fillStyle='rgba(180,220,255,.22)'; g.lineWidth=Math.max(1.5,u*0.01); g.beginPath(); g.arc(X(0),Y(0.89),u*0.135,0,6.29); g.fill(); g.stroke(); }
+  g.restore();
+}
+
+function drawMeter(g,x,base,px,rh,t){
+  const look=S.meter, hcm=Math.max(200,Math.min(250,rh+20)), top=base-hcm*px, w=Math.max(6,22*px);
+  const col={wood:['#c8955a','#8a5a2b'],digital:['#e6ecef','#7f8c95'],laser:['#3a3f4a','#111'],sat:['#d8dde8','#6b7387']}[look]||['#c8955a','#8a5a2b'];
+  g.fillStyle=col[0]; g.fillRect(x-w/2,top,w,base-top); g.strokeStyle=col[1]; g.lineWidth=1; g.strokeRect(x-w/2,top,w,base-top);
+  g.fillStyle=look==='laser'?'#ff5a5a':'#3b2a1a'; g.font=`${Math.max(8,Math.min(12,7*px))}px sans-serif`; g.textAlign='right';
+  for(let c=0;c<=hcm;c+=10){ const y=base-c*px; const L=c%50===0; g.fillRect(x-w/2,y,L?w*0.6:w*0.35,1); if(c%50===0&&c>0&&px>0.35) g.fillText(c,x-w/2-3,y+4); }
+  // ヘッドプレート
+  const head=Math.min(rh,hcm); const since=(performance.now()-measureT)/1000; const drop=since<0.25?(1-since/0.25)*40:0;
+  const py=base-head*px-drop; g.fillStyle=look==='laser'?'#ff3b3b':col[1]; g.fillRect(x-w/2,py-3,w+Math.max(30,40*px),5);
+  if(look==='laser'){ g.strokeStyle='rgba(255,60,60,.6)'; g.lineWidth=2; g.beginPath(); g.moveTo(x,py); g.lineTo(x+60*px,py); g.stroke(); }
+  if(look==='digital'||look==='sat'){ g.fillStyle='#14231f'; const dw=Math.max(54,48*px); rr(x-dw/2,top-22,dw,18,4); g.fill(); g.fillStyle='#4dffb0'; g.font='bold 11px monospace'; g.textAlign='center'; g.fillText(rh>=1000?'ERROR':rh.toFixed(1),x,top-9); }
+}
+
+function drawObj(g,o,x,base,px,t){
+  const h=o.s*px, w=h*o.w;
+  g.save();
+  switch(o.k){
+    case 'door': g.fillStyle='#a8743f'; g.fillRect(x,base-h,w,h); g.fillStyle='#8a5a2b'; g.fillRect(x+w*0.12,base-h*0.92,w*0.76,h*0.38); g.fillRect(x+w*0.12,base-h*0.48,w*0.76,h*0.4); g.fillStyle='#ffd34d'; g.beginPath(); g.arc(x+w*0.82,base-h*0.5,Math.max(1,w*0.06),0,6.29); g.fill(); break;
+    case 'emoji': g.font=`${h*1.05}px sans-serif`; g.textAlign='left'; g.textBaseline='bottom'; g.fillText(o.e,x,base+h*0.08); break;
+    case 'house': g.fillStyle='#f6e7c8'; g.fillRect(x,base-h*0.6,w,h*0.6); g.fillStyle='#d9534f'; g.beginPath(); g.moveTo(x-w*0.08,base-h*0.6); g.lineTo(x+w/2,base-h); g.lineTo(x+w*1.08,base-h*0.6); g.closePath(); g.fill(); g.fillStyle='#7cc8f2'; g.fillRect(x+w*0.15,base-h*0.45,w*0.22,h*0.17); g.fillStyle='#8a5a2b'; g.fillRect(x+w*0.6,base-h*0.34,w*0.2,h*0.34); break;
+    case 'bldg': g.fillStyle='#8fa3b8'; g.fillRect(x,base-h,w,h); g.fillStyle='#d8f0ff'; for(let i=0;i<14;i++) for(let j=0;j<3;j++) g.fillRect(x+w*(0.12+j*0.29),base-h*(0.95-i*0.066),w*0.18,h*0.035); break;
+    case 'tower': g.strokeStyle='#e8413a'; g.lineWidth=Math.max(1,w*0.05); g.beginPath(); g.moveTo(x,base); g.lineTo(x+w/2,base-h); g.lineTo(x+w,base); g.stroke();
+      for(let i=1;i<7;i++){ const yy=base-h*i/7, hw=w/2*(1-i/7); g.beginPath(); g.moveTo(x+w/2-hw,yy); g.lineTo(x+w/2+hw,yy); g.stroke(); }
+      g.fillStyle='#fff'; g.fillRect(x+w*0.36,base-h*0.4,w*0.28,h*0.03); break;
+    case 'stree': g.fillStyle='#c5d3e0'; g.beginPath(); g.moveTo(x,base); g.lineTo(x+w*0.45,base-h); g.lineTo(x+w*0.55,base-h); g.lineTo(x+w,base); g.closePath(); g.fill();
+      g.fillStyle='#8fa3b8'; g.fillRect(x+w*0.2,base-h*0.55,w*0.6,h*0.025); g.fillRect(x+w*0.3,base-h*0.72,w*0.4,h*0.02); break;
+    case 'mt': case 'mt2': { const c=o.k==='mt'?'#5a7fb5':'#7d8796'; g.fillStyle=c; g.beginPath(); g.moveTo(x,base); if(o.k==='mt'){ g.lineTo(x+w*0.44,base-h); g.lineTo(x+w*0.56,base-h); } else { g.lineTo(x+w*0.3,base-h*0.6); g.lineTo(x+w*0.4,base-h*0.75); g.lineTo(x+w*0.5,base-h); g.lineTo(x+w*0.62,base-h*0.7); } g.lineTo(x+w,base); g.closePath(); g.fill();
+      g.fillStyle='#fff'; g.beginPath(); if(o.k==='mt'){ g.moveTo(x+w*0.36,base-h*0.8); g.lineTo(x+w*0.44,base-h); g.lineTo(x+w*0.56,base-h); g.lineTo(x+w*0.64,base-h*0.8); g.lineTo(x+w*0.55,base-h*0.85); g.lineTo(x+w*0.48,base-h*0.78); } else { g.moveTo(x+w*0.42,base-h*0.84); g.lineTo(x+w*0.5,base-h); g.lineTo(x+w*0.58,base-h*0.82); } g.closePath(); g.fill(); break; }
+    case 'ball': { const r=h/2, cx=x+r, cy=base-r; if(o.glow){ g.shadowColor='#ffb300'; g.shadowBlur=Math.min(60,r*0.6); } const gr=g.createRadialGradient(cx-r*0.3,cy-r*0.3,r*0.1,cx,cy,r); gr.addColorStop(0,o.c[0]); gr.addColorStop(1,o.c[1]); g.fillStyle=gr; g.beginPath(); g.arc(cx,cy,r,0,6.29); g.fill(); g.shadowBlur=0;
+      if(o.band){ g.strokeStyle='rgba(150,90,50,.45)'; g.lineWidth=r*0.08; for(const k of[-0.35,0,0.3]){ g.beginPath(); g.moveTo(cx-r*Math.sqrt(1-k*k),cy+k*r); g.lineTo(cx+r*Math.sqrt(1-k*k),cy+k*r); g.stroke(); } } break; }
+    case 'orbits': { const r=h/2, cx=x+r, cy=base-r; g.strokeStyle='rgba(180,200,255,.35)'; g.lineWidth=1; for(let i=1;i<=8;i++){ g.beginPath(); g.arc(cx,cy,r*Math.pow(i/8,1.6),0,6.29); g.stroke(); }
+      g.fillStyle='#ffd34d'; g.beginPath(); g.arc(cx,cy,Math.max(2,r*0.02),0,6.29); g.fill(); break; }
+    case 'galaxy': { const r=h/2, cx=x+r, cy=base-r; g.translate(cx,cy); if(o.tilt) g.scale(1,0.45); g.rotate(t*0.05);
+      const gr=g.createRadialGradient(0,0,0,0,0,r); gr.addColorStop(0,'rgba(255,240,200,.95)'); gr.addColorStop(0.25,'rgba(200,170,255,.45)'); gr.addColorStop(1,'rgba(80,60,160,0)'); g.fillStyle=gr; g.beginPath(); g.arc(0,0,r,0,6.29); g.fill();
+      g.fillStyle='rgba(255,255,255,.7)'; for(let i=0;i<220;i++){ const a=i*0.35, d=(i/220)*r; g.fillRect(Math.cos(a+(i%2)*Math.PI)*d,Math.sin(a+(i%2)*Math.PI)*d,1.5,1.5); } break; }
+  }
+  g.restore();
+  // ラベル
+  if(h>14){ g.fillStyle='rgba(0,0,0,.55)'; g.font='bold 10px sans-serif'; g.textAlign='left'; const lb=`${o.name} ${fmtLen(o.s,true)}`; const tw=g.measureText(lb).width;
+    const ly=Math.max(14,base-h-4); rr(x-2,ly-11,tw+8,14,4); g.fill(); g.fillStyle='#fff'; g.fillText(lb,x+2,ly); }
+}
+
+function drawScene(t){
+  const W=CW, H=CH; ctx.setTransform(dpr,0,0,dpr,0,0);
+  const rh=curRH(S,C), L=Math.log10(rh);
+  const hc=$('#hcard'), hn=$('#hint'); const topPad=hc.offsetTop+hc.offsetHeight+18, base=H-Math.max(40,hn.offsetHeight+16);
+  const charH=Math.max(60,base-topPad)*Math.min(1,rh/190), px=charH/rh, cx=W*0.5;
+  const indoor=rh<260;
+  if(indoor){
+    // 研究所の部屋
+    const wallTop=base-260*px;
+    ctx.fillStyle='#f4efe6'; ctx.fillRect(0,0,W,H); ctx.fillStyle='#e8dfcf'; ctx.fillRect(0,Math.max(0,wallTop),W,6);
+    const wx=W*0.68, wy=base-200*px, ww=Math.min(W*0.26,90*px), wh=80*px;
+    ctx.fillStyle='#bfe6fb'; ctx.fillRect(wx,wy,ww,wh); ctx.strokeStyle='#c9b79c'; ctx.lineWidth=4; ctx.strokeRect(wx,wy,ww,wh); ctx.beginPath(); ctx.moveTo(wx+ww/2,wy); ctx.lineTo(wx+ww/2,wy+wh); ctx.stroke();
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(wx+ww*0.3,wy+wh*0.35,wh*0.12,0,6.29); ctx.arc(wx+ww*0.42,wy+wh*0.32,wh*0.15,0,6.29); ctx.fill();
+    { const pw=Math.min(W*0.15,40*px), ph=pw*0.75, pxl=W*0.03, pyl=base-188*px; ctx.fillStyle='#fff'; rr(pxl,pyl,pw,ph,4); ctx.fill(); ctx.fillStyle='#ff8a3d'; ctx.font=`bold ${Math.max(8,pw*0.22)}px sans-serif`; ctx.textAlign='center'; ctx.fillText('目標',pxl+pw/2,pyl+ph*0.42); ctx.fillText('180cm',pxl+pw/2,pyl+ph*0.8); }
+    ctx.fillStyle='#d9c8a9'; ctx.fillRect(0,base,W,H-base); ctx.fillStyle='#cdb994'; for(let i=0;i<W;i+=40) ctx.fillRect(i,base,2,H-base);
+    // 家具
+    const emo=(e,x,s)=>{ ctx.font=`${s*px}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='bottom'; ctx.fillText(e,x,base+s*px*0.08); ctx.textBaseline='alphabetic'; };
+    if(S.shop.f_shelf){ ctx.fillStyle='#9a6b3f'; ctx.fillRect(W*0.82,base-150*px,50*px,150*px); ctx.fillStyle='#6a4524'; for(let i=1;i<4;i++) ctx.fillRect(W*0.82,base-150*px+i*37*px,50*px,3);
+      const bc=['#e8473f','#4a90e2','#f5b70a','#19a38c']; for(let i=0;i<4;i++) for(let j=0;j<5;j++){ ctx.fillStyle=bc[(i+j)%4]; ctx.fillRect(W*0.82+4*px+j*8.5*px,base-150*px+i*37*px+8*px,6*px,28*px); } }
+    if(S.shop.f_plant) emo('🪴',W*0.08,70);
+    if(S.shop.f_sofa) emo('🛋️',W*0.78,75);
+    if(S.shop.f_monitor){ ctx.fillStyle='#222'; rr(W*0.62,base-175*px,70*px,42*px,4); ctx.fill(); ctx.fillStyle='#19a38c'; ctx.fillRect(W*0.62+4*px,base-171*px,62*px,34*px); ctx.fillStyle='#fff'; ctx.font=`${Math.max(7,8*px)}px sans-serif`; ctx.textAlign='center'; ctx.fillText(rh.toFixed(1),W*0.62+35*px,base-150*px); }
+    if(S.shop.f_scope) emo('🔭',W*0.92,90);
+    drawMeter(ctx,cx-charH*0.32,base,px,rh,t);
+  }else{
+    // 空・宇宙
+    let top,bot;
+    if(L<6){ top=mix('#6ec0ee','#3a7fd0',(L-2.4)/3.6); bot=mix('#d8f1ff','#a9d4f5',(L-2.4)/3.6); }
+    else if(L<7.6){ const k=(L-6)/1.6; top=mix('#3a7fd0','#02030a',k); bot=mix('#a9d4f5','#0b1030',k); }
+    else if(L<17){ top='#02030a'; bot=mix('#0b1030','#120a2a',(L-7.6)/9); }
+    else { top=mix('#02030a','#0d0620',(L-17)/5); bot=mix('#120a2a','#24104a',(L-17)/8); }
+    const gr=ctx.createLinearGradient(0,0,0,H); gr.addColorStop(0,top); gr.addColorStop(1,bot); ctx.fillStyle=gr; ctx.fillRect(0,0,W,H);
+    const sa=Math.max(0,Math.min(1,(L-6.3)/1.2));
+    if(sa>0){ for(const s of STARS){ ctx.globalAlpha=sa*(0.5+0.5*Math.sin(t*1.5+s[3])); ctx.fillStyle='#fff'; ctx.fillRect(s[0]*W,s[1]*H,s[2],s[2]); } ctx.globalAlpha=1; }
+    if(L>25.5){ ctx.globalAlpha=Math.min(1,(L-25.5)/2); for(let i=0;i<60;i++){ const a=STARS[i]; ctx.fillStyle=`hsla(${(i*37)%360},70%,75%,.5)`; ctx.beginPath(); ctx.ellipse(a[1]*W,a[0]*H,3+a[2]*2,1.5+a[2],a[3],0,6.29); ctx.fill(); } ctx.globalAlpha=1; }
+    // 地球（足もと）
+    const R=6.371e8*px;
+    if(R>4000){ ctx.fillStyle='#7cc46b'; ctx.fillRect(0,base,W,H-base); ctx.fillStyle='#5aa851'; ctx.fillRect(0,base,W,3);
+      if(rh<3e5){ const labH=900*px; if(labH>4){ const lx=cx-charH*0.45-labH*1.5; ctx.fillStyle='#e9f3f1'; ctx.fillRect(lx,base-labH,labH*1.4,labH); ctx.fillStyle='#19a38c'; ctx.fillRect(lx,base-labH,labH*1.4,labH*0.18);
+        ctx.fillStyle='#bfe6fb'; for(let i=0;i<3;i++) ctx.fillRect(lx+labH*(0.12+i*0.42),base-labH*0.65,labH*0.3,labH*0.22);
+        if(labH>30){ ctx.fillStyle='#fff'; ctx.font=`bold ${labH*0.12}px sans-serif`; ctx.textAlign='center'; ctx.fillText('身長ラボ',lx+labH*0.7,base-labH*0.86); } } }
+    }else if(R>0.6){
+      ctx.save(); ctx.shadowColor='rgba(120,180,255,.8)'; ctx.shadowBlur=Math.min(30,R*0.1);
+      const eg=ctx.createRadialGradient(cx-R*0.3,base+R*0.7,R*0.1,cx,base+R,R); eg.addColorStop(0,'#5fb0ff'); eg.addColorStop(1,'#1f4fa0');
+      ctx.fillStyle=eg; ctx.beginPath(); ctx.arc(cx,base+R,R,0,6.29); ctx.fill(); ctx.restore();
+      ctx.save(); ctx.beginPath(); ctx.arc(cx,base+R,R,0,6.29); ctx.clip(); ctx.fillStyle='#5cae5a';
+      for(const [a,b,c] of[[-0.4,0.3,0.35],[0.3,0.55,0.3],[0.1,-0.4,0.25],[-0.6,-0.2,0.2]]){ ctx.beginPath(); ctx.ellipse(cx+a*R,base+R+b*R,c*R,c*R*0.6,a,0,6.29); ctx.fill(); }
+      ctx.restore();
+      if(R<60){ ctx.fillStyle='#bfe0ff'; ctx.font='10px sans-serif'; ctx.textAlign='left'; ctx.fillText('← 足もとの地球',cx+R+charH*0.12,base+Math.min(R,20)); }
+    }else{ ctx.fillStyle='#bfe0ff'; ctx.font='10px sans-serif'; ctx.textAlign='right'; ctx.fillText('足もとの地球は見えないほど小さい',W-6,base-4); }
+    // 比較オブジェクト（右側）
+    const vis=OBJS.filter(o=>{ const h=o.s*px; return h>10 && h<H*0.9; });
+    let ox=cx+charH*0.22;
+    for(const o of vis.slice(-2)){ const h=o.s*px, w=h*o.w; drawObj(ctx,o,ox,base,px,t); ox+=w+12; }
+    // 高さの線
+    ctx.setLineDash([5,4]); ctx.lineWidth=1;
+    for(const l of LINES){ const y=base-l.s*px; if(y<16||y>base-12) continue; ctx.strokeStyle='rgba(255,255,255,.45)'; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+      ctx.fillStyle='rgba(255,255,255,.85)'; ctx.font='10px sans-serif'; ctx.textAlign='right'; ctx.fillText(l.name,W-6,y-3); }
+    ctx.setLineDash([]);
+    if(rh<2000) drawMeter(ctx,cx-charH*0.32,base,px,rh,t);
+  }
+  // 左端の目盛り
+  if(!indoor){ const visCm=base/px; const unit=visCm<1000?1:visCm<1e5?100:visCm<LY*0.05?1e5:LY; const vu=visCm/unit;
+    let step=Math.pow(10,Math.floor(Math.log10(vu/4))); if(vu/step>8) step*=2; if(vu/step>8) step*=2.5; step*=unit;
+    ctx.fillStyle='rgba(255,255,255,.75)'; ctx.font='9px sans-serif'; ctx.textAlign='left';
+    for(let i=1;i*step<visCm&&i<20;i++){ const v=i*step, y=base-v*px; ctx.fillRect(0,y,8,1); if(y<base-8) ctx.fillText(fmtLen(v,true),10,y+3); } }
+  // キャラクター
+  const since=(performance.now()-measureT)/1000; const sq=since<0.2?1-Math.sin(since/0.2*Math.PI)*0.025:1;
+  drawChar(ctx,cx,base,charH*sq,S.outfit,t,{hat:!!S.shop.m_hat});
+  // 頭の線
+  const hy=base-charH*sq; ctx.strokeStyle=S.res.s3?'rgba(122,92,255,.85)':'rgba(255,138,61,.9)'; ctx.lineWidth=1.5; ctx.setLineDash([3,3]); ctx.beginPath(); ctx.moveTo(0,hy); ctx.lineTo(cx-charH*0.05,hy); ctx.stroke(); ctx.setLineDash([]);
+}
+
+let rafT0=performance.now();
+function loop(){
+  requestAnimationFrame(loop);
+  if(!S||!C||$('#game').hidden||curTab!=='home'||document.hidden) return;
+  if(cv.width<2) resizeCv();
+  try{ drawScene((performance.now()-rafT0)/1000); }catch(e){ console.error(e); }
+}
+requestAnimationFrame(loop);
+
+// タイトルのキャラ
+function drawTitleChar(){
+  const c=$('#titleCv'), g=c.getContext('2d');
+  const anim=()=>{ if($('#title').hidden) return; g.clearRect(0,0,400,420); const t=performance.now()/1000;
+    g.fillStyle='#c8955a'; g.fillRect(120,40,26,370); g.fillStyle='#8a5a2b'; for(let i=0;i<18;i++) g.fillRect(120,400-i*20,i%5===0?16:9,2);
+    g.fillRect(120,60+Math.sin(t*2)*4,90,8);
+    drawChar(g,250,410,340+Math.sin(t*2)*4,'coat',t,{});
+    requestAnimationFrame(anim); };
+  anim();
+}
+
+showTitle();
+</script>
+<script src="../../playtime.js" defer></script>
+</body>
+</html>
