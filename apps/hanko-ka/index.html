@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<script src="../../audio-pause.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>押せ押せ！ハンコ課</title>
+<meta name="description" content="流れてくる書類に、自分の名前のハンコを連打で押しまくる。朱肉が切れたら補充、あやしい書類はシュレッダーへ。40秒でどこまで出世できるか！">
+<meta name="theme-color" content="#d8202a">
+<style>
+:root{--red:#d8202a;--red2:#9e1219;--ink:#2f2a26;--dim:#7d7368;--paper:#fffdf6;--desk:#b9895a;--desk2:#9c6e43;--gold:#f2b705;--purple:#7a4fa0}
+[hidden]{display:none!important}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:#5b4636;color:var(--ink);font-family:"Hiragino Maru Gothic ProN","Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",system-ui,sans-serif;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+button,input{font-family:inherit;color:inherit}
+button{border:0;background:none;cursor:pointer;touch-action:manipulation}
+#app{position:fixed;inset:0;max-width:520px;margin:0 auto;overflow:hidden;background:linear-gradient(#e9e2d3 0 34%,var(--desk) 34%);box-shadow:0 0 30px rgba(0,0,0,.35)}
+#app.shake{animation:shake .32s}
+@keyframes shake{0%,100%{transform:none}20%{transform:translate(-8px,3px)}40%{transform:translate(7px,-4px)}60%{transform:translate(-5px,2px)}80%{transform:translate(3px,-1px)}}
+.btn{display:block;width:100%;padding:14px 16px;border-radius:16px;font-size:19px;font-weight:900;background:var(--red);color:#fff;box-shadow:0 5px 0 var(--red2);transition:transform .06s}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--red2)}
+.btn.sub{background:#fff;color:var(--red2);box-shadow:0 5px 0 #d9c9b8}
+
+/* ---------- stamp ---------- */
+.stamp{position:absolute;border-radius:50%;border:3px solid var(--red);color:var(--red);display:flex;align-items:center;justify-content:center;font-weight:900;writing-mode:vertical-rl;letter-spacing:-.05em;line-height:1;pointer-events:none;mix-blend-mode:multiply;animation:stampIn .14s ease-out both}
+.stamp::after{content:"";position:absolute;inset:2px;border-radius:50%;background:radial-gradient(circle at 30% 70%,rgba(255,253,246,.7) 0 6%,transparent 7%),radial-gradient(circle at 75% 25%,rgba(255,253,246,.6) 0 4%,transparent 5%)}
+.stamp.faint{opacity:.22;animation:none}
+@keyframes stampIn{0%{transform:scale(1.9) rotate(var(--r));opacity:0}60%{opacity:1}100%{transform:scale(1) rotate(var(--r));opacity:.93}}
+
+/* ---------- title ---------- */
+#title{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;padding:calc(18px + env(safe-area-inset-top)) 22px calc(20px + env(safe-area-inset-bottom));background:repeating-linear-gradient(0deg,rgba(0,0,0,.035) 0 2px,transparent 2px 26px),linear-gradient(#f4ecdc,#e7d8bf)}
+.logo{margin-top:3vh;text-align:center;font-weight:900;line-height:1.05}
+.logo small{display:block;font-size:16px;letter-spacing:.3em;color:var(--dim);margin-bottom:6px}
+.logo b{display:block;font-size:50px;color:var(--red);text-shadow:0 3px 0 #fff,0 5px 0 rgba(0,0,0,.12)}
+.logo b span{color:var(--ink)}
+.bigStampBox{position:relative;width:150px;height:150px;margin:3vh auto 0}
+.bigStampBox .paperBit{position:absolute;inset:14px;background:var(--paper);border-radius:6px;box-shadow:0 3px 8px rgba(0,0,0,.15);transform:rotate(-4deg)}
+.nameRow{margin-top:2.5vh;width:100%;max-width:330px;background:rgba(255,255,255,.75);border-radius:16px;padding:10px 14px;display:flex;align-items:center;gap:10px}
+.nameRow label{font-size:14px;font-weight:800;color:var(--dim);flex:none}
+.nameRow input{flex:1;min-width:0;font-size:22px;font-weight:900;border:2px solid #e2d3c0;border-radius:10px;padding:6px 10px;background:#fff;text-align:center;-webkit-user-select:text;user-select:text}
+.best{margin-top:12px;font-weight:800;font-size:14px;color:var(--red2);background:rgba(255,255,255,.75);padding:6px 16px;border-radius:999px}
+.spacer{flex:1}
+.titleBtns{width:100%;max-width:330px;display:grid;gap:12px}
+.kbd{margin-top:10px;font-size:12px;color:var(--dim);text-align:center}
+
+/* ---------- game ---------- */
+#game{position:absolute;inset:0;display:flex;flex-direction:column}
+#hud{flex:none;padding:calc(8px + env(safe-area-inset-top)) 12px 6px;display:flex;align-items:center;gap:10px}
+#timeBox{flex:1;height:16px;border-radius:99px;background:rgba(0,0,0,.15);overflow:hidden;position:relative}
+#timeBar{position:absolute;inset:0;transform-origin:left;background:linear-gradient(90deg,#3cb371,#8bd06a)}
+#timeBar.low{background:linear-gradient(90deg,#e53935,#ff7043)}
+#timeTxt{font-weight:900;font-size:15px;width:44px;text-align:right;font-variant-numeric:tabular-nums}
+#scoreTxt{font-weight:900;font-size:22px;min-width:92px;text-align:right;font-variant-numeric:tabular-nums}
+#office{flex:none;height:96px;display:flex;align-items:flex-end;padding:0 12px;gap:8px;position:relative}
+#boss{width:86px;height:92px;flex:none;position:relative}
+#boss svg{width:100%;height:100%;overflow:visible}
+#boss .m{display:none}#boss.normal .mN,#boss.happy .mH,#boss.angry .mA,#boss.fever .mH{display:inline}
+#boss.angry .face{fill:#f39b8a}#boss .sg{display:none}#boss.fever .sg{display:inline}#boss.fever{animation:dance .3s infinite alternate}
+@keyframes dance{from{transform:rotate(-7deg) translateY(0)}to{transform:rotate(7deg) translateY(-4px)}}
+#bubble{position:relative;margin-bottom:34px;background:#fff;border-radius:14px;padding:8px 12px;font-weight:900;font-size:15px;max-width:calc(100% - 100px);box-shadow:0 2px 6px rgba(0,0,0,.12);transition:transform .12s}
+#bubble::before{content:"";position:absolute;left:-9px;bottom:10px;border:6px solid transparent;border-right:10px solid #fff;border-left:0}
+#bubble.pop{transform:scale(1.12)}
+#streak{position:absolute;right:12px;top:4px;text-align:right;font-weight:900;line-height:1.1}
+#streak small{display:block;font-size:11px;color:var(--dim)}
+#streak b{font-size:22px;color:var(--red)}
+#desk{flex:1;position:relative;display:flex;align-items:center;justify-content:center;touch-action:none;overflow:hidden;min-height:0}
+#desk::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(95deg,rgba(255,255,255,.05) 0 3px,transparent 3px 22px),repeating-linear-gradient(88deg,rgba(0,0,0,.05) 0 1px,transparent 1px 40px)}
+#rays{position:absolute;inset:-50%;background:repeating-conic-gradient(rgba(255,230,120,.45) 0 10deg,transparent 10deg 20deg);animation:spin 4s linear infinite;opacity:0;transition:opacity .3s;pointer-events:none}
+#game.fever #rays{opacity:1}
+@keyframes spin{to{transform:rotate(360deg)}}
+.doc{position:absolute;width:min(86%,340px);background:var(--paper);border-radius:6px;padding:14px 16px 16px;box-shadow:0 2px 0 #e8e0cf,0 4px 0 #ddd3bf,0 10px 22px rgba(0,0,0,.28);transform:rotate(var(--tilt))}
+.doc.in{animation:docIn .16s ease-out both}
+.doc.outR{animation:docOutR .3s ease-in forwards}
+.doc.outD{animation:docOutD .35s ease-in forwards}
+.doc.burn{animation:docBurn .4s ease-in forwards}
+.doc.jolt{transform:rotate(var(--tilt)) translateY(3px) scale(.99)}
+@keyframes docIn{from{transform:translateX(-120%) rotate(-14deg)}to{transform:rotate(var(--tilt))}}
+@keyframes docOutR{to{transform:translate(140%,-30%) rotate(24deg)}}
+@keyframes docOutD{to{transform:translateY(130%) scaleY(.6);opacity:.2;clip-path:inset(0 0 60% 0)}}
+@keyframes docBurn{0%{filter:none}40%{filter:sepia(1) saturate(4) hue-rotate(-30deg)}100%{transform:translateY(40%) scale(.6) rotate(-20deg);opacity:0;filter:sepia(1) brightness(.4)}}
+.dh{display:flex;justify-content:space-between;font-size:12px;font-weight:800;color:var(--dim);border-bottom:2px solid #e9dfcc;padding-bottom:5px}
+.dt{font-size:21px;font-weight:900;margin:12px 0 8px;line-height:1.3;min-height:2.6em;display:flex;align-items:center}
+.dl i{display:block;height:7px;border-radius:9px;background:#ece4d4;margin:7px 0}
+.slots{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-top:14px}
+.slot{width:58px;height:66px;border:1.5px solid #cbbfa9;position:relative;background:#fff}
+.slot small{position:absolute;top:0;left:0;right:0;text-align:center;font-size:10px;font-weight:800;color:var(--dim);border-bottom:1px solid #e3d8c4;line-height:14px}
+.slots.many{gap:5px;justify-content:center}
+.slots.many .slot{width:48px;height:52px}
+.doc.bad{background:#f1e9f6;box-shadow:0 2px 0 #ddd0e6,0 4px 0 #cfbfdb,0 10px 22px rgba(0,0,0,.28)}
+.doc.bad .dh{color:var(--purple);border-color:#ddcde8}
+.doc.bad .dt{color:#4b2a66}
+.doc.bad .dl i{background:#e2d5ec}
+.doc.bad::after{content:"";position:absolute;left:16px;bottom:18px;width:40px;height:40px;opacity:.55;background:no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M20 4C11 4 6 10 6 17c0 5 3 8 5 9v5h18v-5c2-1 5-4 5-9 0-7-5-13-14-13z' fill='none' stroke='%237a4fa0' stroke-width='2.5'/%3E%3Ccircle cx='14' cy='18' r='3.5' fill='%237a4fa0'/%3E%3Ccircle cx='26' cy='18' r='3.5' fill='%237a4fa0'/%3E%3Cpath d='M16 31v4M20 31v4M24 31v4' stroke='%237a4fa0' stroke-width='2'/%3E%3C/svg%3E")}
+.doc.gold{background:linear-gradient(135deg,#fff8dc,#fffdf2 40%,#fff3c4);outline:3px solid var(--gold);outline-offset:-7px}
+.doc.gold .dh{color:#a67a00}
+#fly{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.pop{position:absolute;font-weight:900;font-size:20px;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.35),0 0 6px rgba(0,0,0,.25);animation:popUp .7s ease-out forwards;white-space:nowrap;transform:translateX(-50%)}
+.pop.bad{color:#ff3b3b;font-size:30px;text-shadow:0 0 0 #fff,-2px -2px 0 #fff,2px -2px 0 #fff,-2px 2px 0 #fff,2px 2px 0 #fff,0 4px 8px rgba(0,0,0,.3)}
+@keyframes popUp{from{opacity:1;margin-top:0}to{opacity:0;margin-top:-56px}}
+.dot{position:absolute;border-radius:50%;background:var(--red);animation:splat .38s ease-out forwards}
+@keyframes splat{to{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
+.strip{position:absolute;width:8px;height:44px;background:var(--paper);border-radius:2px;animation:stripFall .6s ease-in forwards}
+@keyframes stripFall{to{transform:translate(var(--dx),160px) rotate(var(--dr));opacity:0}}
+#banner{position:absolute;left:0;right:0;top:40%;text-align:center;font-weight:900;font-size:44px;color:#fff;text-shadow:0 4px 0 var(--red2),0 8px 20px rgba(0,0,0,.35);pointer-events:none}
+#banner.go{animation:bnr .9s ease-out forwards}
+@keyframes bnr{0%{transform:scale(2.2);opacity:0}25%{transform:scale(1);opacity:1}75%{opacity:1}100%{opacity:0;transform:scale(.95)}}
+#controls{flex:none;display:flex;gap:12px;padding:10px 12px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(transparent,rgba(0,0,0,.12))}
+.ctl{flex:1;height:92px;border-radius:18px;font-weight:900;font-size:17px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;transition:transform .06s}
+.ctl:active{transform:translateY(4px)}
+#inkBtn{background:#3b3330;color:#fff;box-shadow:0 5px 0 #1f1a18}
+#inkBtn .pad{width:54px;height:20px;border-radius:50%;background:radial-gradient(ellipse at 40% 40%,#ff5a5f,#b5121b 70%);box-shadow:0 0 0 4px #77706a}
+#inkBtn.need{animation:need .5s infinite alternate}
+@keyframes need{to{background:#8a1a1f;box-shadow:0 5px 0 #4b0d10,0 0 0 4px #ffd54f}}
+#inkGauge{display:flex;gap:3px}
+#inkGauge i{width:9px;height:9px;border-radius:2px;background:#5e5552}
+#inkGauge i.on{background:#ff4b52}
+#inkGauge.inf i{background:var(--gold)}
+#rejBtn{background:#e7e0d6;color:#4b4038;box-shadow:0 5px 0 #b3a797}
+#rejBtn .shred{width:58px;height:22px;border-radius:5px;background:#6d645c;position:relative}
+#rejBtn .shred::after{content:"";position:absolute;left:8px;right:8px;top:9px;height:4px;background:#2a2522;border-radius:3px}
+#rejBtn.hint{animation:hintR .45s infinite alternate}
+@keyframes hintR{to{box-shadow:0 5px 0 #b3a797,0 0 0 4px #b98ad8}}
+
+/* ---------- panels ---------- */
+.panel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(40,30,25,.55)}
+.card{width:100%;max-width:380px;max-height:100%;overflow:auto;background:var(--paper);border-radius:18px;padding:20px 18px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.card h2{font-size:21px;text-align:center;margin-bottom:12px}
+.rule{display:flex;gap:12px;align-items:center;margin:12px 0;font-size:15px;line-height:1.5}
+.rule .ic{flex:none;width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;text-align:center;line-height:1.15}
+#result .card{text-align:center;position:relative}
+.rk{font-size:13px;color:var(--dim);font-weight:800}
+#rRank{font-size:40px;font-weight:900;color:var(--red);margin:2px 0}
+#rCom{font-size:14px;color:var(--dim);font-weight:700;line-height:1.5;min-height:3em}
+#rScore{font-size:34px;font-weight:900;margin:10px 0 2px;font-variant-numeric:tabular-nums}
+#rNew{display:inline-block;background:var(--gold);color:#fff;font-weight:900;font-size:13px;border-radius:999px;padding:3px 12px;transform:rotate(-4deg)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0 16px}
+.stats div{background:#f3ece0;border-radius:12px;padding:8px 4px;font-size:12px;font-weight:800;color:var(--dim)}
+.stats b{display:block;font-size:20px;color:var(--ink)}
+#rStamp{position:absolute;right:14px;top:14px}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- タイトル -->
+  <div id="title">
+    <div class="logo"><small>株式会社 ハンコ堂 総務部</small><b>押せ押せ！<br><span>ハンコ課</span></b></div>
+    <div class="bigStampBox"><div class="paperBit"></div><div id="tStamp"></div></div>
+    <div class="nameRow"><label>あなたの<br>ハンコ</label><input id="nameIn" maxlength="4" placeholder="山田" autocomplete="off"></div>
+    <div class="best" id="tBest">まだ記録なし</div>
+    <div class="spacer"></div>
+    <div class="titleBtns">
+      <button class="btn" id="startBtn">出社する！</button>
+      <button class="btn sub" id="howBtn">仕事のやりかた</button>
+    </div>
+    <div class="kbd">キーボード：スペース＝押す　Z＝朱肉　X＝却下</div>
+  </div>
+
+  <!-- ゲーム -->
+  <div id="game" hidden>
+    <div id="hud">
+      <div id="timeBox"><div id="timeBar"></div></div>
+      <div id="timeTxt">40.0</div>
+      <div id="scoreTxt">0</div>
+    </div>
+    <div id="office">
+      <div id="boss" class="normal">
+        <svg viewBox="0 0 86 92">
+          <rect x="14" y="66" width="58" height="30" rx="14" fill="#3f4a5c"/>
+          <path d="M37 66l6 14 6-14z" fill="#fff"/><path d="M41 68h4l2 14-4 5-4-5z" fill="#d8202a"/>
+          <ellipse class="face" cx="43" cy="38" rx="27" ry="30" fill="#f6cfa6"/>
+          <path d="M33 10q3-8 6 0M41 9q3-9 6 0M49 10q3-8 6 0" stroke="#3a2c22" stroke-width="2" fill="none"/>
+          <ellipse cx="16" cy="40" rx="5" ry="7" fill="#f0bf93"/><ellipse cx="70" cy="40" rx="5" ry="7" fill="#f0bf93"/>
+          <path d="M18 34q2-9 9-10M68 34q-2-9-9-10" stroke="#8c8c8c" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <circle cx="32" cy="38" r="8" fill="#fff" stroke="#3a2c22" stroke-width="2.5"/><circle cx="54" cy="38" r="8" fill="#fff" stroke="#3a2c22" stroke-width="2.5"/>
+          <path d="M40 38h6" stroke="#3a2c22" stroke-width="2.5"/>
+          <circle cx="32" cy="39" r="2.6" fill="#3a2c22"/><circle cx="54" cy="39" r="2.6" fill="#3a2c22"/>
+          <g class="sg"><rect x="22" y="31" width="19" height="13" rx="4" fill="#111"/><rect x="45" y="31" width="19" height="13" rx="4" fill="#111"/><path d="M41 36h4" stroke="#111" stroke-width="3"/></g>
+          <path d="M33 52q10-3 20 0" stroke="#5a3d2a" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <path class="m mN" d="M36 59h14" stroke="#7a3a2a" stroke-width="3" stroke-linecap="round"/>
+          <path class="m mH" d="M34 57q9 10 18 0z" fill="#7a3a2a"/>
+          <path class="m mA" d="M34 62q9-8 18 0" stroke="#7a3a2a" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div id="bubble">さあ、仕事だ！</div>
+      <div id="streak"><small>れんぞく書類</small><b id="streakN">0</b></div>
+    </div>
+    <div id="desk">
+      <div id="rays"></div>
+      <div id="fly"></div>
+      <div id="banner"></div>
+    </div>
+    <div id="controls">
+      <button class="ctl" id="inkBtn"><div class="pad"></div><span>朱肉</span><div id="inkGauge"></div></button>
+      <button class="ctl" id="rejBtn"><div class="shred"></div><span>却下！</span></button>
+    </div>
+  </div>
+
+  <!-- 遊び方 -->
+  <div class="panel" id="howto" hidden>
+    <div class="card">
+      <h2>ハンコ課の仕事</h2>
+      <div class="rule"><div class="ic" style="background:#fbe3e4;color:#d8202a">机を<br>連打</div><div>机のどこでもタップでハンコ。<b>ハンコ欄が全部うまったら</b>次の書類へ。</div></div>
+      <div class="rule"><div class="ic" style="background:#3b3330;color:#fff">朱肉</div><div>ハンコは<b>10回で朱肉切れ</b>。かすれたハンコは数えません。ボタンで補充！</div></div>
+      <div class="rule"><div class="ic" style="background:#f1e9f6;color:#7a4fa0">あやしい<br>書類</div><div>紫色の<b>あやしい書類</b>は押しちゃダメ。「却下！」でシュレッダーへ。ふつうの書類を却下してもダメ。</div></div>
+      <div class="rule"><div class="ic" style="background:#fff3c4;color:#a67a00">★<br>超重要</div><div>金の書類はハンコ16個。終わらせると<b>ボーナス大量</b>。</div></div>
+      <div class="rule"><div class="ic" style="background:#ffe08a;color:#7a5400">フィー<br>バー</div><div>書類を<b>10枚れんぞく</b>でさばくと部長がノリノリに。朱肉いらず＆1回で2個押せる！</div></div>
+      <button class="btn" id="howClose" style="margin-top:14px">わかった</button>
+    </div>
+  </div>
+
+  <!-- 結果 -->
+  <div class="panel" id="result" hidden>
+    <div class="card">
+      <div id="rStamp"></div>
+      <div class="rk">あなたの役職は…</div>
+      <div id="rRank">平社員</div>
+      <div id="rCom"></div>
+      <div id="rScore">0</div>
+      <div id="rNew" hidden>自己ベスト更新！</div>
+      <div class="stats">
+        <div>さばいた書類<b id="sDocs">0</b></div>
+        <div>押したハンコ<b id="sStamps">0</b></div>
+        <div>最高連打<b id="sTps">0</b></div>
+        <div>シュレッダー<b id="sRej">0</b></div>
+        <div>最高れんぞく<b id="sStreak">0</b></div>
+        <div>うっかり<b id="sMiss">0</b></div>
+      </div>
+      <div style="display:grid;gap:10px">
+        <button class="btn" id="againBtn">もう一回 出社する</button>
+        <button class="btn sub" id="backBtn">タイトルへ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const rnd = (a, b) => a + Math.random() * (b - a);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+
+// ---------- 保存 ----------
+const SKEY = 'hanko-ka-v1';
+const S = { best: 0, bestRank: '', name: '', plays: 0 };
+try { Object.assign(S, JSON.parse(localStorage.getItem(SKEY) || '{}')); } catch (e) {}
+const save = () => { try { localStorage.setItem(SKEY, JSON.stringify(S)); } catch (e) {} };
+const myName = () => (S.name || '').trim() || '山田';
+
+// ---------- 音 ----------
+let ac = null;
+function audio() {
+  if (!ac) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; ac = new AC(); }
+  if (ac.state === 'suspended') ac.resume();
+  return ac;
+}
+function tone(f, d, type = 'sine', v = .2, f2 = 0, delay = 0) {
+  const a = audio(); if (!a) return;
+  const t = a.currentTime + delay, o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + d);
+  g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.001, t + d);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t + d + .02);
+}
+let noiseBuf = null;
+function noise(d, v, fc, ftype = 'lowpass', delay = 0) {
+  const a = audio(); if (!a) return;
+  if (!noiseBuf) { noiseBuf = a.createBuffer(1, a.sampleRate, a.sampleRate); const c = noiseBuf.getChannelData(0); for (let i = 0; i < c.length; i++) c[i] = Math.random() * 2 - 1; }
+  const t = a.currentTime + delay, s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain();
+  s.buffer = noiseBuf; f.type = ftype; f.frequency.value = fc;
+  g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.001, t + d);
+  s.connect(f).connect(g).connect(a.destination); s.start(t, Math.random() * .5); s.stop(t + d + .02);
+}
+const SFX = {
+  stamp() { noise(.07, .55, 1100); tone(170, .1, 'sine', .45, 55); },
+  faint() { noise(.05, .18, 600); },
+  ink() { tone(320, .1, 'sine', .22, 160); noise(.06, .12, 500); },
+  done() { tone(988, .08, 'triangle', .16); tone(1319, .14, 'triangle', .16, 0, .06); },
+  gold() { [784, 988, 1175, 1568].forEach((f, i) => tone(f, .16, 'triangle', .16, 0, i * .07)); },
+  shred() { for (let i = 0; i < 6; i++) noise(.06, .22, 2600, 'bandpass', i * .05); tone(90, .3, 'sawtooth', .07); },
+  bad() { tone(180, .38, 'square', .14, 80); tone(186, .38, 'square', .1, 84); },
+  fever() { [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, .12, 'square', .09, 0, i * .055)); },
+  tick() { tone(1500, .04, 'square', .06); },
+  go() { tone(660, .1, 'square', .1); tone(990, .2, 'square', .1, 0, .1); },
+  end() { [784, 659, 523, 392].forEach((f, i) => tone(f, .18, 'triangle', .16, 0, i * .1)); },
+};
+const buzz = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
+
+// ---------- 書類 ----------
+const GOOD = ['有給休暇届', '会議の議事録', 'ボールペン購入申請（1本）', '社員旅行のしおり', '新しいイスの申請', 'お茶っ葉の補充', 'エアコン修理のお願い', 'コピー用紙の発注', '忘年会のお知らせ', '名刺の追加注文', '植木の水やり当番表', '回覧板：ネコが迷いこみました', '部長のお誕生日カード', 'ハンコを押すための許可願い', '「ハンコ申請」に押すハンコの申請', '健康診断のお知らせ', '新入社員の歓迎会', '冷蔵庫のプリンは名前を書こう', '会議室の予約', 'ホチキスの針（大箱）', '朝礼の順番表', '電球の交換依頼', '社内運動会の実施', '窓ふき業者の手配'];
+const BAD = ['部長のカツラ代（経費で）', '会社を犬にゆずる契約', '全員の給料を0円にする件', '月を買う（ローン300年）', '宇宙人との業務提携', 'あなたの全財産を寄付', 'ぜったい押してはいけない書類', '社長の席をタコにする件', '明日から本社を海の上へ', 'プリンを1億個発注', '会議を毎日8時間にする件', '有給休暇を全部なくす件', '社員証をすべてワカメに', 'となりの会社に会社をあげる'];
+const GOLD = ['超巨大プロジェクト契約書', '本社ビル100階建て計画', '世界進出の稟議書', '新商品「空飛ぶハンコ」発売'];
+const ROLES = ['担当', '主任', '係長', '課長', '次長', '部長'];
+
+const RANKS = [
+  [0, '新入社員', 'まだハンコの持ち方から練習中。朱肉は友だち。'],
+  [1500, '平社員', 'ハンコの音がだんだん様になってきた。'],
+  [3500, '主任', '机の上がすっきりしてきた。部長がこっちを見ている。'],
+  [6000, '係長', 'あなたのハンコを待つ書類が行列を作りはじめた。'],
+  [9500, '課長', '「あの人に回せばすぐ終わる」と社内でウワサに。'],
+  [14000, '部長', '部長が「ワシの席に座るか？」と言い出した。'],
+  [19000, '専務', 'ハンコの音で会社のリズムが決まるようになった。'],
+  [25000, '社長', 'ついに社長。最初の仕事はもちろんハンコ押し。'],
+  [32000, 'ハンコの神', '右手が残像になっている。日本中の書類があなたを待っている。'],
+];
+const rankOf = sc => { let r = RANKS[0]; for (const x of RANKS) if (sc >= x[0]) r = x; return r; };
+
+// ---------- ハンコ要素 ----------
+function makeStamp(size, faint) {
+  const e = document.createElement('div'), n = myName();
+  e.className = 'stamp' + (faint ? ' faint' : '');
+  e.style.width = e.style.height = size + 'px';
+  e.style.fontSize = Math.round(size * (n.length <= 1 ? .5 : n.length === 2 ? .36 : n.length === 3 ? .26 : .2)) + 'px';
+  e.style.setProperty('--r', rnd(-12, 12).toFixed(1) + 'deg');
+  e.textContent = n;
+  return e;
+}
+function drawTitleStamp() {
+  const box = $('#tStamp'); box.innerHTML = '';
+  const s = makeStamp(104); s.style.left = '23px'; s.style.top = '23px'; s.style.borderWidth = '5px'; box.appendChild(s);
+}
+
+// ---------- ゲーム状態 ----------
+const DUR = 40, INK_MAX = 10, FEVER_EVERY = 10, FEVER_LEN = 6;
+let G = null, docNo = 1, raf = 0;
+const desk = $('#desk'), fly = $('#fly');
+
+function startGame() {
+  audio();
+  $('#title').hidden = true; $('#result').hidden = true; $('#game').hidden = false;
+  [...desk.querySelectorAll('.doc')].forEach(e => e.remove());
+  fly.innerHTML = '';
+  G = { on: false, t: DUR, el: 0, score: 0, ink: INK_MAX, streak: 0, bestStreak: 0, done: 0, stamps: 0, rejects: 0, miss: 0, fever: 0, lock: 0, taps: [], maxTps: 0, doc: null, lastTick: 99, feverMeter: 0, sinceBad: 0, sinceGold: 0, sayT: 0 };
+  docNo = 1 + Math.floor(Math.random() * 300);
+  $('#game').classList.remove('fever');
+  setBoss('normal'); say('さあ、仕事だ！');
+  updHud(); updInk();
+  let n = 3;
+  const cd = () => {
+    if (n > 0) { banner(String(n)); tone(520, .1, 'square', .08); n--; setTimeout(cd, 650); }
+    else { banner('はじめ！'); SFX.go(); G.on = true; newDoc(); last = performance.now(); raf = requestAnimationFrame(loop); }
+  };
+  cd();
+}
+
+let last = 0;
+function loop(now) {
+  if (!G || !G.on) return;
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  G.t -= dt; G.el += dt;
+  if (G.lock > 0) G.lock -= dt;
+  if (G.fever > 0) { G.fever -= dt; if (G.fever <= 0) endFever(); }
+  if (G.sayT > 0) { G.sayT -= dt; if (G.sayT <= 0) idleTalk(); }
+  const sec = Math.ceil(G.t);
+  if (G.t <= 5 && sec !== G.lastTick && sec > 0) { G.lastTick = sec; SFX.tick(); }
+  const nowMs = performance.now();
+  while (G.taps.length && nowMs - G.taps[0] > 1000) G.taps.shift();
+  updHud();
+  if (G.t <= 0) { G.t = 0; updHud(); finish(); return; }
+  raf = requestAnimationFrame(loop);
+}
+
+function updHud() {
+  $('#timeBar').style.transform = `scaleX(${Math.max(0, Math.min(1, G.t / DUR))})`;
+  $('#timeBar').classList.toggle('low', G.t <= 8);
+  $('#timeTxt').textContent = G.t.toFixed(1);
+  $('#scoreTxt').textContent = G.score.toLocaleString();
+  $('#streakN').textContent = G.streak;
+}
+function updInk() {
+  const g = $('#inkGauge');
+  if (g.children.length !== INK_MAX) g.innerHTML = '<i></i>'.repeat(INK_MAX);
+  [...g.children].forEach((e, i) => e.classList.toggle('on', i < G.ink));
+  g.classList.toggle('inf', G.fever > 0);
+  $('#inkBtn').classList.toggle('need', G.ink <= 0 && G.fever <= 0);
+}
+const mult = () => (1 + Math.min(G.streak, 10) * .05) * (G.fever > 0 ? 2 : 1);
+
+function newDoc() {
+  const el = G.el, r = Math.random();
+  const badP = Math.min(.13 + el * .004, .27), goldP = el > 5 && G.sinceGold > 8 ? .07 : 0;
+  let type = 'good';
+  if (G.done + G.rejects > 0 && G.sinceBad > 0 && r < badP) type = 'bad';
+  else if (r < badP + goldP) type = 'gold';
+  G.sinceBad = type === 'bad' ? 0 : G.sinceBad + 1;
+  G.sinceGold = type === 'gold' ? 0 : G.sinceGold + 1;
+  const maxN = Math.min(6, 2 + Math.floor(el / 6));
+  const need = type === 'gold' ? 16 : type === 'bad' ? 2 + Math.floor(Math.random() * 3) : 1 + Math.floor(Math.random() * maxN);
+  const title = pick(type === 'gold' ? GOLD : type === 'bad' ? BAD : GOOD);
+  const e = document.createElement('div');
+  e.className = 'doc in ' + type;
+  e.style.setProperty('--tilt', rnd(-3, 3).toFixed(1) + 'deg');
+  const labels = type === 'gold' ? Array(need).fill('印') : ROLES.slice(ROLES.length - need);
+  e.innerHTML = `<div class="dh"><span>${type === 'gold' ? '★超重要★ 稟議書' : '稟議書'}</span><span>No.${String(docNo++).padStart(4, '0')}</span></div>
+    <div class="dt"></div><div class="dl"><i></i><i style="width:85%"></i><i style="width:55%"></i></div>
+    <div class="slots${need > 8 ? ' many' : ''}">${labels.map(l => `<div class="slot"><small>${l}</small></div>`).join('')}</div>`;
+  e.querySelector('.dt').textContent = title;
+  e.addEventListener('animationend', () => e.classList.remove('in'), { once: true });
+  desk.insertBefore(e, fly);
+  G.doc = { type, need, got: 0, el: e, slots: [...e.querySelectorAll('.slot')] };
+  $('#rejBtn').classList.toggle('hint', type === 'bad' && G.done + G.rejects < 4);
+}
+
+function sendOff(cls, wait = 400) {
+  const e = G.doc.el; e.classList.remove('in', 'jolt'); void e.offsetWidth; e.classList.add(cls);
+  setTimeout(() => e.remove(), wait);
+}
+
+function putStamp(slot, faint) {
+  const sz = slot.clientWidth - 6;
+  const s = makeStamp(sz, faint);
+  s.style.left = (3 + rnd(-3, 3)) + 'px'; s.style.top = (slot.clientHeight - sz - 2 + rnd(-3, 2)) + 'px';
+  slot.appendChild(s);
+  if (!faint) splat(slot);
+}
+function deskXY(el) {
+  const a = el.getBoundingClientRect(), b = desk.getBoundingClientRect();
+  return [a.left - b.left + a.width / 2, a.top - b.top + a.height / 2];
+}
+function splat(el) {
+  const [x, y] = deskXY(el);
+  for (let i = 0; i < 5; i++) {
+    const d = document.createElement('div'), s = rnd(3, 7), ang = rnd(0, Math.PI * 2), dist = rnd(20, 42);
+    d.className = 'dot'; d.style.width = d.style.height = s + 'px'; d.style.left = x + 'px'; d.style.top = y + 'px';
+    d.style.setProperty('--dx', Math.cos(ang) * dist + 'px'); d.style.setProperty('--dy', Math.sin(ang) * dist + 'px');
+    fly.appendChild(d); setTimeout(() => d.remove(), 400);
+  }
+}
+function popText(txt, x, y, bad) {
+  const p = document.createElement('div'); p.className = 'pop' + (bad ? ' bad' : '');
+  p.textContent = txt; p.style.left = (x + rnd(-50, 50)) + 'px'; p.style.top = (y + rnd(-15, 15)) + 'px';
+  fly.appendChild(p); setTimeout(() => p.remove(), 720);
+}
+function banner(t) { const b = $('#banner'); b.textContent = t; b.classList.remove('go'); void b.offsetWidth; b.classList.add('go'); }
+
+// ---------- 操作 ----------
+function doStamp() {
+  if (!G || !G.on || G.lock > 0 || !G.doc) return;
+  const d = G.doc, now = performance.now();
+  G.taps.push(now); if (G.taps.length > G.maxTps) G.maxTps = G.taps.length;
+  if (G.fever <= 0 && G.ink <= 0) {
+    if (d.got < d.need) putStamp(d.slots[d.got], true);
+    SFX.faint(); say(pick(['かすれとる！', '朱肉つけて！', 'インク！インク！']), 'angry');
+    return;
+  }
+  if (G.fever <= 0) { G.ink--; updInk(); }
+  if (d.type === 'bad') {
+    putStamp(d.slots[0], false); SFX.stamp();
+    mistake(pick(['それ押しちゃダメー！！', 'なんてことを！！', 'ワシの会社がー！']), 3, 'burn');
+    return;
+  }
+  const n = G.fever > 0 ? 2 : 1;
+  let k = 0;
+  while (k < n && d.got < d.need) { putStamp(d.slots[d.got++], false); k++; }
+  G.stamps += k; G.score += Math.round(5 * k * mult());
+  SFX.stamp(); buzz(6);
+  d.el.classList.add('jolt'); setTimeout(() => d.el.classList.remove('jolt'), 50);
+  if (d.got >= d.need) complete();
+  updHud();
+}
+
+function complete() {
+  const d = G.doc, gold = d.type === 'gold';
+  G.done++; G.streak++; G.bestStreak = Math.max(G.bestStreak, G.streak);
+  const pts = Math.round((gold ? 400 : 20 + d.need * 8) * mult());
+  G.score += pts;
+  const [x, y] = deskXY(d.el);
+  popText('+' + pts, x, y - 40);
+  if (gold) { SFX.gold(); popText('超重要！', x, y + 10); say('でかした！！', 'happy'); }
+  else { SFX.done(); if (Math.random() < .35) say(pick(['いいぞ！', 'はやい！', 'その調子！', 'うむ！', 'ナイスハンコ！', 'キレがある！']), 'happy'); }
+  sendOff('outR', 320);
+  checkFever();
+  newDoc();
+}
+
+function doReject() {
+  if (!G || !G.on || G.lock > 0 || !G.doc) return;
+  const d = G.doc;
+  shredFx();
+  if (d.type === 'bad') {
+    G.rejects++; G.streak++; G.bestStreak = Math.max(G.bestStreak, G.streak);
+    const pts = Math.round(60 * mult()); G.score += pts;
+    const [x, y] = deskXY(d.el); popText('ナイス却下 +' + pts, x, y - 40);
+    SFX.shred(); say(pick(['よく見抜いた！', 'あぶないところだった！', 'さすがだ！']), 'happy');
+    sendOff('outD', 380); checkFever(); newDoc(); updHud();
+  } else {
+    SFX.shred();
+    mistake(gold() ? '超重要書類がー！！' : pick(['それ大事なやつ！', '有給届がー！', 'なぜ消した！？']), 2, 'outD');
+  }
+  function gold() { return d.type === 'gold'; }
+}
+
+function doInk() {
+  if (!G || !G.on) return;
+  if (G.fever > 0) return;
+  G.ink = INK_MAX; updInk(); SFX.ink();
+}
+
+function mistake(msg, sec, cls) {
+  G.t -= sec; G.streak = 0; G.feverMeter = 0; G.miss++;
+  const [x, y] = deskXY(G.doc.el);
+  popText('−' + sec + '秒', x, y - 20, true);
+  SFX.bad(); buzz([40, 30, 60]);
+  say(msg, 'angry', 1.6);
+  const app = $('#app'); app.classList.remove('shake'); void app.offsetWidth; app.classList.add('shake');
+  sendOff(cls, 420);
+  G.doc = null; G.lock = .35;
+  setTimeout(() => { if (G && G.on) newDoc(); }, 300);
+  if (G.fever > 0) { G.fever = 0; endFever(); }
+  updHud();
+}
+
+function shredFx() {
+  const b = desk.getBoundingClientRect(), w = b.width;
+  for (let i = 0; i < 10; i++) {
+    const s = document.createElement('div'); s.className = 'strip';
+    s.style.left = (w / 2 - 60 + i * 12) + 'px'; s.style.top = (b.height - 70) + 'px';
+    s.style.setProperty('--dx', rnd(-30, 30) + 'px'); s.style.setProperty('--dr', rnd(-60, 60) + 'deg');
+    if (G.doc && G.doc.type === 'bad') s.style.background = '#e6daef';
+    fly.appendChild(s); setTimeout(() => s.remove(), 650);
+  }
+}
+
+function checkFever() {
+  if (G.fever > 0) return;
+  if (++G.feverMeter >= FEVER_EVERY) {
+    G.feverMeter = 0;
+    G.fever = FEVER_LEN; $('#game').classList.add('fever'); setBoss('fever');
+    say('フィーバーじゃ〜い！！', 'fever', FEVER_LEN); banner('ハンコ フィーバー！'); SFX.fever(); updInk();
+  }
+}
+function endFever() {
+  G.fever = 0; $('#game').classList.remove('fever'); setBoss('normal'); G.ink = INK_MAX; updInk();
+}
+
+// ---------- 部長 ----------
+function setBoss(m) { $('#boss').className = m; }
+function say(t, mood, dur = 1.1) {
+  const b = $('#bubble'); b.textContent = t; b.classList.add('pop'); setTimeout(() => b.classList.remove('pop'), 120);
+  if (G && G.fever > 0 && mood !== 'angry') mood = 'fever';
+  if (mood) setBoss(mood);
+  if (G) G.sayT = dur;
+}
+function idleTalk() {
+  if (!G) return;
+  if (G.fever > 0) return;
+  setBoss('normal');
+  const lines = G.t < 8 ? ['ラストスパート！', 'あと少しだ！', '定時まであとわずか！'] : ['どんどん押して！', '書類はまだまだあるぞ', 'ハンコは心で押すんだ', '紫の書類には気をつけろ', '朱肉は大事にな'];
+  $('#bubble').textContent = pick(lines);
+}
+
+// ---------- 終了 ----------
+function finish() {
+  G.on = false; cancelAnimationFrame(raf);
+  banner('定時です！'); SFX.end(); setBoss('happy'); $('#bubble').textContent = 'おつかれさん！';
+  $('#game').classList.remove('fever');
+  setTimeout(showResult, 1300);
+}
+function showResult() {
+  const r = rankOf(G.score), nb = G.score > S.best;
+  S.plays++;
+  if (nb) { S.best = G.score; S.bestRank = r[1]; }
+  save();
+  $('#rRank').textContent = r[1]; $('#rCom').textContent = r[2];
+  $('#rScore').textContent = G.score.toLocaleString() + ' 点';
+  $('#rNew').hidden = !nb;
+  $('#sDocs').textContent = G.done + '枚'; $('#sStamps').textContent = G.stamps + '個';
+  $('#sTps').textContent = G.maxTps + '回/秒'; $('#sRej').textContent = G.rejects + '枚';
+  $('#sStreak').textContent = G.bestStreak + '枚'; $('#sMiss').textContent = G.miss + '回';
+  const rs = $('#rStamp'); rs.innerHTML = ''; const s = makeStamp(56); s.style.position = 'relative'; rs.appendChild(s);
+  $('#result').hidden = false;
+}
+function toTitle() {
+  G = null; cancelAnimationFrame(raf);
+  $('#game').hidden = true; $('#result').hidden = true; $('#title').hidden = false;
+  $('#nameIn').value = S.name || '';
+  $('#tBest').textContent = S.best ? `自己ベスト ${S.best.toLocaleString()}点（${S.bestRank}）` : 'まだ記録なし';
+  drawTitleStamp();
+}
+
+// ---------- 入力 ----------
+desk.addEventListener('pointerdown', e => { e.preventDefault(); doStamp(); });
+$('#inkBtn').addEventListener('pointerdown', e => { e.preventDefault(); doInk(); });
+$('#rejBtn').addEventListener('pointerdown', e => { e.preventDefault(); doReject(); });
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.repeat) return;
+  const k = e.key.toLowerCase();
+  if (k === ' ' || k === 'enter' || k === 'j' || k === 'f') { e.preventDefault(); if (G) doStamp(); else if (!$('#title').hidden && k !== 'f' && k !== 'j') startGame(); }
+  else if (k === 'z') doInk();
+  else if (k === 'x') doReject();
+});
+document.addEventListener('contextmenu', e => e.preventDefault());
+$('#nameIn').addEventListener('input', e => { S.name = e.target.value.replace(/\s/g, '').slice(0, 4); save(); drawTitleStamp(); });
+$('#nameIn').addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });
+$('#startBtn').addEventListener('click', startGame);
+$('#againBtn').addEventListener('click', startGame);
+$('#backBtn').addEventListener('click', toTitle);
+$('#howBtn').addEventListener('click', () => $('#howto').hidden = false);
+$('#howClose').addEventListener('click', () => $('#howto').hidden = true);
+$('#howto').addEventListener('pointerdown', e => { if (e.target.id === 'howto') $('#howto').hidden = true; });
+toTitle();
+</script>
+<script src="../../playtime.js" defer></script>
+</body>
+</html>
