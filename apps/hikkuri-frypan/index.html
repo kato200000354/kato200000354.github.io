@@ -1,0 +1,745 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<script src="../../audio-pause.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>ひっくり返せ！フライパン食堂</title>
+<meta name="description" content="フライパンひとつで、へんてこなお客さんの注文に応えよう。タップでひっくり返して両面を焼き、ちょうどいい焼き加減でお客さんへ投げ渡す！ドラゴンはまっくろこげ、宇宙人は表と裏で違う焼き加減をご所望です。">
+<meta name="theme-color" content="#c8412b">
+<style>
+:root{--red:#c8412b;--red2:#8e2717;--ink:#3a2a1e;--dim:#8a7462;--cream:#fff8ea;--wall:#f6dfb8;--wood:#a8693a;--wood2:#7d4a24;--tile:#e9e3d6;--gold:#f2b705}
+[hidden]{display:none!important}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:#4a3324;color:var(--ink);font-family:"Hiragino Maru Gothic ProN","Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",system-ui,sans-serif;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer;touch-action:manipulation}
+#app{position:fixed;inset:0;max-width:520px;margin:0 auto;overflow:hidden;display:flex;flex-direction:column;background:var(--tile);box-shadow:0 0 30px rgba(0,0,0,.4);touch-action:none}
+#app.shake{animation:shake .3s}
+@keyframes shake{0%,100%{transform:none}25%{transform:translate(-7px,2px)}50%{transform:translate(6px,-3px)}75%{transform:translate(-3px,1px)}}
+
+/* HUD */
+#hud{display:flex;align-items:center;gap:6px;padding:8px 10px;padding-top:max(8px,env(safe-area-inset-top));background:var(--red);color:#fff;font-weight:900;flex:none}
+.pill{background:rgba(0,0,0,.22);border-radius:999px;padding:4px 10px;font-size:14px;white-space:nowrap}
+#hTime.low{background:#ffd23f;color:var(--red2);animation:pulse .5s infinite alternate}
+@keyframes pulse{to{transform:scale(1.08)}}
+#hQuota{flex:1;min-width:0}
+#hQuota .qbar{height:9px;border-radius:9px;background:rgba(0,0,0,.25);overflow:hidden}
+#hQuota .qbar i{display:block;height:100%;width:0;background:#ffd23f;border-radius:9px;transition:width .3s}
+#hQuota .qbar i.ok{background:#7be07b}
+#hQuota span{display:block;font-size:12px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#hHearts{font-size:15px;letter-spacing:-2px;white-space:nowrap}
+#mute{font-size:18px;width:30px}
+
+/* counter */
+#counter{flex:none;height:clamp(150px,27vh,200px);display:flex;gap:6px;padding:8px 8px 0;background:linear-gradient(var(--wall) 0 78%,var(--wood) 78% 88%,var(--wood2) 88%);position:relative}
+#counter::before{content:"";position:absolute;left:0;right:0;top:0;height:16px;background:repeating-linear-gradient(90deg,#d94b35 0 26px,#fff 26px 52px);border-radius:0 0 50% 50%/0 0 100% 100%;opacity:.9}
+.seat{flex:1;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:calc(clamp(150px,27vh,200px)*.22);border-radius:14px;transition:background .15s}
+.seat.hover{background:rgba(255,210,63,.45)}
+.seat .face{font-size:clamp(36px,9vw,48px);line-height:1;position:relative;transition:transform .2s}
+.seat .face.enter{animation:enter .45s cubic-bezier(.3,1.6,.5,1)}
+@keyframes enter{from{transform:translateY(60px) scale(.6);opacity:0}}
+.seat .face.angry{animation:wobble .25s infinite}
+@keyframes wobble{50%{transform:rotate(-8deg)}}
+.seat .face .mood{position:absolute;right:-10px;top:-6px;font-size:20px}
+.seat .chair{font-size:30px;opacity:.25}
+.bubble{position:relative;background:#fff;border-radius:12px;padding:4px 6px 5px;margin-bottom:7px;text-align:center;box-shadow:0 2px 0 rgba(0,0,0,.12);width:100%;max-width:150px}
+.bubble::after{content:"";position:absolute;left:50%;bottom:-6px;margin-left:-6px;border:6px solid transparent;border-top-color:#fff;border-bottom:0}
+.bubble .line{font-size:10.5px;color:var(--dim);line-height:1.25;min-height:13px}
+.bubble .ord{display:flex;align-items:center;justify-content:center;gap:3px;margin-top:1px}
+.bubble .fe{font-size:24px;line-height:1}
+.bubble .chips{display:flex;flex-direction:column;gap:2px}
+.chip{display:block;font-size:10.5px;font-weight:900;border-radius:6px;padding:1px 5px;white-space:nowrap}
+.bubble.react{font-size:14px;font-weight:900;padding:8px 6px}
+.pat{width:80%;height:5px;border-radius:5px;background:rgba(0,0,0,.15);overflow:hidden;position:absolute;bottom:calc(clamp(150px,27vh,200px)*.22 - 9px)}
+.pat i{display:block;height:100%;background:#4cbf56;width:100%}
+.pat i.mid{background:#f0b030}.pat i.low{background:#e04030}
+
+/* kitchen */
+#kitchen{flex:1;position:relative;min-height:0;background:
+ linear-gradient(90deg,rgba(0,0,0,.05) 1px,transparent 1px) 0 0/34px 34px,
+ linear-gradient(rgba(0,0,0,.05) 1px,transparent 1px) 0 0/34px 34px,var(--tile);display:flex;align-items:center;justify-content:center}
+#stove{position:relative;--pan:min(66vw,330px,max(190px,calc(100vh - 400px)))}
+#glow{position:absolute;left:50%;top:50%;width:calc(var(--pan)*1.05);height:calc(var(--pan)*1.05);transform:translate(-50%,-50%);border-radius:50%;transition:box-shadow .3s}
+#pan{position:relative;width:var(--pan);height:var(--pan);border-radius:50%;background:radial-gradient(circle at 40% 35%,#5d5f66,#2c2d31 62%,#1b1b1e);border:calc(var(--pan)*.035) solid #3c3d42;box-shadow:inset 0 0 0 3px #6d6f76,inset 0 8px 24px rgba(0,0,0,.6),0 8px 0 #222}
+#pan::after{content:"";position:absolute;left:92%;top:72%;width:calc(var(--pan)*.42);height:calc(var(--pan)*.1);background:linear-gradient(#5a3a22,#3d2513);border-radius:0 calc(var(--pan)*.05) calc(var(--pan)*.05) 0;transform:rotate(35deg);transform-origin:left center;box-shadow:0 4px 0 #2a180b;z-index:-1}
+.slot{position:absolute;width:36%;height:36%;transform:translate(-50%,-50%);border-radius:50%;border:2px dashed rgba(255,255,255,.08)}
+.food{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:grab;touch-action:none}
+.food .emo{font-size:calc(var(--pan)*.16);line-height:1;transition:filter .25s;filter:drop-shadow(0 3px 2px rgba(0,0,0,.5))}
+.food.drop{animation:drop .3s ease-out}
+@keyframes drop{from{transform:translateY(-40px) scale(1.3);opacity:0}}
+.food.flipping .emo{animation:flip .34s ease-in-out}
+@keyframes flip{0%{transform:none}50%{transform:translateY(-55px) rotateX(180deg) scale(1.15)}100%{transform:rotateX(360deg)}}
+.food.lifted{opacity:.25}
+.food.ready .emo{animation:ready 1s infinite}
+@keyframes ready{50%{transform:scale(1.08)}}
+.food.ready::before{content:"";position:absolute;inset:6%;border-radius:50%;box-shadow:0 0 0 3px #7be07b,0 0 18px #7be07b;pointer-events:none}
+.food.smoke::after{content:"💨";position:absolute;top:-6%;left:55%;font-size:calc(var(--pan)*.08);animation:smoke 1.1s infinite;pointer-events:none}
+@keyframes smoke{from{transform:translateY(0) scale(.6);opacity:.9}to{transform:translateY(-30px) scale(1.4);opacity:0}}
+.bars{width:96%;margin-top:3px;display:flex;flex-direction:column;gap:2px}
+.br{display:flex;align-items:center;gap:2px;font-size:9px;font-weight:900;color:#fff}
+.br b{width:11px;text-align:center;flex:none}
+.bar{position:relative;flex:1;height:7px;border-radius:4px;background:linear-gradient(90deg,#f4e7cc 0 21.4%,#ef8b8b 21.4% 35.7%,#bfb3a3 35.7% 39.3%,#f3b23d 39.3% 57.1%,#bfb3a3 57.1% 60%,#9a5a26 60% 75.7%,#6e6258 75.7% 84.3%,#111 84.3%);box-shadow:0 0 0 1px rgba(255,255,255,.35)}
+.bar .m{position:absolute;top:-3px;width:3px;height:13px;margin-left:-1.5px;background:#fff;border-radius:2px;box-shadow:0 0 0 1px #000}
+.br.hot b{color:#ffb347}
+
+#cat{position:absolute;font-size:calc(var(--pan)*.17);transform:translate(-50%,-50%);z-index:5;cursor:pointer;animation:catin .3s ease-out,catbob .35s .3s infinite alternate;filter:drop-shadow(0 3px 2px rgba(0,0,0,.5))}
+#cat::after{content:"ねらってる…";position:absolute;left:50%;top:-14px;transform:translateX(-50%);font-size:11px;font-weight:900;color:#fff;background:#e04030;border-radius:6px;padding:1px 5px;white-space:nowrap}
+@keyframes catin{from{transform:translate(-50%,-50%) scale(0)}}
+@keyframes catbob{to{transform:translate(-50%,-58%)}}
+
+#heat{position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px}
+#heat button{width:46px;padding:7px 0;border-radius:12px;background:#fff;font-weight:900;font-size:13px;box-shadow:0 3px 0 #cbbfae;line-height:1.1}
+#heat button span{display:block;font-size:16px}
+#heat button.on{background:#ff8a3d;color:#fff;box-shadow:0 3px 0 #b8541a}
+#heat .lbl{font-size:10px;font-weight:900;color:var(--dim);text-align:center}
+#trash{position:absolute;left:8px;bottom:10px;width:58px;height:62px;border-radius:14px;background:#fff;box-shadow:0 3px 0 #cbbfae;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:28px;transition:transform .15s}
+#trash small{font-size:10px;font-weight:900;color:var(--dim)}
+#trash.hover{transform:scale(1.15);background:#ffe0d8}
+
+/* tray */
+#tray{flex:none;display:flex;gap:6px;padding:8px;padding-bottom:max(8px,env(safe-area-inset-bottom));background:var(--wood);box-shadow:inset 0 4px 0 var(--wood2)}
+#foods{flex:1;display:flex;gap:5px;min-width:0}
+.fb{flex:1;min-width:0;background:var(--cream);border-radius:12px;padding:5px 0 4px;box-shadow:0 4px 0 #c9b28e;display:flex;flex-direction:column;align-items:center}
+.fb:active{transform:translateY(3px);box-shadow:0 1px 0 #c9b28e}
+.fb .e{font-size:28px;line-height:1}
+.fb small{font-size:9.5px;font-weight:900;color:var(--dim);white-space:nowrap}
+.fb.new{animation:newf 1s 3}
+@keyframes newf{50%{background:#ffe58a}}
+#flipAll{flex:none;width:76px;border-radius:12px;background:var(--red);color:#fff;font-weight:900;font-size:12px;box-shadow:0 4px 0 var(--red2);line-height:1.2}
+#flipAll span{display:block;font-size:24px}
+#flipAll:active{transform:translateY(3px);box-shadow:0 1px 0 var(--red2)}
+
+/* fx */
+#fx{position:fixed;inset:0;pointer-events:none;z-index:50}
+.pop{position:absolute;transform:translate(-50%,-50%);font-weight:900;font-size:18px;color:#fff;-webkit-text-stroke:5px var(--red2);paint-order:stroke fill;white-space:nowrap;animation:pop 1.1s ease-out forwards}
+.pop.big{font-size:26px;-webkit-text-stroke-color:#a06a00;color:#ffe14a}
+.pop.good{-webkit-text-stroke-color:#2a7a33}
+.pop.bad{-webkit-text-stroke-color:#333;color:#ddd}
+@keyframes pop{0%{transform:translate(-50%,-50%) scale(.4)}20%{transform:translate(-50%,-70%) scale(1.15)}100%{transform:translate(-50%,-190%) scale(1);opacity:0}}
+.ghost{position:fixed;font-size:56px;line-height:1;transform:translate(-50%,-60%) rotate(-8deg);filter:drop-shadow(0 10px 6px rgba(0,0,0,.4))}
+.fly{position:fixed;font-size:44px;line-height:1;transition:transform .55s cubic-bezier(.3,0,.7,1),opacity .55s}
+
+/* overlays */
+.ov{position:absolute;inset:0;z-index:30;background:rgba(58,30,14,.62);display:flex;align-items:center;justify-content:center;padding:16px}
+.card{background:var(--cream);border-radius:22px;padding:20px 18px;width:100%;max-width:400px;max-height:100%;overflow:auto;text-align:center;box-shadow:0 8px 0 rgba(0,0,0,.25);animation:cardin .3s cubic-bezier(.3,1.5,.5,1)}
+@keyframes cardin{from{transform:scale(.8);opacity:0}}
+.card h1{font-size:27px;line-height:1.2;color:var(--red);letter-spacing:.02em}
+.card h1 small{display:block;font-size:14px;color:var(--dim);letter-spacing:0;margin-bottom:4px}
+.card h2{font-size:22px;color:var(--red);margin-bottom:8px}
+.card p{font-size:14px;line-height:1.6;margin:8px 0}
+.logo{font-size:58px;line-height:1;margin:6px 0 4px;animation:logo 1.4s infinite}
+@keyframes logo{0%,60%,100%{transform:none}30%{transform:translateY(-22px) rotate(180deg)}}
+.rules{text-align:left;font-size:13px;line-height:1.55;background:#fff;border-radius:14px;padding:10px 12px;margin:10px 0}
+.rules li{list-style:none;padding-left:1.6em;text-indent:-1.6em;margin:3px 0}
+.btn{display:block;width:100%;padding:13px 16px;border-radius:16px;font-size:19px;font-weight:900;background:var(--red);color:#fff;box-shadow:0 5px 0 var(--red2);margin-top:10px}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--red2)}
+.btn.sub{background:#fff;color:var(--red2);box-shadow:0 5px 0 #d9c4a8;font-size:16px}
+.best{font-size:13px;color:var(--dim);font-weight:900;margin-top:8px}
+.stat{display:flex;justify-content:space-between;background:#fff;border-radius:10px;padding:7px 12px;margin:5px 0;font-size:15px;font-weight:900}
+.stat b{color:var(--red)}
+.verdict{font-size:22px;font-weight:900;margin:10px 0 4px}
+.verdict.ok{color:#2a9a3a}.verdict.ng{color:#c03020}
+.boss{font-size:13px;background:#fff3c9;border-radius:12px;padding:8px 10px;margin-top:8px;text-align:left;line-height:1.5}
+.perk{display:flex;align-items:center;gap:10px;width:100%;background:#fff;border-radius:14px;padding:10px 12px;margin:8px 0;text-align:left;box-shadow:0 4px 0 #d9c4a8}
+.perk:active{transform:translateY(3px);box-shadow:0 1px 0 #d9c4a8}
+.perk .pe{font-size:34px}
+.perk b{display:block;font-size:16px;color:var(--red)}
+.perk small{font-size:12px;color:var(--dim);line-height:1.4}
+.news{background:#fff;border-radius:12px;padding:8px 10px;margin:8px 0;font-size:14px;text-align:left;line-height:1.6}
+.news .t{font-size:11px;font-weight:900;color:var(--red)}
+.zl{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:6px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="hud">
+    <div class="pill" id="hDay">1日目</div>
+    <div class="pill" id="hTime">⏱ 75</div>
+    <div id="hQuota"><div class="qbar"><i></i></div><span>0 / 500円</span></div>
+    <div id="hHearts"></div>
+    <button id="mute" aria-label="音">🔊</button>
+  </header>
+  <section id="counter"></section>
+  <section id="kitchen">
+    <div id="stove"><div id="glow"></div><div id="pan"></div></div>
+    <div id="heat">
+      <div class="lbl">火力</div>
+      <button data-h="2"><span>🔥</span>強</button>
+      <button data-h="1" class="on"><span>🔥</span>中</button>
+      <button data-h="0"><span>🔥</span>弱</button>
+    </div>
+    <div id="trash">🗑️<small>すてる</small></div>
+  </section>
+  <footer id="tray">
+    <div id="foods"></div>
+    <button id="flipAll"><span>🔄</span>ぜんぶ<br>返す</button>
+  </footer>
+
+  <div class="ov" id="ovTitle">
+    <div class="card">
+      <h1><small>フライパンひとつで勝負！</small>ひっくり返せ！<br>フライパン食堂</h1>
+      <div class="logo">🍳</div>
+      <ul class="rules">
+        <li>🥚 下の食材をタップ → フライパンへ</li>
+        <li>👆 食材をタップ → <b>ひっくり返す</b>（焼けるのは下の面だけ）</li>
+        <li>🫴 食材を<b>お客さんまでドラッグ</b>して出す</li>
+        <li>🎯 ゲージの<b>上の面・下の面</b>を両方、注文の焼き加減の色に合わせよう</li>
+        <li>🐲 へんなお客さんは、へんな注文をします</li>
+        <li>🐈 ネコが来たらタップで追いはらう！</li>
+      </ul>
+      <div class="zl" id="zoneLegend"></div>
+      <button class="btn" id="bStart">開店する！</button>
+      <div class="best" id="bestT"></div>
+    </div>
+  </div>
+  <div class="ov" id="ovDay" hidden><div class="card" id="dayCard"></div></div>
+  <div class="ov" id="ovResult" hidden><div class="card" id="resCard"></div></div>
+  <div class="ov" id="ovPerk" hidden><div class="card" id="perkCard"></div></div>
+  <div class="ov" id="ovOver" hidden><div class="card" id="overCard"></div></div>
+</div>
+<div id="fx"></div>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const rand = (a, b) => a + Math.random() * (b - a);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const MAXV = 140;
+const DAY_LEN = 75;
+const HEAT = [0.55, 1, 1.7];
+const SKEY = 'hikkuri-frypan';
+
+const ZONES = {
+  rare: { n: 'レア', lo: 30, hi: 50, c: '#ef8b8b', t: '#5a1414' },
+  mid: { n: 'こんがり', lo: 55, hi: 80, c: '#f3b23d', t: '#4a2a00' },
+  well: { n: 'ウェルダン', lo: 84, hi: 106, c: '#9a5a26', t: '#fff' },
+  char: { n: 'まっくろ', lo: 118, hi: 140, c: '#1d1d1d', t: '#fff' },
+};
+const FOODS = {
+  egg: { e: '🍳', n: '目玉焼き', rate: 13, price: 120, from: 1 },
+  pancake: { e: '🥞', n: 'ホットケーキ', rate: 10, price: 150, from: 1 },
+  gyoza: { e: '🥟', n: 'ギョーザ', rate: 15, price: 180, from: 2 },
+  steak: { e: '🥩', n: 'ステーキ', rate: 8, price: 300, from: 3 },
+  bacon: { e: '🥓', n: 'ベーコン', rate: 20, price: 140, from: 4 },
+};
+const CUST = [
+  { e: '👦', n: '腹ペコ少年', want: ['mid'], line: ['こんがりで！', 'おなかすいた〜', 'はやくはやく！'], pay: 1, from: 1 },
+  { e: '👵', n: 'おばあちゃん', want: ['rare', 'mid'], line: ['ゆっくりでいいよ', 'やわらかめが好きでねぇ'], pay: 1, pat: 1.4, from: 1 },
+  { e: '👨‍💼', n: 'いそぐ会社員', want: ['mid', 'well'], line: ['昼休みあと3分！', '急いでくれ！'], pay: 1.15, pat: 0.65, from: 1 },
+  { e: '🧛', n: '吸血鬼', want: ['rare'], line: ['血のしたたる感じで', 'レアで頼む…フフ'], pay: 1.25, from: 2 },
+  { e: '🐲', n: 'ドラゴン', want: ['char'], line: ['まっくろこげで！', '焦げこそ至高', 'もっと焼け！'], pay: 1.5, from: 2 },
+  { e: '🐻', n: 'くま', want: ['well'], line: ['よく焼きで', 'がおー（よく焼き）'], pay: 1.3, from: 2 },
+  { e: '🤖', n: 'ロボット', want: ['mid'], line: ['コンガリ ヲ ヨウキュウ', 'ピピッ…ハラヘッタ'], pay: 1.2, from: 3 },
+  { e: '👽', n: '宇宙人', mixed: true, line: ['ウラ ト オモテ チガウ ヤキカタ', 'チキュウ リョウリ キョウミ アル'], pay: 1.8, pat: 1.3, from: 3 },
+  { e: '🧐', n: '料理評論家', want: ['rare', 'mid', 'well'], strict: true, line: ['ふむ、見せてもらおう', '妥協は許さんよ'], pay: 2.2, from: 4 },
+  { e: '👑', n: '王さま', want: ['mid', 'well'], line: ['余は腹がへった', 'うむ、くるしゅうない'], pay: 2.6, pat: 0.8, from: 5 },
+];
+const PERKS = [
+  { id: 'slot4', e: '🍳', n: '大きなフライパン', d: '一度に4つ焼けるようになる', once: true },
+  { id: 'tea', e: '🍵', n: 'お茶サービス', d: 'お客さんが30%長く待ってくれる', once: true },
+  { id: 'smile', e: '😁', n: '笑顔の接客', d: 'パーフェクト時のチップ +40%', },
+  { id: 'price', e: '💴', n: 'ねあげ', d: '全メニュー +15%', },
+  { id: 'bell', e: '🔔', n: 'ネコよけの鈴', d: 'ネコがあまり来なくなる', once: true, min: 1 },
+  { id: 'eye', e: '👀', n: 'プロの目', d: '注文どおりに焼けた食材が緑に光る', once: true },
+  { id: 'heart', e: '💖', n: '常連さん', d: '評判ハートの上限 +1（全回復）', once: true },
+];
+const BOSS = {
+  ok: ['いい腕だ。明日もたのむぞ。', 'フライパンさばきが板についてきたな。', 'ネコのエサ代もこれで安心だ。', 'ドラゴンが常連になりたいそうだ。', '店の前に行列ができてたぞ！'],
+  ng: ['…明日からは皿洗いからやり直しだ。', 'フライパンが泣いているぞ。', 'ネコのほうが料理うまいかもな。'],
+};
+const RANKS = [[1, '皿洗い見習い'], [2, 'フライパン新人'], [3, '屋台の看板コック'], [4, '町いちばんの焼き職人'], [5, 'ひっくり返しの達人'], [6, '伝説のフライパン王'], [8, 'フライパンの神']];
+
+/* ---------- save ---------- */
+let SAVE = {};
+try { SAVE = JSON.parse(localStorage.getItem(SKEY) || '{}') || {}; } catch (e) { SAVE = {}; }
+function store() { try { localStorage.setItem(SKEY, JSON.stringify(SAVE)); } catch (e) {} }
+
+/* ---------- audio ---------- */
+let AC = null, sizzleG = null, muted = !!SAVE.muted;
+function ac() {
+  if (!AC) {
+    try {
+      AC = new (window.AudioContext || window.webkitAudioContext)();
+      const len = AC.sampleRate * 2, buf = AC.createBuffer(1, len, AC.sampleRate), d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (Math.random() < 0.03 ? 1 : 0.35);
+      const src = AC.createBufferSource(); src.buffer = buf; src.loop = true;
+      const bp = AC.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 4200; bp.Q.value = 0.6;
+      sizzleG = AC.createGain(); sizzleG.gain.value = 0;
+      src.connect(bp); bp.connect(sizzleG); sizzleG.connect(AC.destination); src.start();
+    } catch (e) { AC = null; }
+  }
+  if (AC && AC.state === 'suspended') AC.resume();
+  return AC;
+}
+function tone(f, dur = 0.12, type = 'sine', vol = 0.2, f2 = null, delay = 0) {
+  if (muted || !AC) return;
+  const t = AC.currentTime + delay, o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t);
+  if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + dur + 0.02);
+}
+const SFX = {
+  flip: () => tone(300, 0.18, 'triangle', 0.15, 900),
+  place: () => { tone(180, 0.08, 'square', 0.06); tone(120, 0.1, 'sine', 0.2, 60); },
+  coin: () => { tone(988, 0.09, 'square', 0.08); tone(1319, 0.25, 'square', 0.08, null, 0.08); },
+  perfect: () => [784, 988, 1175, 1568].forEach((f, i) => tone(f, 0.18, 'triangle', 0.16, null, i * 0.07)),
+  bad: () => { tone(220, 0.3, 'sawtooth', 0.1, 110); },
+  no: () => { tone(330, 0.08, 'square', 0.08); tone(250, 0.12, 'square', 0.08, null, 0.09); },
+  meow: () => tone(700, 0.35, 'sawtooth', 0.07, 1100),
+  shoo: () => tone(500, 0.2, 'triangle', 0.15, 150),
+  trash: () => tone(160, 0.2, 'triangle', 0.18, 60),
+  bell: () => { tone(1568, 0.5, 'sine', 0.15); tone(2093, 0.6, 'sine', 0.08, null, 0.05); },
+};
+function setSizzle(v) {
+  if (!sizzleG) return;
+  sizzleG.gain.setTargetAtTime(muted ? 0 : v, AC.currentTime, 0.1);
+}
+
+/* ---------- state ---------- */
+let G = null;
+const counterEl = $('#counter'), panEl = $('#pan'), fxEl = $('#fx'), app = $('#app');
+const seatEls = [];
+for (let i = 0; i < 3; i++) {
+  const s = document.createElement('div'); s.className = 'seat'; s.dataset.i = i;
+  counterEl.appendChild(s); seatEls.push(s);
+}
+function newGame() {
+  G = { day: 1, total: 0, hearts: 3, maxH: 3, perks: {}, heat: 1, running: false, items: [], seats: [null, null, null], spawnT: [0, 0, 0], cat: null, catT: 0, combo: 0 };
+}
+function quotaOf(d) { return 500 + (d - 1) * 420 + Math.max(0, d - 4) * 150; }
+function priceMul() { return Math.pow(1.15, G.perks.price || 0); }
+
+/* ---------- pan slots ---------- */
+const SLOT_POS = { 3: [[50, 29], [28, 66], [72, 66]], 4: [[30, 31], [70, 31], [30, 69], [70, 69]] };
+function buildSlots() {
+  panEl.innerHTML = '';
+  const n = G.perks.slot4 ? 4 : 3;
+  G.items = Array(n).fill(null);
+  G.slotEls = SLOT_POS[n].map(([x, y]) => {
+    const s = document.createElement('div'); s.className = 'slot'; s.style.left = x + '%'; s.style.top = y + '%';
+    panEl.appendChild(s); return s;
+  });
+}
+
+/* ---------- food items ---------- */
+const pct = v => (Math.min(MAXV, v) / MAXV * 100) + '%';
+function cookFilter(v) {
+  const t = Math.min(v, MAXV) / MAXV;
+  return `drop-shadow(0 3px 2px rgba(0,0,0,.5)) sepia(${Math.min(1, t * 1.3).toFixed(2)}) saturate(${(0.6 + t * 1.6).toFixed(2)}) brightness(${(1.3 - t * 1.05).toFixed(2)})`;
+}
+function addFood(key) {
+  if (!G.running) return;
+  ac();
+  const i = G.items.indexOf(null);
+  if (i < 0) { pop('フライパンがいっぱい！', centerOf(panEl), 'bad'); SFX.no(); return; }
+  const f = FOODS[key];
+  const el = document.createElement('div'); el.className = 'food drop';
+  el.innerHTML = `<div class="emo">${f.e}</div><div class="bars"><div class="br"><b>上</b><div class="bar"><i class="m"></i></div></div><div class="br hot"><b>下</b><div class="bar"><i class="m"></i></div></div></div>`;
+  const it = { key, sides: [0, 0], top: 0, el, emo: el.querySelector('.emo'), m: el.querySelectorAll('.m'), flipping: false, lifted: false };
+  el.addEventListener('pointerdown', e => startDrag(e, it));
+  G.slotEls[i].appendChild(el);
+  G.items[i] = it;
+  drawItem(it);
+  SFX.place();
+}
+function drawItem(it) {
+  const top = it.sides[it.top], bot = it.sides[1 - it.top];
+  it.emo.style.filter = cookFilter(top);
+  it.m[0].style.left = pct(top);
+  it.m[1].style.left = pct(bot);
+  it.el.classList.toggle('smoke', bot > 108 && !it.lifted);
+}
+function flip(it) {
+  if (it.flipping) return;
+  it.flipping = true; it.el.classList.add('flipping'); SFX.flip();
+  setTimeout(() => { it.top = 1 - it.top; drawItem(it); }, 170);
+  setTimeout(() => { it.flipping = false; it.el.classList.remove('flipping'); }, 340);
+}
+function removeItem(it) {
+  const i = G.items.indexOf(it);
+  if (i >= 0) G.items[i] = null;
+  it.el.remove();
+}
+
+/* ---------- drag ---------- */
+let drag = null;
+function startDrag(e, it) {
+  if (!G.running || it.flipping) return;
+  e.preventDefault(); ac();
+  drag = { it, x0: e.clientX, y0: e.clientY, moved: false, ghost: null, hover: null };
+}
+function hitTarget(x, y) {
+  const el = document.elementFromPoint(x, y);
+  if (!el) return null;
+  const seat = el.closest('.seat'); if (seat) return seat;
+  const tr = el.closest('#trash'); if (tr) return tr;
+  return null;
+}
+window.addEventListener('pointermove', e => {
+  if (!drag) return;
+  if (!drag.moved && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 10) {
+    drag.moved = true; drag.it.lifted = true; drag.it.el.classList.add('lifted');
+    const g = document.createElement('div'); g.className = 'ghost';
+    g.textContent = FOODS[drag.it.key].e; g.style.filter = cookFilter(drag.it.sides[drag.it.top]);
+    fxEl.appendChild(g); drag.ghost = g;
+  }
+  if (drag.moved) {
+    drag.ghost.style.left = e.clientX + 'px'; drag.ghost.style.top = e.clientY + 'px';
+    const t = hitTarget(e.clientX, e.clientY);
+    if (t !== drag.hover) { if (drag.hover) drag.hover.classList.remove('hover'); if (t) t.classList.add('hover'); drag.hover = t; }
+  }
+});
+function endDrag(e, cancel) {
+  if (!drag) return;
+  const d = drag; drag = null;
+  if (d.hover) d.hover.classList.remove('hover');
+  const alive = G.items.includes(d.it);
+  if (!d.moved) { if (alive && !cancel) flip(d.it); return; }
+  d.ghost.remove();
+  d.it.lifted = false; d.it.el.classList.remove('lifted');
+  if (!alive || cancel || !G.running) return;
+  const t = hitTarget(e.clientX, e.clientY);
+  if (t && t.id === 'trash') { removeItem(d.it); SFX.trash(); pop('ポイッ', { x: e.clientX, y: e.clientY }, 'bad'); G.combo = 0; }
+  else if (t && t.classList.contains('seat')) serve(d.it, +t.dataset.i, e.clientX, e.clientY);
+}
+window.addEventListener('pointerup', e => endDrag(e, false));
+window.addEventListener('pointercancel', e => endDrag(e, true));
+
+/* ---------- customers ---------- */
+function zoneChips(want) {
+  const chip = (z, pre) => `<span class="chip" style="background:${ZONES[z].c};color:${ZONES[z].t}">${pre}${ZONES[z].n}</span>`;
+  return want[0] === want[1] ? chip(want[0], '両面') : chip(want[0], '片面') + chip(want[1], '片面');
+}
+function spawn(i) {
+  const types = CUST.filter(c => c.from <= G.day);
+  const t = pick(types);
+  const food = pick(Object.keys(FOODS).filter(k => FOODS[k].from <= G.day));
+  let want;
+  if (t.mixed) { const z = shuffle(Object.keys(ZONES)); want = [z[0], z[1]]; }
+  else { const z = pick(t.want); want = [z, z]; }
+  const base = Math.max(13, 27 - G.day * 1.4) * (t.pat || 1) * (G.perks.tea ? 1.3 : 1) + 70 / FOODS[food].rate;
+  G.seats[i] = { t, food, want, pat: base, patMax: base, leaving: false, line: pick(t.line) };
+  renderSeat(i, true);
+}
+function renderSeat(i, enter) {
+  const s = G.seats[i], el = seatEls[i];
+  if (!s) { el.innerHTML = '<div class="chair">🪑</div>'; return; }
+  const f = FOODS[s.food];
+  el.innerHTML = `<div class="bubble"><div class="line">${s.line}</div><div class="ord"><span class="fe">${f.e}</span><span class="chips">${zoneChips(s.want)}</span></div></div><div class="face${enter ? ' enter' : ''}">${s.t.e}<span class="mood"></span></div><div class="pat"><i></i></div>`;
+  s.patEl = el.querySelector('.pat i'); s.faceEl = el.querySelector('.face'); s.moodEl = el.querySelector('.mood');
+}
+function leave(i, face, text) {
+  const s = G.seats[i]; if (!s) return;
+  s.leaving = true;
+  const el = seatEls[i];
+  el.querySelector('.bubble').outerHTML = `<div class="bubble react">${text}</div>`;
+  s.moodEl.textContent = face;
+  s.faceEl.classList.remove('angry');
+  const p = el.querySelector('.pat'); if (p) p.remove();
+  setTimeout(() => {
+    if (G.seats[i] !== s) return;
+    G.seats[i] = null; renderSeat(i);
+    G.spawnT[i] = rand(1.2, 3.5) * Math.max(0.45, 1 - G.day * 0.08);
+  }, 1100);
+}
+function sideScore(v, z) {
+  const Z = ZONES[z]; const d = v < Z.lo ? Z.lo - v : v > Z.hi ? v - Z.hi : 0;
+  return d === 0 ? 2 : d <= 10 ? 1 : 0;
+}
+function gradeOf(sides, want) {
+  return Math.max(sideScore(sides[0], want[0]) + sideScore(sides[1], want[1]), sideScore(sides[0], want[1]) + sideScore(sides[1], want[0]));
+}
+function serve(it, i, x, y) {
+  const s = G.seats[i];
+  if (!s || s.leaving) { SFX.no(); return; }
+  if (s.food !== it.key) { SFX.no(); pop(`${FOODS[s.food].n}がいい！`, { x, y }, 'bad'); return; }
+  removeItem(it);
+  let g = gradeOf(it.sides, s.want);
+  if (s.t.strict && g < 4) g = 0;
+  const pos = centerOf(seatEls[i]);
+  const base = FOODS[s.food].price * s.t.pay * priceMul();
+  G.served++;
+  if (g === 4) {
+    G.combo++; G.perfect++;
+    const tip = 1.5 + 0.4 * (G.perks.smile || 0);
+    const pay = Math.round((base * tip + (G.combo - 1) * 20) / 10) * 10;
+    earn(pay); SFX.perfect();
+    pop('パーフェクト！', { x: pos.x, y: pos.y - 30 }, 'big');
+    pop(`+${pay}円${G.combo > 1 ? ` (${G.combo}連続)` : ''}`, { x: pos.x, y: pos.y + 10 }, 'good');
+    leave(i, '😍', pick(s.t.strict ? ['★★★ 完璧だ！', '…まいった'] : s.t.e === '🐲' ? ['ガオォ！最高の焦げ！', 'この苦み…たまらん'] : ['うまっ！！', 'さいこう！', 'また来る！', 'ほっぺ落ちた']));
+  } else if (g === 3) {
+    G.combo = 0;
+    const pay = Math.round(base / 10) * 10; earn(pay); SFX.coin();
+    pop(`+${pay}円`, pos, 'good');
+    leave(i, '😋', pick(['おいしい！', 'いいね！', 'ごちそうさま']));
+  } else if (g === 2) {
+    G.combo = 0;
+    const pay = Math.round(base * 0.5 / 10) * 10; earn(pay); SFX.coin();
+    pop(`+${pay}円`, pos, 'bad');
+    leave(i, '😐', pick(['まあまあ…', 'ちょっとちがうかな', 'ふつう']));
+  } else {
+    G.combo = 0; SFX.bad(); shake();
+    pop('まずい！', pos, 'bad');
+    leave(i, '🤮', s.t.strict ? '話にならん！' : pick(['なにこれ…', 'お金はらわない！', 'ナマじゃん！']));
+    loseHeart();
+  }
+}
+function earn(v) { G.sales += v; }
+function loseHeart() {
+  G.hearts--; renderHUD();
+  if (G.hearts <= 0) setTimeout(() => gameOver(true), 600);
+}
+
+/* ---------- cat ---------- */
+function spawnCat() {
+  const idx = G.items.map((it, i) => it && !it.lifted ? i : -1).filter(i => i >= 0);
+  if (!idx.length) { G.catT = 2; return; }
+  const i = pick(idx);
+  const c = document.createElement('div'); c.id = 'cat'; c.textContent = '🐈';
+  const [x, y] = (G.perks.slot4 ? SLOT_POS[4] : SLOT_POS[3])[i];
+  c.style.left = (x + (x < 50 ? -14 : 14)) + '%'; c.style.top = (y - 14) + '%';
+  c.addEventListener('pointerdown', e => {
+    e.stopPropagation(); e.preventDefault();
+    if (!G.cat) return;
+    SFX.shoo(); pop('シッシッ！', { x: e.clientX, y: e.clientY }, 'good');
+    removeCat();
+  });
+  panEl.appendChild(c);
+  G.cat = { el: c, target: G.items[i], t: 2.6 };
+  SFX.meow();
+}
+function removeCat() {
+  if (G.cat) G.cat.el.remove();
+  G.cat = null;
+  G.catT = rand(11, 18) * (G.perks.bell ? 2.2 : 1);
+}
+
+/* ---------- fx ---------- */
+function centerOf(el) { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }
+function pop(text, p, cls = '') {
+  const d = document.createElement('div'); d.className = 'pop ' + cls; d.textContent = text;
+  d.style.left = p.x + 'px'; d.style.top = p.y + 'px';
+  fxEl.appendChild(d); setTimeout(() => d.remove(), 1150);
+}
+function shake() { app.classList.remove('shake'); void app.offsetWidth; app.classList.add('shake'); }
+
+/* ---------- HUD ---------- */
+function renderHUD() {
+  $('#hDay').textContent = `${G.day}日目`;
+  const t = Math.max(0, Math.ceil(G.time));
+  const ht = $('#hTime'); ht.textContent = `⏱ ${t}`; ht.classList.toggle('low', t <= 10 && G.running);
+  const q = G.quota, bar = $('#hQuota i');
+  bar.style.width = Math.min(100, G.sales / q * 100) + '%'; bar.classList.toggle('ok', G.sales >= q);
+  $('#hQuota span').textContent = `売上 ${G.sales} / ${q}円`;
+  $('#hHearts').textContent = '❤️'.repeat(Math.max(0, G.hearts)) + '🤍'.repeat(Math.max(0, G.maxH - G.hearts));
+}
+function renderFoods(day) {
+  const box = $('#foods'); box.innerHTML = '';
+  Object.entries(FOODS).filter(([, f]) => f.from <= day).forEach(([k, f]) => {
+    const b = document.createElement('button'); b.className = 'fb' + (f.from === day && day > 1 ? ' new' : '');
+    b.innerHTML = `<span class="e">${f.e}</span><small>${f.n.length > 4 ? f.n.slice(0, 4) + '…' : f.n}</small>`;
+    b.addEventListener('click', () => addFood(k));
+    box.appendChild(b);
+  });
+}
+function setHeat(h) {
+  G.heat = h;
+  document.querySelectorAll('#heat button').forEach(b => b.classList.toggle('on', +b.dataset.h === h));
+  const glow = ['0 0 20px 4px rgba(255,140,40,.35)', '0 0 34px 10px rgba(255,110,20,.55)', '0 0 50px 18px rgba(255,60,0,.75)'][h];
+  $('#glow').style.boxShadow = glow;
+}
+document.querySelectorAll('#heat button').forEach(b => b.addEventListener('click', () => { ac(); setHeat(+b.dataset.h); tone(200 + 150 * +b.dataset.h, 0.1, 'triangle', 0.1); }));
+$('#flipAll').addEventListener('click', () => {
+  if (!G || !G.running) return; ac();
+  G.items.forEach((it, k) => { if (it && !it.lifted) setTimeout(() => G.items.includes(it) && flip(it), k * 45); });
+});
+$('#mute').addEventListener('click', () => {
+  muted = !muted; SAVE.muted = muted; store();
+  $('#mute').textContent = muted ? '🔇' : '🔊';
+  ac(); setSizzle(0);
+});
+$('#mute').textContent = muted ? '🔇' : '🔊';
+
+/* ---------- loop ---------- */
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (G && G.running) update(dt);
+  requestAnimationFrame(loop);
+}
+function update(dt) {
+  G.time -= dt;
+  // cook
+  let cooking = 0;
+  const hm = HEAT[G.heat];
+  G.items.forEach(it => {
+    if (!it) return;
+    if (!it.lifted && !it.flipping) {
+      const b = 1 - it.top;
+      it.sides[b] = Math.min(MAXV, it.sides[b] + FOODS[it.key].rate * hm * dt);
+      cooking++;
+    }
+    drawItem(it);
+    if (G.perks.eye) it.el.classList.toggle('ready', G.seats.some(s => s && !s.leaving && s.food === it.key && gradeOf(it.sides, s.want) === 4));
+  });
+  setSizzle(cooking ? Math.min(0.12, 0.03 + cooking * 0.018 * hm) : 0);
+  // customers
+  for (let i = 0; i < 3; i++) {
+    const s = G.seats[i];
+    if (s) {
+      if (s.leaving) continue;
+      s.pat -= dt;
+      const r = Math.max(0, s.pat / s.patMax);
+      s.patEl.style.width = r * 100 + '%';
+      s.patEl.className = r < 0.25 ? 'low' : r < 0.5 ? 'mid' : '';
+      s.faceEl.classList.toggle('angry', r < 0.25);
+      s.moodEl.textContent = r < 0.25 ? '💢' : '';
+      if (s.pat <= 0) {
+        G.combo = 0; SFX.bad(); shake();
+        pop('おそい！', centerOf(seatEls[i]), 'bad');
+        leave(i, '😡', pick(['もう帰る！', 'おそすぎ！', 'ぷんぷん！']));
+        loseHeart();
+      }
+    } else if (G.time > 7) {
+      G.spawnT[i] -= dt;
+      if (G.spawnT[i] <= 0) spawn(i);
+    }
+  }
+  // cat
+  if (G.day >= 2) {
+    if (G.cat) {
+      G.cat.t -= dt;
+      if (!G.items.includes(G.cat.target) || G.cat.target.lifted) removeCat();
+      else if (G.cat.t <= 0) {
+        const it = G.cat.target, p = centerOf(it.el);
+        const fly = document.createElement('div'); fly.className = 'fly'; fly.textContent = '🐈' + FOODS[it.key].e;
+        fly.style.left = (p.x - 40) + 'px'; fly.style.top = (p.y - 22) + 'px';
+        fxEl.appendChild(fly);
+        requestAnimationFrame(() => { fly.style.transform = `translate(${p.x < innerWidth / 2 ? -400 : 400}px,-120px)`; fly.style.opacity = '0'; });
+        setTimeout(() => fly.remove(), 700);
+        removeItem(it); SFX.meow(); pop('ネコにとられた！', p, 'bad'); G.combo = 0;
+        removeCat();
+      }
+    } else {
+      G.catT -= dt;
+      if (G.catT <= 0) spawnCat();
+    }
+  }
+  if (G.time <= 0) { G.time = 0; endDay(); }
+  renderHUD();
+}
+requestAnimationFrame(loop);
+
+/* ---------- flow ---------- */
+function show(id) { ['#ovTitle', '#ovDay', '#ovResult', '#ovPerk', '#ovOver'].forEach(s => $(s).hidden = s !== id); }
+function hideAll() { show(null); }
+function clearStage() {
+  if (drag) { if (drag.ghost) drag.ghost.remove(); drag = null; }
+  if (G.cat) { G.cat.el.remove(); G.cat = null; }
+  G.items.forEach(it => it && it.el.remove());
+  G.items = G.items.map(() => null);
+  G.seats = [null, null, null];
+  for (let i = 0; i < 3; i++) renderSeat(i);
+  setSizzle(0);
+}
+function dayIntro() {
+  G.quota = quotaOf(G.day);
+  const nf = Object.values(FOODS).filter(f => f.from === G.day);
+  const nc = CUST.filter(c => c.from === G.day);
+  let news = '';
+  if (G.day > 1 && nf.length) news += `<div class="news"><div class="t">新メニュー</div>${nf.map(f => `${f.e} ${f.n}`).join('　')}</div>`;
+  if (G.day > 1 && nc.length) news += `<div class="news"><div class="t">新しいお客さん</div>${nc.map(c => `${c.e} ${c.n}${c.mixed ? '<br><small>表と裏で別々の焼き加減を注文してくる</small>' : c.strict ? '<br><small>パーフェクト以外はゆるさない。そのぶん高く払う</small>' : c.want[0] === 'char' ? '<br><small>まっくろこげが大好物</small>' : ''}`).join('<br>')}</div>`;
+  if (G.day === 2) news += `<div class="news"><div class="t">ちゅうい</div>🐈 ノラネコが食材をねらいに来るようになった！</div>`;
+  $('#dayCard').innerHTML = `<h2>${G.day}日目</h2><div class="stat">今日のノルマ<b>${G.quota}円</b></div>${news}<button class="btn" id="bGo">開店！</button>`;
+  show('#ovDay');
+  $('#bGo').onclick = startDay;
+}
+function startDay() {
+  ac();
+  hideAll();
+  buildSlots();
+  renderFoods(G.day);
+  G.time = DAY_LEN; G.sales = 0; G.served = 0; G.perfect = 0; G.combo = 0;
+  G.seats = [null, null, null];
+  for (let i = 0; i < 3; i++) renderSeat(i);
+  G.spawnT = [0.4, 2.2, 4.5].map(v => v * Math.max(0.5, 1 - G.day * 0.08));
+  G.catT = rand(9, 15) * (G.perks.bell ? 2.2 : 1);
+  setHeat(1);
+  G.running = true;
+  SFX.bell();
+  pop('開店！', centerOf(panEl), 'big');
+  renderHUD();
+}
+function endDay() {
+  if (!G.running) return;
+  G.running = false;
+  clearStage();
+  renderHUD();
+  G.total += G.sales;
+  const ok = G.sales >= G.quota;
+  $('#resCard').innerHTML = `<h2>${G.day}日目 しめ</h2>
+    <div class="stat">売上<b>${G.sales}円</b></div>
+    <div class="stat">ノルマ<b>${G.quota}円</b></div>
+    <div class="stat">出した料理<b>${G.served}品</b></div>
+    <div class="stat">パーフェクト<b>${G.perfect}品</b></div>
+    <div class="verdict ${ok ? 'ok' : 'ng'}">${ok ? '🎉 ノルマ達成！' : '😱 ノルマ未達…'}</div>
+    <div class="boss">👨‍🍳 店長「${pick(ok ? BOSS.ok : BOSS.ng)}」</div>
+    <button class="btn" id="bNext">${ok ? 'つぎへ' : '結果を見る'}</button>`;
+  show('#ovResult');
+  if (ok) SFX.perfect(); else SFX.bad();
+  $('#bNext').onclick = ok ? perkPick : () => gameOver(false);
+}
+function perkPick() {
+  const opts = shuffle(PERKS.filter(p => !(p.once && G.perks[p.id]) && (p.min || 0) <= G.day)).slice(0, 3);
+  $('#perkCard').innerHTML = `<h2>ごほうびを1つえらぼう</h2><p>あしたの営業がラクになるよ</p>${opts.map(p => `<button class="perk" data-id="${p.id}"><span class="pe">${p.e}</span><span><b>${p.n}</b><small>${p.d}</small></span></button>`).join('')}`;
+  show('#ovPerk');
+  $('#perkCard').querySelectorAll('.perk').forEach(b => b.onclick = () => {
+    const id = b.dataset.id;
+    G.perks[id] = (G.perks[id] || 0) + 1;
+    if (id === 'heart') { G.maxH++; G.hearts = G.maxH; }
+    G.hearts = Math.min(G.maxH, G.hearts + 1);
+    SFX.coin();
+    G.day++;
+    dayIntro();
+  });
+}
+function rankOf(d) { let r = RANKS[0][1]; RANKS.forEach(([n, t]) => { if (d >= n) r = t; }); return r; }
+function gameOver(byHearts) {
+  if (G.running) { G.running = false; G.total += G.sales; clearStage(); }
+  if (!$('#ovOver').hidden) return;
+  const cleared = G.day - 1;
+  const best = SAVE.best || 0, bestDay = SAVE.bestDay || 0;
+  const isBest = G.total > best;
+  if (isBest) SAVE.best = G.total;
+  if (cleared > bestDay) SAVE.bestDay = cleared;
+  store();
+  $('#overCard').innerHTML = `<h2>${byHearts ? '評判が地に落ちた…' : '閉店…'}</h2>
+    <div class="logo" style="animation:none">${byHearts ? '💔' : '🍳'}</div>
+    <div class="stat">クリアした日数<b>${cleared}日</b></div>
+    <div class="stat">売上の合計<b>${G.total}円</b></div>
+    <div class="verdict ok" style="color:var(--red)">称号：${rankOf(cleared + 1)}</div>
+    ${isBest ? '<div class="verdict ok">🏆 自己ベスト更新！</div>' : `<div class="best">ベスト：${best}円</div>`}
+    <button class="btn" id="bRetry">もう一度</button>
+    <button class="btn sub" id="bTitle">タイトルへ</button>`;
+  show('#ovOver');
+  $('#bRetry').onclick = () => { newGame(); dayIntro(); };
+  $('#bTitle').onclick = title;
+}
+function title() {
+  newGame();
+  G.quota = quotaOf(1); G.sales = 0; G.time = DAY_LEN;
+  buildSlots(); renderFoods(1); setHeat(1);
+  for (let i = 0; i < 3; i++) renderSeat(i);
+  renderHUD();
+  $('#bestT').textContent = SAVE.best ? `ベスト：${SAVE.best}円（${SAVE.bestDay || 0}日クリア）` : '';
+  show('#ovTitle');
+}
+$('#zoneLegend').innerHTML = Object.values(ZONES).map(z => `<span class="chip" style="background:${z.c};color:${z.t}">${z.n}</span>`).join('');
+$('#bStart').onclick = () => { ac(); newGame(); dayIntro(); };
+title();
+</script>
+<script src="../../playtime.js" defer></script>
+</body>
+</html>
