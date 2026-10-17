@@ -78,7 +78,7 @@ button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer
 .bars{width:96%;margin-top:3px;display:flex;flex-direction:column;gap:2px}
 .br{display:flex;align-items:center;gap:2px;font-size:9px;font-weight:900;color:#fff}
 .br b{width:11px;text-align:center;flex:none}
-.bar{position:relative;flex:1;height:7px;border-radius:4px;background:linear-gradient(90deg,#f4e7cc 0 21.4%,#ef8b8b 21.4% 35.7%,#bfb3a3 35.7% 39.3%,#f3b23d 39.3% 57.1%,#bfb3a3 57.1% 60%,#9a5a26 60% 75.7%,#6e6258 75.7% 84.3%,#111 84.3%);box-shadow:0 0 0 1px rgba(255,255,255,.35)}
+.bar{position:relative;flex:1;height:7px;border-radius:4px;background:linear-gradient(90deg,#f4e7cc 0 17.9%,#ef8b8b 17.9% 37.1%,#f3b23d 37.1% 58.6%,#9a5a26 58.6% 78.6%,#6e6258 78.6% 80%,#111 80%);box-shadow:0 0 0 1px rgba(255,255,255,.35)}
 .bar .m{position:absolute;top:-3px;width:3px;height:13px;margin-left:-1.5px;background:#fff;border-radius:2px;box-shadow:0 0 0 1px #000}
 .br.hot b{color:#ffb347}
 
@@ -184,6 +184,7 @@ button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer
         <li>👆 食材をタップ → <b>ひっくり返す</b>（焼けるのは下の面だけ）</li>
         <li>🫴 食材を<b>お客さんまでドラッグ</b>して出す</li>
         <li>🎯 ゲージの<b>上の面・下の面</b>を両方、注文の焼き加減の色に合わせよう</li>
+        <li>✨ 注文どおりに焼けると<b>緑に光る</b>！光ったら出そう</li>
         <li>🐲 へんなお客さんは、へんな注文をします</li>
         <li>🐈 ネコが来たらタップで追いはらう！</li>
       </ul>
@@ -211,17 +212,17 @@ const HEAT = [0.55, 1, 1.7];
 const SKEY = 'hikkuri-frypan';
 
 const ZONES = {
-  rare: { n: 'レア', lo: 30, hi: 50, c: '#ef8b8b', t: '#5a1414' },
-  mid: { n: 'こんがり', lo: 55, hi: 80, c: '#f3b23d', t: '#4a2a00' },
-  well: { n: 'ウェルダン', lo: 84, hi: 106, c: '#9a5a26', t: '#fff' },
-  char: { n: 'まっくろ', lo: 118, hi: 140, c: '#1d1d1d', t: '#fff' },
+  rare: { n: 'レア', lo: 25, hi: 52, c: '#ef8b8b', t: '#5a1414' },
+  mid: { n: 'こんがり', lo: 52, hi: 82, c: '#f3b23d', t: '#4a2a00' },
+  well: { n: 'ウェルダン', lo: 82, hi: 110, c: '#9a5a26', t: '#fff' },
+  char: { n: 'まっくろ', lo: 112, hi: 140, c: '#1d1d1d', t: '#fff' },
 };
 const FOODS = {
-  egg: { e: '🍳', n: '目玉焼き', rate: 13, price: 120, from: 1 },
-  pancake: { e: '🥞', n: 'ホットケーキ', rate: 10, price: 150, from: 1 },
-  gyoza: { e: '🥟', n: 'ギョーザ', rate: 15, price: 180, from: 2 },
-  steak: { e: '🥩', n: 'ステーキ', rate: 8, price: 300, from: 3 },
-  bacon: { e: '🥓', n: 'ベーコン', rate: 20, price: 140, from: 4 },
+  egg: { e: '🍳', n: '目玉焼き', rate: 10, price: 120, from: 1 },
+  pancake: { e: '🥞', n: 'ホットケーキ', rate: 8, price: 150, from: 1 },
+  gyoza: { e: '🥟', n: 'ギョーザ', rate: 12, price: 180, from: 2 },
+  steak: { e: '🥩', n: 'ステーキ', rate: 7, price: 300, from: 3 },
+  bacon: { e: '🥓', n: 'ベーコン', rate: 15, price: 140, from: 4 },
 };
 const CUST = [
   { e: '👦', n: '腹ペコ少年', want: ['mid'], line: ['こんがりで！', 'おなかすいた〜', 'はやくはやく！'], pay: 1, from: 1 },
@@ -240,8 +241,7 @@ const PERKS = [
   { id: 'tea', e: '🍵', n: 'お茶サービス', d: 'お客さんが30%長く待ってくれる', once: true },
   { id: 'smile', e: '😁', n: '笑顔の接客', d: 'パーフェクト時のチップ +40%', },
   { id: 'price', e: '💴', n: 'ねあげ', d: '全メニュー +15%', },
-  { id: 'bell', e: '🔔', n: 'ネコよけの鈴', d: 'ネコがあまり来なくなる', once: true, min: 1 },
-  { id: 'eye', e: '👀', n: 'プロの目', d: '注文どおりに焼けた食材が緑に光る', once: true },
+  { id: 'bell', e: '🔔', n: 'ネコよけの鈴', d: 'ネコがあまり来なくなる', once: true, min: 2 },
   { id: 'heart', e: '💖', n: '常連さん', d: '評判ハートの上限 +1（全回復）', once: true },
 ];
 const BOSS = {
@@ -308,7 +308,7 @@ for (let i = 0; i < 3; i++) {
 function newGame() {
   G = { day: 1, total: 0, hearts: 3, maxH: 3, perks: {}, heat: 1, running: false, items: [], seats: [null, null, null], spawnT: [0, 0, 0], cat: null, catT: 0, combo: 0 };
 }
-function quotaOf(d) { return 500 + (d - 1) * 420 + Math.max(0, d - 4) * 150; }
+function quotaOf(d) { return 350 + (d - 1) * 320 + Math.max(0, d - 4) * 120; }
 function priceMul() { return Math.pow(1.15, G.perks.price || 0); }
 
 /* ---------- pan slots ---------- */
@@ -349,7 +349,7 @@ function drawItem(it) {
   it.emo.style.filter = cookFilter(top);
   it.m[0].style.left = pct(top);
   it.m[1].style.left = pct(bot);
-  it.el.classList.toggle('smoke', bot > 108 && !it.lifted);
+  it.el.classList.toggle('smoke', bot > 112 && !it.lifted);
 }
 function flip(it) {
   if (it.flipping) return;
@@ -419,7 +419,7 @@ function spawn(i) {
   let want;
   if (t.mixed) { const z = shuffle(Object.keys(ZONES)); want = [z[0], z[1]]; }
   else { const z = pick(t.want); want = [z, z]; }
-  const base = Math.max(13, 27 - G.day * 1.4) * (t.pat || 1) * (G.perks.tea ? 1.3 : 1) + 70 / FOODS[food].rate;
+  const base = Math.max(20, 38 - G.day * 1.5) * (t.pat || 1) * (G.perks.tea ? 1.3 : 1) + 70 / FOODS[food].rate;
   G.seats[i] = { t, food, want, pat: base, patMax: base, leaving: false, line: pick(t.line) };
   renderSeat(i, true);
 }
@@ -446,7 +446,7 @@ function leave(i, face, text) {
 }
 function sideScore(v, z) {
   const Z = ZONES[z]; const d = v < Z.lo ? Z.lo - v : v > Z.hi ? v - Z.hi : 0;
-  return d === 0 ? 2 : d <= 10 ? 1 : 0;
+  return d === 0 ? 2 : d <= 15 ? 1 : 0;
 }
 function gradeOf(sides, want) {
   return Math.max(sideScore(sides[0], want[0]) + sideScore(sides[1], want[1]), sideScore(sides[0], want[1]) + sideScore(sides[1], want[0]));
@@ -483,7 +483,6 @@ function serve(it, i, x, y) {
     G.combo = 0; SFX.bad(); shake();
     pop('まずい！', pos, 'bad');
     leave(i, '🤮', s.t.strict ? '話にならん！' : pick(['なにこれ…', 'お金はらわない！', 'ナマじゃん！']));
-    loseHeart();
   }
 }
 function earn(v) { G.sales += v; }
@@ -507,13 +506,13 @@ function spawnCat() {
     removeCat();
   });
   panEl.appendChild(c);
-  G.cat = { el: c, target: G.items[i], t: 2.6 };
+  G.cat = { el: c, target: G.items[i], t: 3.5 };
   SFX.meow();
 }
 function removeCat() {
   if (G.cat) G.cat.el.remove();
   G.cat = null;
-  G.catT = rand(11, 18) * (G.perks.bell ? 2.2 : 1);
+  G.catT = rand(15, 24) * (G.perks.bell ? 2.2 : 1);
 }
 
 /* ---------- fx ---------- */
@@ -583,7 +582,7 @@ function update(dt) {
       cooking++;
     }
     drawItem(it);
-    if (G.perks.eye) it.el.classList.toggle('ready', G.seats.some(s => s && !s.leaving && s.food === it.key && gradeOf(it.sides, s.want) === 4));
+    it.el.classList.toggle('ready', G.seats.some(s => s && !s.leaving && s.food === it.key && gradeOf(it.sides, s.want) === 4));
   });
   setSizzle(cooking ? Math.min(0.12, 0.03 + cooking * 0.018 * hm) : 0);
   // customers
@@ -609,7 +608,7 @@ function update(dt) {
     }
   }
   // cat
-  if (G.day >= 2) {
+  if (G.day >= 3) {
     if (G.cat) {
       G.cat.t -= dt;
       if (!G.items.includes(G.cat.target) || G.cat.target.lifted) removeCat();
@@ -652,7 +651,7 @@ function dayIntro() {
   let news = '';
   if (G.day > 1 && nf.length) news += `<div class="news"><div class="t">新メニュー</div>${nf.map(f => `${f.e} ${f.n}`).join('　')}</div>`;
   if (G.day > 1 && nc.length) news += `<div class="news"><div class="t">新しいお客さん</div>${nc.map(c => `${c.e} ${c.n}${c.mixed ? '<br><small>表と裏で別々の焼き加減を注文してくる</small>' : c.strict ? '<br><small>パーフェクト以外はゆるさない。そのぶん高く払う</small>' : c.want[0] === 'char' ? '<br><small>まっくろこげが大好物</small>' : ''}`).join('<br>')}</div>`;
-  if (G.day === 2) news += `<div class="news"><div class="t">ちゅうい</div>🐈 ノラネコが食材をねらいに来るようになった！</div>`;
+  if (G.day === 3) news += `<div class="news"><div class="t">ちゅうい</div>🐈 ノラネコが食材をねらいに来るようになった！</div>`;
   $('#dayCard').innerHTML = `<h2>${G.day}日目</h2><div class="stat">今日のノルマ<b>${G.quota}円</b></div>${news}<button class="btn" id="bGo">開店！</button>`;
   show('#ovDay');
   $('#bGo').onclick = startDay;
@@ -666,7 +665,7 @@ function startDay() {
   G.seats = [null, null, null];
   for (let i = 0; i < 3; i++) renderSeat(i);
   G.spawnT = [0.4, 2.2, 4.5].map(v => v * Math.max(0.5, 1 - G.day * 0.08));
-  G.catT = rand(9, 15) * (G.perks.bell ? 2.2 : 1);
+  G.catT = rand(12, 18) * (G.perks.bell ? 2.2 : 1);
   setHeat(1);
   G.running = true;
   SFX.bell();
