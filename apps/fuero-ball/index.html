@@ -230,7 +230,36 @@ function startPlay(){
   boss={hp,max:hp,dead:false,wob:0,hue:(save.stage*47)%360,eye:0};
   fever=0;feverT=0;runCoins=0;peakUnits=0;nextMile=50;clearT=0;passPitch=0;
   banner('STAGE '+save.stage,'#fff',1.2);
+  snapshot();
 }
+
+// ---------- 途中保存（アプリを閉じても続きから） ----------
+function snapshot(){
+  if(state==='title')return;
+  if(state==='play'||state==='clearing'){
+    const r1=x=>Math.round(x*10)/10;
+    save.run={st:state,ammo,gPos,fever,feverT,runCoins,peakUnits,nextMile,
+      boss:{hp:boss.hp,max:boss.max,dead:boss.dead,hue:boss.hue},
+      gates:gates.map(g=>({row:g.row,fy:g.fy,off:g.off,w:g.w,speed:g.speed,bit:g.bit,op:g.op,n:g.n,gold:!!g.gold})),
+      pegs:pegs.map(p=>({fy:p.fy,x:p.x})),
+      balls:balls.map(b=>[r1(b.x),r1(b.y),Math.round(b.vx),Math.round(b.vy),b.v,b.m])};
+  }else save.run=null;
+  persist();
+}
+function resumeRun(){
+  const r=save.run;
+  gates=r.gates.map(g=>Object.assign({fl:0,acc:0,accT:0},g));
+  pegs=r.pegs.map(p=>Object.assign({fl:0},p));
+  layout();gPos=r.gPos;for(const g of gates)g.x=gateX(g);
+  balls=r.balls.map(a=>({x:a[0],y:a[1],px:a[0],py:a[1],vx:a[2],vy:a[3],v:a[4],m:a[5],d:0}));
+  boss={hp:r.boss.hp,max:r.boss.max,dead:r.boss.dead,hue:r.boss.hue,wob:0,eye:0};
+  ammo=r.ammo;fever=r.fever;feverT=r.feverT;runCoins=r.runCoins;peakUnits=r.peakUnits;nextMile=r.nextMile;
+  state=r.st;clearT=0;pourAcc=0;passPitch=0;holding=false;
+  banner('つづきから！','#3dffb0',1.1);
+}
+setInterval(()=>{if(state==='play'||state==='clearing')snapshot()},1500);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)snapshot()});
+addEventListener('pagehide',snapshot);
 
 // ---------- 演出 ----------
 function burst(x,y,n,col,sp,sz){
@@ -364,7 +393,7 @@ function update(dt,rdt){
 
   // 判定
   if(state==='play'&&ammo<=0&&balls.length===0&&!boss.dead){
-    state='over';addCoins(5+save.stage*4);setTimeout(()=>showResult(false),500);
+    state='over';addCoins(5+save.stage*4);snapshot();setTimeout(()=>showResult(false),500);
     sfx(()=>{blip(392,.2,'triangle',.08,330);blip(294,.35,'triangle',.08,220,ac.currentTime+.18)});
   }
   if(state==='clearing'){
@@ -372,7 +401,7 @@ function update(dt,rdt){
     if(balls.length===0&&clearT>1.1){
       state='cleared';
       const bonus=Math.floor((15+10*save.stage+ammo*save.stage*2)*coinMul());
-      addCoins(bonus);
+      addCoins(bonus);snapshot();
       for(let i=0;i<24;i++)coinFx.push({x:200+(Math.random()-.5)*200,y:H*.5+(Math.random()-.5)*100,t:-i*.03});
       floatTxt(200,H*.5,'BONUS +'+fmt(bonus),'#ffd23f',26);
       setTimeout(()=>showResult(true),900);
@@ -517,7 +546,7 @@ function draw(now){
     cx.fillStyle=holding&&ammo>0?'#ffe35a':'#8f7bff';
     cx.beginPath();cx.moveTo(spX-22,y-14);cx.lineTo(spX+22,y-14);cx.lineTo(spX+8,y+8);cx.lineTo(spX-8,y+8);cx.closePath();cx.fill();
     cx.strokeStyle='#fff';cx.lineWidth=2;cx.stroke();
-    if(state==='play')text(ammo+'発',spX,y-26,14,ammo>0?'#fff':'#ff8fa3','#1a0830');
+    if(state==='play'){const rt=spX<300;text(ammo+'発',spX+(rt?28:-28),y-4,14,ammo>0?'#fff':'#ff8fa3','#1a0830',rt?'left':'right')}
     cx.strokeStyle='rgba(255,255,255,.12)';cx.setLineDash([4,6]);cx.beginPath();cx.moveTo(spX,y+10);cx.lineTo(spX,gTop()-14);cx.stroke();cx.setLineDash([]);
   }
 
@@ -587,8 +616,14 @@ function showResult(win){
   if(win)sfx(()=>{[0,4,7,12].forEach((s,i)=>blip(mtof(72+s),.22,'triangle',.08,0,ac.currentTime+i*.09))});
 }
 $('nextBtn').onclick=()=>{au();$('result').hidden=true;startPlay()};
-$('startBtn').onclick=()=>{au();startBgm();$('title').hidden=true;startPlay()};
-$('tBest').innerHTML=save.stage>1?'つづきから <b>STAGE '+save.stage+'</b>　🪙'+fmt(save.coins):'';
+const hasRun=()=>!!(save.run&&save.run.boss&&save.run.gates);
+$('startBtn').onclick=()=>{au();startBgm();$('title').hidden=true;
+  if(hasRun()){try{resumeRun()}catch(e){save.run=null;startPlay()}}else startPlay()};
+if(hasRun()){
+  const r=save.run;
+  $('tBest').innerHTML=r.boss.dead?'<b>STAGE '+(save.stage-1)+'</b> ボーナス回収の途中から':'<b>STAGE '+save.stage+'</b> の途中から<br>ボスHP <b>'+fmt(Math.ceil(r.boss.hp))+'</b>　のこり <b>'+r.ammo+'発</b>';
+  $('startBtn').textContent='つづきから再開';
+}else $('tBest').innerHTML=save.stage>1?'つづきから <b>STAGE '+save.stage+'</b>　🪙'+fmt(save.coins):'';
 const muteBtn=$('mute');
 const syncMute=()=>{muteBtn.textContent=save.mute?'🔇':'🔊';if(master)master.gain.value=save.mute?0:.8};
 muteBtn.onclick=e=>{e.stopPropagation();au();save.mute=!save.mute;persist();syncMute()};

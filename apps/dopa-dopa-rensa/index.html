@@ -99,7 +99,11 @@ button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer
     🪙金 💣爆弾 🎆分裂 🌈虹（FEVER）を狙え！
   </div>
   <div class="best" id="tBest"></div>
-  <div class="go">▶ タップでスタート</div>
+  <div class="go" id="tGo">▶ タップでスタート</div>
+  <div id="tSave" hidden style="width:min(360px,100%);margin-top:20px">
+    <button class="btn" id="tCont" style="margin-top:0">▶ つづきから<div id="tContInfo" style="font-size:13px;font-weight:800;opacity:.85;margin-top:2px"></div></button>
+    <button class="pb" id="tNew" style="width:100%;margin-top:12px">はじめから</button>
+  </div>
 </div>
 
 <div id="result" class="ov" hidden>
@@ -552,7 +556,36 @@ function tapExplode(x, y) {
 }
 
 // ---------- ラウンドの流れ ----------
+// ---------- セーブ（ラウンド開始時・カード選択時に自動保存。途中で閉じたらそのラウンドの最初から） ----------
+const SAVE_KEY = 'dopa-save';
+function saveGame(phase) {
+  store.set(SAVE_KEY, {
+    v: 1, phase, up, score, coins, hearts, level, maxChain, rerollCost, healCost,
+    cards: phase === 'pick' && curCards.length ? curCards.map(u => u.id) : null
+  });
+}
+function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} }
+function loadSave() {
+  const s = store.get(SAVE_KEY, null);
+  return s && s.v === 1 && s.hearts > 0 && s.up ? s : null;
+}
+function resumeGame(s) {
+  up = Object.assign(freshUp(), s.up);
+  score = scoreShown = s.score; coins = coinsShown = s.coins; hearts = s.hearts; level = s.level;
+  maxChain = s.maxChain || 0; rerollCost = s.rerollCost || 20; healCost = s.healCost || 80;
+  if (s.phase === 'pick') {
+    ['title', 'result', 'over'].forEach(id => $(id).hidden = true);
+    ['hud', 'quota', 'taps'].forEach(id => $(id).hidden = false);
+    exps = []; pops = 0; quota = 0;
+    state = 'pick'; $('pick').hidden = false;
+    curCards = (s.cards || []).map(id => UPS.find(u => u.id === id)).filter(Boolean);
+    if (curCards.length !== 3) { curCards = drawCards(); saveGame('pick'); }
+    renderTaps(); renderPick();
+  } else startRound();
+}
+
 function startRun() {
+  clearSave();
   up = freshUp(); score = scoreShown = 0; coins = coinsShown = 0; hearts = 3; level = 1;
   maxChain = 0; rerollCost = 20; healCost = 80;
   startRound();
@@ -587,6 +620,9 @@ function finishRound() {
   $('rNext').hidden = true;
   $('result').hidden = false;
   if (!cleared) { hearts--; sFail(); }
+  if (cleared) { curCards = drawCards(); saveGame('pick'); }
+  else if (hearts > 0) saveGame('round');
+  else clearSave();
   updateHud();
   let i = 0;
   const step = () => {
@@ -637,7 +673,7 @@ function drawCards() {
 function openPick() {
   state = 'pick';
   $('result').hidden = true; $('pick').hidden = false;
-  curCards = drawCards();
+  if (curCards.length !== 3) { curCards = drawCards(); saveGame('pick'); }
   renderPick();
 }
 function renderPick() {
@@ -670,15 +706,16 @@ function choose(u, el) {
 $('reroll').addEventListener('click', () => {
   if (coins < rerollCost || state !== 'pick') return;
   coins -= rerollCost; coinsShown = coins; rerollCost += 10;
-  curCards = drawCards(); renderPick(); tone(800, .2, 'triangle', .15, 0, 2);
+  curCards = drawCards(); saveGame('pick'); renderPick(); tone(800, .2, 'triangle', .15, 0, 2);
 });
 $('heal').addEventListener('click', () => {
   if (coins < healCost || hearts >= 3 || state !== 'pick') return;
   coins -= healCost; coinsShown = coins; hearts++; healCost += 40;
-  renderPick(); [0, 4, 7, 12].forEach((s, i) => tone(noteF(12 + s), .25, 'triangle', .15, i * .06));
+  saveGame('pick'); renderPick(); [0, 4, 7, 12].forEach((s, i) => tone(noteF(12 + s), .25, 'triangle', .15, i * .06));
 });
 function gameOver() {
   state = 'over';
+  clearSave();
   const isNew = score > best;
   if (isNew) { best = score; store.set('dopa-best', best); }
   $('result').hidden = true; $('over').hidden = false;
@@ -712,12 +749,29 @@ cv.addEventListener('pointerdown', e => {
   initAudio();
   if (state === 'play' && tapsLeft > 0) tapExplode(e.clientX, e.clientY);
 });
+function startJingle() { tone(noteF(12), .1, 'triangle', .2); tone(noteF(19), .2, 'triangle', .2, .08); }
+let titleSave = loadSave();
 $('title').addEventListener('pointerdown', e => {
-  if (e.target.closest('#mute')) return;
-  initAudio();
-  tone(noteF(12), .1, 'triangle', .2); tone(noteF(19), .2, 'triangle', .2, .08);
+  if (e.target.closest('#mute') || titleSave) return; // セーブがあるときはボタンで選ぶ
+  initAudio(); startJingle();
   startRun();
 });
+$('tCont').addEventListener('click', () => {
+  const s = loadSave(); if (!s) return;
+  initAudio(); startJingle();
+  resumeGame(s);
+});
+let newConfirm = false;
+$('tNew').addEventListener('click', () => {
+  initAudio();
+  if (!newConfirm) { newConfirm = true; $('tNew').textContent = '本当に？ セーブが消えます（もう一度タップ）'; tone(440, .12, 'triangle', .15); return; }
+  startJingle(); startRun();
+});
+function renderTitleSave() {
+  $('tSave').hidden = !titleSave; $('tGo').hidden = !!titleSave;
+  if (titleSave) $('tContInfo').textContent = `ROUND ${titleSave.level}　❤️×${titleSave.hearts}　スコア ${fmt(titleSave.score)}`;
+}
+renderTitleSave();
 
 // ---------- 更新 ----------
 function update(dt) {
