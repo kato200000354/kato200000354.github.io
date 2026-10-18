@@ -1,0 +1,220 @@
+<!doctype html>
+<!-- © kato200000354. 無断転載・複製・再配布を禁止します。 (kato200000354-protected) -->
+
+<html lang="ja">
+<head>
+<meta name="copyright" content="© kato200000354">
+<script src="../../audio-pause.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1a120c">
+<title>なぞときの館</title>
+<meta name="description" content="古い洋館に閉じこめられた！10枚の扉にかけられた「なぞ」を解いて、館の宝をさがす謎解きゲーム。">
+<style>
+:root{
+  --bg:#1a120c;--bg2:#2a1d13;--card:#f4ead6;--card2:#e9dcc0;--ink:#2b1e14;--sub:#7a6450;
+  --gold:#d9a441;--gold2:#f2cf7a;--red:#c0392b;--green:#3f8f5a;--line:#c9b38d;
+}
+[hidden]{display:none!important}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100%;background:var(--bg);color:var(--card)}
+body{font-family:"Hiragino Mincho ProN","Yu Mincho","YuMincho","Noto Serif JP",serif;line-height:1.6;
+  background:radial-gradient(ellipse at 50% -10%,#4a3220 0%,var(--bg) 60%) fixed;min-height:100svh}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.wrap{max-width:560px;margin:0 auto;padding:16px 16px 40px}
+.screen{min-height:100svh}
+
+/* タイトル */
+#title{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 16px}
+.logo-sub{letter-spacing:.4em;color:var(--gold);font-size:13px}
+.logo{font-size:clamp(38px,11vw,60px);font-weight:900;letter-spacing:.08em;color:var(--gold2);
+  text-shadow:0 2px 0 #6b4a1c,0 0 24px rgba(242,207,122,.35);margin:6px 0 4px}
+.mansion{width:min(300px,80vw);margin:18px 0}
+.story{color:#d9c9ab;font-size:15px;max-width:380px;margin-bottom:22px}
+.bigbtn{display:block;width:min(300px,100%);margin:8px auto;padding:14px 18px;border-radius:14px;font-weight:800;font-size:18px;
+  background:linear-gradient(#e7b85a,#b9822c);color:#2b1a08;box-shadow:0 4px 0 #6b4a1c,0 8px 18px rgba(0,0,0,.4)}
+.bigbtn:active{transform:translateY(3px);box-shadow:0 1px 0 #6b4a1c}
+.subbtn{display:block;width:min(300px,100%);margin:8px auto;padding:10px;border-radius:12px;border:1px solid #6b5238;color:#d9c9ab;font-size:15px}
+
+/* 扉の一覧 */
+.bar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px}
+.bar h2{font-size:20px;color:var(--gold2)}
+.pill{border:1px solid #6b5238;border-radius:999px;padding:4px 12px;font-size:13px;color:#d9c9ab;white-space:nowrap}
+.doors{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.door{aspect-ratio:3/5;border-radius:40% 40% 6px 6px / 22% 22% 6px 6px;position:relative;
+  background:linear-gradient(#7a4f2c,#5a371c);border:3px solid #3a2412;box-shadow:inset 0 0 0 3px #8d6038;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--gold2);font-weight:900;font-size:18px}
+.door::after{content:"";position:absolute;right:16%;top:55%;width:7px;height:7px;border-radius:50%;background:var(--gold)}
+.door .ic{font-size:22px;line-height:1.2}
+.door.locked{filter:grayscale(1) brightness(.45)}
+.door.locked .ic{font-size:18px}
+.door.done{background:linear-gradient(#2c1a0e,#160d06);box-shadow:inset 0 0 18px rgba(242,207,122,.5)}
+.door.final{grid-column:span 5;aspect-ratio:auto;height:110px;border-radius:50% 50% 8px 8px / 60% 60% 8px 8px;
+  background:linear-gradient(#8a2e22,#561911);box-shadow:inset 0 0 0 3px #b0503e;font-size:16px}
+.door.final.locked{filter:grayscale(1) brightness(.4)}
+.door.next{animation:glow 1.6s ease-in-out infinite}
+@keyframes glow{50%{box-shadow:inset 0 0 0 3px #8d6038,0 0 18px 4px rgba(242,207,122,.55)}}
+.door.final.next{animation:glow2 1.6s ease-in-out infinite}
+@keyframes glow2{50%{box-shadow:inset 0 0 0 3px #b0503e,0 0 22px 6px rgba(242,120,90,.55)}}
+.note{margin-top:18px;color:#a8957a;font-size:13px;text-align:center}
+.memo{margin-top:16px;background:rgba(244,234,214,.06);border:1px dashed #6b5238;border-radius:12px;padding:10px 14px;font-size:14px;color:#d9c9ab}
+.memo b{color:var(--gold2)}
+.memo ul{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;margin-top:4px}
+
+/* なぞ画面 */
+.paper{background:var(--card);color:var(--ink);border-radius:6px;padding:20px 16px;position:relative;
+  box-shadow:0 10px 30px rgba(0,0,0,.5),inset 0 0 40px rgba(160,120,60,.25);
+  background-image:repeating-linear-gradient(0deg,transparent 0 31px,rgba(150,110,60,.08) 31px 32px)}
+.paper .no{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:var(--red);color:#fff;
+  padding:2px 14px;border-radius:999px;font-size:13px;font-weight:800;letter-spacing:.1em;white-space:nowrap}
+.paper h3{text-align:center;font-size:19px;margin:4px 0 12px}
+.q{text-align:center;font-size:16px}
+.big{font-size:clamp(30px,9vw,42px);font-weight:900;letter-spacing:.12em;margin:10px 0}
+.row{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:6px 10px;margin:8px 0}
+.box{display:inline-block;width:1.15em;height:1.15em;border:2px solid var(--ink);vertical-align:-0.2em;background:#fff8e8}
+.word{font-size:24px;font-weight:800;letter-spacing:.08em;padding:2px 8px;border-bottom:2px solid var(--line)}
+.lead{font-size:14px;color:var(--sub);text-align:center;margin-top:10px}
+.mirror{display:inline-block;transform:scaleX(-1);font-size:clamp(40px,12vw,56px);font-weight:900;letter-spacing:.15em;
+  padding:8px 22px;border-radius:50%/40%;background:linear-gradient(135deg,#dfe9ef,#b8c8d2 60%,#eef4f7);border:6px solid #b08a4a;color:#40525e}
+.red{color:var(--red)}
+.ans-area{margin-top:16px;display:flex;gap:8px}
+.ans-area input{flex:1;min-width:0;font:inherit;font-size:20px;padding:10px 12px;border-radius:10px;border:2px solid var(--line);
+  background:#fffaf0;color:var(--ink);text-align:center;letter-spacing:.1em}
+.ans-area input:focus{outline:none;border-color:var(--gold)}
+.ans-area button{padding:0 18px;border-radius:10px;background:var(--ink);color:var(--gold2);font-weight:800;font-size:17px}
+.shake{animation:shake .4s}
+@keyframes shake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+.msg{min-height:1.6em;text-align:center;margin-top:8px;font-weight:700}
+.msg.ng{color:var(--red)}
+.tools{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+.tbtn{border:1px solid #6b5238;border-radius:999px;padding:6px 14px;font-size:14px;color:#d9c9ab}
+.tbtn:disabled{opacity:.4}
+.hints{margin-top:12px}
+.hint{background:#fff3d6;color:var(--ink);border-left:4px solid var(--gold);border-radius:6px;padding:8px 12px;margin-top:8px;font-size:15px}
+.hint.ans{border-color:var(--red)}
+.svgbox{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:8px 0}
+.svgbox svg{display:block}
+.svgbox .arw{align-self:center;font-size:14px}
+.svgbox.clocks{gap:4px;flex-wrap:nowrap}
+.grid50{border-collapse:collapse;margin:10px auto;font-size:14px}
+.grid50 td,.grid50 th{border:1px solid var(--line);width:30px;height:28px;text-align:center}
+.grid50 th{background:var(--card2);font-weight:800}
+.code{font-size:26px;font-weight:900;letter-spacing:.1em;text-align:center;margin:8px 0}
+.slot{display:inline-flex;gap:4px;align-items:center;font-size:22px;margin:6px 10px}
+.slot .c{width:32px;height:32px;border:2px solid var(--ink);display:inline-flex;align-items:center;justify-content:center;background:#fff8e8;font-size:16px}
+.slot .c.on{background:var(--red);border-color:var(--red)}
+
+/* 正解モーダル */
+.overlay{position:fixed;inset:0;background:rgba(10,6,3,.82);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+.modal{background:var(--card);color:var(--ink);border-radius:14px;padding:22px 18px;width:min(420px,100%);text-align:center;
+  box-shadow:0 20px 50px rgba(0,0,0,.6);animation:pop .35s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{from{transform:scale(.6);opacity:0}}
+.modal .ok{font-size:34px;font-weight:900;color:var(--green);letter-spacing:.1em}
+.modal .answer{font-size:28px;font-weight:900;margin:4px 0 10px;letter-spacing:.12em}
+.modal .exp{font-size:15px;text-align:left;background:#fff8e8;border-radius:8px;padding:10px 12px;margin-bottom:14px}
+.modal .bigbtn{margin-top:4px}
+
+/* エンディング */
+#ending{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 16px}
+.chest{font-size:90px;animation:bounce 1.2s ease-in-out infinite}
+@keyframes bounce{50%{transform:translateY(-10px)}}
+.result{background:rgba(244,234,214,.08);border:1px solid #6b5238;border-radius:12px;padding:14px 18px;margin:16px 0;min-width:240px}
+.result div{display:flex;justify-content:space-between;gap:20px;padding:3px 0}
+.rank{font-size:26px;color:var(--gold2);font-weight:900;margin-top:4px}
+.sparkle{position:fixed;pointer-events:none;font-size:22px;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(360deg);opacity:.2}}
+</style>
+</head>
+<body>
+
+<!-- タイトル -->
+<section id="title" class="screen">
+  <div class="logo-sub">NAZOTOKI MANSION</div>
+  <h1 class="logo">なぞときの館</h1>
+  <svg class="mansion" viewBox="0 0 300 180" aria-hidden="true">
+    <circle cx="250" cy="34" r="18" fill="#f2cf7a" opacity=".9"/>
+    <circle cx="258" cy="28" r="16" fill="#2a1d13"/>
+    <polygon points="40,80 150,20 260,80" fill="#3a2716"/>
+    <rect x="55" y="80" width="190" height="95" fill="#4a3220"/>
+    <polygon points="20,100 70,60 120,100" fill="#2f1f12"/>
+    <polygon points="180,100 230,60 280,100" fill="#2f1f12"/>
+    <rect x="30" y="100" width="80" height="75" fill="#3d2918"/>
+    <rect x="190" y="100" width="80" height="75" fill="#3d2918"/>
+    <g fill="#f2cf7a"><rect x="45" y="115" width="18" height="24" opacity=".85"/><rect x="78" y="115" width="18" height="24" opacity=".25"/>
+    <rect x="205" y="115" width="18" height="24" opacity=".25"/><rect x="238" y="115" width="18" height="24" opacity=".85"/>
+    <rect x="95" y="95" width="18" height="24" opacity=".5"/><rect x="187" y="95" width="18" height="24" opacity=".5"/>
+    <circle cx="150" cy="58" r="10" opacity=".7"/></g>
+    <path d="M130 175 V130 a20 20 0 0 1 40 0 V175 Z" fill="#7a2a1e"/>
+    <circle cx="162" cy="152" r="2.5" fill="#f2cf7a"/>
+  </svg>
+  <p class="story">目がさめると、そこは古い洋館の中だった。<br>出口へ続く扉には、どれも「なぞ」の錠がかかっている。<br>すべてのなぞを解いて、館にねむる宝を見つけだせ！</p>
+  <button class="bigbtn" id="btnStart">はじめる</button>
+  <button class="subbtn" id="btnReset" hidden>さいしょからやり直す</button>
+</section>
+
+<!-- 扉の一覧 -->
+<section id="map" class="screen" hidden>
+  <div class="wrap">
+    <div class="bar">
+      <button class="pill" id="btnHome">◀ タイトル</button>
+      <h2>大広間</h2>
+      <span class="pill" id="progress">0 / 10</span>
+    </div>
+    <div class="doors" id="doors"></div>
+    <div class="memo" id="memo" hidden><b>📜 メモ帳</b>（解いた答え）<ul id="memoList"></ul></div>
+    <p class="note">光っている扉から順に開けよう。<br>開けた扉は、もう一度遊べます。</p>
+  </div>
+</section>
+
+<!-- なぞ -->
+<section id="puzzle" class="screen" hidden>
+  <div class="wrap">
+    <div class="bar">
+      <button class="pill" id="btnBack">◀ 大広間</button>
+      <span class="pill" id="hintCount">ヒント 0回</span>
+    </div>
+    <div style="height:10px"></div>
+    <div class="paper" id="paper">
+      <div class="no" id="pNo">第1の扉</div>
+      <h3 id="pTitle"></h3>
+      <div id="pBody"></div>
+      <form class="ans-area" id="ansForm" autocomplete="off">
+        <input id="ans" placeholder="こたえを入力" enterkeyhint="done" autocapitalize="off" spellcheck="false">
+        <button type="submit">解く</button>
+      </form>
+      <div class="msg" id="msg"></div>
+    </div>
+    <div class="tools">
+      <button class="tbtn" id="btnHint">💡 ヒントを見る</button>
+    </div>
+    <div class="hints" id="hints"></div>
+  </div>
+</section>
+
+<!-- エンディング -->
+<section id="ending" class="screen" hidden>
+  <div class="chest">🎁</div>
+  <h1 class="logo" style="font-size:clamp(30px,9vw,46px)">脱出成功！</h1>
+  <p class="story">最後の扉の奥には、金色にかがやく宝箱。<br>ふたを開けると、朝の光がさしこんできた――。<br>あなたは「なぞときの館」をみごと攻略した！</p>
+  <div class="result" id="result"></div>
+  <button class="bigbtn" id="btnEndMap">大広間にもどる</button>
+  <button class="subbtn" id="btnEndReset">さいしょから遊ぶ</button>
+</section>
+
+<!-- 正解モーダル -->
+<div class="overlay" id="okModal" hidden>
+  <div class="modal">
+    <div class="ok">せいかい！</div>
+    <div class="answer" id="okAnswer"></div>
+    <div class="exp" id="okExp"></div>
+    <button class="bigbtn" id="okNext">扉を開ける</button>
+  </div>
+</div>
+
+<script>
+/*! © kato200000354. 無断転載・複製・再配布を禁止します。 */
+(()=>{"use strict";const s=s=>document.getElementById(s);function n(s,n=92){let t="";for(let s=0;s<12;s++){const n=s*Math.PI/6,e=s%3?40:36;t+=`<line x1="${50+Math.sin(n)*e}" y1="${50-Math.cos(n)*e}" x2="${50+44*Math.sin(n)}" y2="${50-44*Math.cos(n)}" stroke="#2b1e14" stroke-width="${s%3?1.5:3}"/>`}const e=s*Math.PI/6;return`<svg width="${n}" height="${n}" viewBox="0 0 100 100">\n    <circle cx="50" cy="50" r="47" fill="#fff8e8" stroke="#8d6038" stroke-width="4"/>${t}\n    <line x1="50" y1="50" x2="50" y2="14" stroke="#2b1e14" stroke-width="3" stroke-linecap="round"/>\n    <line x1="50" y1="50" x2="${50+25*Math.sin(e)}" y2="${50-25*Math.cos(e)}" stroke="#c0392b" stroke-width="6" stroke-linecap="round"/>\n    <circle cx="50" cy="50" r="4" fill="#2b1e14"/></svg>`}const t=[{icon:"🦝",title:"たぬきの落書き",answers:["とびら"],body:'<p class="q">扉に、こんな落書きが…</p>\n      <div class="big">たとたびたら</div>\n      <div style="font-size:54px;text-align:center">🦝</div>\n      <p class="lead">この扉の「合言葉」は？</p>',hints:["落書きのそばに「たぬき」がいる。たぬき＝「た」ぬき…？","文字から「た」を全部ぬいてみよう。"],exp:"「たぬき」＝「た」を抜く。<br>た<b>と</b>た<b>び</b>た<b>ら</b> → <b>とびら</b>"},{icon:"🪞",title:"ふしぎな鏡",answers:["たまご"],body:'<p class="q">壁にかかった鏡に、文字が映っている。</p>\n      <div style="text-align:center;margin:14px 0"><span class="mirror">たまご</span></div>\n      <p class="lead">本当は何と書いてある？</p>',hints:["鏡の中では、左と右が入れかわる。","文字を右から読んでみよう。"],exp:"鏡に映った文字は左右が反対。右から読むと <b>たまご</b>。"},{icon:"🐻",title:"□に入る文字",answers:["くま"],body:'<p class="q">同じ列の□には、同じ文字が入る。</p>\n      <div class="row" style="margin-top:12px"><b style="font-size:20px">①</b>\n        <span class="word">さ<span class="box"></span>ら</span><span class="word"><span class="box"></span>るま</span><span class="word"><span class="box"></span>つ</span></div>\n      <div class="row"><b style="font-size:20px">②</b>\n        <span class="word"><span class="box"></span>くら</span><span class="word"><span class="box"></span>ど</span><span class="word"><span class="box"></span>め</span></div>\n      <p class="lead">①②の順に読むと、森にいる動物に。</p>',hints:["①の列：花・のりもの・はきもの。","①は「く」（さくら・くるま・くつ）。②は寝るときに使うもの・窓・豆…"],exp:"①さ<b>く</b>ら・<b>く</b>るま・<b>く</b>つ<br>②<b>ま</b>くら・<b>ま</b>ど・<b>ま</b>め<br>→ <b>くま</b>"},{icon:"🐝",title:"絵の足し算",answers:["はちみつ"],body:'<p class="q">絵を読んで、足し算しよう。</p>\n      <div class="row" style="font-size:46px;margin:16px 0">🐝<span style="font-size:30px">＋</span>🍎🍎🍎<span style="font-size:30px">＝？</span></div>\n      <p class="lead">とろ〜り甘いものになる。</p>',hints:["🐝は「はち」。","りんごはいくつ？「さん」じゃない数え方で。"],exp:"🐝＝はち、🍎が「みっつ」。<br>はち＋みつ（っ）→ <b>はちみつ</b>"},{icon:"🕯️",title:"赤いうそつき",answers:["ろうそく"],body:'<p class="q">「赤い文字は、うそつきだ」と書かれた紙。</p>\n      <div class="big">ろ<span class="red">ほ</span>う<span class="red">ね</span>そ<span class="red">こ</span>く<span class="red">や</span></div>\n      <p class="lead">暗い部屋を照らすのに必要なものは？</p>',hints:["うそつきの言うことは信じちゃダメ。つまり…","赤い文字を消して読もう。"],exp:"赤い文字（ほ・ね・こ・や）を消すと <b>ろうそく</b>。"},{icon:"🌼",title:"ひとつずらし",answers:["きく"],body:'<p class="q">この部屋には、ふしぎなルールがある。</p>\n      <div class="row" style="margin-top:14px"><span class="word">あさ</span><b style="font-size:22px">▶</b><span class="word">いし</span></div>\n      <div class="row"><span class="word">かき</span><b style="font-size:22px">▶</b><span class="word"><span class="box"></span><span class="box"></span></span></div>\n      <p class="lead">□□に入るのは、秋にさく花。</p>',hints:["「あ」が「い」に、「さ」が「し」に変わった。","五十音で、ひとつ後ろの文字にずらしている。か→？ き→？"],exp:"あ→い、さ→し のように五十音でひとつ後ろへ。<br>か→<b>き</b>、き→<b>く</b> → <b>きく</b>"},{icon:"🕰️",title:"止まった時計",answers:["ろうか"],body:`<p class="q">古い文字盤と、止まった3つの時計。</p>\n      <div class="svgbox">${function(s,n=180){let t="";return s.forEach((s,n)=>{const e=(n+1)*Math.PI/6;t+=`<text x="${50+36*Math.sin(e)}" y="${50-36*Math.cos(e)}" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="800" fill="#2b1e14">${s}</text>`}),`<svg width="${n}" height="${n}" viewBox="0 0 100 100">\n    <circle cx="50" cy="50" r="47" fill="#fff8e8" stroke="#b08a4a" stroke-width="4"/>\n    <circle cx="50" cy="50" r="26" fill="none" stroke="#e0cfa8" stroke-dasharray="2 3"/>${t}\n    <text x="50" y="50" text-anchor="middle" dominant-baseline="central" font-size="7" fill="#7a6450">もじばん</text></svg>`}(["さ","か","え","き","は","の","ゆ","ろ","し","う","ん","む"])}</div>\n      <div class="svgbox clocks">${n(8,74)}<b class="arw">→</b>${n(10,74)}<b class="arw">→</b>${n(2,74)}</div>\n      <p class="lead">赤い針が示す場所は？</p>`,hints:["赤いのは「短い針」。それぞれ何時をさしている？","8時・10時・2時。文字盤のその位置にある文字を読もう。"],exp:"時計は 8時・10時・2時。<br>文字盤の 8＝<b>ろ</b>、10＝<b>う</b>、2＝<b>か</b> → <b>ろうか</b>"},{icon:"🌲",title:"漢字の合体",answers:["もり","しん"],body:'<p class="q">3本の木が集まると…？</p>\n      <div class="row" style="margin:16px 0"><span class="big" style="margin:0">木</span><b style="font-size:26px">＋</b><span class="big" style="margin:0">木</span><b style="font-size:26px">＋</b><span class="big" style="margin:0">木</span><b style="font-size:26px">＝</b><span class="box" style="font-size:40px"></span></div>\n      <p class="lead">□の漢字の読みを、ひらがな2文字で。</p>',hints:["木が2本なら「林（はやし）」。","もっと木が多いところ。くんよみで。"],exp:"木が3つで「森」。読みは <b>もり</b>。"},{icon:"🔖",title:"五十音の暗号",answers:["しおり"],body:`<p class="q">本のあいだに、暗号のメモがはさまっていた。</p>\n      <div class="code">さ② ・ あ⑤ ・ ら②</div>\n      <table class="grid50">\n        <tr><th></th><th>わ</th><th>ら</th><th>や</th><th>ま</th><th>は</th><th>な</th><th>た</th><th>さ</th><th>か</th><th>あ</th></tr>\n        ${[1,2,3,4,5].map(s=>`<tr><th>${"①②③④⑤"[s-1]}</th>${"<td></td>".repeat(10)}</tr>`).join("")}\n      </table>\n      <p class="lead">本にはさむもの、なーんだ？</p>`,hints:["表は「五十音表」。あいうえお が縦にならんでいる。","さ行の②番目は「し」。あ行の⑤番目は？"],exp:"さ行②＝<b>し</b>、あ行⑤＝<b>お</b>、ら行②＝<b>り</b> → <b>しおり</b>"},{icon:"👑",title:"最後の扉",answers:["たから"],final:!0,body:'<p class="q">大きな赤い扉に、3つの絵と、赤いマスが刻まれている。</p>\n      <div style="margin:12px 0;text-align:center">\n        <div class="slot">🪞<span class="c on"></span><span class="c"></span><span class="c"></span></div><br>\n        <div class="slot">🕰️<span class="c"></span><span class="c"></span><span class="c on"></span></div><br>\n        <div class="slot">🦝<span class="c"></span><span class="c"></span><span class="c on"></span></div>\n      </div>\n      <p class="lead">上から順に、赤いマスに入る文字を読むと、この館にねむるものに。</p>',hints:["絵は、これまでに開けた扉のしるし。メモ帳を見てみよう。","🪞＝たまご、🕰️＝ろうか、🦝＝とびら。赤いマスは何文字目？"],exp:"🪞<b>た</b>まご、🕰️ろう<b>か</b>、🦝とび<b>ら</b><br>→ <b>たから</b>"}],e="nazotoki-yakata-v1";let a={cleared:[],hints:{},start:0,end:0};try{const s=JSON.parse(localStorage.getItem(e));s&&Array.isArray(s.cleared)&&(a=Object.assign(a,s))}catch(s){}const i=()=>{try{localStorage.setItem(e,JSON.stringify(a))}catch(s){}},l=s=>a.cleared.includes(s),o=()=>Object.values(a.hints).reduce((s,n)=>s+n,0);let c;function r(s,n=.12,t="triangle",e=.15){try{c=c||new(window.AudioContext||window.webkitAudioContext),s.forEach((s,a)=>{const i=c.createOscillator(),l=c.createGain(),o=c.currentTime+a*n;i.type=t,i.frequency.value=s,l.gain.setValueAtTime(e,o),l.gain.exponentialRampToValueAtTime(.001,o+1.8*n),i.connect(l).connect(c.destination),i.start(o),i.stop(o+2*n)})}catch(s){}}const p=()=>r([660],.05,"sine",.08);function d(n){["title","map","puzzle","ending"].forEach(t=>s(t).hidden=t!==n),window.scrollTo(0,0)}function b(){const n=a.cleared.length>0;s("btnStart").textContent=n?"つづきから":"はじめる",s("btnReset").hidden=!n,d("title")}function h(){const n=(()=>{for(let s=0;s<t.length;s++)if(!l(s))return s;return-1})(),e=s("doors");e.innerHTML="",t.forEach((o,c)=>{const r=document.createElement("button"),b=l(c),h=b||c===n;r.className="door"+(o.final?" final":"")+(b?" done":"")+(h?"":" locked")+(c===n?" next":""),r.innerHTML=o.final?`<span class="ic">${b?"👑":h?"🚪":"🔒"}</span>${b?"宝の間":"最後の扉"}`:`<span class="ic">${b?o.icon:h?"❓":"🔒"}</span>${c+1}`,r.disabled=!h,r.onclick=()=>{p(),function(n){x=n;const e=t[n];a.start||(a.start=Date.now(),i());s("pNo").textContent=e.final?"最後の扉":`第${n+1}の扉`,s("pTitle").textContent=e.title,s("pBody").innerHTML=e.body,s("ans").value="",s("msg").textContent="",s("msg").className="msg",f=0,s("hints").innerHTML="",l(n)&&(f=0);m(),d("puzzle")}(c)},e.appendChild(r)}),s("progress").textContent=`${a.cleared.length} / ${t.length}`;const o=t.map((s,n)=>l(n)&&!s.final?`<li>${s.icon} ${s.answers[0]}</li>`:"").join("");s("memo").hidden=!o,s("memoList").innerHTML=o,d("map")}let x=0,f=0;function m(){const n=t[x];s("hintCount").textContent=`ヒント ${o()}回`;const e=s("btnHint");f<n.hints.length?(e.textContent=`💡 ヒント${f+1}を見る`,e.disabled=!1):f===n.hints.length?(e.textContent="🗝️ 答えを見る",e.disabled=!1):(e.textContent="💡 ヒントはもうありません",e.disabled=!0)}function y(s){return s.normalize("NFKC").trim().replace(/[ァ-ヶ]/g,s=>String.fromCharCode(s.charCodeAt(0)-96)).replace(/[\s・、。!！?？ー〜~「」]/g,"").toLowerCase()}function g(){confirm("進みぐあいを消して、さいしょからやり直しますか？")&&(a={cleared:[],hints:{},start:0,end:0},i(),b())}s("btnHint").onclick=()=>{const n=t[x];if(f===n.hints.length&&!confirm("答えを見ますか？"))return;p();const e=document.createElement("div");f<n.hints.length?(e.className="hint",e.innerHTML=`<b>ヒント${f+1}：</b>${n.hints[f]}`):(e.className="hint ans",e.innerHTML=`<b>答え：</b>${n.answers[0]}`),s("hints").appendChild(e),l(x)||(a.hints[x]=(a.hints[x]||0)+1,i()),f++,m()},s("ansForm").onsubmit=n=>{n.preventDefault();const e=y(s("ans").value);if(!e)return;const o=t[x];if(o.answers.some(s=>y(s)===e)){r([523,659,784,1047]),s("ans").blur();!l(x)&&(a.cleared.push(x),o.final&&(a.end=Date.now()),i()),s("okAnswer").textContent=`「${o.answers[0]}」`,s("okExp").innerHTML=o.exp,s("okNext").textContent=o.final?"宝箱を開ける":"扉を開ける",s("okModal").hidden=!1}else{r([220,180],.15,"square",.08);const n=["ちがうようだ…","扉はびくともしない。","うーん、ちがう。","錠は開かない…"];s("msg").textContent=n[Math.floor(Math.random()*n.length)],s("msg").className="msg ng";const t=s("paper");t.classList.remove("shake"),t.offsetWidth,t.classList.add("shake")}},s("okNext").onclick=()=>{s("okModal").hidden=!0,t[x].final?function(){const n=(a.end||Date.now())-(a.start||Date.now()),t=Math.floor(n/6e4),e=Math.floor(n/1e3)%60,i=o(),l=0===i?"🏆 なぞときマスター":i<=4?"🥇 名探偵":i<=10?"🥈 見習い探偵":"🥉 館のお客さま";s("result").innerHTML=`<div><span>クリアタイム</span><b>${t}分${String(e).padStart(2,"0")}秒</b></div>\n    <div><span>ヒント・答えを見た回数</span><b>${i}回</b></div><div class="rank" style="justify-content:center">${l}</div>`,d("ending"),r([523,659,784,1047,784,1047,1319],.14);for(let s=0;s<40;s++){const n=document.createElement("div");n.className="sparkle",n.textContent=["✨","⭐","💰","🪙"][s%4],n.style.left=100*Math.random()+"vw",n.style.top="-30px",n.style.animationDuration=2.5+3*Math.random()+"s",n.style.animationDelay=2*Math.random()+"s",document.body.appendChild(n),setTimeout(()=>n.remove(),8e3)}}():h()},s("btnStart").onclick=()=>{p(),h()},s("btnReset").onclick=g,s("btnHome").onclick=b,s("btnBack").onclick=h,s("btnEndMap").onclick=h,s("btnEndReset").onclick=g,b()})();
+</script>
+<script src="../../playtime.js" defer></script>
+</body>
+</html>
