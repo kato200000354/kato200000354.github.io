@@ -1,0 +1,280 @@
+<!doctype html>
+<!-- © kato200000354. 無断転載・複製・再配布を禁止します。 (kato200000354-protected) -->
+
+<html lang="ja">
+<head>
+<meta name="copyright" content="© kato200000354">
+<script src="../../audio-pause.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>漆黒の大富豪</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="CPU3人と遊ぶトランプの大富豪。8切り・革命・階段・しばり・イレブンバック・都落ち・反則上がり・スペ3返しを切り替えられます。">
+<meta name="theme-color" content="#170d0f">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap">
+<style>
+/* Layout: one-screen lacquer table — CPU seats on three sides, the field in the middle, your hand fanned along the bottom edge */
+:root{
+  color-scheme:dark;
+  --bg:#170d0f;        /* 漆黒 */
+  --felt:#3b1519;      /* 朱漆の卓 */
+  --felt2:#24100f;
+  --gold:#e2b65a;      /* 金箔 */
+  --cinnabar:#d64a2c;  /* 朱 */
+  --ink:#f6ead6;
+  --muted:#b79a86;
+  --card:#fbf6ec;
+  --card-ink:#1f1517;
+  --suit-red:#c4243a;
+  --good:#7ed08a;
+  --display:"Dela Gothic One","Hiragino Kaku Gothic StdN","Yu Gothic UI","Meiryo",sans-serif;
+  --body:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",sans-serif;
+  --cw:58px; --ch:84px;     /* hand card */
+  --fw:50px; --fh:72px;     /* field card */
+}
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);overflow:hidden;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;
+  padding-left:max(0px,env(safe-area-inset-left,0px));padding-right:max(0px,env(safe-area-inset-right,0px))}
+button{font-family:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible+span{outline:2px solid var(--gold);outline-offset:2px}
+
+/* ---------- screens ---------- */
+.screen{height:100%;position:relative}
+#title{overflow-y:auto;padding:24px max(16px,env(safe-area-inset-right,0px)) 32px max(16px,env(safe-area-inset-left,0px));
+  background:radial-gradient(120% 70% at 50% 0%,#4a1a1d 0%,var(--bg) 70%)}
+.tin{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.logo{text-align:center;padding-top:10px}
+.logo .sub{font-size:13px;letter-spacing:.4em;color:var(--gold);font-weight:700}
+.logo h1{font-family:var(--display);font-weight:400;font-size:clamp(44px,15vw,76px);margin:4px 0 0;line-height:1.05;
+  background:linear-gradient(180deg,#fff1c7 0%,var(--gold) 45%,#9c6b22 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  text-shadow:0 2px 0 rgba(0,0,0,.25)}
+.logo .fan{display:flex;justify-content:center;margin-top:14px;height:96px}
+.logo .fan .card{margin:0 -14px;transform-origin:50% 120%}
+.panel{background:rgba(255,240,220,.05);border:1px solid rgba(226,182,90,.25);border-radius:14px;padding:14px 16px}
+.panel h2{font-size:14px;letter-spacing:.15em;color:var(--gold);margin:0 0 10px;font-weight:900}
+.rules{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rule{display:flex;align-items:flex-start;gap:8px;font-size:14px;line-height:1.35;padding:8px;border-radius:10px;background:rgba(0,0,0,.25);cursor:pointer}
+.rule input{accent-color:var(--cinnabar);width:18px;height:18px;margin:0;flex:none}
+.rule small{display:block;color:var(--muted);font-size:11.5px;font-weight:500}
+.rule b{font-weight:900}
+.opts{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;font-size:14px}
+.seg{display:inline-flex;border:1px solid rgba(226,182,90,.4);border-radius:999px;overflow:hidden}
+.seg button{background:none;border:0;padding:6px 12px;font-weight:700;font-size:13px}
+.seg button.on{background:var(--gold);color:#2a1608}
+.optrow{display:flex;align-items:center;gap:8px}
+.big{font-family:var(--display);font-size:22px;letter-spacing:.1em;padding:14px;border:0;border-radius:14px;color:#2a1608;
+  background:linear-gradient(180deg,#f4d48a,var(--gold) 55%,#b98536);box-shadow:0 4px 0 #6f4a17,0 10px 24px rgba(0,0,0,.4)}
+.big:active{transform:translateY(3px);box-shadow:0 1px 0 #6f4a17}
+.stats{text-align:center;color:var(--muted);font-size:13px}
+details.how{font-size:13.5px;line-height:1.7;color:#e8d8c2}
+details.how summary{cursor:pointer;font-weight:900;color:var(--gold)}
+details.how ul{padding-left:1.2em;margin:8px 0 0}
+
+/* ---------- game ---------- */
+#game{display:grid;grid-template-rows:auto 1fr auto;height:100%;
+  background:radial-gradient(90% 60% at 50% 42%,var(--felt) 0%,var(--felt2) 70%,var(--bg) 100%)}
+.topbar{display:flex;align-items:center;gap:8px;padding:8px max(12px,env(safe-area-inset-right,0px)) 4px max(12px,env(safe-area-inset-left,0px));font-size:13px}
+.topbar .rd{font-weight:900;color:var(--gold);letter-spacing:.08em}
+.topbar .sp{flex:1}
+.tbtn{background:rgba(0,0,0,.3);border:1px solid rgba(226,182,90,.3);border-radius:999px;padding:5px 11px;font-size:12px;font-weight:700}
+.table{display:grid;grid-template-columns:minmax(76px,auto) 1fr minmax(76px,auto);grid-template-rows:auto 1fr;gap:6px;padding:4px 8px;min-height:0}
+#seat2{grid-column:1/4;justify-self:center}
+#seat1{grid-row:2;grid-column:1;align-self:center}
+#seat3{grid-row:2;grid-column:3;align-self:center}
+.field{grid-row:2;grid-column:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-width:0;
+  border:1px solid rgba(226,182,90,.28);border-radius:50%/38%;padding:14px 6px;position:relative;
+  background:radial-gradient(closest-side,rgba(0,0,0,.18),rgba(0,0,0,0))}
+.chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;min-height:22px}
+.chip{font-size:11.5px;font-weight:900;padding:3px 9px;border-radius:999px;letter-spacing:.05em}
+.chip.rev{background:var(--cinnabar);color:#fff}
+.chip.eb{background:#6c4bd1;color:#fff}
+.chip.lock{background:var(--gold);color:#2a1608}
+.fcards{display:flex;justify-content:center;min-height:var(--fh);align-items:center}
+.fcards .card{--cw:var(--fw);--ch:var(--fh);margin:0 -6px;animation:drop .32s cubic-bezier(.2,1.4,.4,1) both}
+.fcards .card:nth-child(2){animation-delay:.04s}.fcards .card:nth-child(3){animation-delay:.08s}.fcards .card:nth-child(4){animation-delay:.12s}.fcards .card:nth-child(5){animation-delay:.16s}
+@keyframes drop{from{transform:translateY(-22px) scale(1.15) rotate(-6deg);opacity:0}to{transform:none;opacity:1}}
+.fempty{font-size:12.5px;color:var(--muted);text-align:center;line-height:1.5}
+.fby{font-size:12px;color:var(--muted);min-height:16px;text-align:center}
+.fby b{color:var(--ink)}
+
+.seat{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 8px;border-radius:12px;min-width:76px;position:relative;
+  border:1px solid transparent;transition:border-color .2s,background .2s}
+.seat.turn{border-color:var(--gold);background:rgba(226,182,90,.1);box-shadow:0 0 18px rgba(226,182,90,.25)}
+.seat .nm{font-weight:900;font-size:13px;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.face{font-size:22px;line-height:1}
+.badge{font-size:10px;font-weight:900;padding:2px 6px;border-radius:6px;background:rgba(0,0,0,.4);color:var(--gold);white-space:nowrap}
+.badge.r0{background:var(--gold);color:#2a1608}.badge.r3{background:#4d4040;color:#d8c8c8}
+.backs{display:flex;align-items:center;height:30px}
+.backs i{width:16px;height:24px;border-radius:3px;margin-left:-11px;border:1px solid rgba(255,255,255,.5);
+  background:repeating-linear-gradient(45deg,var(--cinnabar) 0 3px,#9e2d1a 3px 6px)}
+.backs i:first-child{margin-left:0}
+.cnt{font-family:var(--display);font-size:16px;margin-left:6px;font-variant-numeric:tabular-nums}
+.bubble{position:absolute;top:-6px;right:-4px;font-size:11px;font-weight:900;padding:2px 7px;border-radius:999px;background:#fff;color:#3a2318;white-space:nowrap;
+  animation:pop .25s ease-out}
+.bubble.done{background:var(--gold)}
+.bubble.foul{background:#888;color:#fff}
+@keyframes pop{from{transform:scale(.4);opacity:0}}
+
+.me{padding:4px max(8px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:6px}
+.meinfo{display:flex;align-items:center;gap:8px;font-size:13px;min-height:24px;padding:0 4px}
+.meinfo .nm{font-weight:900}
+.meinfo .msg{flex:1;text-align:right;color:var(--muted);font-size:12.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meinfo .msg.ok{color:var(--good)}.meinfo .msg.ng{color:#ff9a8a}
+.me.turn .meinfo .nm{color:var(--gold)}
+.hand{display:flex;justify-content:center;padding-top:18px;height:calc(var(--ch) + 22px);min-width:0}
+.hand .card{margin-left:var(--ov,0px);transition:transform .14s ease,box-shadow .14s;cursor:pointer;border:0;padding:0}
+.hand .card:first-child{margin-left:0}
+.hand .card.sel{transform:translateY(-16px);box-shadow:0 0 0 2px var(--gold),0 8px 16px rgba(0,0,0,.5)}
+.hand .card.new{box-shadow:0 0 0 2px var(--good),0 0 14px var(--good)}
+.hand .card.sel.new{box-shadow:0 0 0 2px var(--gold),0 0 14px var(--good)}
+.controls{display:grid;grid-template-columns:1fr 1.6fr 1fr;gap:8px}
+.cbtn{border:0;border-radius:12px;padding:12px 6px;font-weight:900;font-size:15px;letter-spacing:.05em;background:rgba(0,0,0,.35);border:1px solid rgba(226,182,90,.35)}
+.cbtn.play{font-family:var(--display);font-weight:400;font-size:18px;color:#2a1608;background:linear-gradient(180deg,#f4d48a,var(--gold) 60%,#b98536);border:0;box-shadow:0 3px 0 #6f4a17}
+.cbtn:disabled{opacity:.38;cursor:default;box-shadow:none}
+.cbtn.warn{background:linear-gradient(180deg,#ff8d6f,var(--cinnabar));color:#fff}
+
+/* ---------- cards ---------- */
+.card{width:var(--cw);height:var(--ch);flex:none;background:var(--card);color:var(--card-ink);border-radius:calc(var(--cw)*.12);position:relative;
+  box-shadow:0 1px 0 rgba(0,0,0,.2),0 3px 8px rgba(0,0,0,.35);font-family:var(--body);overflow:hidden;display:block}
+.card.red{color:var(--suit-red)}
+.card .ix{position:absolute;left:calc(var(--cw)*.07);top:calc(var(--cw)*.05);display:flex;flex-direction:column;align-items:center;line-height:.95;font-weight:900;font-size:calc(var(--cw)*.3)}
+.card .ix s{text-decoration:none;font-size:calc(var(--cw)*.26)}
+.card .pip{position:absolute;left:0;right:0;bottom:calc(var(--ch)*.1);text-align:center;font-size:calc(var(--cw)*.56);line-height:1}
+.card .face-l{position:absolute;right:calc(var(--cw)*.1);bottom:calc(var(--ch)*.08);font-family:var(--display);font-size:calc(var(--cw)*.5);line-height:1;
+  border:1.5px solid currentColor;border-radius:4px;padding:1px 4px 2px;opacity:.9}
+.card.joker{background:linear-gradient(160deg,#fff8e4,#f1dfb3)}
+.card.joker .jk{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.card.joker .jk b{font-family:var(--display);font-weight:400;font-size:calc(var(--cw)*.2);letter-spacing:.06em;color:#7a2a8c}
+.card.joker .jk span{font-size:calc(var(--cw)*.55);line-height:1;background:linear-gradient(135deg,#d64a2c,#e2b65a 45%,#6c4bd1);-webkit-background-clip:text;background-clip:text;color:transparent}
+.card.back{background:repeating-linear-gradient(45deg,var(--cinnabar) 0 5px,#9e2d1a 5px 10px);border:2px solid #f2e2c2}
+
+/* ---------- overlays ---------- */
+#banner{position:fixed;inset:0;display:grid;place-items:center;pointer-events:none;z-index:30}
+#banner span{font-family:var(--display);font-size:clamp(54px,18vw,110px);color:#fff;letter-spacing:.06em;
+  text-shadow:0 0 18px var(--cinnabar),0 4px 0 #6a1a0c;animation:ban 1s ease-out both}
+#banner.gold span{color:#fff1c7;text-shadow:0 0 22px var(--gold),0 4px 0 #6f4a17}
+@keyframes ban{0%{transform:scale(2.2);opacity:0}25%{transform:scale(1);opacity:1}75%{opacity:1}100%{transform:scale(.95);opacity:0}}
+#toast{position:fixed;left:50%;top:calc(52px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:25;max-width:min(92vw,440px);
+  background:rgba(20,10,8,.92);border:1px solid var(--gold);border-radius:12px;padding:10px 14px;font-size:13.5px;line-height:1.5;text-align:center;
+  animation:pop .25s ease-out}
+.modal{position:fixed;inset:0;background:rgba(8,4,4,.72);display:grid;place-items:center;z-index:40;padding:16px max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px))}
+.mbox{width:min(100%,420px);max-height:100%;overflow-y:auto;background:linear-gradient(180deg,#2e1214,#1b0c0d);border:1px solid var(--gold);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.mbox h2{font-family:var(--display);font-weight:400;margin:0;text-align:center;font-size:24px;color:var(--gold);letter-spacing:.08em}
+.mbox .note{text-align:center;color:var(--muted);font-size:12.5px}
+.rtable{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+.rtable td{padding:8px 6px;border-bottom:1px solid rgba(226,182,90,.15)}
+.rtable td.t{font-weight:900;white-space:nowrap}
+.rtable td.n{text-align:right}
+.rtable tr.you td{color:#fff1c7}
+.rtable .tag{font-size:10.5px;color:#ff9a8a;margin-left:4px}
+.mbtns{display:flex;gap:8px}
+.mbtns button{flex:1}
+.sbtn{padding:12px;border-radius:12px;background:rgba(0,0,0,.35);border:1px solid rgba(226,182,90,.35);font-weight:900}
+
+@media (min-width:640px){
+  :root{--cw:70px;--ch:100px;--fw:60px;--fh:86px}
+  .table{grid-template-columns:150px 1fr 150px}
+}
+@media (max-height:640px){
+  :root{--cw:50px;--ch:72px;--fw:44px;--fh:63px}
+  .seat{padding:3px 6px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+
+<!-- ================= TITLE ================= -->
+<section id="title" class="screen">
+  <div class="tin">
+    <div class="logo">
+      <div class="sub">トランプ</div>
+      <h1>大富豪</h1>
+      <div class="fan" id="logoFan"></div>
+    </div>
+
+    <button class="big" id="btnStart">対局をはじめる</button>
+
+    <div class="panel">
+      <h2>ローカルルール</h2>
+      <div class="rules" id="ruleList"></div>
+      <div class="opts">
+        <div class="optrow">ジョーカー <span class="seg" id="segJoker"></span></div>
+        <div class="optrow">ラウンド <span class="seg" id="segRounds"></span></div>
+        <div class="optrow">CPUの速さ <span class="seg" id="segSpeed"></span></div>
+      </div>
+    </div>
+
+    <details class="how panel">
+      <summary>遊び方</summary>
+      <ul>
+        <li>手札を先に全部出しきった人が勝ち。あなたとCPU3人の4人対戦です。</li>
+        <li>強さは 3 &lt; 4 &lt; … &lt; K &lt; A &lt; 2 &lt; ジョーカー。場と同じ枚数・同じ形で、より強いカードを出します。</li>
+        <li>カードをタップして選び「出す」。出せない・出したくないときは「パス」。全員がパスすると場が流れ、最後に出した人から再開します。</li>
+        <li>ジョーカーは好きなカードの代わりになります（ペアや階段の穴埋めにも使えます）。</li>
+        <li>2ラウンド目からはカード交換があります。大貧民は一番強い2枚を大富豪へ、貧民は1枚を富豪へ。大富豪・富豪はいらないカードを選んで返します。</li>
+        <li>得点は 大富豪3・富豪2・貧民1・大貧民0。全ラウンドの合計で順位が決まります。</li>
+        <li>「ヒント」を押すと、おすすめの出し方を選んでくれます。</li>
+      </ul>
+    </details>
+    <div class="stats" id="stats"></div>
+  </div>
+</section>
+
+<!-- ================= GAME ================= -->
+<section id="game" class="screen" hidden>
+  <div class="topbar">
+    <span class="rd" id="roundLbl">第1ラウンド</span>
+    <span class="sp"></span>
+    <button class="tbtn" id="btnMute">音 ON</button>
+    <button class="tbtn" id="btnQuit">タイトルへ</button>
+  </div>
+  <div class="table">
+    <div class="seat" id="seat2"></div>
+    <div class="seat" id="seat1"></div>
+    <div class="field">
+      <div class="chips" id="chips"></div>
+      <div class="fcards" id="fcards"></div>
+      <div class="fby" id="fby"></div>
+    </div>
+    <div class="seat" id="seat3"></div>
+  </div>
+  <div class="me" id="me">
+    <div class="meinfo">
+      <span class="face">🙂</span><span class="nm">あなた</span><span class="badge" id="myBadge" hidden></span>
+      <span class="msg" id="msg"></span>
+    </div>
+    <div class="hand" id="hand"></div>
+    <div class="controls">
+      <button class="cbtn" id="btnPass">パス</button>
+      <button class="cbtn play" id="btnPlay">出す</button>
+      <button class="cbtn" id="btnHint">ヒント</button>
+    </div>
+  </div>
+</section>
+
+<div id="banner" hidden><span></span></div>
+<div id="toast" hidden></div>
+
+<div class="modal" id="resultModal" hidden>
+  <div class="mbox">
+    <h2 id="resTitle">ラウンド結果</h2>
+    <div class="note" id="resNote"></div>
+    <table class="rtable" id="resTable"></table>
+    <div class="mbtns" id="resBtns"></div>
+  </div>
+</div>
+
+<script>
+/*! © kato200000354. 無断転載・複製・再配布を禁止します。 */
+"use strict";const SUITS=["S","H","D","C"],SYM={S:"♠",H:"♥",D:"♦",C:"♣"},RL={3:"3",4:"4",5:"5",6:"6",7:"7",8:"8",9:"9",10:"10",11:"J",12:"Q",13:"K",14:"A",15:"2"},TITLES=["大富豪","富豪","貧民","大貧民"],POINTS=[3,2,1,0],NAMES=["あなた","たぬき","きつね","ふくろう"],FACES=["🙂","🦝","🦊","🦉"],RULES=[{k:"eight",n:"8切り",d:"8を出すと場が流れ、出した人から再開"},{k:"revolution",n:"革命",d:"同じ数字4枚以上で強さが逆転"},{k:"seq",n:"階段",d:"同じマークの3枚以上の連番を出せる"},{k:"shibari",n:"しばり",d:"同じマークが続くとそのマークしか出せない"},{k:"eleven",n:"イレブンバック",d:"Jを出すと場が流れるまで強さが逆転"},{k:"spe3",n:"スペ3返し",d:"ジョーカー1枚に♠3で勝てる"},{k:"miyako",n:"都落ち",d:"大富豪が1位を逃すと即、大貧民"},{k:"hansoku",n:"反則上がり",d:"ジョーカー・2・8・♠3返しで上がると最下位"}],store={get(e,n){try{const t=localStorage.getItem("daifugo."+e);return null==t?n:JSON.parse(t)}catch(e){return n}},set(e,n){try{localStorage.setItem("daifugo."+e,JSON.stringify(n))}catch(e){}}},cfg=Object.assign({eight:!0,revolution:!0,seq:!0,shibari:!0,eleven:!1,spe3:!0,miyako:!0,hansoku:!0,jokers:1,rounds:5,speed:1},store.get("cfg",{}));let stats=Object.assign({games:0,wins:0,daifugo:0,rounds:0},store.get("stats",{})),muted=store.get("muted",!1),AC=null;function snd(e,n=.09,t="triangle",s=.06,r=0){if(!muted)try{AC=AC||new(window.AudioContext||window.webkitAudioContext);const a=AC.currentTime+r,o=AC.createOscillator(),l=AC.createGain();o.type=t,o.frequency.setValueAtTime(e,a),l.gain.setValueAtTime(s,a),l.gain.exponentialRampToValueAtTime(1e-4,a+n),o.connect(l).connect(AC.destination),o.start(a),o.stop(a+n+.02)}catch(e){}}const sfx={play(){snd(520,.07),snd(780,.06,"triangle",.04,.04)},pass(){snd(220,.08,"sine",.05)},clear(){[392,494,587].forEach((e,n)=>snd(e,.12,"sine",.05,.05*n))},rev(){[880,660,440,330,220].forEach((e,n)=>snd(e,.16,"sawtooth",.035,.07*n))},win(){[523,659,784,1047].forEach((e,n)=>snd(e,.2,"triangle",.06,.09*n))},sel(){snd(900,.03,"sine",.03)}},st=e=>e.j?13:e.r-3;function cardHTML(e,n="div",t=""){if(e.j)return`<${n} class="card joker ${t}" data-id="${e.id}"><div class="jk"><span>★</span><b>JOKER</b></div></${n}>`;const s="H"===e.s||"D"===e.s?"red":"",r=e.r>=11&&e.r<=13;return`<${n} class="card ${s} ${t}" data-id="${e.id}"><span class="ix">${RL[e.r]}<s>${SYM[e.s]}</s></span>`+(r?`<span class="face-l">${RL[e.r]}</span>`:`<span class="pip">${SYM[e.s]}</span>`)+`</${n}>`}function cardText(e){return e.j?"JOKER":SYM[e.s]+RL[e.r]}function sortHand(e){e.sort((e,n)=>st(e)-st(n)||SUITS.indexOf(e.s)-SUITS.indexOf(n.s))}function shuffle(e){for(let n=e.length-1;n>0;n--){const t=Math.random()*(n+1)|0;[e[n],e[t]]=[e[t],e[n]]}return e}function mk(e,n,t,s){const r=e.filter(e=>!e.j);return{cards:e,kind:n,n:e.length,lo:t,hi:s,joker:e.length-r.length,allJoker:!r.length,suits:[...new Set(r.map(e=>e.s))].sort().join("")}}function interpret(e){const n=[];if(!e.length)return n;const t=e.filter(e=>!e.j),s=e.length-t.length;if(!t.length)return n.push(mk(e,"group",13,13)),n;if(t.every(e=>e.r===t[0].r)){const s=st(t[0]);n.push(mk(e,"group",s,s))}if(cfg.seq&&e.length>=3&&t.every(e=>e.s===t[0].s)){const r=t.map(st).sort((e,n)=>e-n);if(new Set(r).size===r.length){const t=r[r.length-1]-r[0]+1-r.length;if(t<=s){const a=s-t;for(let t=a;t>=0;t--){const s=r[0]-(a-t),o=r[r.length-1]+t;s>=0&&o<=12&&n.push(mk(e,"seq",s,o))}}}}return n}function allPlays(e){const n=[],t=e.filter(e=>e.j),s={};for(const n of e)n.j||(s[n.r]=s[n.r]||[]).push(n);for(const e in s){const r=s[e],a=r.length;for(let e=1;e<1<<a;e++){const s=r.filter((n,t)=>e&1<<t);for(let e=0;e<=t.length;e++){const a=s.concat(t.slice(0,e));n.push(mk(a,"group",st(r[0]),st(r[0])))}}}for(let e=1;e<=t.length;e++)n.push(mk(t.slice(0,e),"group",13,13));if(cfg.seq)for(const s of SUITS){const r={};for(const n of e)n.j||n.s!==s||(r[st(n)]=n);for(let e=0;e<=10;e++){let s=[],a=0;for(let o=e;o<=12;o++){if(r[o])s.push(r[o]);else{if(a>=t.length)break;s.push(t[a++])}s.length>=3&&s.some(e=>!e.j)&&n.push(mk(s.slice(),"seq",e,o))}}}return n}const reversed=()=>G.revolution!==G.eleven;function beats(e){if(G.lock)for(const n of e.suits)if(!G.lock.includes(n))return!1;const n=G.field;return!n||e.kind===n.kind&&e.n===n.n&&("group"===e.kind?n.allJoker?cfg.spe3&&1===n.n&&1===e.n&&!e.allJoker&&"S"===e.cards[0].s&&3===e.cards[0].r:!!e.allJoker||(reversed()?e.lo<n.lo:e.lo>n.lo):reversed()?e.hi<n.lo:e.lo>n.hi)}const isSpe3Return=e=>cfg.spe3&&G.field&&G.field.allJoker&&1===G.field.n&&1===e.n&&!e.allJoker&&"S"===e.cards[0].s&&3===e.cards[0].r;function isFoul(e){if(!cfg.hansoku)return!1;if(e.joker)return!0;const n=G.revolution?3:15;return!!e.cards.some(e=>!e.j&&e.r===n)||(!(!cfg.eight||!e.cards.some(e=>!e.j&&8===e.r))||isSpe3Return(e))}function badCard(e){return e.j||e.r===(G.revolution?3:15)||cfg.eight&&8===e.r}function describe(e){const n=e.cards.filter(e=>!e.j);if("seq"===e.kind)return`${SYM[n[0].s]}の階段 ${RL[e.lo+3]}〜${RL[e.hi+3]}`;if(e.allJoker)return 1===e.n?"ジョーカー":"ジョーカー"+e.n+"枚";const t=RL[n[0].r];return 1===e.n?n[0]?SYM[n[0].s]+t:t:`${t}の${2===e.n?"ペア":e.n+"枚出し"}`}let G=null,timer=null,token=0;const P=()=>G.players,active=()=>G.players.map((e,n)=>n).filter(e=>!G.players[e].finished);function nextActive(e){for(let n=0;n<4;n++)if(e=(e+1)%4,!G.players[e].finished)return e;return e}function newGame(){token++,clearTimeout(timer),G={players:NAMES.map((e,n)=>({name:e,human:0===n,hand:[],finished:!1})),round:0,totals:[0,0,0,0],prevRanks:null,field:null,fieldBy:-1,lock:null,revolution:!1,eleven:!1,passed:[!1,!1,!1,!1],front:[],back:[],fouls:[],turn:0,phase:"play",sel:new Set,newIds:new Set,exchange:null,bubbles:{}},show("game"),startRound()}function startRound(){G.round++;const e=[];let n=0;for(const t of SUITS)for(let s=3;s<=15;s++)e.push({id:n++,s:t,r:s,j:!1});for(let t=0;t<cfg.jokers;t++)e.push({id:n++,s:"X",r:16,j:!0});shuffle(e),G.players.forEach(e=>{e.hand=[],e.finished=!1});const t=4*Math.random()|0;e.forEach((e,n)=>G.players[(n+t)%4].hand.push(e)),G.players.forEach(e=>sortHand(e.hand)),Object.assign(G,{field:null,fieldBy:-1,lock:null,revolution:!1,eleven:!1,passed:[!1,!1,!1,!1],front:[],back:[],fouls:[],sel:new Set,newIds:new Set,exchange:null,bubbles:{},lastFieldKey:""}),$("roundLbl").textContent=`第${G.round}ラウンド`+(cfg.rounds<99?` / ${cfg.rounds}`:""),G.prevRanks?doExchange():beginPlay()}function strongest(e,n){return e.slice().sort((e,n)=>st(n)-st(e)||SUITS.indexOf(e.s)-SUITS.indexOf(n.s)).slice(0,n)}function weakest(e,n){return e.slice().sort((e,n)=>st(e)-st(n)).slice(0,n)}function give(e,n,t){const s=new Set(t.map(e=>e.id));G.players[e].hand=G.players[e].hand.filter(e=>!s.has(e.id)),G.players[n].hand.push(...t),sortHand(G.players[n].hand),0===n&&t.forEach(e=>G.newIds.add(e.id))}function doExchange(){const[e,n,t,s]=G.prevRanks,r=[],a=strongest(G.players[s].hand,2);give(s,e,a);const o=strongest(G.players[t].hand,1);give(t,n,o),0===s&&r.push(`大貧民のあなたは ${a.map(cardText).join(" ")} を${G.players[e].name}に渡しました`),0===e&&r.push(`大貧民の${G.players[s].name}から ${a.map(cardText).join(" ")} をもらいました`),0===t&&r.push(`貧民のあなたは ${o.map(cardText).join(" ")} を${G.players[n].name}に渡しました`),0===n&&r.push(`貧民の${G.players[t].name}から ${o.map(cardText).join(" ")} をもらいました`);for(const[a,o,l]of[[e,s,2],[n,t,1]])if(0===a)G.exchange={rich:a,poor:o,k:l};else{const e=weakest(G.players[a].hand,l);give(a,o,e),0===o&&r.push(`${G.players[a].name}から ${e.map(cardText).join(" ")} が返ってきました`)}G.exchange?(G.phase="exchange",r.push(`${G.players[G.exchange.poor].name}に返すカードを${G.exchange.k}枚選んでください`),toast(r.join("<br>"),4200),render()):(r.length&&toast(r.join("<br>"),3600),beginPlay())}function finishExchange(){const e=G.exchange,n=G.players[0].hand.filter(e=>G.sel.has(e.id));n.length===e.k&&(give(0,e.poor,n),G.sel.clear(),G.exchange=null,sfx.play(),toast(`${n.map(cardText).join(" ")} を${G.players[e.poor].name}に渡しました`,2200),beginPlay())}function beginPlay(){G.phase="play",G.prevRanks?G.turn=G.prevRanks[3]:G.turn=G.players.findIndex(e=>e.hand.some(e=>"D"===e.s&&3===e.r)),G.turn<0&&(G.turn=0),G.bubbles={},schedule(900)}function cpuDelay(){const e=[1150,750,380][cfg.speed];return G.players[0].finished?.5*e:e}function schedule(e=0){if(render(),clearTimeout(timer),"play"!==G.phase)return;if(!G.players[G.turn].human){const n=token;timer=setTimeout(()=>{n===token&&cpuAct(G.turn)},cpuDelay()+e)}}function clearField(){G.field=null,G.fieldBy=-1,G.lock=null,G.eleven=!1,G.passed=[!1,!1,!1,!1];for(const e in G.bubbles)/位|反則|都落ち/.test(G.bubbles[e])||delete G.bubbles[e]}function doPlay(e,n){const t=G.players[e],s=new Set(n.cards.map(e=>e.id));t.hand=t.hand.filter(e=>!s.has(e.id)),0===e&&(G.sel.clear(),G.newIds.clear());const r=G.field,a=isSpe3Return(n),o=0===t.hand.length&&isFoul(n);!cfg.shibari||!r||G.lock||n.joker||r.joker||n.suits!==r.suits||(G.lock=n.suits,banner("しばり","gold")),G.field=n,G.fieldBy=e,G.fieldKey=Math.random(),G.bubbles[e]=describe(n),sfx.play();let l=!1;if(cfg.revolution&&"group"===n.kind&&n.n>=4?(G.revolution=!G.revolution,banner(G.revolution?"革命!":"革命返し!"),sfx.rev()):cfg.eight&&n.cards.some(e=>!e.j&&8===e.r)?(l=!0,banner("8切り","gold"),sfx.clear()):a?(l=!0,banner("スペ3返し","gold"),sfx.clear()):cfg.eleven&&"group"===n.kind&&!n.allJoker&&8===n.lo&&(G.eleven=!G.eleven,banner(G.eleven?"Jバック":"Jバック解除")),0===t.hand.length&&finish(e,o),l){render();const n=token;return clearTimeout(timer),void(timer=setTimeout(()=>{if(n!==token)return;const t=e;clearField(),endIfDone()||(G.turn=G.players[t].finished?nextActive(t):t,schedule())},850))}advance(e)}function doPass(e){G.passed[e]=!0,G.bubbles[e]="パス",sfx.pass(),0===e&&G.sel.clear(),advance(e)}function advance(e){if(endIfDone())return;if(G.field){const e=active().filter(e=>e!==G.fieldBy);if(e.every(e=>G.passed[e])){const e=G.fieldBy;render();const n=token;return clearTimeout(timer),void(timer=setTimeout(()=>{n===token&&(clearField(),sfx.clear(),G.turn=G.players[e].finished?nextActive(e):e,schedule())},700))}}let n=e,t=0;do{n=(n+1)%4,t++}while((G.players[n].finished||G.passed[n])&&t<8);G.turn=n,schedule()}function finish(e,n){if(G.players[e].finished=!0,n)G.back.unshift(e),G.fouls.push(e),G.bubbles[e]="反則上がり",banner("反則上がり");else if(G.front.push(e),G.bubbles[e]=`${G.front.length}位 あがり`,0===e&&sfx.win(),cfg.miyako&&1===G.front.length&&G.prevRanks){const n=G.prevRanks[0];n===e||G.players[n].finished||(G.players[n].finished=!0,G.players[n].hand=[],G.back.unshift(n),G.bubbles[n]="都落ち",setTimeout(()=>banner("都落ち"),700))}}function endIfDone(){const e=active();if(e.length>1)return!1;if(1===e.length){const n=e[0];G.players[n].finished=!0,G.front.push(n),G.bubbles[n]=`${G.front.length}位`}if("play"!==G.phase)return!0;G.phase="ending",render(),clearTimeout(timer);const n=token;return timer=setTimeout(()=>{n===token&&endRound()},1300),!0}function eff(e){return 13===e?14:reversed()?12-e:e}function choosePlay(e,n){const t=G.players[e].hand;let s=allPlays(t).filter(beats);const r=s.filter(e=>!(e.n===t.length&&isFoul(e)));if(!s.length||!r.length&&G.field)return null;if(!r.length)return s[0];s=r;const a=s.find(e=>e.n===t.length);if(a)return a;const o={};for(const e of t)e.j||(o[e.r]=(o[e.r]||0)+1);const l=t.reduce((e,n)=>e+eff(st(n)),0)/t.length,i=Math.min(...active().filter(n=>n!==e).map(e=>G.players[e].hand.length));let d=null,c=1e9,u=0;for(const e of s){const s=e.cards.filter(e=>!e.j),r=s.length?s.reduce((e,n)=>e+eff(st(n)),0)/s.length:14;let a=r+9*e.joker;if(G.field||(a-=1.6*e.n),"group"===e.kind&&s.length&&o[s[0].r]>s.length&&(a+=3),"seq"===e.kind)for(const e of s)o[e.r]>1&&(a+=1.5);if(cfg.eight&&s.some(e=>8===e.r)&&(a+=G.field?.5:4),cfg.revolution&&"group"===e.kind&&e.n>=4&&(a+=l<6?-12:9),i<=2&&G.field&&(a-=.4*r),cfg.hansoku){const n=new Set(e.cards.map(e=>e.id)),s=t.filter(e=>!n.has(e.id));s.length&&s.every(badCard)&&(a+=20),e.cards.some(badCard)&&s.filter(badCard).length>=s.length-1&&(a-=6)}n||(a+=1.2*Math.random()),a<c&&(c=a,d=e,u=r)}if(G.field&&!n){if((u>=10||d.joker>0)&&t.length-d.n>2&&i>3&&Math.random()<.6)return null}return d}function cpuAct(e){if("play"!==G.phase||G.turn!==e)return;const n=choosePlay(e,!1);n?doPlay(e,n):doPass(e)}function selectedCards(){return G.players[0].hand.filter(e=>G.sel.has(e.id))}function humanLegal(){return interpret(selectedCards()).filter(beats)}let foulArmed=!1;function onPlay(){if("exchange"===G.phase)return void finishExchange();if("play"!==G.phase||0!==G.turn)return;const e=humanLegal();if(!e.length)return;const n=e[0];if(n.n===G.players[0].hand.length&&isFoul(n)&&!foulArmed)return foulArmed=!0,void render();foulArmed=!1,doPlay(0,n)}function onPass(){"play"===G.phase&&0===G.turn&&G.field&&(foulArmed=!1,doPass(0))}function onHint(){if("exchange"===G.phase)return G.sel=new Set(weakest(G.players[0].hand,G.exchange.k).map(e=>e.id)),sfx.sel(),void render();if("play"!==G.phase||0!==G.turn)return;const e=choosePlay(0,!0);if(!e)return G.sel.clear(),render(),void setMsg("出せるカードがありません。パスしましょう","ng");G.sel=new Set(e.cards.map(e=>e.id)),foulArmed=!1,sfx.sel(),render()}const $=e=>document.getElementById(e);function show(e){$("title").hidden="title"!==e,$("game").hidden="game"!==e}function setMsg(e,n=""){const t=$("msg");t.textContent=e,t.className="msg "+n}function titleOf(e){if(!G.prevRanks)return null;const n=G.prevRanks.indexOf(e);return n<0?null:n}function render(){if(!G)return;for(let e=1;e<=3;e++){const n=G.players[e],t=$("seat"+e),s=titleOf(e),r=G.bubbles[e],a=n.hand.length,o=Array.from({length:Math.min(a,7)},()=>"<i></i>").join(""),l=r&&/あがり|位/.test(r)?"done":r&&/反則|都落ち/.test(r)?"foul":"";t.className="seat"+("play"!==G.phase||G.turn!==e||n.finished?"":" turn"),t.innerHTML=`<div class="nm"><span class="face">${FACES[e]}</span>${n.name}</div>`+(null!=s?`<span class="badge r${s}">${TITLES[s]}</span>`:"")+`<div class="backs">${o}<span class="cnt">${a}</span></div>`+(r?`<span class="bubble ${l}">${r}</span>`:"")}const e=[];G.revolution&&e.push('<span class="chip rev">革命中</span>'),G.eleven&&e.push('<span class="chip eb">Jバック</span>'),G.lock&&e.push(`<span class="chip lock">しばり ${[...G.lock].map(e=>SYM[e]).join("")}</span>`),$("chips").innerHTML=e.join("");const n=$("fcards");G.field?(n.dataset.key!==String(G.fieldKey)&&(n.innerHTML=G.field.cards.map(e=>cardHTML(e)).join(""),n.dataset.key=String(G.fieldKey)),$("fby").innerHTML=`<b>${G.players[G.fieldBy].name}</b>：${describe(G.field)}`):(n.dataset.key="",n.innerHTML=`<div class="fempty">${"exchange"===G.phase?"カード交換中":"場は空です"}<br>${"play"===G.phase&&0===G.turn?"好きなカードを出せます":""}</div>`,$("fby").textContent="");const t=G.players[0],s="play"===G.phase&&0===G.turn&&!t.finished;$("me").classList.toggle("turn",s);const r=titleOf(0),a=$("myBadge");null!=r?(a.hidden=!1,a.textContent=TITLES[r],a.className="badge r"+r):a.hidden=!0,renderHand();const o=$("btnPlay"),l=$("btnPass"),i=$("btnHint");if(o.classList.remove("warn"),"exchange"===G.phase){const e=G.exchange.k,n=G.sel.size;return o.textContent=`渡す (${n}/${e})`,o.disabled=n!==e,l.disabled=!0,i.disabled=!1,void setMsg(`${G.players[G.exchange.poor].name}に返すカードを${e}枚選択`)}if(o.textContent="出す",i.disabled=!s,l.disabled=!s||!G.field,t.finished){o.disabled=!0;const e=G.back.includes(0);return void setMsg((G.fouls.includes(0)?"反則上がり…":e?"都落ち…":`${G.front.indexOf(0)+1}位であがり！`)+" 残りの勝負を見守ります",e?"ng":"ok")}const d=selectedCards();if(!d.length){if(o.disabled=!0,foulArmed=!1,s){const e=allPlays(t.hand).some(beats);setMsg(e?"あなたの番です":"出せるカードがありません",e?"":"ng")}else setMsg(`${G.players[G.turn].name}の番…`);return}const c=interpret(d),u=c.filter(beats);return c.length?u.length?(o.disabled=!s,foulArmed?(o.textContent="それでも出す",o.classList.add("warn"),void setMsg("このまま上がると反則上がりで最下位です","ng")):void setMsg(describe(u[0])+(s?" を出せます":""),"ok")):(o.disabled=!0,void setMsg(describe(c[0])+" は場に出せません","ng")):(o.disabled=!0,void setMsg("その組み合わせは出せません","ng"))}function renderHand(){const e=G.players[0].hand,n=$("hand");n.innerHTML=e.map(e=>cardHTML(e,"button",(G.sel.has(e.id)?"sel ":"")+(G.newIds.has(e.id)?"new":""))).join("");const t=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--cw"))||58,s=n.clientWidth-4,r=e.length;let a=t+4;r>1&&(r-1)*a+t>s&&(a=Math.max(10,(s-t)/(r-1))),n.style.setProperty("--ov",a-t+"px")}let bannerT=0,toastT=0;function banner(e,n=""){const t=$("banner");t.hidden=!1,t.className=n;const s=t.querySelector("span");s.textContent=e,s.style.animation="none",s.offsetWidth,s.style.animation="",clearTimeout(bannerT),bannerT=setTimeout(()=>t.hidden=!0,1e3)}function toast(e,n=2600){const t=$("toast");t.innerHTML=e,t.hidden=!1,clearTimeout(toastT),toastT=setTimeout(()=>t.hidden=!0,n)}function endRound(){const e=G.front.concat(G.back);e.forEach((e,n)=>G.totals[e]+=POINTS[n]),G.prevRanks=e,stats.rounds++,0===e[0]&&stats.daifugo++;const n=G.round>=cfg.rounds;if(n){stats.games++;const e=Math.max(...G.totals);G.totals[0]===e&&stats.wins++}store.set("stats",stats),G.phase="result",render();const t=$("resTable"),s=$("resBtns");if(n){const e=[0,1,2,3].sort((e,n)=>G.totals[n]-G.totals[e]),n=e.findIndex(e=>G.totals[e]===G.totals[0])+1;$("resTitle").textContent="最終結果",$("resNote").textContent=1===n?"総合優勝！おめでとうございます":`あなたは総合${n}位でした`,t.innerHTML=e.map(n=>{const t=e.findIndex(e=>G.totals[e]===G.totals[n])+1;return`<tr class="${0===n?"you":""}"><td class="t">${t}位</td><td>${FACES[n]} ${G.players[n].name}</td><td class="n">${G.totals[n]} 点</td></tr>`}).join(""),s.innerHTML='<button class="sbtn" id="btnHome">タイトルへ</button><button class="big" id="btnAgain">もう一度</button>',$("btnHome").onclick=()=>{$("resultModal").hidden=!0,goTitle()},$("btnAgain").onclick=()=>{$("resultModal").hidden=!0,newGame()},1===n&&sfx.win()}else $("resTitle").textContent=`第${G.round}ラウンド結果`,$("resNote").textContent=0===e[0]?"あなたが大富豪！":"次のラウンドは身分に応じてカードを交換します",t.innerHTML=e.map((e,n)=>`<tr class="${0===e?"you":""}"><td class="t">${TITLES[n]}</td><td>${FACES[e]} ${G.players[e].name}${G.fouls.includes(e)?'<span class="tag">反則</span>':""}${"都落ち"===G.bubbles[e]?'<span class="tag">都落ち</span>':""}</td><td class="n">+${POINTS[n]}</td><td class="n">計 ${G.totals[e]}</td></tr>`).join(""),s.innerHTML='<button class="big" id="btnNext">次のラウンドへ</button>',$("btnNext").onclick=()=>{$("resultModal").hidden=!0,startRound()};$("resultModal").hidden=!1}function goTitle(){token++,clearTimeout(timer),G=null,show("title"),renderTitle()}function seg(e,n,t,s){const r=$(e);r.innerHTML=n.map((e,n)=>`<button type="button" class="${cfg[s]===e?"on":""}" data-v="${e}">${t[n]}</button>`).join(""),r.onclick=r=>{const a=r.target.closest("button");a&&(cfg[s]=Number(a.dataset.v),store.set("cfg",cfg),seg(e,n,t,s))}}function renderTitle(){$("ruleList").innerHTML=RULES.map(e=>`<label class="rule"><input type="checkbox" id="rule-${e.k}" data-k="${e.k}" ${cfg[e.k]?"checked":""}><span><b>${e.n}</b><small>${e.d}</small></span></label>`).join(""),seg("segJoker",[0,1,2],["0","1","2"],"jokers"),seg("segRounds",[3,5,10],["3","5","10"],"rounds"),seg("segSpeed",[0,1,2],["ゆっくり","ふつう","はやい"],"speed"),$("stats").textContent=stats.rounds?`これまで ${stats.games}対局・${stats.rounds}ラウンド ／ 大富豪 ${stats.daifugo}回 ／ 総合優勝 ${stats.wins}回`:""}$("ruleList").addEventListener("change",e=>{const n=e.target.dataset.k;n&&(cfg[n]=e.target.checked,store.set("cfg",cfg))}),$("logoFan").innerHTML=[{id:"a",s:"S",r:14},{id:"b",s:"H",r:15},{id:"c",j:!0,id2:1},{id:"d",s:"D",r:3},{id:"e",s:"C",r:8}].map((e,n)=>cardHTML(e).replace('class="card','style="transform:rotate('+11*(n-2)+"deg) translateY("+6*Math.abs(n-2)+'px)" class="card')).join(""),$("btnStart").onclick=()=>{snd(1,.01,"sine",1e-4),newGame()},$("btnPlay").onclick=onPlay,$("btnPass").onclick=onPass,$("btnHint").onclick=onHint,$("hand").addEventListener("click",e=>{const n=e.target.closest(".card");if(!n||!G)return;const t=Number(n.dataset.id);if(!G.players[0].finished&&"result"!==G.phase){if(G.sel.has(t))G.sel.delete(t);else{if("exchange"===G.phase&&G.sel.size>=G.exchange.k)return;G.sel.add(t)}foulArmed=!1,sfx.sel(),render()}});let quitArmed=0;function paintMute(){$("btnMute").textContent=muted?"音 OFF":"音 ON"}$("btnQuit").onclick=()=>{const e=$("btnQuit");if(Date.now()-quitArmed<2500)return e.textContent="タイトルへ",void goTitle();quitArmed=Date.now(),e.textContent="もう一度押すと終了",setTimeout(()=>{e.textContent="タイトルへ"},2500)},$("btnMute").onclick=()=>{muted=!muted,store.set("muted",muted),paintMute()},paintMute();let rz=0;window.addEventListener("resize",()=>{cancelAnimationFrame(rz),rz=requestAnimationFrame(()=>{G&&renderHand()})}),renderTitle();
+</script>
+<script src="../../playtime.js" defer></script>
+</body>
+</html>
