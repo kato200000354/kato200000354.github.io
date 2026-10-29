@@ -1,0 +1,367 @@
+<!doctype html>
+<!-- © kato200000354. 無断転載・複製・再配布を禁止します。 (kato200000354-protected) -->
+
+<html lang="ja">
+<head>
+<meta name="copyright" content="© kato200000354">
+<script src="../../audio-pause.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>星結び ～願いをこめて～</title>
+<meta name="description" content="夜空の星を指でつないで、あなただけの星座をつくろう。実在の星座をなぞって、星の物語にも出会える。">
+<meta name="theme-color" content="#0a1030">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;800&family=Zen+Maru+Gothic:wght@500;700&display=swap">
+<style>
+:root {
+  --deep: #070b1f; --night: #0d1538; --card: rgba(18, 27, 66, .86); --line: rgba(243, 212, 138, .28);
+  --gold: #f3d48a; --gold2: #e2ad54; --ink: #eef0ff; --muted: #aab1d8; --cream: #fbf3df; --cream-ink: #2b2a3d;
+  --bad: #ff8a8a;
+  --serif: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --round: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Hiragino Sans", "Meiryo", sans-serif;
+  color-scheme: dark;
+}
+[hidden] { display: none !important; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; background: var(--deep); color: var(--ink); font-family: var(--round); overflow: hidden; }
+button { font: inherit; color: inherit; }
+#sky { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+.screen { position: fixed; inset: 0; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); }
+.inner { width: 100%; max-width: 560px; margin: 0 auto; padding: 0 16px 24px; display: flex; flex-direction: column; gap: 14px; flex: 1; }
+.bar { display: flex; align-items: center; gap: 8px; padding: 10px 12px; width: 100%; max-width: 560px; margin: 0 auto; }
+.bar h2 { flex: 1; margin: 0; font-family: var(--serif); font-weight: 800; font-size: 18px; letter-spacing: .04em; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ib { width: 38px; height: 38px; flex: none; border-radius: 50%; border: 1px solid var(--line); background: rgba(10, 16, 48, .7); display: grid; place-items: center; cursor: pointer; padding: 0; }
+.ib svg { width: 20px; height: 20px; stroke: var(--gold); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ib:disabled { opacity: .35; }
+.ib.on { background: var(--gold); } .ib.on svg { stroke: var(--deep); }
+.btn { border: 0; border-radius: 999px; padding: 14px 22px; font-weight: 700; font-size: 17px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.btn.main { background: linear-gradient(180deg, #fbe7b0, var(--gold2)); color: #2a1d05; box-shadow: 0 0 24px rgba(243, 212, 138, .35); }
+.btn.sub { background: rgba(10, 16, 48, .75); border: 1px solid var(--line); color: var(--gold); }
+.btn:disabled { opacity: .4; box-shadow: none; }
+.btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.btn:focus-visible, .ib:focus-visible, .chip:focus-visible, .wish:focus-visible, .tile:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px; }
+.muted { color: var(--muted); }
+
+/* ホーム */
+#home .inner { justify-content: space-between; padding-top: 6vh; }
+.logo { text-align: center; }
+.logo ruby { font-family: var(--serif); font-weight: 800; font-size: clamp(54px, 18vw, 84px); color: var(--gold); letter-spacing: .08em; text-shadow: 0 0 22px rgba(243, 212, 138, .55); }
+.logo rt { font-size: 13px; letter-spacing: .3em; color: var(--ink); text-shadow: none; }
+.logo .tag { font-family: var(--serif); font-size: 18px; letter-spacing: .2em; margin-top: 2px; }
+.today-line span { display: block; text-wrap: balance; }
+.today-line { text-align: center; font-size: 15px; line-height: 1.8; color: var(--ink); text-shadow: 0 1px 8px #000; padding: 0 8px; text-wrap: balance; }
+.home-acts { display: grid; gap: 10px; }
+.nav { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; background: rgba(8, 12, 36, .78); border: 1px solid var(--line); border-radius: 18px; padding: 8px 4px; }
+.nav button { background: none; border: 0; display: grid; justify-items: center; gap: 3px; font-size: 12px; color: var(--ink); cursor: pointer; padding: 4px 0; }
+.nav svg { width: 24px; height: 24px; stroke: var(--gold); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* 願い */
+.wish-head { text-align: center; font-family: var(--serif); font-size: 22px; font-weight: 800; line-height: 1.6; margin: 8px 0 4px; }
+.wishes { display: grid; gap: 10px; }
+.wish { display: flex; align-items: center; gap: 12px; text-align: left; background: var(--cream); color: var(--cream-ink); border: 0; border-radius: 14px; padding: 14px 16px; font-size: 16px; font-weight: 700; cursor: pointer; }
+.wish i { font-style: normal; font-size: 20px; width: 26px; text-align: center; }
+.wish:active { transform: scale(.98); }
+
+/* 盤面 */
+.boardwrap { flex: 1; position: relative; min-height: 0; margin: 0 8px; border-radius: 18px; overflow: hidden; border: 1px solid var(--line); background: radial-gradient(ellipse at 50% 30%, rgba(40, 60, 130, .35), rgba(5, 8, 25, .55)); }
+.boardwrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; display: block; }
+.hint-bubble { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); background: rgba(8, 12, 36, .85); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font-size: 13px; white-space: nowrap; pointer-events: none; }
+.tools { width: 100%; max-width: 560px; margin: 0 auto; padding: 10px 16px 14px; display: grid; gap: 10px; }
+.trow { display: flex; align-items: center; gap: 10px; }
+.trow > span { font-size: 13px; color: var(--muted); width: 4.5em; flex: none; }
+.swatches { display: flex; gap: 8px; flex-wrap: wrap; }
+.sw { width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; }
+.sw[aria-pressed="true"] { border-color: #fff; box-shadow: 0 0 0 2px var(--deep), 0 0 12px currentColor; }
+input[type=range] { flex: 1; accent-color: var(--gold); min-width: 0; }
+.tools .btn { width: 100%; }
+
+/* 結果 */
+.res-canvas { width: 100%; aspect-ratio: 1 / 1; max-height: 52vh; border-radius: 18px; border: 1px solid var(--line); background: rgba(5, 8, 25, .5); display: block; }
+.res-top { text-align: center; font-family: var(--serif); font-weight: 800; font-size: 20px; margin-top: 4px; }
+.res-top small { display: block; font-family: var(--round); font-weight: 500; font-size: 14px; color: var(--muted); }
+.banner { position: relative; text-align: center; font-family: var(--serif); font-weight: 800; font-size: clamp(18px, 5.4vw, 24px); color: #2a1d05; background: linear-gradient(180deg, #fbe7b0, var(--gold2)); border-radius: 12px; padding: 10px 40px; margin: -34px 10px 0; box-shadow: 0 4px 18px rgba(0, 0, 0, .4); overflow-wrap: anywhere; }
+.banner .ib { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 34px; height: 34px; background: rgba(255, 255, 255, .35); border-color: transparent; }
+.banner .ib svg { stroke: #2a1d05; width: 16px; height: 16px; }
+.banner input { width: 100%; font: inherit; text-align: center; border: 0; background: rgba(255, 255, 255, .55); border-radius: 8px; color: #2a1d05; padding: 2px 4px; }
+.desc { text-align: center; line-height: 1.8; font-size: 15px; }
+.stats { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.stats b { color: var(--gold); font-weight: 700; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.row2 .btn { padding: 13px 10px; font-size: 16px; }
+
+/* タブ・図鑑 */
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { border: 1px solid var(--line); background: rgba(10, 16, 48, .7); color: var(--ink); border-radius: 999px; padding: 6px 14px; font-size: 14px; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--cream); color: var(--cream-ink); border-color: var(--cream); font-weight: 700; }
+.search { width: 100%; font: inherit; font-size: 16px; border-radius: 999px; border: 0; padding: 10px 16px; background: var(--cream); color: var(--cream-ink); }
+.grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.tile { background: rgba(14, 22, 58, .85); border: 1px solid var(--line); border-radius: 12px; padding: 6px 6px 8px; cursor: pointer; display: grid; gap: 4px; text-align: center; position: relative; min-width: 0; }
+.tile canvas { width: 100%; aspect-ratio: 1 / 1; display: block; border-radius: 8px; background: rgba(5, 8, 25, .6); }
+.tile b { font-size: 13px; font-weight: 700; overflow-wrap: anywhere; line-height: 1.35; }
+.tile small { font-size: 11px; color: var(--muted); }
+.tile .mark { position: absolute; top: 8px; right: 9px; color: var(--gold); font-size: 14px; text-shadow: 0 0 6px #000; }
+.empty { text-align: center; color: var(--muted); padding: 40px 10px; line-height: 1.9; }
+.detail-name { text-align: center; font-family: var(--serif); font-weight: 800; font-size: 26px; margin: 0; }
+.detail-name small { display: block; font-family: var(--round); font-size: 13px; color: var(--muted); letter-spacing: .1em; font-weight: 500; }
+.tabtext { background: var(--cream); color: var(--cream-ink); border-radius: 14px; padding: 14px 16px; line-height: 1.85; font-size: 15px; min-height: 7em; }
+
+/* 今日の星空 */
+.date { text-align: center; font-family: var(--serif); font-weight: 800; font-size: 22px; }
+.msg { background: var(--cream); color: var(--cream-ink); border-radius: 14px; padding: 16px; text-align: center; line-height: 1.85; font-size: 16px; }
+.sec { display: flex; justify-content: space-between; align-items: baseline; font-weight: 700; }
+
+/* 設定 */
+.set { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.set:last-child { border-bottom: 0; }
+.danger { color: var(--bad); border-color: rgba(255, 138, 138, .4); }
+
+/* シェア */
+.share-img { width: 100%; max-width: 360px; margin: 0 auto; display: block; border-radius: 12px; box-shadow: 0 8px 30px rgba(0, 0, 0, .55); }
+.shares { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.shares button { background: rgba(10, 16, 48, .75); border: 1px solid var(--line); border-radius: 14px; padding: 10px 2px; display: grid; justify-items: center; gap: 4px; font-size: 12px; cursor: pointer; }
+.shares i { font-style: normal; width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; font-weight: 800; font-size: 15px; }
+.shares svg { width: 20px; height: 20px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* 説明・確認 */
+.overlay { position: fixed; inset: 0; background: rgba(3, 5, 18, .72); display: grid; place-items: center; padding: 20px; z-index: 20; }
+.dialog { width: 100%; max-width: 380px; background: #121a44; border: 1px solid var(--line); border-radius: 20px; padding: 20px; display: grid; gap: 12px; line-height: 1.8; }
+.dialog h3 { margin: 0; font-family: var(--serif); font-size: 20px; color: var(--gold); text-align: center; }
+.dialog ol { margin: 0; padding-left: 1.3em; }
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--cream); color: var(--cream-ink); padding: 10px 18px; border-radius: 999px; font-weight: 700; font-size: 14px; z-index: 30; box-shadow: 0 6px 20px rgba(0, 0, 0, .5); white-space: nowrap; }
+@media (prefers-reduced-motion: no-preference) { .screen:not([hidden]) { animation: fade .35s ease; } @keyframes fade { from { opacity: 0; } to { opacity: 1; } } }
+</style>
+</head>
+<body>
+<canvas id="sky" aria-hidden="true"></canvas>
+
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 7H4V2"/><path d="M4 7a9 9 0 1 1-1 7"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17h.01"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5M12 7l1 2 2 .3-1.5 1.4.4 2.1-1.9-1-1.9 1 .4-2.1L9 9.3l2-.3z"/></symbol>
+  <symbol id="i-album" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/><circle cx="16" cy="9" r="1.5"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path d="M4 20l4-1L19 8l-3-3L5 16z"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></symbol>
+  <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5"/><path d="M5 13v7h14v-7"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 20h14"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></symbol>
+</svg>
+
+<!-- ① ホーム -->
+<section class="screen" id="home">
+  <div class="inner">
+    <div class="logo">
+      <ruby>星結び<rt>ほしむすび</rt></ruby>
+      <div class="tag">～ 願いをこめて ～</div>
+    </div>
+    <p class="today-line" id="homeLine"></p>
+    <div class="home-acts">
+      <button class="btn main" id="startBtn" type="button"><svg><use href="#i-star"/></svg>はじめる</button>
+      <button class="btn sub" id="findBtn" type="button">実在の星座をさがす</button>
+      <nav class="nav" aria-label="メニュー">
+        <button type="button" data-go="zukan"><svg><use href="#i-book"/></svg>図鑑</button>
+        <button type="button" data-go="album"><svg><use href="#i-album"/></svg>アルバム</button>
+        <button type="button" data-go="today"><svg><use href="#i-star"/></svg>今日の星</button>
+        <button type="button" data-go="settings"><svg><use href="#i-gear"/></svg>設定</button>
+      </nav>
+    </div>
+  </div>
+</section>
+
+<!-- ② 願い -->
+<section class="screen" id="wish" hidden>
+  <div class="bar"><button class="ib" data-back type="button" aria-label="もどる"><svg><use href="#i-back"/></svg></button><h2></h2><button class="chip" id="skipWish" type="button">スキップ</button></div>
+  <div class="inner">
+    <p class="wish-head">今日の願いを<br>選んでみましょう</p>
+    <div class="wishes" id="wishes"></div>
+    <p class="muted" style="text-align:center;font-size:13px">選んだ願いは、星座の名前とことばになります</p>
+  </div>
+</section>
+
+<!-- ③ 星をつなぐ -->
+<section class="screen" id="draw" hidden>
+  <div class="bar">
+    <button class="ib" data-back type="button" aria-label="もどる"><svg><use href="#i-back"/></svg></button>
+    <h2>星をつなぐ</h2>
+    <button class="ib" id="dUndo" type="button" aria-label="ひとつ戻す"><svg><use href="#i-undo"/></svg></button>
+    <button class="ib" id="dClear" type="button" aria-label="線を全部消す"><svg><use href="#i-trash"/></svg></button>
+    <button class="ib" id="dNew" type="button" aria-label="星空をかえる"><svg><use href="#i-refresh"/></svg></button>
+    <button class="ib" id="dHelp" type="button" aria-label="あそびかた"><svg><use href="#i-help"/></svg></button>
+  </div>
+  <div class="boardwrap"><canvas id="drawCanvas"></canvas><div class="hint-bubble" id="dHint">星から星へ、指でなぞってつなごう</div></div>
+  <div class="tools">
+    <div class="trow"><span>線の色</span><div class="swatches" id="swatches"></div></div>
+    <div class="trow"><span>線の太さ</span><input type="range" id="dWidth" min="1" max="6" step="0.5" value="2.5" aria-label="線の太さ"></div>
+    <button class="btn main" id="dDone" type="button" disabled>できた！</button>
+  </div>
+</section>
+
+<!-- ④ あなただけの星座 -->
+<section class="screen" id="result" hidden>
+  <div class="bar"><button class="ib" data-back type="button" aria-label="もどる"><svg><use href="#i-back"/></svg></button><h2></h2></div>
+  <div class="inner">
+    <p class="res-top">できました！<small>あなたが描いたのは…</small></p>
+    <canvas class="res-canvas" id="resCanvas"></canvas>
+    <div class="banner" id="resBanner"><span id="resName"></span><button class="ib" id="resEdit" type="button" aria-label="名前をかえる"><svg><use href="#i-pen"/></svg></button></div>
+    <p class="desc" id="resDesc"></p>
+    <div class="stats" id="resStats"></div>
+    <div class="row2">
+      <button class="btn sub" id="resAgain" type="button"><svg><use href="#i-refresh"/></svg>もう一度描く</button>
+      <button class="btn main" id="resSave" type="button"><svg><use href="#i-star"/></svg>保存する</button>
+    </div>
+    <button class="btn sub" id="resShare" type="button" hidden><svg><use href="#i-share"/></svg>画像でシェアする</button>
+  </div>
+</section>
+
+<!-- ⑤ 実在の星座をなぞる -->
+<section class="screen" id="trace" hidden>
+  <div class="bar">
+    <button class="ib" data-back type="button" aria-label="もどる"><svg><use href="#i-back"/></svg></button>
+    <h2 id="tTitle"></h2>
+    <button class="ib" id="tUndo" type="button" aria-label="ひとつ戻す"><svg><use href="#i-undo"/></svg></button>
+    <button class="ib" id="tHint" type="button" aria-label="ヒントを見る"><svg><use href="#i-bulb"/></svg></button>
+  </div>
+  <div class="boardwrap"><canvas id="traceCanvas"></canvas><div class="hint-bubble" id="tProg"></div></div>
+  <div class="tools"><p class="muted" style="margin:0;text-align:center;font-size:14px" id="tLead"></p></div>
+</section>
+
+<!-- ⑤' 発見 -->
+<section class="screen" id="found" hidden>
+  <div class="bar"><button class="ib" data-back type="button" aria-label="もどる"><svg><use href="#i-back"/></svg></button><h2></h2></div>
+  <div class="inner">
+    <p class="res-top">星座が完成しました！</p>
+    <canvas class="res-canvas" id="foundCanvas"></canvas>
+    <p class="detail-name" id="fName"></p>
+    <div class="chips" id="fTabs" role="tablist"></div>
+    <div class="tabtext" id="fText"></div>
+    <div class="row2">
+      <button class="btn sub" data-go="zukan" type="button"><svg><use href="#i-book"/></svg>図鑑を見る</button>
+      <button class="btn main" id="fNext" type="button"><svg><use href="#i-star"/></svg>次の星座へ</button>
+    </div>
+  </div>
+</section>
+
+<!-- ⑥ 図鑑 -->
+<section class="screen" id="zukan" hidden>
+  <div class="bar"><button class="ib" data-back type="button" aria-label="もどる"><svg><use href="#i-back"/></svg></button><h2>星座図鑑</h2><span class="muted" id="zCount" style="font-size:13px"></span></div>
+  <div class="inner">
+    <input class="search" id="zSearch" type="search" placeholder="星座を検索…" aria-label="星座を検索">
+    <div class="chips" id="zSeasons"></div>
+    <div class="grid" id="zGrid"></div>
+    <p class="empty" id="zEmpty" hidden>見つかりませんでした</p>
+  </div>
+</section>
+
+<!-- ⑦ 星の物語 -->
+<section class="screen" id="detail" hidden>
+  <div class="bar"><button class="ib" data-back type="button" aria-label="もどる"><svg><use href="#i-back"/></svg></button><h2></h2></div>
+  <div class="inner">
+    <canvas class="res-canvas" id="detCanvas"></canvas>
+    <p class="detail-name" id="detName"></p>
+    <div class="chips" id="detTabs" role="tablist"></div>
+    <div class="tabtext" id="detText"></div>
+    <button class="btn main" id="detTrace" type="button"><svg><use href="#i-pen"/></svg>線をなぞって見つける</button>
+  </div>
+</section>
+
+<!-- ⑧ アルバム -->
+<section class="screen" id="album" hidden>
+  <div class="bar"><button class="ib" data-back type="button" aria-label="もどる"><svg><use href="#i-back"/></svg></button><h2>わたしの星空アルバム</h2></div>
+  <div class="inner">
+    <div class="chips" id="aTabs"></div>
+    <div class="grid" id="aGrid"></div>
+    <p class="empty" id="aEmpty" hidden>まだ星座がありません。<br>「はじめる」から星をつないでみよう。</p>
+  </div>
+</section>
+
+<section class="screen" id="view" hidden>
+  <div class="bar"><button class="ib" data-back type="button" aria-label="もどる"><svg><use href="#i-back"/></svg></button><h2></h2>
+    <button class="ib" id="vFav" type="button" aria-label="お気に入り"><svg><use href="#i-heart"/></svg></button></div>
+  <div class="inner">
+    <canvas class="res-canvas" id="viewCanvas"></canvas>
+    <div class="banner"><span id="vName"></span></div>
+    <p class="desc" id="vDesc"></p>
+    <p class="stats" id="vDate"></p>
+    <div class="row2">
+      <button class="btn sub danger" id="vDel" type="button"><svg><use href="#i-trash"/></svg>消す</button>
+      <button class="btn main" id="vShare" type="button"><svg><use href="#i-share"/></svg>シェア</button>
+    </div>
+  </div>
+</section>
+
+<!-- ⑨ 今日の星空 -->
+<section class="screen" id="today" hidden>
+  <div class="bar"><button class="ib" data-back type="button" aria-label="もどる"><svg><use href="#i-back"/></svg></button><h2>今日の星空</h2></div>
+  <div class="inner">
+    <p class="date" id="tdDate"></p>
+    <p class="msg" id="tdMsg"></p>
+    <div class="sec"><span>今夜見やすい星座</span><span class="muted" style="font-size:12px" id="tdSeason"></span></div>
+    <div class="grid" id="tdGrid"></div>
+    <div class="sec"><span>今日の星座</span></div>
+    <div class="grid" id="tdPick" style="grid-template-columns:minmax(0,1fr) 2fr;align-items:center"></div>
+  </div>
+</section>
+
+<!-- 設定 -->
+<section class="screen" id="settings" hidden>
+  <div class="bar"><button class="ib" data-back type="button" aria-label="もどる"><svg><use href="#i-back"/></svg></button><h2>設定</h2></div>
+  <div class="inner">
+    <div class="panel">
+      <div class="set"><span>音</span><div class="chips" id="sSound"></div></div>
+      <div class="set"><span>つなげる星の数</span><div class="chips" id="sStars"></div></div>
+      <div class="set"><span>アルバム</span><button class="chip danger" id="sReset" type="button">全部消す</button></div>
+    </div>
+    <p class="muted" style="font-size:13px;line-height:1.8">描いた星座は、この端末の中だけに保存されます。アカウント登録はいりません。<br>図鑑の星座は、本物の星の位置をもとに線をつないでいます。</p>
+  </div>
+</section>
+
+<!-- ⑩ シェア -->
+<section class="screen" id="share" hidden>
+  <div class="bar"><button class="ib" data-back type="button" aria-label="もどる"><svg><use href="#i-back"/></svg></button><h2>シェア</h2></div>
+  <div class="inner">
+    <img class="share-img" id="shareImg" alt="シェアする星座の画像">
+    <div class="shares">
+      <button type="button" id="shSave"><i style="background:#3b4a8a"><svg><use href="#i-down"/></svg></i>画像を保存</button>
+      <button type="button" id="shX"><i style="background:#000;border:1px solid #444">X</i>X</button>
+      <button type="button" id="shLine"><i style="background:#06c755;font-size:11px">LINE</i>LINE</button>
+      <button type="button" id="shMore"><i style="background:#555c80"><svg><use href="#i-more"/></svg></i>その他</button>
+    </div>
+  </div>
+</section>
+
+<div class="overlay" id="helpDlg" hidden>
+  <div class="dialog" role="dialog" aria-labelledby="helpT">
+    <h3 id="helpT">あそびかた</h3>
+    <ol>
+      <li>星に指を置いて、ほかの星までなぞると線がつながります</li>
+      <li>星をタップしてから、べつの星をタップしてもつながります</li>
+      <li>好きな形ができたら「できた！」で、あなただけの星座に名前がつきます</li>
+    </ol>
+    <p class="muted" style="margin:0;font-size:14px">↶ でひとつ戻す、ごみ箱で全部消す、↻ で星空をかえられます。</p>
+    <button class="btn main" type="button" data-close>はじめる</button>
+  </div>
+</div>
+<div class="overlay" id="confirmDlg" hidden>
+  <div class="dialog" role="dialog" aria-labelledby="cfT">
+    <h3 id="cfT"></h3>
+    <p style="margin:0;text-align:center" id="cfText"></p>
+    <div class="row2"><button class="btn sub" type="button" data-close>やめる</button><button class="btn main" type="button" id="cfOk">消す</button></div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/*! © kato200000354. 無断転載・複製・再配布を禁止します。 */
+(()=>{"use strict";const t=t=>document.getElementById(t),e=(t,e,a)=>{const n=document.createElement(t);return e&&(n.className=e),null!=a&&(n.textContent=a),n},a={get(t,e){try{const a=localStorage.getItem("hoshimusubi."+t);return null==a?e:JSON.parse(a)}catch{return e}},set(t,e){try{return localStorage.setItem("hoshimusubi."+t,JSON.stringify(e)),!0}catch{return!1}}};function n(t){let e=t>>>0;return()=>{e=e+1831565813>>>0;let t=e;return t=Math.imul(t^t>>>15,1|t),t^=t+Math.imul(t^t>>>7,61|t),((t^t>>>14)>>>0)/4294967296}}const s=t=>{let e=2166136261;for(const a of String(t))e^=a.codePointAt(0),e=Math.imul(e,16777619);return e>>>0},i=(t=new Date)=>1e4*t.getFullYear()+100*(t.getMonth()+1)+t.getDate(),o=t=>{const e=new Date(t);return`${e.getFullYear()}.${String(e.getMonth()+1).padStart(2,"0")}.${String(e.getDate()).padStart(2,"0")}`};let r;function l(e){const a=t("toast");a.textContent=e,a.hidden=!1,clearTimeout(r),r=setTimeout(()=>a.hidden=!0,1800)}const d=Object.assign({sound:!0,stars:"mid"},a.get("settings",{}));let h=null;const c=[523.25,587.33,659.25,783.99,880,1046.5,1174.66,1318.5];function m(t,e=0,a=.9,n=.07){if(d.sound)try{h||=new(window.AudioContext||window.webkitAudioContext),"suspended"===h.state&&h.resume();const s=h.currentTime+e,i=h.createOscillator(),o=h.createGain();i.type="sine",i.frequency.value=t,o.gain.setValueAtTime(0,s),o.gain.linearRampToValueAtTime(n,s+.02),o.gain.exponentialRampToValueAtTime(1e-4,s+a),i.connect(o).connect(h.destination),i.start(s),i.stop(s+a)}catch{}}const u=t=>m(c[t%c.length]),p=()=>[0,2,4,5,7].forEach((t,e)=>m(c[t%8]*(t>6?2:1),.11*e,1.2,.06)),g=t("sky"),f=g.getContext("2d");let b,v=[],y=null;function x(){const t=Math.min(2,devicePixelRatio||1),e=innerWidth,a=innerHeight;g.width=e*t,g.height=a*t,b=document.createElement("canvas"),b.width=g.width,b.height=g.height;const s=b.getContext("2d");s.scale(t,t);const i=s.createLinearGradient(0,0,0,a);i.addColorStop(0,"#050820"),i.addColorStop(.55,"#111a4a"),i.addColorStop(.85,"#3a2f6b"),i.addColorStop(1,"#5a3f73"),s.fillStyle=i,s.fillRect(0,0,e,a);const o=n(7);s.save(),s.translate(.5*e,.4*a),s.rotate(-.6);for(let t=0;t<260;t++){const t=(o()-.5)*e*1.6,n=(o()+o()+o()-1.5)*a*.09;s.fillStyle=`rgba(170,180,255,${.05*o()})`,s.beginPath(),s.arc(t,n,8+30*o(),0,7),s.fill()}s.restore();for(let t=0;t<e*a/900;t++){const t=o()*a*.8;s.fillStyle=`rgba(255,255,255,${.2+.6*o()})`,s.fillRect(o()*e,t,o()<.1?1.6:1,o()<.1?1.6:1)}const r=(t,i,o,r)=>{const l=n(r);s.fillStyle=o,s.beginPath(),s.moveTo(0,a);let d=t;for(let n=0;n<=e+20;n+=20)d+=(l()-.5)*i,d=Math.min(t+2*i,Math.max(t-2*i,d)),s.lineTo(n,a-d);s.lineTo(e,a),s.fill()};r(.2*a,14,"#1d1a45",3),r(.12*a,9,"#131232",11);const l=n(21);for(let t=0;t<e/9;t++){const t=l()*e,n=a-.07*a-l()*a*.05;s.fillStyle=`rgba(255,${190+50*l()},120,${.4+.5*l()})`,s.fillRect(t,n,2,2)}s.fillStyle="#0b0a22",s.fillRect(0,a-.06*a,e,.06*a),v=Array.from({length:40},()=>({x:o()*e,y:o()*a*.7,p:6.28*o(),s:.6+1.6*o()}))}function w(t,e,a,n,s=1,i="255,248,225"){const o=t.createRadialGradient(e,a,0,e,a,4*n*s);o.addColorStop(0,`rgba(${i},1)`),o.addColorStop(.25,`rgba(${i},.55)`),o.addColorStop(1,`rgba(${i},0)`),t.fillStyle=o,t.beginPath(),t.arc(e,a,4*n*s,0,7),t.fill(),t.fillStyle="#fff",t.beginPath(),t.arc(e,a,.8*n,0,7),t.fill()}function C(t,e,a,n,s,i=1){t.save(),t.globalAlpha=i,t.strokeStyle=n,t.lineWidth=s,t.lineCap="round",t.shadowColor=n,t.shadowBlur=10+2*s,t.beginPath(),t.moveTo(e[0],e[1]),t.lineTo(a[0],a[1]),t.stroke(),t.shadowBlur=0,t.globalAlpha=.9*i,t.strokeStyle="#fff",t.lineWidth=Math.max(.6,.35*s),t.beginPath(),t.moveTo(e[0],e[1]),t.lineTo(a[0],a[1]),t.stroke(),t.restore()}function S(t){const e=t.getBoundingClientRect(),a=Math.min(2,devicePixelRatio||1);t.width=Math.max(1,Math.round(e.width*a)),t.height=Math.max(1,Math.round(e.height*a));const n=t.getContext("2d");return n.setTransform(a,0,0,a,0,0),[n,e.width,e.height]}function k(t,e,a,i,o={}){const r=o.pad??.14*Math.min(e,a),l=n(s(i.id||i.name));if(!1!==o.bg){o.keep||t.clearRect(0,0,e,a);for(let n=0;n<e*a/(o.small?260:700);n++)t.fillStyle=`rgba(255,255,255,${.15+.5*l()})`,t.fillRect(l()*e,l()*a,1,1)}if(!i?.stars?.length||!i.edges?.length)return;const d=i.aspect||1,h=i.stars.map(t=>[t[0]*d,t[1]]),c=new Set(i.edges.flat()),m=h.filter((t,e)=>c.has(e)),u=m.map(t=>t[0]),p=m.map(t=>t[1]),g=Math.min(...u),f=Math.max(...u),b=Math.min(...p),v=Math.max(...p),y=Math.min((e-2*r)/Math.max(.001,f-g),(a-2*r)/Math.max(.001,v-b)),x=(e-(f-g)*y)/2-g*y,S=(a-(v-b)*y)/2-b*y,k=t=>[t[0]*y+x,t[1]*y+S],M=(i.width||2.5)*(o.small?.6:1)*Math.max(.6,Math.min(e,a)/340);for(const[e,a]of i.edges)C(t,k(h[e]),k(h[a]),i.color||"#f3d48a",M);h.forEach((n,s)=>{if(!c.has(s))return;const r=k(n);w(t,r[0],r[1],(i.stars[s][2]||1.6)*(o.small?.7:1.1)*Math.max(1,Math.min(e,a)/400))})}const M=[{id:"orion",name:"オリオン座",latin:"Orion",season:"冬",s:{bet:[5.92,7.41,1],bel:[5.42,6.35,2],rig:[5.24,-8.2,1],sai:[5.8,-9.67,2],alk:[5.68,-1.94,2],aln:[5.6,-1.2,2],min:[5.53,-.3,2],mei:[5.59,9.93,3]},l:"mei-bet-alk-sai,mei-bel-min-rig,min-aln-alk,bet-bel",about:"冬の夜空でいちばん目立つ星座です。赤いベテルギウスと青白いリゲルという2つの1等星と、まん中にまっすぐ並ぶ「三つ星」が目印です。",myth:"ギリシャ神話の狩人オリオンの姿です。力じまんのオリオンはおごりたかぶったため、大地の女神が放ったサソリに刺されて命を落としたといわれます。そのため、さそり座が東から昇るとオリオン座は西へしずむ、と語られています。",find:"冬の夜、南の空に三つ星を探しましょう。その上と下に明るい星が2つずつあり、つづみのような形になります。"},{id:"ursa-major",name:"北斗七星",latin:"Ursa Major",season:"春",s:{dub:[11.06,61.75,2],mer:[11.03,56.38,2],phe:[11.9,53.69,2],meg:[12.26,57.03,3],ali:[12.9,55.96,2],miz:[13.4,54.93,2],alk:[13.79,49.31,2]},l:"dub-mer-phe-meg-dub,meg-ali-miz-alk",about:"ひしゃくの形に並ぶ7つの星で、おおぐま座の背中からしっぽにあたります。昔から北の方角を知る目印にされてきました。",myth:"女神アルテミスに仕えていたカリストが熊の姿に変えられ、のちにゼウスによって空に上げられたのが、おおぐま座だといわれます。",find:"春の夜、北の空高くにひしゃくの形を探しましょう。ひしゃくの先の2つの星の間を5倍のばすと、北極星があります。"},{id:"cassiopeia",name:"カシオペヤ座",latin:"Cassiopeia",season:"秋",s:{cap:[.15,59.15,2],sch:[.68,56.54,2],gam:[.95,60.72,2],ruc:[1.43,60.24,2],seg:[1.91,63.67,3]},l:"cap-sch-gam-ruc-seg",about:"5つの星がアルファベットの「W」の形に並ぶ星座です。北の空で一年中見えますが、秋から冬の夜に高く昇ります。",myth:"エチオピアの王妃カシオペヤの姿です。娘アンドロメダの美しさを自慢しすぎて海の神の怒りを買い、娘がいけにえにされかける原因になりました。",find:"北の空にWの形を探しましょう。北極星をはさんで、北斗七星の反対側にあります。"},{id:"cygnus",name:"はくちょう座",latin:"Cygnus",season:"夏",s:{den:[20.69,45.28,1],sad:[20.37,40.26,2],gie:[20.77,33.97,2],del:[19.75,45.13,2],alb:[19.51,27.96,2],eta:[19.94,35.08,3]},l:"den-sad-eta-alb,del-sad-gie",about:"大きな十字の形で「北十字」とも呼ばれます。しっぽの1等星デネブは、ベガ・アルタイルとともに「夏の大三角」をつくります。",myth:"ゼウスが白鳥に姿を変えた姿だといわれます。天の川の上を、南へ向かって飛んでいるように見えます。",find:"夏の夜、頭の真上近くに大きな十字を探しましょう。天の川の流れにそって、翼を広げています。"},{id:"lyra",name:"こと座",latin:"Lyra",season:"夏",s:{veg:[18.62,38.78,1],eps:[18.74,39.67,3],zet:[18.75,37.6,3],del:[18.91,36.9,3],gam:[18.98,32.69,2],bet:[18.83,33.36,2]},l:"veg-eps,veg-zet-del-gam-bet-zet",about:"小さな星座ですが、夏の夜空でいちばん明るい1等星ベガがあります。ベガは七夕の「織姫星」です。",myth:"竪琴の名手オルフェウスの竪琴だといわれます。その音色は、森の動物や木々までうっとりさせたと語られています。",find:"夏の夜、頭の真上近くで白く強く光る星がベガです。そのそばにある小さな平行四辺形が竪琴の形です。"},{id:"aquila",name:"わし座",latin:"Aquila",season:"夏",s:{alt:[19.85,8.87,1],tar:[19.77,10.61,2],als:[19.92,6.41,3],del:[19.42,3.11,3],zet:[19.09,13.86,2],lam:[19.1,-4.88,3],the:[20.19,-.82,3]},l:"zet-tar-alt-als-the,alt-del-lam",about:"1等星アルタイルは七夕の「彦星」です。アルタイルが両わきに星を1つずつ従えて、一直線に並んでいるのが特ちょうです。",myth:"大神ゼウスの使いとして、雷の矢を運んだわしの姿だといわれます。",find:"夏の大三角のうち、天の川をはさんでベガの反対側にある明るい星がアルタイルです。"},{id:"scorpius",name:"さそり座",latin:"Scorpius",season:"夏",s:{bet:[16.09,-19.81,2],del:[16.01,-22.62,2],pi:[15.98,-26.11,3],sig:[16.35,-25.59,3],ant:[16.49,-26.43,1],tau:[16.6,-28.22,3],eps:[16.84,-34.29,2],mu:[16.86,-38.05,3],zet:[16.91,-42.36,3],eta:[17.2,-43.24,3],the:[17.62,-43,2],iot:[17.79,-40.13,3],kap:[17.71,-39.03,2],lam:[17.56,-37.1,2]},l:"bet-del-pi,del-sig-ant-tau-eps-mu-zet-eta-the-iot-kap-lam",about:"S字のように星が並ぶ、夏を代表する星座です。赤い1等星アンタレスは、サソリの心臓にあたります。",myth:"狩人オリオンを刺したサソリです。日本では、その形から「魚釣り星」と呼んだ地方もあります。",find:"夏の夜、南の低い空に赤く光るアンタレスを探しましょう。そこから、つり針のようなS字が続いています。"},{id:"sagittarius",name:"いて座",latin:"Sagittarius",season:"夏",s:{gam:[18.1,-30.42,3],del:[18.35,-29.83,2],eps:[18.4,-34.38,2],lam:[18.47,-25.42,2],phi:[18.76,-26.99,3],sig:[18.92,-26.3,2],tau:[19.12,-27.67,3],zet:[19.04,-29.88,2]},l:"gam-del-eps-gam,del-lam-phi-sig-tau-zet-phi,zet-eps,phi-del",about:"弓を引く半人半馬の射手の姿です。6つの星がひしゃくの形に並び「南斗六星」と呼ばれます。この方向に天の川の中心があります。",myth:"多くの英雄を育てた、かしこいケンタウロスのケイローンだといわれることがあります。",find:"さそり座のしっぽの東（左）に、ティーポットのような形を探しましょう。"},{id:"leo",name:"しし座",latin:"Leo",season:"春",s:{reg:[10.14,11.97,1],eta:[10.12,16.76,3],alg:[10.33,19.84,2],zet:[10.28,23.42,3],mu:[9.88,26,3],eps:[9.76,23.77,3],zos:[11.24,20.52,2],che:[11.24,15.43,3],den:[11.82,14.57,2]},l:"reg-eta-alg-zet-mu-eps,alg-zos-den-che-reg,zos-che",about:"「？」を裏返したような星の並びがライオンの頭で「ししの大がま」と呼ばれます。胸には1等星レグルスが光ります。",myth:"英雄ヘラクレスが退治した、ネメアの森のライオンだといわれます。",find:"春の夜、南の空高くを探しましょう。北斗七星のひしゃくから水がこぼれる方向にあります。"},{id:"gemini",name:"ふたご座",latin:"Gemini",season:"冬",s:{cas:[7.58,31.89,2],pol:[7.76,28.03,1],eps:[6.73,25.13,3],mu:[6.38,22.51,3],del:[7.34,21.98,3],alh:[6.63,16.4,2],xi:[6.75,12.9,3]},l:"cas-pol,cas-eps-mu,pol-del-alh,del-xi,eps-del",about:"カストルとポルックスという、よく似た明るさの2つの星が並んでいます。この2つが双子の頭にあたります。",myth:"ゼウスの子である双子の兄弟です。とても仲がよく、そのきずなをたたえて空に並べられたといわれます。",find:"冬の夜、オリオン座の左上に、明るい星が2つ並んでいるのを探しましょう。"},{id:"taurus",name:"おうし座",latin:"Taurus",season:"冬",s:{ald:[4.6,16.51,1],the:[4.48,15.87,3],gam:[4.33,15.63,3],del:[4.38,17.54,3],eps:[4.48,19.18,3],eln:[5.44,28.61,2],zet:[5.63,21.14,2],lam:[4.01,12.49,3],ple:[3.79,24.1,2]},l:"eln-eps-del-gam-the-ald-zet,gam-lam",about:"赤い1等星アルデバランが牛の目です。顔の部分のV字の星の集まりはヒアデス星団、肩のあたりには「すばる」（プレアデス星団）があります。",myth:"大神ゼウスが、美しい白い牛に姿を変えた姿だといわれます。",find:"オリオン座の三つ星を右上へのばすと、赤く光るアルデバランに届きます。"},{id:"canis-major",name:"おおいぬ座",latin:"Canis Major",season:"冬",s:{sir:[6.75,-16.72,1],mir:[6.38,-17.96,2],iot:[6.94,-17.05,3],gam:[7.06,-15.63,3],wez:[7.14,-26.39,2],adh:[6.98,-28.97,2],alu:[7.4,-29.3,2],zet:[6.34,-30.06,3]},l:"gam-iot-sir-mir,sir-wez-alu,wez-adh-zet",about:"全天でいちばん明るい恒星シリウスがある星座です。シリウスは、ベテルギウス・プロキオンとともに「冬の大三角」をつくります。",myth:"狩人オリオンが連れていた猟犬だといわれます。",find:"オリオン座の三つ星を左下へのばすと、ひときわ明るいシリウスに届きます。"},{id:"canis-minor",name:"こいぬ座",latin:"Canis Minor",season:"冬",s:{pro:[7.66,5.22,1],gom:[7.45,8.29,2]},l:"pro-gom",about:"1等星プロキオンと、もう1つの星だけでできた小さな星座です。",myth:"オリオンが連れていた、もう1匹の小さな猟犬だといわれます。",find:"シリウスとベテルギウスと三角形をつくる明るい星がプロキオンです。"},{id:"pegasus",name:"ペガスス座",latin:"Pegasus",season:"秋",s:{mar:[23.08,15.21,2],sch:[23.06,28.08,2],alp:[24.14,29.09,2],alg:[24.22,15.18,2],zet:[22.69,10.83,3],the:[22.17,6.2,3],eni:[21.74,9.88,2],eta:[22.72,30.22,3]},l:"mar-sch-alp-alg-mar,mar-zet-the-eni,sch-eta",about:"4つの星がつくる大きな四角形は「秋の四辺形」と呼ばれ、秋の星座さがしの目印になります。",myth:"つばさを持つ天馬ペガススです。英雄ペルセウスが怪物メドゥーサを退治したとき、その血から生まれたといわれます。",find:"秋の夜、南の空高くに、大きな四角形を探しましょう。"},{id:"andromeda",name:"アンドロメダ座",latin:"Andromeda",season:"秋",s:{alp:[.14,29.09,2],del:[.66,30.86,3],mir:[1.16,35.62,2],alm:[2.06,42.33,2],mu:[.95,38.5,3],nu:[.83,41.08,3],pi:[.61,33.72,3]},l:"alp-del-mir-alm,mir-mu-nu,del-pi",about:"ペガスス座の四辺形から、星が弓なりに並んでいます。肉眼で見える、いちばん遠い天体のひとつ「アンドロメダ銀河」があります。",myth:"カシオペヤ王妃の娘アンドロメダです。海の怪物のいけにえにされかけたところを、英雄ペルセウスに助けられました。",find:"秋の四辺形の左上の角から、左へのびる星の列を探しましょう。"},{id:"cepheus",name:"ケフェウス座",latin:"Cepheus",season:"秋",s:{ald:[21.31,62.59,2],bet:[21.48,70.56,3],gam:[23.66,77.63,3],iot:[22.83,66.2,3],zet:[22.18,58.2,3]},l:"ald-bet-gam-iot-zet-ald,ald-iot",about:"5つの星が、とんがり屋根の家のような五角形に並ぶ星座です。",myth:"エチオピアの王ケフェウスで、カシオペヤ王妃の夫、アンドロメダの父です。",find:"カシオペヤ座の近く、北極星との間に五角形を探しましょう。"},{id:"corona-borealis",name:"かんむり座",latin:"Corona Borealis",season:"夏",s:{the:[15.55,31.36,3],bet:[15.46,29.1,3],alp:[15.58,26.71,2],gam:[15.71,26.3,3],del:[15.83,26.07,3],eps:[15.96,26.88,3],iot:[16.02,29.85,3]},l:"the-bet-alp-gam-del-eps-iot",about:"7つの星が半円形に並ぶ、かわいらしい星座です。まん中のいちばん明るい星はアルフェッカです。",myth:"酒の神ディオニュソスが、花嫁アリアドネに贈った冠だといわれます。",find:"初夏の夜、うしかい座のアークトゥルスとこと座のベガの間に、小さな半円を探しましょう。"},{id:"bootes",name:"うしかい座",latin:"Boötes",season:"春",s:{arc:[14.26,19.18,1],eta:[13.91,18.4,3],izr:[14.75,27.07,2],del:[15.26,33.31,3],bet:[15.03,40.39,3],gam:[14.53,38.31,3],rho:[14.53,30.37,3],zet:[14.69,13.73,3]},l:"arc-izr-del-bet-gam-rho-arc,arc-eta,arc-zet",about:"オレンジ色の1等星アークトゥルスを先に、ネクタイのような形に星が並んでいます。",myth:"熊を追いかける人、または牛を連れて畑を耕す人の姿だといわれます。",find:"北斗七星のひしゃくの柄のカーブを、そのままのばしていくとアークトゥルスに届きます。この線は「春の大曲線」と呼ばれます。"},{id:"hercules",name:"ヘルクレス座",latin:"Hercules",season:"夏",s:{zet:[16.69,31.6,2],eta:[16.71,38.92,3],pi:[17.25,36.81,3],eps:[17,30.93,3],bet:[16.5,21.49,2],del:[17.25,24.84,3],alp:[17.24,14.39,2]},l:"zet-eta-pi-eps-zet,zet-bet,eps-del-alp",about:"体のまん中にある4つの星の台形が目印で、「キーストーン」と呼ばれます。",myth:"ギリシャ神話でいちばん有名な英雄ヘラクレスです。12の難しい仕事をやりとげたといわれます。",find:"ベガとかんむり座の間に、小さな台形を探しましょう。"},{id:"crux",name:"みなみじゅうじ座",latin:"Crux",season:"春",s:{acr:[12.44,-63.1,1],mim:[12.8,-59.69,1],gac:[12.52,-57.11,2],del:[12.25,-58.75,3]},l:"gac-acr,mim-del",about:"全天88星座の中でいちばん小さな星座です。明るい4つの星が十字に並び「南十字星」と呼ばれます。",myth:"ギリシャ神話の物語はありません。昔は、となりのケンタウルス座の一部とされていました。",find:"日本では、沖縄などの南の地域で、春の夜の南の低い空に見えます。"},{id:"aries",name:"おひつじ座",latin:"Aries",season:"秋",s:{a41:[2.83,27.26,3],ham:[2.12,23.46,2],she:[1.91,20.81,2],mes:[1.89,19.29,3]},l:"a41-ham-she-mes",about:"誕生日の星座としても知られる、黄道12星座のひとつです。明るい星は少なく、ゆるく曲がった線で表されます。",myth:"空を飛ぶ、金色の毛を持つ羊だといわれます。その毛皮を求めて、英雄たちが冒険の旅に出ました。",find:"秋の夜、アンドロメダ座の下に並ぶ2つの星（ハマルとシェラタン）を探しましょう。"},{id:"delphinus",name:"いるか座",latin:"Delphinus",season:"夏",s:{eps:[20.55,11.3,3],bet:[20.63,14.6,3],alp:[20.66,15.91,3],gam:[20.78,16.12,3],del:[20.73,15.07,3]},l:"bet-alp-gam-del-bet,bet-eps",about:"小さなひし形にしっぽがついた、かわいらしい星座です。",myth:"海で助けを求めた音楽家アリオンを、背中に乗せて救ったいるかだといわれます。",find:"わし座のアルタイルの左上に、小さなひし形を探しましょう。"}];function E(t){const e=Object.keys(t.s),a=e.map(e=>t.s[e]),n=a.reduce((t,e)=>t+e[0],0)/a.length,s=a.reduce((t,e)=>t+e[1],0)/a.length,i=Math.cos(s*Math.PI/180),o=a.map(t=>[15*-(t[0]-n)*i,-(t[1]-s)]),r=o.map(t=>t[0]),l=o.map(t=>t[1]),d=Math.min(...r),h=Math.min(...l),c=Math.max(Math.max(...r)-d,Math.max(...l)-h,1),m=(Math.max(...r)-d)/c,u=(Math.max(...l)-h)/c,p=o.map((t,e)=>[(t[0]-d)/c+(1-m)/2,(t[1]-h)/c+(1-u)/2,[2.6,1.9,1.4][a[e][2]-1]]),g=[];for(const a of t.l.split(",")){const t=a.split("-");for(let a=1;a<t.length;a++)g.push([e.indexOf(t[a-1]),e.indexOf(t[a])])}return{stars:p,edges:g}}const L=t=>{const e=E(t);return{id:t.id,name:t.name,stars:e.stars,edges:e.edges,aspect:1,color:"#bcd4ff",width:2}};class z{constructor(t,e){this.cv=t,this.mode=e,this.stars=[],this.bg=[],this.edges=[],this.target=null,this.color="#f3d48a",this.width=2.5,this.sel=-1,this.drag=null,this.ptr=null,this.flash=null,this.hintUntil=0,this.onChange=()=>{},t.addEventListener("pointerdown",t=>this.down(t)),t.addEventListener("pointermove",t=>this.move(t)),t.addEventListener("pointerup",t=>this.up(t)),t.addEventListener("pointercancel",()=>{this.drag=null,this.ptr=null})}size(){[this.c,this.W,this.H]=S(this.cv)}pos(t){const e=this.cv.getBoundingClientRect();return[t.clientX-e.left,t.clientY-e.top]}P(t){return[t.x*this.W,t.y*this.H]}hit(t,e=30){let a=-1,n=e*e;return this.stars.forEach((e,s)=>{if(!e.ok)return;const i=this.P(e),o=(i[0]-t[0])**2+(i[1]-t[1])**2;o<n&&(n=o,a=s)}),a}has(t,e){return this.edges.some(([a,n])=>a===t&&n===e||a===e&&n===t)}add(t,e){if(t===e||t<0||e<0||this.has(t,e))return!0;if(this.target&&!this.target.some(([a,n])=>a===t&&n===e||a===e&&n===t)){if(this.flash={a:t,b:e,t:performance.now()},m(196,0,.25,.05),navigator.vibrate)try{navigator.vibrate(40)}catch{}return!1}return this.edges.push([t,e]),u(this.edges.length),this.onChange(),!0}down(t){t.preventDefault(),this.cv.setPointerCapture?.(t.pointerId);const e=this.pos(t),a=this.hit(e);this.ptr=e,this.drag={from:a,start:a,moved:!1}}move(t){if(!this.drag)return;const e=this.pos(t);this.ptr=e;const a=this.hit(e,24);if(a>=0&&this.drag.from<0)return this.drag.from=a,void(this.drag.moved=!0);a>=0&&a!==this.drag.from&&(this.add(this.drag.from,a)?(this.drag.from=a,this.drag.moved=!0):(this.drag=null,this.ptr=null))}up(t){const e=this.drag;this.drag=null,this.ptr=null,!e||e.from<0?this.sel=-1:e.moved?this.sel=e.from:this.sel>=0&&this.sel!==e.start?this.sel=this.add(this.sel,e.start)?e.start:-1:this.sel=this.sel===e.start?-1:e.start}undo(){this.edges.pop()&&this.onChange(),this.sel=-1}clear(){this.edges=[],this.sel=-1,this.onChange()}render(t){const e=this.c,a=this.W,n=this.H;if(!e)return;e.clearRect(0,0,a,n);for(const s of this.bg)e.fillStyle=`rgba(255,255,255,${s.a*(.6+.4*Math.sin(t/700+s.p))})`,e.fillRect(s.x*a,s.y*n,s.s,s.s);if(this.target&&t<this.hintUntil)for(const[t,a]of this.target)this.has(t,a)||(e.save(),e.setLineDash([5,7]),e.strokeStyle="rgba(190,210,255,.55)",e.lineWidth=1.5,e.beginPath(),e.moveTo(...this.P(this.stars[t])),e.lineTo(...this.P(this.stars[a])),e.stroke(),e.restore());for(const[t,a]of this.edges)C(e,this.P(this.stars[t]),this.P(this.stars[a]),this.color,this.width);if(this.flash){const a=(t-this.flash.t)/600;a<1?C(e,this.P(this.stars[this.flash.a]),this.P(this.stars[this.flash.b]),"#ff6b6b",2,1-a):this.flash=null}this.drag&&this.drag.from>=0&&this.ptr&&(e.save(),e.strokeStyle="rgba(255,255,255,.45)",e.setLineDash([4,6]),e.lineWidth=1.5,e.beginPath(),e.moveTo(...this.P(this.stars[this.drag.from])),e.lineTo(...this.ptr),e.stroke(),e.restore());const s=new Set(this.edges.flat());this.stars.forEach((a,n)=>{const i=this.P(a),o=.85+.15*Math.sin(t/500+n);a.ok?w(e,i[0],i[1],a.r*(s.has(n)?1.2:1)*o,s.has(n)?1.4:1.15,s.has(n)?"255,248,225":"255,236,190"):w(e,i[0],i[1],.6*a.r,.6,"190,200,255")});const i=this.drag&&this.drag.from>=0?this.drag.from:this.sel;if(i>=0){const a=this.P(this.stars[i]);e.strokeStyle=`rgba(243,212,138,${.6+.4*Math.sin(t/150)})`,e.lineWidth=2,e.beginPath(),e.arc(a[0],a[1],14+2*Math.sin(t/200),0,7),e.stroke()}}}function T(t,e){const a=n(e);return Array.from({length:t},()=>({x:a(),y:a(),a:.12+.35*a(),s:a()<.1?1.3:1,p:6.3*a()}))}const $=["home"];let A=null;function P(e,a=!0){document.querySelectorAll(".screen").forEach(t=>t.hidden=t.id!==e),a&&$[$.length-1]!==e&&$.push(e),A="draw"===e?G:"trace"===e?X:null;const n=U[e];n&&n(),t(e).scrollTop=0}function D(){$.length>1&&$.pop(),P($[$.length-1],!1)}document.addEventListener("click",t=>{if(t.target.closest("[data-back]"))return void D();const e=t.target.closest("[data-go]");if(e)return void P(e.dataset.go);const a=t.target.closest("[data-close]");a&&(a.closest(".overlay").hidden=!0)});let R=a.get("album",[]);const W=()=>{a.set("album",R)||l("保存できませんでした（端末の空きを確かめてください）")};let N=new Set(a.get("found",[]));const F=()=>a.set("found",[...N]),I=["流れる星のように、今日も新しい出会いがありますように。","夜空の星も、ひとつずつつなげば形になる。今日の小さな一歩も、きっと。","見えない昼間も、星はちゃんとそこにあります。","ゆっくり休むことも、明日へのじゅんびです。","だれかの「ありがとう」が、今日のあなたを照らしています。","遠回りした道にも、きれいな星はかがやいています。","ひとつの星だけでは星座にならない。つながりが形をつくります。","迷ったら、いちばん明るい星を目印に。","今日のあなたにしか描けない線があります。","雲の上では、今夜も星がかがやいています。","小さな光も、集まれば道しるべになります。","深呼吸して、夜空を見上げてみましょう。","昨日とはちがう星空。今日はどんな形を見つけますか。","願いごとは、口にしたときから少しずつ近づいてきます。"],H=()=>I[s(i())%I.length],q=[{id:"brave",icon:"★",label:"勇気がほしい",pre:["はばたく","まっすぐな","かけだす","くじけない"],desc:t=>`一歩ふみだすあなたを、そっと照らす星座。${t}つの星が、背中をおしてくれます。`},{id:"sleep",icon:"☾",label:"ぐっすり眠りたい",pre:["まどろむ","ねむりの","やすらぎの","ゆりかごの"],desc:t=>`今日一日をがんばったあなたに。${t}つの星が、静かな夜を見守っています。`},{id:"meet",icon:"♥",label:"良い出会いがありますように",pre:["めぐりあう","てをつなぐ","まちあわせの","ひかれあう"],desc:t=>`星と星が線でつながるように、すてきな出会いが近づいています。${t}つの星がその合図です。`},{id:"work",icon:"✎",label:"仕事・勉強がうまくいきますように",pre:["がんばる","こつこつ","ひらめきの","まなびの"],desc:t=>`ひとつずつ積み重ねる人をおうえんする星座。${t}つの星が、あなたの努力をつないでいます。`},{id:"thanks",icon:"✿",label:"誰かに感謝を伝えたい",pre:["ありがとうの","とどける","ほほえむ","やさしい"],desc:t=>`伝えたい気持ちを運ぶ星座。${t}つの星が、あの人のもとへ光を届けます。`},{id:"free",icon:"✦",label:"特になし・自由に楽しみたい",pre:["旅する","気ままな","ふわふわ","あそびずきの"],desc:t=>`どこまでも自由に、夜空を旅する星座。${t}つの星が、好奇心のままにかがやいています。`}];let B=q[5];const U={home:()=>{t("homeLine").replaceChildren(e("span","","今日、どんな星と出会えるだろう？"),e("span","",H()))}};t("startBtn").addEventListener("click",()=>P("wish")),t("findBtn").addEventListener("click",()=>K(_()));for(const a of q){const n=e("button","wish");n.type="button",n.append(e("i","",a.icon),e("span","",a.label)),n.addEventListener("click",()=>{B=a,m(c[4]),V(),P("draw")}),t("wishes").append(n)}t("skipWish").addEventListener("click",()=>{B=q[5],V(),P("draw")});const O=["#ffffff","#f3d48a","#9db4ff","#ff9fd2","#8fe8ff","#9ff0b0"],G=new z(t("drawCanvas"),"free");for(const a of O){const n=e("button","sw");n.type="button",n.style.background=a,n.style.color=a,n.setAttribute("aria-label","線の色"),n.addEventListener("click",()=>{G.color=a,[...t("swatches").children].forEach(t=>t.setAttribute("aria-pressed",t===n))}),t("swatches").append(n)}t("swatches").children[1].setAttribute("aria-pressed","true"),[...t("swatches").children].forEach((t,e)=>1!==e&&t.setAttribute("aria-pressed","false")),t("dWidth").addEventListener("input",t=>G.width=+t.target.value),G.onChange=()=>{const e=G.edges.length;t("dDone").disabled=e<2,t("dUndo").disabled=!e,t("dHint").hidden=e>0},t("dUndo").addEventListener("click",()=>G.undo()),t("dClear").addEventListener("click",()=>G.clear()),t("dNew").addEventListener("click",()=>{V()}),t("dHelp").addEventListener("click",()=>t("helpDlg").hidden=!1);let j=Date.now();function V(){j=(Date.now()^1e9*Math.random())>>>0,G.edges=[],G.sel=-1,G.stars=[],G.onChange()}U.draw=()=>{requestAnimationFrame(()=>{if(G.size(),!G.stars.length){const t={few:22,mid:32,many:44}[d.stars]||32;G.stars=function(t,e,a,s){const i=n(s),o=[],r=Math.max(40,.62*Math.sqrt(t*e/a));for(let n=0;o.length<a&&n<60*a;n++){const a=26+i()*(t-52),n=26+i()*(e-52);o.every(t=>(t[0]-a)**2+(t[1]-n)**2>r*r)&&o.push([a,n])}return o.map(a=>{const n=i();return{x:a[0]/t,y:a[1]/e,r:n<.12?3.4:n<.45?2.7:2.2,ok:!0}})}(G.W,G.H,t,j),G.bg=T(Math.round(G.W*G.H/900),j+1)}a.get("helped",!1)||(t("helpDlg").hidden=!1,a.set("helped",!0))})},t("dDone").addEventListener("click",()=>{!function(){const e=G,a=e.W/e.H,n=[...new Set(e.edges.flat())],i=new Map(n.map((t,e)=>[t,e])),o=n.map(t=>[e.stars[t].x,e.stars[t].y,e.stars[t].r]),r=e.edges.map(([t,e])=>[i.get(t),i.get(e)]),l=o.map(t=>[t[0]*a,t[1]]),d=o.map((t,e)=>e),h=t=>d[t]===t?t:d[t]=h(d[t]);r.forEach(([t,e])=>d[h(t)]=h(e));const c=new Set(o.map((t,e)=>h(e))).size,m=r.length-o.length+c,u=o.map((t,e)=>r.filter(t=>t.includes(e)).length),g=Math.max(...u),f=l.map(t=>t[0]),b=l.map(t=>t[1]),v=(Math.max(...f)-Math.min(...f)+.01)/(Math.max(...b)-Math.min(...b)+.01),y=m>=2?"loops2":1===m&&o.length<=4?"tri":1===m?"loop":g>=3?"branch":v>2?"wide":v<.5?"tall":"small",x=s(JSON.stringify(r)+j),w=Y[y],C=B.pre[x%B.pre.length]+w[(x>>>8)%w.length]+"座",S=function(t,e){let a=0;const n=(t,e,a)=>(a[1]-t[1])*(e[0]-t[0])-(e[1]-t[1])*(a[0]-t[0]);for(let s=0;s<e.length;s++)for(let i=s+1;i<e.length;i++){const[o,r]=e[s],[l,d]=e[i];if(o===l||o===d||r===l||r===d)continue;const h=t[o],c=t[r],m=t[l],u=t[d];n(h,m,u)>0!=n(c,m,u)>0&&n(h,c,m)>0!=n(h,c,u)>0&&a++}return a}(l,r);let k=2+(o.length>=5&&o.length<=12?1:0)+(0===S?1:0)+(m>=1||g>=3?1:0);k=Math.max(1,Math.min(5,k-(S>=3?1:0))),J={id:"m"+Date.now().toString(36),type:"own",name:C,wish:B.id,desc:B.desc(o.length),date:(new Date).toISOString(),stars:o,edges:r,aspect:a,color:e.color,width:e.width,score:k,fav:!1},t("resSave").disabled=!1,t("resSave").lastChild.textContent="保存する",t("resShare").hidden=!0,p()}(),P("result")});const Y={loops2:["ランタン","コーヒーカップ","かご","ふうせん","おうち","まど"],tri:["おにぎり","とんがり帽子","ヨット","たこ"],loop:["かがみ","ほたる","すずらん","どんぐり","まくら","たまご"],branch:["トナカイ","くじら","ふくろう","うさぎ","きつね","かざぐるま","大きな木"],wide:["へび","りゅう","リボン","ほうき星","つり橋"],tall:["つるぎ","灯台","ろうそく","はしご"],small:["ことり","ねこ","くつした","かぎ","つばさ","ラッコ","ペンギン"]};let J=null;U.result=()=>{if(!J)return D();t("resName").textContent=J.name,t("resDesc").textContent=J.desc,t("resStats").replaceChildren();const a=(a,n)=>{const s=e("span","",a+" ");s.append(e("b","",n)),t("resStats").append(s)};a("星",J.stars.length+"こ"),a("線",J.edges.length+"本"),a("かがやき","★".repeat(J.score)+"☆".repeat(5-J.score)),requestAnimationFrame(()=>{const[e,a,n]=S(t("resCanvas"));k(e,a,n,J)})},t("resEdit").addEventListener("click",()=>{const a=t("resBanner"),n=e("input");n.id="resNameInput",n.maxLength=20,n.value=J.name,n.setAttribute("aria-label","星座の名前");t("resName").hidden=!0,t("resEdit").hidden=!0,a.insertBefore(n,t("resName")),n.focus(),n.select(),n.addEventListener("blur",()=>{const e=n.value.trim();e&&(J.name=/座$/.test(e)?e:e+"座"),t("resName").textContent=J.name,n.replaceWith(t("resName")),t("resName").hidden=!1,t("resEdit").hidden=!1,R.some(t=>t.id===J.id)&&(R=R.map(t=>t.id===J.id?{...t,name:J.name}:t),W())},{once:!0}),n.addEventListener("keydown",t=>{"Enter"===t.key&&n.blur()})}),t("resAgain").addEventListener("click",()=>{V(),$.pop(),P("draw",!1)}),t("resSave").addEventListener("click",()=>{J&&(R.some(t=>t.id===J.id)||(R.unshift({...J}),W()),t("resSave").disabled=!0,t("resSave").lastChild.textContent="保存しました",t("resShare").hidden=!1,l("アルバムに保存しました"))}),t("resShare").addEventListener("click",()=>ut(J));const X=new z(t("traceCanvas"),"trace");let Z=null;function _(){const t=M.filter(t=>!N.has(t.id)),e=t.length?t:M;return e[Math.floor(Math.random()*e.length)]}function K(t){Z=t,X.stars=[],X.edges=[],X.sel=-1,P("trace")}X.color="#bcd4ff",X.width=2.2,X.onChange=()=>{const e=X.edges.length,a=X.target.length;if(t("tProg").textContent=`${e} / ${a} 本`,t("tUndo").disabled=!e,e===a){N.add(Z.id),F();const t=L(Z);R.some(t=>t.conId===Z.id)||(R.unshift({...t,id:"f"+Date.now().toString(36),type:"found",conId:Z.id,desc:Z.about,date:(new Date).toISOString(),fav:!1}),W()),p(),setTimeout(()=>{$.pop(),P("found")},700)}},U.trace=()=>{const e=Z;t("tTitle").textContent=e.name,t("tLead").textContent=`明るく光る星を線でつないで、${e.name}を完成させよう。迷ったら電球のボタンでヒントが見られます。`,requestAnimationFrame(()=>{const t=X;if(t.size(),t.stars.length)return;const a=E(e),o=t.W,r=t.H,l=.78*Math.min(o,r),d=(o-l)/2,h=(r-l)/2;t.stars=a.stars.map(t=>({x:(d+t[0]*l)/o,y:(h+t[1]*l)/r,r:t[2],ok:!0}));const c=n(s(e.id)+i());for(let e=0;e<26;e++){const e=.05+.9*c(),a=.05+.9*c();t.stars.every(t=>((t.x-e)*o)**2+((t.y-a)*r)**2>1600)&&t.stars.push({x:e,y:a,r:1.2+.8*c(),ok:!1})}t.bg=T(Math.round(o*r/900),s(e.id)),t.target=a.edges,t.edges=[],t.onChange()})},t("tUndo").addEventListener("click",()=>X.undo()),t("tHint").addEventListener("click",()=>{X.hintUntil=performance.now()+2500});let Q="about";function tt(t,a,n,s,i){t.replaceChildren();for(const[o,r]of[["about","解説"],["myth","神話"],["find","見つけ方"]]){const l=e("button","chip",r);l.type="button",l.setAttribute("role","tab"),l.setAttribute("aria-pressed",o===s),l.addEventListener("click",()=>{i(o),tt(t,a,n,o,i)}),t.append(l)}a.textContent=n[s]}U.found=()=>{const a=Z;t("fName").replaceChildren(document.createTextNode(a.name),e("small","",a.latin)),tt(t("fTabs"),t("fText"),a,Q,t=>Q=t),requestAnimationFrame(()=>{const[e,n,s]=S(t("foundCanvas"));k(e,n,s,L(a))})},t("fNext").addEventListener("click",()=>{$.pop(),K(_())});let et="すべて";for(const a of["すべて","春","夏","秋","冬"]){const n=e("button","chip",a);n.type="button",n.addEventListener("click",()=>{et=a,U.zukan()}),t("zSeasons").append(n)}function at(t){const a=e("button","tile");a.type="button";const n=e("canvas");if(a.append(n,e("b","",t.name),e("small","",t.season+"の星座")),N.has(t.id)){const t=e("span","mark","★");t.title="見つけた星座",a.append(t)}return a.addEventListener("click",()=>{st=t,P("detail")}),[a,n]}function nt(t){requestAnimationFrame(()=>t.forEach(([t,e])=>{const[a,n,s]=S(t);k(a,n,s,e,{small:!0})}))}t("zSearch").addEventListener("input",()=>U.zukan()),U.zukan=()=>{[...t("zSeasons").children].forEach(t=>t.setAttribute("aria-pressed",t.textContent===et));const e=t("zSearch").value.trim(),a=M.filter(t=>("すべて"===et||t.season===et)&&(!e||(t.name+t.latin).toLowerCase().includes(e.toLowerCase()))),n=[];t("zGrid").replaceChildren(...a.map(t=>{const[e,a]=at(t);return n.push([a,L(t)]),e})),t("zEmpty").hidden=a.length>0,t("zCount").textContent=`見つけた ${N.size} / ${M.length}`,nt(n)};let st=M[0],it="about";U.detail=()=>{const a=st;t("detName").replaceChildren(document.createTextNode(a.name),e("small","",a.latin+"・"+a.season+"の星座")),tt(t("detTabs"),t("detText"),a,it,t=>it=t),t("detTrace").lastChild.textContent=N.has(a.id)?"もう一度なぞる":"線をなぞって見つける",requestAnimationFrame(()=>{const[e,n,s]=S(t("detCanvas"));k(e,n,s,L(a))})},t("detTrace").addEventListener("click",()=>K(st));let ot="all",rt=null;for(const[a,n]of[["all","すべて"],["own","オリジナル"],["found","発見した星座"],["fav","お気に入り"]]){const s=e("button","chip",n);s.type="button",s.dataset.k=a,s.addEventListener("click",()=>{ot=a,U.album()}),t("aTabs").append(s)}U.album=()=>{[...t("aTabs").children].forEach(t=>t.setAttribute("aria-pressed",t.dataset.k===ot));const a=R.filter(t=>"all"===ot||("fav"===ot?t.fav:t.type===ot)),n=[];t("aGrid").replaceChildren(...a.map(t=>{const a=e("button","tile");a.type="button";const s=e("canvas");return a.append(s,e("b","",t.name),e("small","",o(t.date))),t.fav&&a.append(e("span","mark","♥")),a.addEventListener("click",()=>{rt=t,P("view")}),n.push([s,t]),a})),t("aEmpty").hidden=a.length>0,!a.length&&R.length?t("aEmpty").textContent="この分類の星座はまだありません。":t("aEmpty").innerHTML="まだ星座がありません。<br>「はじめる」から星をつないでみよう。",nt(n)},U.view=()=>{const e=rt;t("vName").textContent=e.name,t("vDesc").textContent=e.desc||"",t("vDate").textContent=("found"===e.type?"発見した日 ":"描いた日 ")+o(e.date),t("vFav").classList.toggle("on",!!e.fav),requestAnimationFrame(()=>{const[a,n,s]=S(t("viewCanvas"));k(a,n,s,e)})},t("vFav").addEventListener("click",()=>{rt.fav=!rt.fav,W(),t("vFav").classList.toggle("on",rt.fav),l(rt.fav?"お気に入りにしました":"お気に入りを外しました")}),t("vShare").addEventListener("click",()=>ut(rt));let lt=null;function dt(e,a,n){t("cfT").textContent=e,t("cfText").textContent=a,lt=n,t("confirmDlg").hidden=!1}function ht(t,n,s){t.replaceChildren(...n.map(([i,o])=>{const r=e("button","chip",o);return r.type="button",r.setAttribute("aria-pressed",d[s]===i),r.addEventListener("click",()=>{d[s]=i,a.set("settings",d),ht(t,n,s),"sound"===s&&i&&u(4)}),r}))}t("cfOk").addEventListener("click",()=>{t("confirmDlg").hidden=!0,lt?.()}),t("vDel").addEventListener("click",()=>dt("この星座を消しますか？",`「${rt.name}」をアルバムから消します。もとに戻せません。`,()=>{R=R.filter(t=>t!==rt),W(),l("消しました"),D()})),U.today=()=>{const a=new Date,n="日月火水木金土"[a.getDay()];t("tdDate").textContent=`${a.getFullYear()}.${String(a.getMonth()+1).padStart(2,"0")}.${String(a.getDate()).padStart(2,"0")}（${n}）`,t("tdMsg").textContent=H();const o=a.getMonth()+1,r=o<=2||12===o?"冬":o<=5?"春":o<=8?"夏":"秋";t("tdSeason").textContent=`${o}月の夜（${r}の星座）`;const l=M.filter(t=>t.season===r).slice(0,6),d=[];t("tdGrid").replaceChildren(...l.map(t=>{const[e,a]=at(t);return d.push([a,L(t)]),e}));const h=M[s("pick"+i())%M.length],[c,m]=at(h);d.push([m,L(h)]);const u=e("div","muted");u.style.fontSize="14px",u.style.lineHeight="1.8",u.textContent=h.about,t("tdPick").replaceChildren(c,u),nt(d)},U.settings=()=>{ht(t("sSound"),[[!0,"オン"],[!1,"オフ"]],"sound"),ht(t("sStars"),[["few","少なめ"],["mid","ふつう"],["many","多め"]],"stars")},t("sReset").addEventListener("click",()=>dt("アルバムを全部消しますか？","描いた星座と見つけた星座の記録を、すべて消します。もとに戻せません。",()=>{R=[],W(),N=new Set,F(),l("全部消しました")}));let ct=null,mt=null;async function ut(e){try{await(document.fonts?.ready)}catch{}mt=e,ct=function(t){const e=1080,a=1350,n=document.createElement("canvas");n.width=e,n.height=a;const s=n.getContext("2d"),i=s.createLinearGradient(0,0,0,a);i.addColorStop(0,"#060a24"),i.addColorStop(.7,"#18215a"),i.addColorStop(1,"#3b2c66"),s.fillStyle=i,s.fillRect(0,0,e,a),s.save(),s.translate(90,90),k(s,900,860,t,{pad:90,keep:!0}),s.restore(),s.fillStyle="rgba(251,243,223,.96)",s.beginPath(),s.roundRect?s.roundRect(90,990,900,270,28):s.rect(90,990,900,270),s.fill(),s.fillStyle="#2b2a3d",s.textAlign="center",s.font='800 64px "Shippori Mincho B1", serif',s.fillText(t.name,540,1085,820),s.font='500 30px "Zen Maru Gothic", sans-serif',s.fillStyle="#5a5870";const r=[];for(let e=t.desc||"";e.length;){let t=e.length;for(;s.measureText(e.slice(0,t)).width>780;)t--;if(r.push(e.slice(0,t)),e=e.slice(t),2===r.length)break}return r.forEach((t,e)=>s.fillText(t,540,1150+44*e)),s.font='500 26px "Zen Maru Gothic", sans-serif',s.fillStyle="#8a879e",s.textAlign="left",s.fillText(o(t.date),130,1236),s.textAlign="right",s.fillStyle="#b8862e",s.font='800 34px "Shippori Mincho B1", serif',s.fillText("星結び",950,1238),n}(e),t("shareImg").src=ct.toDataURL("image/png"),P("share")}const pt=()=>`夜空の星をつないで「${mt.name}」をつくりました。 #星結び`;let gt;t("shSave").addEventListener("click",()=>{const t=document.createElement("a");t.href=ct.toDataURL("image/png"),t.download=`hoshimusubi-${mt.name}.png`,document.body.append(t),t.click(),t.remove(),l("画像を保存しました")}),t("shX").addEventListener("click",()=>open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(pt())}&url=${encodeURIComponent(location.href.split("#")[0])}`,"_blank","noopener")),t("shLine").addEventListener("click",()=>open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(location.href.split("#")[0])}&text=${encodeURIComponent(pt())}`,"_blank","noopener")),t("shMore").addEventListener("click",async()=>{try{const t=new File([await new Promise(t=>ct.toBlob(t,"image/png"))],"hoshimusubi.png",{type:"image/png"});navigator.canShare?.({files:[t]})?await navigator.share({files:[t],text:pt()}):navigator.share?await navigator.share({text:pt(),url:location.href.split("#")[0]}):l("この端末では使えません。「画像を保存」をお使いください")}catch(t){"AbortError"!==t?.name&&l("シェアできませんでした")}}),addEventListener("resize",()=>{clearTimeout(gt),gt=setTimeout(()=>{x(),A&&A.size()},150)}),x(),P("home",!1),requestAnimationFrame(function t(e){!function(t){const e=g.width/innerWidth;f.setTransform(1,0,0,1,0,0),f.drawImage(b,0,0),f.setTransform(e,0,0,e,0,0);for(const e of v){const a=.35+.65*Math.abs(Math.sin(t/900+e.p));f.fillStyle=`rgba(255,250,230,${a})`,f.beginPath(),f.arc(e.x,e.y,e.s,0,7),f.fill()}if(!y&&Math.random()<.004&&(y={x:Math.random()*innerWidth*.8+.2*innerWidth,y:Math.random()*innerHeight*.3,t:0}),y){y.t+=1;const t=y.t/40,e=y.x-220*t,a=y.y+110*t,n=f.createLinearGradient(e,a,e+70,a-35);n.addColorStop(0,`rgba(255,255,255,${1-t})`),n.addColorStop(1,"rgba(255,255,255,0)"),f.strokeStyle=n,f.lineWidth=1.6,f.beginPath(),f.moveTo(e,a),f.lineTo(e+70,a-35),f.stroke(),t>=1&&(y=null)}}(e),A&&A.render(e),requestAnimationFrame(t)})})();
+</script>
+<script src="../../playtime.js" defer></script>
+</body>
+</html>
