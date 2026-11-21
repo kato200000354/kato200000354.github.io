@@ -1,0 +1,223 @@
+<!doctype html>
+<!-- © kato200000354. 無断転載・複製・再配布を禁止します。 (kato200000354-protected) -->
+
+<html lang="ja">
+<head>
+<meta name="copyright" content="© kato200000354">
+<script src="../../audio-pause.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>すなば芸術祭</title>
+<meta name="description" content="公園の砂場で3Dの砂の造形をつくり、きびしい審査員に芸術点をつけてもらうゲーム。">
+<meta name="theme-color" content="#f3d9a4">
+<style>
+:root{
+  --bg:#fdf3df; --ink:#4a3423; --sub:#8a6a4c; --card:#fffaf0; --line:#e6cfa6;
+  --accent:#e2682f; --accent2:#3f8fd1; --gold:#e8b024; --wood:#a8703f;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font-family:"Hiragino Maru Gothic ProN","M PLUS Rounded 1c","Yu Gothic",system-ui,sans-serif;overflow-x:hidden;-webkit-user-select:none;user-select:none}
+button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
+.screen{min-height:100%;display:flex;flex-direction:column;align-items:center;padding:12px 16px 20px}
+.btn{background:var(--accent);color:#fff;font-weight:700;font-size:18px;padding:14px 22px;border-radius:16px;box-shadow:0 4px 0 #b44c1c;width:100%;max-width:320px;margin:6px 0}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #b44c1c}
+.btn.blue{background:var(--accent2);box-shadow:0 4px 0 #2a6aa3}
+.btn.blue:active{box-shadow:0 1px 0 #2a6aa3}
+.btn.ghost{background:var(--card);color:var(--ink);box-shadow:0 4px 0 var(--line);border:2px solid var(--line)}
+.card{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:14px 16px;width:100%;max-width:420px;margin:8px 0}
+
+#title h1{font-size:34px;margin:14px 0 2px;letter-spacing:2px;text-align:center;color:var(--accent);text-shadow:0 3px 0 #f6c58f}
+#title .tag{color:var(--sub);margin:0 0 10px;text-align:center;font-size:14px}
+.hero{width:100%;max-width:400px;height:220px;border-radius:18px;overflow:hidden;border:4px solid var(--wood);background:#bfe6ff;position:relative}
+.hero canvas,.pit canvas{display:block;width:100%!important;height:100%!important;touch-action:none}
+.rules{font-size:14px;line-height:1.7}
+.rules b{color:var(--accent)}
+.row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.pill{padding:8px 14px;border-radius:999px;border:2px solid var(--line);background:var(--card);font-weight:700;font-size:15px}
+.pill.on{background:var(--accent2);border-color:var(--accent2);color:#fff}
+.best{font-size:13px;color:var(--sub);margin-top:6px;text-align:center}
+
+#game{padding:6px 8px 8px;height:100vh;height:100dvh;min-height:0}
+.hud{display:flex;align-items:center;gap:8px;width:100%;max-width:520px;margin-bottom:6px;flex:0 0 auto}
+.theme{flex:1;background:var(--card);border:2px solid var(--line);border-radius:12px;padding:4px 10px;font-size:12px;line-height:1.3;min-width:0}
+.theme b{font-size:17px;color:var(--accent)}
+.timer{font-size:22px;font-weight:800;min-width:62px;text-align:center;background:var(--card);border:2px solid var(--line);border-radius:12px;padding:3px 6px}
+.timer.hurry{color:#d33;border-color:#f19a9a;animation:pulse .5s infinite alternate}
+@keyframes pulse{to{transform:scale(1.08)}}
+.done{background:var(--gold);color:#4a3423;font-weight:800;border-radius:12px;padding:8px 10px;font-size:15px;box-shadow:0 3px 0 #b88710}
+.done:disabled{opacity:.5}
+.pit{position:relative;width:100%;max-width:520px;flex:1 1 auto;min-height:260px;border:5px solid var(--wood);border-radius:12px;overflow:hidden;background:#bfe6ff;touch-action:none}
+.wind{position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.5);line-height:1.3;text-align:center}
+.camhint{position:absolute;left:6px;bottom:6px;font-size:11px;background:rgba(255,255,255,.75);border-radius:8px;padding:3px 7px;pointer-events:none}
+.rot{position:absolute;right:6px;bottom:6px;display:flex;gap:6px}
+.rot button{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.85);font-size:20px;font-weight:900;box-shadow:0 2px 4px rgba(0,0,0,.2)}
+.toolbar{width:100%;max-width:520px;margin-top:6px;flex:0 0 auto}
+.tools{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.tool{background:var(--card);border:2px solid var(--line);border-radius:12px;padding:3px 1px;font-size:10px;font-weight:700;display:flex;flex-direction:column;align-items:center;line-height:1.2;white-space:nowrap}
+.tool .ic{font-size:20px;line-height:1.2}
+.tool.on{border-color:var(--accent);background:#ffe7d6;box-shadow:0 0 0 2px var(--accent) inset}
+.sub{display:flex;gap:5px;margin-top:5px;align-items:center}
+.sizes{display:flex;gap:4px}
+.size{width:34px;height:34px;border-radius:10px;border:2px solid var(--line);background:var(--card);display:flex;align-items:center;justify-content:center}
+.size i{display:block;border-radius:50%;background:var(--ink)}
+.size.on{border-color:var(--accent);background:#ffe7d6}
+.undo{flex:0 0 auto;padding:6px 9px;border-radius:10px;border:2px solid var(--line);background:var(--card);font-weight:700;font-size:13px}
+.decos{display:flex;gap:4px;overflow-x:auto;flex:1;min-width:0;padding-bottom:2px}
+.deco{flex:0 0 auto;width:36px;height:34px;border-radius:10px;border:2px solid var(--line);background:var(--card);font-size:18px;display:flex;align-items:center;justify-content:center}
+.deco.on{border-color:var(--accent);background:#ffe7d6}
+.hint{font-size:12px;color:var(--sub);margin-top:4px;text-align:center;min-height:16px}
+
+#turn{justify-content:center;text-align:center}
+#turn .big{font-size:30px;font-weight:900;margin:8px 0;color:var(--accent)}
+
+#result h2,#final h2{margin:6px 0 4px;font-size:24px}
+.shot{width:100%;max-width:340px;border:5px solid var(--wood);border-radius:10px;display:block;background:#eaf8ff}
+.judges{display:grid;gap:8px;width:100%;max-width:420px;margin-top:8px}
+.judge{display:flex;gap:10px;align-items:center;background:var(--card);border:2px solid var(--line);border-radius:16px;padding:8px 10px;opacity:0;transform:translateY(10px);transition:.4s}
+.judge.show{opacity:1;transform:none}
+.face{font-size:34px;width:46px;text-align:center;flex:0 0 auto}
+.jtxt{flex:1;min-width:0;font-size:13px;line-height:1.45}
+.jtxt b{font-size:14px}
+.jscore{font-size:28px;font-weight:900;color:var(--accent);flex:0 0 auto;min-width:56px;text-align:right}
+.total{font-size:44px;font-weight:900;text-align:center;margin:6px 0 0;color:var(--accent)}
+.total small{font-size:18px;color:var(--sub)}
+.award{text-align:center;font-weight:900;font-size:20px;margin-bottom:4px}
+.bars{font-size:13px}
+.bar{display:flex;align-items:center;gap:8px;margin:4px 0}
+.bar span{width:84px;flex:0 0 auto;font-size:12px;white-space:nowrap}
+.bar .tr{flex:1;height:12px;border-radius:6px;background:#f0e2c6;overflow:hidden}
+.bar .tr i{display:block;height:100%;background:linear-gradient(90deg,#f0a35e,var(--accent));border-radius:6px;width:0;transition:width .8s}
+.bar em{width:30px;text-align:right;font-style:normal;font-weight:700}
+.rank{list-style:none;padding:0;margin:4px 0}
+.rank li{display:flex;align-items:center;gap:10px;padding:6px 4px;border-bottom:1px dashed var(--line);font-size:15px}
+.rank li.me{background:#fff0c9;border-radius:10px;font-weight:800}
+.rank .no{width:30px;font-weight:900;text-align:center;font-size:18px}
+.rank .nm{flex:1}
+.rank img{width:56px;height:42px;border-radius:4px;border:2px solid var(--wood);object-fit:cover}
+.gallery{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;width:100%;max-width:420px}
+.gallery figure{margin:0;text-align:center;font-size:13px;font-weight:700}
+.gallery img{width:100%;border:3px solid var(--wood);border-radius:8px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#4a3423;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:9;opacity:0;transition:.3s;pointer-events:none}
+.toast.show{opacity:1}
+input.nm{font:inherit;padding:6px 8px;border-radius:10px;border:2px solid var(--line);width:100%;margin:3px 0;background:#fff}
+.loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--sub);font-size:14px}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
+</head>
+<body>
+
+<section id="title" class="screen">
+  <h1>すなば芸術祭</h1>
+  <p class="tag">公園の砂場で、いちばん芸術的な作品をつくれ！</p>
+  <div class="hero" id="hero"><div class="loading">砂場を準備中…</div></div>
+  <div class="card rules">
+    <b>しめった砂</b>は固まるので高く積める。<b>かわいた砂</b>はサラサラ崩れる。<br>
+    積んだら<b>指</b>で彫って窓やトンネルを。<b>飾り</b>で仕上げよう。<br>
+    制限時間のあとに<b>風</b>が吹くよ。かわいた砂は飛ばされる！<br>
+    <b>2本指</b>で砂場を回したりズームしたりできる。<br>
+    最後に3人の審査員が点数をつける（30点満点）。
+  </div>
+  <div class="card">
+    <div style="font-weight:700;margin-bottom:6px;text-align:center">あそびかた</div>
+    <div class="row" id="modeRow">
+      <button class="pill on" data-mode="solo">ひとりで（ライバル3人と勝負）</button>
+      <button class="pill" data-mode="multi">みんなで（2〜4人で交代）</button>
+    </div>
+    <div id="multiBox" hidden style="margin-top:8px">
+      <div class="row" id="numRow">
+        <button class="pill on" data-n="2">2人</button>
+        <button class="pill" data-n="3">3人</button>
+        <button class="pill" data-n="4">4人</button>
+      </div>
+      <div id="names" style="margin-top:6px"></div>
+    </div>
+    <div style="font-weight:700;margin:10px 0 6px;text-align:center">制限時間</div>
+    <div class="row" id="timeRow">
+      <button class="pill" data-t="90">90秒</button>
+      <button class="pill on" data-t="150">150秒</button>
+      <button class="pill" data-t="240">240秒</button>
+    </div>
+  </div>
+  <button class="btn" id="startBtn">砂場へ行く</button>
+  <div class="best" id="bestTxt"></div>
+</section>
+
+<section id="turn" class="screen" hidden>
+  <div style="font-size:15px;color:var(--sub)">スマホを渡してね</div>
+  <div class="big" id="turnName">○○さんの番</div>
+  <div class="card" style="text-align:center">お題：<b id="turnTheme" style="font-size:22px;color:var(--accent)"></b></div>
+  <button class="btn" id="turnGo">はじめる</button>
+</section>
+
+<section id="game" class="screen" hidden>
+  <div class="hud">
+    <div class="theme">お題<br><b id="themeTxt">お城</b></div>
+    <div class="timer" id="timer">150</div>
+    <button class="done" id="doneBtn">できた！</button>
+  </div>
+  <div class="pit" id="pit">
+    <div class="wind" id="windMsg" hidden></div>
+    <div class="camhint">2本指：回す・ズーム</div>
+    <div class="rot"><button id="rotL" aria-label="左に回す">⟲</button><button id="rotR" aria-label="右に回す">⟳</button></div>
+  </div>
+  <div class="toolbar">
+    <div class="tools" id="tools">
+      <button class="tool on" data-tool="wet"><span class="ic">🟫</span>しめった砂</button>
+      <button class="tool" data-tool="dry"><span class="ic">🟨</span>かわいた砂</button>
+      <button class="tool" data-tool="water"><span class="ic">💧</span>水</button>
+      <button class="tool" data-tool="carve"><span class="ic">☝️</span>指で彫る</button>
+      <button class="tool" data-tool="shovel"><span class="ic">🥄</span>シャベル</button>
+      <button class="tool" data-tool="cam"><span class="ic">👀</span>見回す</button>
+    </div>
+    <div class="sub">
+      <div class="sizes" id="sizes">
+        <button class="size" data-s="0"><i style="width:6px;height:6px"></i></button>
+        <button class="size on" data-s="1"><i style="width:11px;height:11px"></i></button>
+        <button class="size" data-s="2"><i style="width:17px;height:17px"></i></button>
+      </div>
+      <div class="decos" id="decos"></div>
+      <button class="undo" id="undoBtn">↶戻す</button>
+    </div>
+    <div class="hint" id="hint">しめった砂を積んで、形をつくろう</div>
+  </div>
+</section>
+
+<section id="result" class="screen" hidden>
+  <h2 id="resTitle">審査結果</h2>
+  <img class="shot" id="resImg" alt="あなたの作品">
+  <div class="judges" id="judges"></div>
+  <div id="resTotalBox" hidden style="width:100%;max-width:420px">
+    <div class="total" id="resTotal">0<small> / 30点</small></div>
+    <div class="award" id="resAward"></div>
+    <div class="card bars" id="bars"></div>
+    <div class="card" id="rankCard" hidden>
+      <div style="font-weight:800;text-align:center">今日の砂場ランキング</div>
+      <ol class="rank" id="rank"></ol>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <button class="btn" id="nextBtn">もう一回つくる</button>
+      <button class="btn blue" id="saveBtn">作品を画像で保存</button>
+      <button class="btn ghost" id="toTitle">タイトルへ</button>
+    </div>
+  </div>
+</section>
+
+<section id="final" class="screen" hidden>
+  <h2>🏆 最終結果</h2>
+  <div class="card"><ol class="rank" id="finalRank"></ol></div>
+  <div class="gallery" id="gallery"></div>
+  <button class="btn" id="finalAgain">もう一回あそぶ</button>
+  <button class="btn ghost" id="finalTitle">タイトルへ</button>
+</section>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+/*! © kato200000354. 無断転載・複製・再配布を禁止します。 */
+import*as t from"three";const e=t=>document.querySelector(t),n=t=>[...document.querySelectorAll(t)],o=(t,e=0,n=1)=>Math.max(e,Math.min(n,t)),a=44,s=44,i=44,r=85184,c=1936,l=new Uint8Array(r),d=new Uint8Array(r),m=new Uint8Array(r),h=new Uint16Array(r),f=new Uint8Array(r),u=(t,e,n)=>(e*s+n)*a+t;let p=1,M=0,w=1,y={},g=!0;function x(){l.fill(0),m.fill(0),h.fill(0),y={},w=1;for(let t=0;t<r;t++)d[t]=255*Math.random()|0;for(let t=0;t<c;t++)l[t]=5;g=!0}function b(t,e){let n=l[t];l[t]=l[e],l[e]=n,n=d[t],d[t]=d[e],d[e]=n,n=m[t],m[t]=m[e],m[e]=n,n=h[t],h[t]=h[e],h[e]=n,f[e]=p}const v=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1]];function k(){const t=[0,1,2,3];for(let e=3;e>0;e--){const n=Math.random()*(e+1)|0;[t[e],t[n]]=[t[n],t[e]]}return t}function L(){p=255===p?1:p+1;for(let t=1;t<i;t++){const e=M+t&1;for(let n=0;n<s;n++){const o=e?n:43-n;for(let n=0;n<a;n++){const i=e?n:43-n,d=u(i,t,o),h=l[d];if(0===h||5===h||4===h||f[d]===p)continue;const M=d-c,w=l[M];if(1===h){if(0===w){b(d,M);continue}if(3===w){b(d,M),l[M]=2;continue}for(const e of k()){const[n,r]=v[e],m=i+n,h=o+r;if(m<0||m>=a||h<0||h>=s)continue;const f=u(m,t,h),p=f-c;if(0===l[f]&&0===l[p]){b(d,p);break}}}else if(2===h){if(m[d]){if(0===w||3===w){b(d,M);continue}let e=!1;if(Math.random()<.45)for(const n of k()){const[r,m]=v[n],h=i+r,f=o+m;if(h<0||h>=a||f<0||f>=s)continue;const p=u(h,t,f),M=p-c;if(0===l[p]&&0===l[M]){b(d,M),e=!0;break}}e||(m[d]=0,g=!0)}}else if(3===h){let e=!1;for(const t of[1,-1,a,-44,c,-1936]){const n=d+t;if(!(n<0||n>=r)&&(1===l[n]&&Math.random()<.35)){l[n]=2,m[n]=0,l[d]=0,e=!0,g=!0;break}}if(e)continue;if(Math.random()<.003){l[d]=0;continue}if(0===w){b(d,M);continue}for(const e of k()){const[n,r]=v[e],m=i+n,h=o+r;if(m<0||m>=a||h<0||h>=s)continue;const f=u(m,t,h);if(0===l[f-c]&&0===l[f]){b(d,f-c);break}if(0===l[f]&&Math.random()<.5){b(d,f);break}}}}}}M%3==0&&g&&function(){z.fill(0);let t=0,e=0;for(let t=0;t<c;t++)z[t]=1,S[e++]=t;for(;t<e;){const n=S[t++],o=n%a,i=(n/a|0)%s,d=[n+c,n-c];o>0&&d.push(n-1),o<43&&d.push(n+1),i>0&&d.push(n-a),i<43&&d.push(n+a);for(const t of d){if(t<0||t>=r||z[t])continue;const n=l[t];(2===n&&!m[t]||4===n||1===n)&&(z[t]=1,S[e++]=t)}}let n=!1;p=255===p?1:p+1;for(let t=c;t<r;t++){const e=l[t];if((2===e&&!m[t]||4===e)&&!z[t]){const e=t-c;0!==l[e]&&3!==l[e]||(b(t,e),n=!0)}}g=n}(),M++}const z=new Uint8Array(r),S=new Int32Array(r);const C=new t.WebGLRenderer({antialias:!0,preserveDrawingBuffer:!0});C.setPixelRatio(Math.min(2,window.devicePixelRatio||1)),C.shadowMap.enabled=!0,C.shadowMap.type=t.PCFSoftShadowMap;const T=new t.Scene;{const e=document.createElement("canvas");e.width=2,e.height=256;const n=e.getContext("2d"),o=n.createLinearGradient(0,0,0,256);o.addColorStop(0,"#8fd0ff"),o.addColorStop(.6,"#d8f1ff"),o.addColorStop(1,"#fff6e0"),n.fillStyle=o,n.fillRect(0,0,2,256);const a=new t.CanvasTexture(e);a.colorSpace=t.SRGBColorSpace,T.background=a}T.fog=new t.Fog(15135999,90,190);const E=new t.PerspectiveCamera(45,1,.5,400);T.add(new t.HemisphereLight(15398655,11569754,1.1));const G=new t.DirectionalLight(16773590,2);function $(e,n,o,a,s=128){const i=document.createElement("canvas");i.width=i.height=s;const r=i.getContext("2d"),c=r.createImageData(s,s);for(let t=0;t<s*s;t++){const s=(Math.random()-.5)*a;c.data[4*t]=e+s,c.data[4*t+1]=n+s,c.data[4*t+2]=o+s,c.data[4*t+3]=255}r.putImageData(c,0,0);const l=new t.CanvasTexture(i);return l.wrapS=l.wrapT=t.RepeatWrapping,l.colorSpace=t.SRGBColorSpace,l}G.position.set(52,60,42),G.target.position.set(22,0,22),G.castShadow=!0,G.shadow.mapSize.set(2048,2048),Object.assign(G.shadow.camera,{left:-40,right:40,top:40,bottom:-40,near:1,far:160}),G.shadow.bias=-8e-4,T.add(G,G.target);{const e=$(214,182,128,40);e.repeat.set(6,6);const n=new t.Mesh(new t.BoxGeometry(a,1,s),new t.MeshLambertMaterial({map:e}));n.position.set(22,.5,22),n.receiveShadow=!0,T.add(n);const o=new t.MeshLambertMaterial({map:$(168,112,63,30)}),i=2;for(const[e,n,r,c]of[[a+2*i,i,22,-i/2],[a+2*i,i,22,s+i/2],[i,s,-i/2,22],[i,s,a+i/2,22]]){const a=new t.Mesh(new t.BoxGeometry(e,2.4,n),o);a.position.set(r,1.2,c),a.castShadow=a.receiveShadow=!0,T.add(a)}const r=$(120,180,90,40);r.repeat.set(30,30);const c=new t.Mesh(new t.PlaneGeometry(400,400),new t.MeshLambertMaterial({map:r}));c.rotation.x=-Math.PI/2,c.position.set(22,0,22),c.receiveShadow=!0,T.add(c);const l=(e,n,o)=>{const a=new t.Mesh(new t.CylinderGeometry(.8*o,1.1*o,8*o,8),new t.MeshLambertMaterial({color:8016432}));a.position.set(e,4*o,n),a.castShadow=!0,T.add(a);for(const[a,s,i,r]of[[0,10,0,5],[3,8.5,1,3.6],[-3,8.8,-1,3.8],[0,12.5,0,3.4]]){const c=new t.Mesh(new t.IcosahedronGeometry(r*o,1),new t.MeshLambertMaterial({color:5216837,flatShading:!0}));c.position.set(e+a*o,s*o,n+i*o),c.castShadow=!0,T.add(c)}};l(-16,-10,1.4),l(62,-6,1.2),l(54,66,1.3),l(-20,58,1.1);const d=new t.Group,m=new t.MeshLambertMaterial({color:12872250}),h=new t.MeshLambertMaterial({color:5592405}),f=new t.Mesh(new t.BoxGeometry(12,.6,3),m);f.position.y=2.4,d.add(f);const u=new t.Mesh(new t.BoxGeometry(12,2.4,.5),m);u.position.set(0,4,-1.3),d.add(u);for(const e of[-5,5]){const n=new t.Mesh(new t.BoxGeometry(.6,2.4,2.6),h);n.position.set(e,1.2,0),d.add(n)}d.traverse(t=>{t.castShadow=!0}),d.position.set(22,0,-14),T.add(d)}const A=6e4,B=new t.InstancedMesh(new t.BoxGeometry(1,1,1),new t.MeshLambertMaterial({color:16777215}),A);B.instanceMatrix.setUsage(t.DynamicDrawUsage),B.instanceColor=new t.InstancedBufferAttribute(new Float32Array(3*A),3),B.instanceColor.setUsage(t.DynamicDrawUsage),B.castShadow=B.receiveShadow=!0,B.frustumCulled=!1,T.add(B);{const t=B.instanceMatrix.array;for(let e=0;e<A;e++){const n=16*e;t[n]=t[n+5]=t[n+10]=t[n+15]=1}}const j=new t.InstancedMesh(new t.BoxGeometry(1,1,1),new t.MeshLambertMaterial({color:4891624,transparent:!0,opacity:.7}),8e3);j.instanceMatrix.setUsage(t.DynamicDrawUsage),j.frustumCulled=!1,T.add(j);{const t=j.instanceMatrix.array;for(let e=0;e<8e3;e++){const n=16*e;t[n]=t[n+5]=t[n+10]=t[n+15]=1}}const R=t=>Math.pow(t/255,2.2),I={dry:[236,206,148],wet:[164,122,80]},U=new Map;function D(){const e=B.instanceMatrix.array,n=B.instanceColor.array,r=j.instanceMatrix.array;let m=0,f=0;U.clear();for(let t=1;t<i;t++)for(let i=0;i<s;i++)for(let s=0;s<a;s++){const p=u(s,t,i),M=l[p];if(0===M||5===M)continue;if(4===M){U.set(h[p],p);continue}if(3===M){if(f<8e3){const e=16*f;r[e+12]=s+.5,r[e+13]=t+.5,r[e+14]=i+.5,f++}continue}const w=43===t?0:l[p+c];if(!!(0!==w&&3!==w&&4!==w&&0!==s&&43!==s&&0!==i&&43!==i&&P(l[p-1])&&P(l[p+1])&&P(l[p-a])&&P(l[p+a]))||m>=A)continue;const y=16*m;e[y+12]=s+.5,e[y+13]=t+.5,e[y+14]=i+.5;const g=1===M?I.dry:I.wet,x=22*(d[p]/255-.5),b=0===w?8:0;n[3*m]=R(o(g[0]+x+b,0,255)),n[3*m+1]=R(o(g[1]+x+b,0,255)),n[3*m+2]=R(o(g[2]+x+.6*b,0,255)),m++}B.count=m,B.instanceMatrix.needsUpdate=!0,B.instanceColor.needsUpdate=!0,j.count=f,j.instanceMatrix.needsUpdate=!0,function(){for(const[e,n]of U){let o=H.get(e);if(!o){const n=q.find(t=>t.k===y[e]);if(!n)continue;o=new t.Group,o.add(n.make()),o.traverse(t=>{t.castShadow=!0}),T.add(o),H.set(e,o)}const i=n%a,r=(n/a|0)%s,l=n/c|0;o.position.set(i+.5,l+.5,r+.5)}for(const[t,e]of H)U.has(t)||(T.remove(e),H.delete(t))}()}const P=t=>1===t||2===t||5===t,F=e=>new t.MeshLambertMaterial({color:e}),q=[{k:"shell",ic:"🐚",name:"貝がら",make(){const e=new t.Group,n=new t.Mesh(new t.SphereGeometry(.7,10,6,0,2*Math.PI,0,Math.PI/2),F(16170955));n.scale.set(1,.55,1.2),e.add(n);for(let n=-2;n<=2;n++){const o=new t.Mesh(new t.BoxGeometry(.06,.36,1.5),F(14845598));o.position.set(.22*n,.12,0),o.rotation.z=.25*n,e.add(o)}return e.position.y=-.45,e}},{k:"pebble",ic:"🪨",name:"小石",make(){const e=new t.Mesh(new t.DodecahedronGeometry(.6,0),new t.MeshLambertMaterial({color:10133670,flatShading:!0}));return e.scale.set(1.1,.6,.9),e.position.y=-.2,e}},{k:"flag",ic:"🚩",name:"旗",make(){const e=new t.Group,n=new t.Mesh(new t.CylinderGeometry(.08,.08,4.2,6),F(6111287));n.position.y=1.6,e.add(n);const o=new t.Shape;o.moveTo(0,0),o.lineTo(1.6,-.5),o.lineTo(0,-1);const a=new t.Mesh(new t.ShapeGeometry(o),new t.MeshLambertMaterial({color:15022389,side:t.DoubleSide}));return a.position.set(.05,3.6,0),e.add(a),e}},{k:"flower",ic:"🌺",name:"花",make(){const e=new t.Group,n=new t.Mesh(new t.CylinderGeometry(.06,.06,1.4,5),F(4431943));n.position.y=.2,e.add(n);for(let n=0;n<5;n++){const o=new t.Mesh(new t.SphereGeometry(.28,6,5),F(15684432));o.position.set(.35*Math.cos(1.256*n),1,.35*Math.sin(1.256*n)),e.add(o)}const o=new t.Mesh(new t.SphereGeometry(.22,6,5),F(16766287));return o.position.y=1.05,e.add(o),e}},{k:"leaf",ic:"🍃",name:"葉っぱ",make(){const e=new t.Mesh(new t.SphereGeometry(.6,8,6),F(5025616));return e.scale.set(.5,.12,1.3),e.rotation.y=3*Math.random(),e.position.y=-.35,e}},{k:"star",ic:"⭐",name:"ヒトデ",make(){const e=new t.Group;for(let n=0;n<5;n++){const o=new t.Mesh(new t.ConeGeometry(.22,1,5),F(16485376));o.rotation.z=-Math.PI/2;const a=new t.Group;o.position.x=.45,a.add(o),a.rotation.y=1.256*n,e.add(a)}return e.position.y=-.38,e}},{k:"marble",ic:"🔵",name:"ビー玉",make(){const e=new t.Mesh(new t.SphereGeometry(.42,14,10),new t.MeshPhongMaterial({color:3116516,shininess:120,specular:16777215}));return e.position.y=-.08,e}},{k:"stick",ic:"🥢",name:"木の枝",make(){const e=new t.Mesh(new t.CylinderGeometry(.1,.14,4,6),F(8081714));return e.position.y=1.4,e.rotation.z=.5*(Math.random()-.5),e}}],H=new Map;const O={az:.6,el:.62,dist:72,tx:22,ty:7,tz:22};function Y(){O.el=o(O.el,.12,1.45),O.dist=o(O.dist,22,120),E.position.set(O.tx+O.dist*Math.cos(O.el)*Math.sin(O.az),O.ty+O.dist*Math.sin(O.el),O.tz+O.dist*Math.cos(O.el)*Math.cos(O.az)),E.lookAt(O.tx,O.ty,O.tz)}let X=null;function J(t){X=t,t.appendChild(C.domElement),N()}function N(){if(!X)return;const t=X.clientWidth,e=X.clientHeight;t&&e&&(C.setSize(t,e,!1),E.aspect=t/e,E.updateProjectionMatrix())}window.addEventListener("resize",N);const V=new t.Raycaster,W=new t.Vector2;function _(t,e){const n=C.domElement.getBoundingClientRect();W.set((t-n.left)/n.width*2-1,-(e-n.top)/n.height*2+1),V.setFromCamera(W,E);const r=V.ray.origin,c=V.ray.direction,d=[a,i,s],m=[r.x,r.y,r.z],h=[c.x,c.y,c.z];let f=0,p=1e9,M=1;for(let t=0;t<3;t++){if(Math.abs(h[t])<1e-9){if(m[t]<0||m[t]>d[t])return null;continue}let e=(0-m[t])/h[t],n=(d[t]-m[t])/h[t];e>n&&([e,n]=[n,e]),e>f&&(f=e,M=t),p=Math.min(p,n)}if(f>p)return null;const w=m.map((t,e)=>t+h[e]*(f+1e-4)),y=w.map((t,e)=>o(Math.floor(t),0,d[e]-1)),g=h.map(t=>t>0?1:-1),x=h.map(t=>Math.abs(1/(t||1e-9))),b=h.map((t,e)=>Math.abs(t)<1e-9?1e9:(y[e]+(t>0?1:0)-w[e])/t);let v=[0,0,0];v[M]=-g[M];for(let t=0;t<300;t++){const t=l[u(y[0],y[1],y[2])];if(0!==t&&3!==t)return{x:y[0],y:y[1],z:y[2],nx:v[0],ny:v[1],nz:v[2]};let e=b[0]<b[1]?b[0]<b[2]?0:2:b[1]<b[2]?1:2;if(y[e]+=g[e],y[e]<0||y[e]>=d[e])return null;b[e]+=x[e],v=[0,0,0],v[e]=-g[e]}return null}let K="wet",Q=1,Z=0;const tt=[.8,2,3.4],et=[2,6,14],nt=[2.2,3.4,5],ot=[.6,1.1,1.7];function at(t){const e="shovel"===K?nt[Q]:ot[Q],n=e*e;for(let o=Math.max(1,Math.floor(t.y-e));o<=Math.min(43,Math.ceil(t.y+e));o++)for(let a=Math.max(0,Math.floor(t.z-e));a<=Math.min(43,Math.ceil(t.z+e));a++)for(let s=Math.max(0,Math.floor(t.x-e));s<=Math.min(43,Math.ceil(t.x+e));s++){const e=s-t.x,i=o-t.y,r=a-t.z;if(e*e+i*i+r*r>n)continue;const c=u(s,o,a);5!==l[c]&&(l[c]=0,h[c]=0,m[c]=0)}g=!0}const st=[];const it=new Map;let rt=!1,ct=!1,lt=!1,dt=0,mt=null,ht=null,ft=0,ut=0,pt=!1;const Mt=C.domElement;Mt.addEventListener("contextmenu",t=>t.preventDefault()),Mt.addEventListener("pointerdown",t=>{if(t.preventDefault(),Mt.setPointerCapture(t.pointerId),re(),it.set(t.pointerId,{x:t.clientX,y:t.clientY}),2===it.size){lt&&(lt=!1);const[t,e]=[...it.values()];return dt=Math.hypot(t.x-e.x,t.y-e.y),void(mt={x:(t.x+e.x)/2,y:(t.y+e.y)/2})}if(it.size>2)return;if(ft=t.clientX,ut=t.clientY,!ct||"cam"===K||2===t.button||1===t.button)return void(pt=!0);pt=!1;const e=_(ft,ut);e&&(st.push({t:l.slice(),s:d.slice(),f:m.slice(),d:h.slice(),k:{...y}}),st.length>12&&st.shift(),lt=!0,ht=e,"carve"===K||"shovel"===K?at(e):"deco"===K&&(!function(t){const e=t.x+t.nx,n=t.y+t.ny,o=t.z+t.nz;if(e<0||e>=a||o<0||o>=s||n<1||n>=i)return;const r=u(e,n,o);if(0!==l[r]&&3!==l[r])return;const c=w++;y[c]=q[Z].k,l[r]=4,h[r]=c,g=!0,ce(660,.05)}(e),lt=!1))}),Mt.addEventListener("pointermove",t=>{if(!it.has(t.pointerId))return;const e=it.get(t.pointerId),n=t.clientX-e.x,o=t.clientY-e.y;if(e.x=t.clientX,e.y=t.clientY,2===it.size){const[t,e]=[...it.values()],n=Math.hypot(t.x-e.x,t.y-e.y),o={x:(t.x+e.x)/2,y:(t.y+e.y)/2};return dt>0&&(O.dist*=dt/n),dt=n,O.az-=.008*(o.x-mt.x),O.el+=.006*(o.y-mt.y),void(mt=o)}if(Math.hypot(t.clientX-ft,t.clientY-ut)>4&&(ft=t.clientX,ut=t.clientY,rt=!0),pt)return O.az-=.008*n,void(O.el+=.006*o);if(lt&&("carve"===K||"shovel"===K)){const t=_(ft,ut);t&&at(t)}});const wt=t=>{it.delete(t.pointerId),it.size<2&&(dt=0),0===it.size&&(lt=!1,pt=!1)};Mt.addEventListener("pointerup",wt),Mt.addEventListener("pointercancel",wt),Mt.addEventListener("wheel",t=>{t.preventDefault(),O.dist*=Math.exp(.001*t.deltaY)},{passive:!1}),e("#rotL").onclick=()=>gt(O.az+Math.PI/4),e("#rotR").onclick=()=>gt(O.az-Math.PI/4);let yt=null;function gt(t){yt=t}const xt={wet:"しめった砂は固まる。タップ長押しで積み上げよう",dry:"かわいた砂はサラサラ山になる。風で飛ぶので注意",water:"水をかけると、かわいた砂がしめって固まる",carve:"指でなぞると細かく彫れる。窓やトンネルを",shovel:"シャベルで大きくけずる",cam:"1本指で砂場を見回す（2本指でズーム）",deco:"タップした場所に飾りを置く"};e("#tools").addEventListener("click",t=>{const o=t.target.closest(".tool");o&&(K=o.dataset.tool,n(".tool").forEach(t=>t.classList.toggle("on",t===o)),n(".deco").forEach(t=>t.classList.remove("on")),e("#hint").textContent=xt[K])}),e("#sizes").addEventListener("click",t=>{const e=t.target.closest(".size");e&&(Q=+e.dataset.s,n(".size").forEach(t=>t.classList.toggle("on",t===e)))}),e("#decos").innerHTML=q.map((t,e)=>`<button class="deco" data-i="${e}" title="${t.name}">${t.ic}</button>`).join(""),e("#decos").addEventListener("click",t=>{const o=t.target.closest(".deco");o&&(K="deco",Z=+o.dataset.i,n(".tool").forEach(t=>t.classList.remove("on")),n(".deco").forEach(t=>t.classList.toggle("on",t===o)),e("#hint").textContent=q[Z].name+"："+xt.deco)}),e("#undoBtn").onclick=function(){const t=st.pop();t?(l.set(t.t),d.set(t.s),m.set(t.f),h.set(t.d),y=t.k,g=!0):de("これ以上もどせないよ")};const bt=[{k:"castle",name:"お城",tip:"左右対称・窓・旗があるとよい"},{k:"pyramid",name:"ピラミッド",tip:"下が広く上がとがった形を"},{k:"tower",name:"天までとどく塔",tip:"細く高く！"},{k:"tunnel",name:"山とトンネル",tip:"山をつくって穴をほろう"},{k:"animal",name:"動物",tip:"形のおもしろさが勝負"},{k:"vehicle",name:"乗りもの",tip:"横長の車体に窓や車輪を"},{k:"sea",name:"海の生きもの",tip:"貝やヒトデも使ってね"},{k:"free",name:"自由（なんでも）",tip:"あなたの芸術を見せて"}];function vt(t){const e=new Uint8Array(r);let n=0,d=0,m=0,h=0,f=a,p=-1,M=s,w=-1;const y=new Array(i).fill(0);for(let t=1;t<i;t++)for(let o=0;o<s;o++)for(let s=0;s<a;s++){const a=u(s,t,o),i=l[a];1!==i&&2!==i&&4!==i||(e[a]=1,n++,m+=s,h+=o,y[t]++,t>d&&(d=t),s<f&&(f=s),s>p&&(p=s),o<M&&(M=o),o>w&&(w=o))}if(n<30)return{A:n,height:0,sym:0,detail:0,decor:0,volume:0,theme:0,holes:0};const g={A:n},x=d,b=Math.max(p-f+1,w-M+1);g.height=100*o(x/35.2);const v=m/n,k=h/n;let L=0,z=0;for(let t=1;t<=d;t++)for(let n=M;n<=w;n++)for(let o=f;o<=p;o++){if(!e[u(o,t,n)])continue;const i=Math.round(2*v-o),r=Math.round(2*k-n);i>=0&&i<a&&e[u(i,t,n)]&&L++,r>=0&&r<s&&e[u(o,t,r)]&&z++}g.sym=100*o((Math.max(L,z)/n-.25)/.65)*o(n/400);let C=0;for(let t=1;t<=d;t++)for(let n=M;n<=w;n++)for(let o=f;o<=p;o++){const s=u(o,t,n);e[s]&&(!(43===t||!e[s+c]||t>1&&!e[s-c]||0===o)&&e[s-1]&&43!==o&&e[s+1]&&0!==n&&e[s-a]&&43!==n&&e[s+a]||C++)}const T=C/(3.2*Math.pow(n,2/3)),E=new Uint8Array(r);for(let t=M;t<=w;t++)for(let n=f;n<=p;n++){let o=!1;for(let a=d;a>=1;a--){const s=u(n,a,t);e[s]?o=!0:!o||0!==l[s]&&3!==l[s]||(E[s]=1)}}let G=0;const $=new Uint8Array(r);for(let t=0;t<r;t++){if(!E[t]||$[t])continue;let e=0,n=0,o=0;for(S[o++]=t,$[t]=1;n<o;){const t=S[n++];e++;for(const e of[1,-1,a,-44,c,-1936]){const n=t+e;n>=0&&n<r&&E[n]&&!$[n]&&($[n]=1,S[o++]=n)}}e>=4&&G++}g.holes=G;const A=Math.min(100,22*G);g.detail=(70*o((T-1)/1.4)+.3*A)*o(n/600);const B=[...kt()],j=B.length;let R=0;if(j){const t=new Set(B.map(t=>t.k)),e=B.reduce((t,e)=>t+e.x,0)/j,a=B.reduce((t,e)=>t+e.z,0)/j,s=B.reduce((t,e)=>t+e.y,0)/j,i=Math.sqrt(B.reduce((t,n)=>t+(n.x-e)**2+(n.z-a)**2+(n.y-s)**2,0)/j),r=j<3?10*j:j<=14?30:Math.max(0,30-3*(j-14));R=45*o(t.size/4)+r+25*o(i/6),n<400&&(R*=.5)}g.decor=R;const I=t=>B.filter(e=>e.k===t).length;g.volume=100*o(n/7e3);let U=0;switch(t){case"castle":U=.35*g.sym+.25*A+(I("flag")?20:0)+.2*g.height;break;case"pyramid":{const t=Math.max(...y.slice(1,4));let e=0,n=0;for(let o=1;o<=d;o++){const a=t*Math.pow(1-(o-1)/x,2);e+=Math.min(a,y[o]),n+=Math.max(a,y[o])}U=75*o((e/n-.3)/.5)+.25*g.sym*(x>=6?1:.3);break}case"tower":{const t=Math.sqrt(Math.max(...y.slice(1)));U=55*o(x/t/3)+.45*g.height;break}case"tunnel":U=.5*A+.3*g.volume+(x>=8?20:2*x);break;case"animal":U=.5*g.detail+.3*g.volume+(b>x?20:10);break;case"vehicle":U=40*o(b/x/2.5)+.3*A+(I("pebble")+I("marble")>=2?30:0);break;case"sea":U=50*o((I("shell")+I("star"))/3)+.5*g.detail;break;default:U=(g.detail+g.sym+g.decor+g.height)/4*1.15}return g.theme=100*o(U/100)*o(n/300),g}function*kt(){for(let t=c;t<r;t++)4===l[t]&&(yield{k:y[h[t]],x:t%a,z:(t/a|0)%s,y:t/c|0})}const Lt=[{name:"砂川 ゲン",role:"造形の巨匠",face:"🧔",w:{detail:.35,sym:.2,theme:.25,height:.1,decor:.1}},{name:"ハマグリ夫人",role:"飾りにうるさい",face:"👒",w:{decor:.35,theme:.25,sym:.15,detail:.15,volume:.1}},{name:"ゴロウ園長",role:"迫力がすき",face:"👴",w:{height:.3,volume:.3,theme:.2,detail:.1,decor:.1}}],zt={height:"高さ",sym:"左右対称",detail:"彫りの細かさ",decor:"飾りのセンス",volume:"迫力",theme:"お題らしさ"},St={height:"天まで届きそうな高さ！",sym:"左右の釣り合いが見事だ。",detail:"細部の彫りに魂を感じる。",decor:"飾りの置き方にセンスがあるわ。",volume:"どっしりした迫力がいい！",theme:"お題をよく表している！"},Ct={height:"もう少し高さが欲しいね。",sym:"左右のバランスが惜しい。",detail:"もっと彫り込めるはずだ。",decor:"飾りでもう一工夫ほしいわね。",volume:"ちょっと小ぢんまりしすぎかな。",theme:"お題らしさがあと一歩。"};let Tt,Et="solo",Gt=2,$t=150,At=["","","",""],Bt=0,jt=[],Rt=0,It="demo",Ut=0,Dt=0,Pt=0,Ft=1,qt=0;const Ht="sunaba-art3d-best";function Ot(){try{return JSON.parse(localStorage.getItem(Ht))||null}catch(t){return null}}function Yt(){const t=Ot();e("#bestTxt").textContent=t?`自己ベスト：${t.score.toFixed(1)}点（お題「${t.theme}」）`:""}function Xt(t){n(".screen").forEach(e=>e.hidden=e.id!==t),window.scrollTo(0,0)}function Jt(){e("#names").innerHTML=Array.from({length:Gt},(t,e)=>`<input class="nm" data-i="${e}" maxlength="8" placeholder="プレイヤー${e+1}" value="${Vt(At[e])}">`).join(""),n("#names .nm").forEach(t=>t.oninput=()=>At[+t.dataset.i]=t.value)}e("#modeRow").addEventListener("click",t=>{const o=t.target.closest(".pill");o&&(Et=o.dataset.mode,n("#modeRow .pill").forEach(t=>t.classList.toggle("on",t===o)),e("#multiBox").hidden="multi"!==Et,Jt())}),e("#numRow").addEventListener("click",t=>{const e=t.target.closest(".pill");e&&(Gt=+e.dataset.n,n("#numRow .pill").forEach(t=>t.classList.toggle("on",t===e)),Jt())}),e("#timeRow").addEventListener("click",t=>{const e=t.target.closest(".pill");e&&($t=+e.dataset.t,n("#timeRow .pill").forEach(t=>t.classList.toggle("on",t===e)))});const Nt=t=>(At[t]||"").trim()||"プレイヤー"+(t+1),Vt=t=>String(t).replace(/[&<>"]/g,t=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[t]));function Wt(){Tt=bt[Math.random()*bt.length|0],jt=[],Bt=0,"multi"===Et?_t():Kt()}function _t(){e("#turnName").textContent=Nt(Bt)+"さんの番",e("#turnTheme").textContent=Tt.name,Xt("turn")}function Kt(){x(),st.length=0,e("#themeTxt").textContent=Tt.name,e("#hint").textContent="お題「"+Tt.name+"」："+Tt.tip,Rt=$t,It="build",ct=!0,Dt=0,yt=null,e("#timer").classList.remove("hurry"),e("#windMsg").hidden=!0,e("#doneBtn").disabled=!1,Xt("game"),J(e("#pit")),Object.assign(O,{az:.6,el:.62,dist:66/Math.min(1,Math.max(.6,1.25*E.aspect))}),Ut=performance.now()}function Qt(){It="wind",ct=!1,lt=!1,Pt=2.8,Ft=Math.random()<.5?-1:1,e("#doneBtn").disabled=!0,e("#timer").classList.remove("hurry");const t=e("#windMsg");t.hidden=!1,t.innerHTML='💨 風が吹いた！<br><span style="font-size:15px">かわいた砂が飛んでいく…</span>',function(){if(!ie)return;const t=2.6*ie.sampleRate,e=ie.createBuffer(1,t,ie.sampleRate),n=e.getChannelData(0);for(let e=0;e<t;e++)n[e]=(2*Math.random()-1)*Math.sin(Math.PI*e/t)*.35;const o=ie.createBufferSource();o.buffer=e;const a=ie.createBiquadFilter();a.type="bandpass",a.frequency.value=700,o.connect(a).connect(ie.destination),o.start()}()}function Zt(){for(let t=1;t<i;t++)for(let e=0;e<s;e++)for(let n=0;n<a;n++){const o=u(n,t,e);if(1!==l[o])continue;if(t<43&&0!==l[o+c])continue;const s=n+Ft;if(s<0||s>=a){Math.random()<.3&&(l[o]=0);continue}const i=o+Ft;0===l[i]&&Math.random()<.3?b(o,i):t<43&&0===l[i+c]&&Math.random()<.1&&b(o,i+c)}}function te(t){const i=Math.min(.05,(t-Ut)/1e3);if(Ut=t,null!==yt&&(O.az+=.18*(yt-O.az),Math.abs(yt-O.az)<.005&&(O.az=yt,yt=null)),"build"===It||"wind"===It){if(lt&&ct&&("wet"===K||"dry"===K||"water"===K)){const t=(rt?_(ft,ut):null)||ht;rt=!1,t&&(!function(t){const e="wet"===K?2:"dry"===K?1:3,n=tt[Q],i=o(t.x+t.nx,0,43),r=o(t.z+t.nz,0,43),c=i+.5,h=r+.5;let f=t.y+t.ny;for(let t=43;t>=1;t--){const e=l[u(i,t,r)];if(0!==e&&3!==e){f=Math.max(f,t+1);break}}const p=Math.min(43,f+2);for(let t=0;t<et[Q];t++){const t=Math.random()*Math.PI*2,o=Math.sqrt(Math.random())*n,i=Math.floor(c+Math.cos(t)*o),r=Math.floor(h+Math.sin(t)*o),f=Math.min(43,p+(2*Math.random()|0));if(i<0||i>=a||r<0||r>=s)continue;const M=u(i,f,r);0===l[M]&&(l[M]=e,m[M]=2===e?1:0,d[M]=255*Math.random()|0)}}(t),ht=t)}Dt+=i;let t=0;for(;Dt>=1/30&&t<2;)"wind"===It&&Zt(),L(),Dt-=1/30,t++;2===t&&(Dt=0),t&&D(),"build"===It?(Rt-=i,e("#timer").textContent=Math.max(0,Math.ceil(Rt)),e("#timer").classList.toggle("hurry",Rt<=10),Rt<=0&&Qt()):(O.az+=.5*i,Pt-=i,Pt<=0&&(It="settle",qt=1,e("#windMsg").innerHTML="しんさ中…"))}else"settle"===It?(L(),L(),D(),qt-=i,qt<=0&&(It="idle",function(){const t=vt(Tt.k),i=function(t){return Lt.map(e=>{let n=0;for(const o in e.w)n+=e.w[o]*t[o];let a=t.A<30?.5:o(1+9*Math.pow(o(n/100),1.3)+.6*(Math.random()-.5),1,10);a=Math.round(10*a)/10;const s=Object.keys(e.w),i=s.reduce((n,o)=>t[o]*e.w[o]>t[n]*e.w[n]?o:n),r=s.reduce((e,n)=>t[n]<t[e]?n:e);let c;return c=t.A<30?"……砂場、ですね。":a>=9?"すばらしい！ "+St[i]+" 文句なしだ。":a>=6?St[i]+" "+Ct[r]:Ct[r]+(t[i]>30?" でも"+St[i]:""),{...e,score:a,comment:c}})}(t),d=Math.round(10*i.reduce((t,e)=>t+e.score,0))/10,m=function(){const t={...O};let e=0,n=0,i=0,d=1,m=a,h=0,f=s,u=0;for(let t=c;t<r;t++){const o=l[t];if(1!==o&&2!==o&&4!==o)continue;const r=t%a,p=(t/a|0)%s,M=t/c|0;e++,n+=r,i+=p,M>d&&(d=M),r<m&&(m=r),r>h&&(h=r),p<f&&(f=p),p>u&&(u=p)}e>0?Object.assign(O,{tx:n/e+.5,tz:i/e+.5,ty:.42*d,el:.42,dist:o(18+1.7*Math.max(d,h-m,u-f),30,80)}):Object.assign(O,{el:.5,dist:60});Y();const p=640,M=480;C.domElement.width,C.domElement.height;C.setSize(p,M,!1),E.aspect=p/M,E.updateProjectionMatrix(),C.render(T,E);const w=C.domElement.toDataURL("image/jpeg",.88);return Object.assign(O,t),N(),w}(),h={name:"multi"===Et?Nt(Bt):"あなた",R:t,J:i,total:d,img:m};jt.push(h),f=h,Xt("result"),e("#resTitle").textContent="multi"===Et?f.name+"さんの審査結果":"審査結果",e("#resImg").src=f.img,e("#resTotalBox").hidden=!0,e("#judges").innerHTML=f.J.map(t=>`<div class="judge"><div class="face">${t.face}</div><div class="jtxt"><b>${t.name}</b> <small style="color:var(--sub)">${t.role}</small><br>${t.comment}</div><div class="jscore">${t.score.toFixed(1)}</div></div>`).join(""),n(".judge").forEach((t,e)=>setTimeout(()=>{t.classList.add("show"),ce(440+120*e,.08)},500+700*e)),setTimeout(()=>{if(e("#resTotalBox").hidden=!1,e("#resTotal").innerHTML=f.total.toFixed(1)+"<small> / 30点</small>",e("#resAward").textContent=ee.find(t=>f.total>=t[0])[1],e("#bars").innerHTML=Object.keys(zt).map(t=>`<div class="bar"><span>${zt[t]}</span><div class="tr"><i data-w="${Math.round(f.R[t]||0)}"></i></div><em>${Math.round(f.R[t]||0)}</em></div>`).join(""),requestAnimationFrame(()=>n("#bars i").forEach(t=>t.style.width=t.dataset.w+"%")),le(f.total),"solo"===Et){const t=[...oe(),{name:"あなた",total:f.total,me:!0}].sort((t,e)=>e.total-t.total);e("#rank").innerHTML=t.map((t,e)=>`<li class="${t.me?"me":""}"><span class="no">${["🥇","🥈","🥉","4"][e]}</span><span class="nm">${t.name}${t.me?"":'<br><small style="color:var(--sub)">'+t.work+"</small>"}</span><b>${t.total.toFixed(1)}点</b></li>`).join(""),e("#rankCard").hidden=!1;const n=Ot();(!n||f.total>n.score)&&(function(t){try{localStorage.setItem(Ht,JSON.stringify(t))}catch(t){}}({score:f.total,theme:Tt.name}),n&&de("自己ベスト更新！")),e("#nextBtn").textContent="もう一回つくる"}else e("#rankCard").hidden=!0,e("#nextBtn").textContent=Bt<Gt-1?"次の人へ":"最終結果を見る"},2600);var f}())):"demo"===It&&(O.az+=.25*i,M%2==0?(L(),D()):M++);Y(),C.render(T,E),requestAnimationFrame(te)}e("#startBtn").onclick=()=>{re(),Wt()},e("#turnGo").onclick=Kt,e("#doneBtn").onclick=()=>{"build"===It&&Qt()};const ee=[[27,"🏆 芸術大賞！"],[23,"🥇 金賞"],[19,"🥈 銀賞"],[15,"🥉 銅賞"],[10,"🎖 努力賞"],[0,"🌱 参加賞"]];const ne=[["けんた（7さい）",["でっかい山","トンネル","どろだんご"]],["みさき（9さい）",["お花のケーキ","貝がらのお家","うさぎ"]],["ゆうと（11さい）",["ほぼ本物の城","巨大な塔","恐竜"]],["となりのおじさん",["無言の大作","謎の像","完璧なピラミッド"]],["砂場の主ネコ",["足あと","ねこ山","ほった穴"]]];function oe(){return ne.slice().sort(()=>Math.random()-.5).slice(0,3).map(([t,e])=>{const n=(Math.random()+Math.random()+Math.random())/3;return{name:t,work:"「"+e[Math.random()*e.length|0]+"」",total:Math.round(10*(10+15*n))/10}})}function ae(){Yt(),Xt("title"),function(){x();const t=(t,e,n,o=2)=>{t<0||t>=a||n<0||n>=s||e<1||e>=i||(l[u(t,e,n)]=o)},e=22;for(let n=1;n<=8;n++)for(let o=e-8;o<e+8;o++)for(let a=e-8;a<e+8;a++)t(a,n,o);for(let n=e-8;n<e+8;n+=2)for(const o of[e-8,e+7])t(n,9,o);for(let n=e-8;n<e+8;n+=2)for(const o of[e-8,e+7])t(o,9,n);for(const[n,o]of[[e-8,e-8],[e+7,e-8],[e-8,e+7],[e+7,e+7]]){for(let e=1;e<=14;e++)for(let a=-2;a<=2;a++)for(let s=-2;s<=2;s++)s*s+a*a<=5&&t(n+s,e,o+a);for(let e=0;e<4;e++)t(n+[2,-2,0,0][e],15,o+[0,0,2,-2][e])}for(let n=1;n<=18;n++)for(let o=-3;o<=3;o++)for(let a=-3;a<=3;a++)a*a+o*o<=9-(n>14?2*(n-14):0)&&t(e+a,n,e+o);for(let n=1;n<=4;n++)for(let o=e-1;o<=e;o++)for(let a=e+5;a<e+9;a++)t(o,n,a,0);for(const[n,o]of[[e-5,e+7],[e+4,e+7]])for(let e=5;e<=6;e++)t(n,e,o+1,0);for(let n=0;n<160;n++){const n=6.28*Math.random(),o=12+6*Math.random();t(Math.floor(e+Math.cos(n)*o),1,Math.floor(e+Math.sin(n)*o),1)}const n=(e,n,o,a)=>{const s=w++;y[s]=e,t(n,o,a,4),h[u(n,o,a)]=s};n("flag",e,19,e),n("flag",e-8,15,e-8),n("flag",e+7,15,e+7),n("shell",e-11,1,e+10),n("star",e+11,1,e+11),n("flower",e+10,1,e-11),g=!0,D()}(),J(e("#hero")),It="demo",Object.assign(O,{el:.45,dist:64})}e("#nextBtn").onclick=()=>{"solo"===Et?(Tt=bt[Math.random()*bt.length|0],jt=[],Kt()):Bt<Gt-1?(Bt++,_t()):function(){const t=jt.slice().sort((t,e)=>e.total-t.total);e("#finalRank").innerHTML=t.map((t,e)=>`<li class="${0===e?"me":""}"><span class="no">${["🥇","🥈","🥉","4"][e]}</span><img src="${t.img}" alt=""><span class="nm">${Vt(t.name)}<br><small style="color:var(--sub)">${ee.find(e=>t.total>=e[0])[1]}</small></span><b>${t.total.toFixed(1)}点</b></li>`).join(""),e("#gallery").innerHTML=jt.map(t=>`<figure><img src="${t.img}" alt=""><figcaption>${Vt(t.name)}　${t.total.toFixed(1)}点</figcaption></figure>`).join(""),Xt("final"),le(30)}()},e("#saveBtn").onclick=()=>{const t=jt[jt.length-1];if(!t)return;const e=document.createElement("a");e.href=t.img,e.download="sunaba-art.jpg",e.click(),de("画像を保存したよ")},e("#toTitle").onclick=ae,e("#finalTitle").onclick=ae,e("#finalAgain").onclick=Wt;let se,ie=null;function re(){try{ie||(ie=new(window.AudioContext||window.webkitAudioContext)),"suspended"===ie.state&&ie.resume()}catch(t){}}function ce(t,e){if(!ie)return;const n=ie.createOscillator(),o=ie.createGain();n.type="triangle",n.frequency.value=t,o.gain.setValueAtTime(.12,ie.currentTime),o.gain.exponentialRampToValueAtTime(.001,ie.currentTime+e+.1),n.connect(o).connect(ie.destination),n.start(),n.stop(ie.currentTime+e+.12)}function le(t){if(!ie)return;(t>=19?[523,659,784,1047]:t>=10?[523,659,784]:[392,349]).forEach((t,e)=>setTimeout(()=>ce(t,.18),150*e))}function de(t){const n=e("#toast");n.textContent=t,n.classList.add("show"),clearTimeout(se),se=setTimeout(()=>n.classList.remove("show"),1800)}e("#hero .loading")?.remove(),Jt(),Yt(),ae(),window.__sunaba={pick:_,analyze:()=>vt(Tt?.k||"free"),get phase(){return It}},requestAnimationFrame(t=>{Ut=t,te(t)});
+</script>
+<script src="../../playtime.js" defer></script>
+</body>
+</html>
